@@ -18,18 +18,18 @@
             <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-plugin" />
             <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-report" />
             <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-webapi" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-business" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-common" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-mservice" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-plugin" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-report" />
-            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-webapi" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-business" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-common" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-mservice" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-plugin" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-report" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-webapi" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-business" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-common" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-mservice" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-plugin" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-report" />
+            <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-webapi" />
           </set>
         </option>
       </GradleProjectSettings>
