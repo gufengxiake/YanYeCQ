@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleMigrationSettings" migrationVersion="1" />
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="gradleJvm" value="#JAVA_HOME" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/base/nckd-base-common" />
+            <option value="$PROJECT_DIR$/base/nckd-base-helper" />
+            <option value="$PROJECT_DIR$/nckd-cosmic-debug" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-business" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-common" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-mservice" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-plugin" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-report" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-fi-webapi" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-business" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-common" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-mservice" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-plugin" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-report" />
+            <option value="$PROJECT_DIR$/yanye/fi/nckd-yanye-scm-webapi" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-business" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-common" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-mservice" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-plugin" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-report" />
+            <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-webapi" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+    <option name="offlineMode" value="true" />
+  </component>
+</project>

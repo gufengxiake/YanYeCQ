@@ -1,0 +1,16 @@
+Manifest-Version: 1.0
+Jar-Id: 
+Project-Name: nckd-yanye-hr-business
+Build-Tool: Gradle 7.5
+Build-Date: 2024-07-15 15:35:54
+Built-By: Kingdee Cosmic Developer Tools
+Build-Num: 20240715153554259
+App-Name: 
+Git-Branch: master
+Cloud-Name: 
+Group-Name: nckd.cosmic
+Bundle-Version: 1.0.0
+Git-Commit-Hash: 
+Build-Image: 
+Build-Jdk: 1.8.0_351
+
