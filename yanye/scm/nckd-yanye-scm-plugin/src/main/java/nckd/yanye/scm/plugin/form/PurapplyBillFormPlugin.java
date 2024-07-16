@@ -22,6 +22,8 @@ import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 import nckd.yanye.scm.plugin.utils.ZcPlatformApiUtil;
 
+import java.awt.Desktop;
+import java.net.URI;
 import java.util.EventObject;
 import java.util.List;
 import java.util.Objects;
@@ -348,8 +350,14 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     private void announcement() {
         IFormView view = this.getView();
         IDataModel model = this.getModel();
-
-        view.showConfirm("该采购申请单未推送至招采平台", MessageBoxOptions.OK);
+        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
+            throw new KDBizException("该采购申请单未推送至招采平台!");
+        }
+        String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
+        String url = ZcPlatformApiUtil.viewNotice(orderId);
+        // 跳转页面
+        getView().openUrl(url);
+//        view.showConfirm(url, MessageBoxOptions.OK);
     }
 
 }

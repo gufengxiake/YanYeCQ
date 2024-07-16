@@ -31,6 +31,10 @@ public class ZcPlatformApiUtil {
      * 测试环境url
      */
     private static final String URL = "http://open-api.yingcaicheng.net";
+    /**
+     * 测试环境访问指定页面url
+     */
+    public static final String PASSPORTURL = "http://passport.yingcaicheng.net";
 
 
     /**
@@ -237,7 +241,8 @@ public class ZcPlatformApiUtil {
     /**
      * 询比单流标
      *
-     * @param
+     * @param orderId
+     * @param noticeId
      * @return
      */
     public static JSONObject cancelXBD(String orderId, String noticeId) {
@@ -274,6 +279,35 @@ public class ZcPlatformApiUtil {
 
         return JSON.parseObject(execute.body());
     }
+
+    /**
+     * 询比公告查看
+     *
+     * @param orderId
+     */
+    public static String viewNotice(String orderId) {
+        String userAccessToken = getZcUserToken();
+        JSONObject configJson = new JSONObject() {
+            {
+                put("platform", "purchase");
+                put("page", "InquiryDetail");
+                put("params", new JSONObject() {
+                    {
+                        put("orderId", orderId);
+                    }
+                });
+                put("query", new JSONObject() {
+                    {
+                        put("loginCompanyId", 463);
+                    }
+                });
+            }
+        };
+
+        String config = configJson.toString();
+        return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
 }
 
 
