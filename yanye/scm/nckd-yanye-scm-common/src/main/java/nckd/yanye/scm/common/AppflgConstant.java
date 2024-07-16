@@ -5,7 +5,7 @@
  * Author: liebin.zheng
  * Generate Date: generate_date
  */
-package devflg.cloudflg.appflg.common;
+package nckd.yanye.scm.common;
 
 /**
  * cloudflg云appflg应用-通用常量类<br>
