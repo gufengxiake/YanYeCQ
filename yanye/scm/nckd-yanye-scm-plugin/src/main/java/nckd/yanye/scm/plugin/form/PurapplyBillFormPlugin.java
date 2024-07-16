@@ -139,21 +139,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 // 对应公告id
                 String noticeId = (String) model.getValue(PurapplybillConst.NCKD_NOTICEID);
 
-                JSONObject cancelJson = new JSONObject() {
-                    {
-                        // 是否公示 1：是 0：否
-                        put("closePublicity", 0);
-                        //流标类型 1：终止询比 2：重新询比
-                        put("closeType", 1);
-                        //关闭公告
-                        put("notice", new JSONObject() {
-                            {
-                                put("noticeId", noticeId);
-                            }
-                        });
-                    }
-                };
-
                 JSONObject jsonObject = ZcPlatformApiUtil.cancelXBD(orderId, noticeId);
                 if (jsonObject.getBooleanValue("success")) {
                     this.getView().showSuccessNotification("作废成功!");
