@@ -2,7 +2,8 @@ package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-import com.aliyun.odps.utils.StringUtils;
+
+import com.kingdee.util.StringUtils;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
@@ -39,6 +40,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     final static String ANNOUNCEMENT = "bar_announcement";
 
+    /**
+     * 按钮标识-作废
+     */
+    final static String CANCELORDER = "bar_cancelorder";
+
 
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
@@ -56,7 +62,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     public void afterBindData(EventObject e) {
         //富文本数据回显
         String largeText = (String) this.getModel().getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT);
-        if (StringUtils.isBlank(largeText)) {
+        if (StringUtils.isEmpty(largeText)) {
             return;
         }
         RichTextEditor richTextEditor = this.getControl(PurapplybillConst.NCKD_NOTICECONTENT);
@@ -78,43 +84,33 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     @Override
     public void itemClick(ItemClickEvent evt) {
+        IDataModel model = this.getModel();
+        IFormView view = this.getView();
         super.itemClick(evt);
         switch (evt.getItemKey()) {
             // 推送招采平台
             case PUSHTOZC:
-                IDataModel model = this.getModel();
-                IFormView view = this.getView();
-
                 if (!Objects.equals(model.getValue(PurapplybillConst.BILLSTATUS), "C")) {
-                    throw new KDBizException("单据未审核!");
+                    throw new KDBizException("采购申请单未审核!");
                 }
-//                if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == true)) {
-//                    throw new KDBizException("该单据已推送招采平台!");
-//                }
+                if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == true)) {
+                    throw new KDBizException("该采购申请单已经推送至招采平台!");
+                }
                 if (((boolean) model.getValue(PurapplybillConst.NCKD_WHETHERPUSH) == false) ||
                         model.getValue(PurapplybillConst.NCKD_PROCUREMENTS) == "annualcontract") {
-                    throw new KDBizException("该单据未勾选“是否推送招采平台”!");
+                    throw new KDBizException("该采购申请单未勾选“是否推送招采平台”!");
                 }
-                switch ((String) model.getValue("nckd_procurements")) {
-                    //询比价 或 单一品牌
-                    case "pricecomparison":
-                    case "singlebrand":
-                        xb(model);
-                        break;
-                    //竞争性谈判
-                    case "competitive":
 
-                        break;
-                    //单一供应商
-                    case "singlesupplier":
-
-                        break;
-                    //招投采购
-                    case "bidprocurement":
-
-                        break;
-                    default:
-                        throw new KDBizException("该单据不可推送!");
+                if ("pricecomparison".equals(model.getValue("nckd_procurements")) || "singlebrand".equals(model.getValue("nckd_procurements"))) {
+                    xb(model);
+                } else if ("competitive".equals(model.getValue("nckd_procurements"))) {
+                    // 竞争性谈判的相关代码
+                } else if ("singlesupplier".equals(model.getValue("nckd_procurements"))) {
+                    // 单一供应商的相关代码
+                } else if ("bidprocurement".equals(model.getValue("nckd_procurements"))) {
+                    // 招投采购的相关代码
+                } else {
+                    throw new KDBizException("该单据不可推送!");
                 }
 
 
@@ -129,8 +125,41 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             case ANNOUNCEMENT:
                 announcement();
                 break;
-            //询比采购线上评审文件制作
+            // 询比采购线上评审文件制作
             case "制作标书":
+
+                break;
+            // 作废
+            case CANCELORDER:
+                if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
+                    throw new KDBizException("该采购申请单未推送至招采平台!");
+                }
+                // 招采平台id
+                String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
+                // 对应公告id
+                String noticeId = (String) model.getValue(PurapplybillConst.NCKD_NOTICEID);
+
+                JSONObject cancelJson = new JSONObject() {
+                    {
+                        // 是否公示 1：是 0：否
+                        put("closePublicity", 0);
+                        //流标类型 1：终止询比 2：重新询比
+                        put("closeType", 1);
+                        //关闭公告
+                        put("notice", new JSONObject() {
+                            {
+                                put("noticeId", noticeId);
+                            }
+                        });
+                    }
+                };
+
+                JSONObject jsonObject = ZcPlatformApiUtil.cancelXBD(orderId, noticeId);
+                if (jsonObject.getBooleanValue("success")) {
+                    this.getView().showSuccessNotification("作废成功!");
+                } else {
+                    this.getView().showErrorNotification("作废失败!" + jsonObject.getString("message"));
+                }
 
                 break;
             default:
@@ -170,7 +199,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 if (!dynamicObjects.isEmpty()) {
                     DynamicObject dynamicObject = dynamicObjects.get(0);
                     fullname = dynamicObject.getString("fullname");
-
                 }
                 String[] parts = fullname.split("_");
                 String province = parts[0];
@@ -318,6 +346,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         //fixme
         if (xbjd.getBooleanValue("success")) {
             this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, xbjd.getJSONObject("data").getString("orderId"));
+            this.getModel().setValue(PurapplybillConst.NCKD_NOTICEID, xbjd.getJSONObject("data").getString("noticeId"));
             this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("公告发布成功!");
@@ -334,7 +363,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     private void announcement() {
         IFormView view = this.getView();
         IDataModel model = this.getModel();
-
 
         view.showConfirm("该采购申请单未推送至招采平台", MessageBoxOptions.OK);
     }

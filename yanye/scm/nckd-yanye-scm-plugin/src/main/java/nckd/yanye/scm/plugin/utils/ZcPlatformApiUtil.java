@@ -237,13 +237,24 @@ public class ZcPlatformApiUtil {
     /**
      * 询比单流标
      *
-     * @param inquiryOrderId
+     * @param
      * @return
      */
-    public static JSONObject cancelXBD(String inquiryOrderId) {
-        HttpRequest httpRequest = new HttpRequest(URL + "/sourcing/purchaser/inquiry-orders/{orderId}/close/publish");
+    public static JSONObject cancelXBD(String orderId, String xbJson) {
+        String accessToken = getZcAccessToken();
 
-        return null;
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("identity", "purchaser");
+        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.body(xbJson);
+
+        HttpResponse execute = httpRequest.execute();
+
+
+        return JSON.parseObject(execute.body());
     }
 }
 
