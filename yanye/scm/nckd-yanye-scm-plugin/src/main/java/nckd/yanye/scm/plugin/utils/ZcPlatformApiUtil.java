@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.utils;
 
+import akka.japi.pf.FI;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.Method;
@@ -7,9 +8,12 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
+import kd.bos.fileservice.FileItem;
+import kd.bos.print.service.BosPrintServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
+import java.io.InputStream;
 
 public class ZcPlatformApiUtil {
     /**
@@ -231,7 +235,9 @@ public class ZcPlatformApiUtil {
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
-        httpRequest.form("file", new File(url));
+
+        File file = new File(url);
+        httpRequest.form("file", file);
         httpRequest.form("name", name);
         HttpResponse execute = httpRequest.execute();
 
@@ -285,29 +291,49 @@ public class ZcPlatformApiUtil {
      *
      * @param orderId
      */
-    public static String viewNotice(String orderId) {
+    public static String viewNotice(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
-        JSONObject configJson = new JSONObject() {
-            {
-                put("platform", "purchase");
-                put("page", "InquiryDetail");
-                put("params", new JSONObject() {
-                    {
-                        put("orderId", orderId);
-                    }
-                });
-                put("query", new JSONObject() {
-                    {
-                        put("loginCompanyId", 463);
-                    }
-                });
-            }
-        };
+        String config = "";
+        // 采购方式-询比价，单一品牌
+        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            JSONObject configJson = new JSONObject() {
+                {
+                    put("platform", "purchase");
+                    put("page", "InquiryDetail");
+                    put("params", new JSONObject() {
+                        {
+                            put("orderId", orderId);
+                        }
+                    });
+                    put("query", new JSONObject() {
+                        {
+                            put("loginCompanyId", 463);
+                        }
+                    });
+                }
+            };
+            config = configJson.toString();
 
-        String config = configJson.toString();
+
+            // 采购方式-竞争性谈判
+        } else if ("competitive".equals(procurements)) {
+            // 竞争性谈判的相关代码
+
+
+            // 采购方式-单一供应商
+        } else if ("singlesupplier".equals(procurements)) {
+            // 单一供应商的相关代码
+
+
+            // 采购方式-招投采购
+        } else if ("bidprocurement".equals(procurements)) {
+            // 招投采购的相关代码
+        } else {
+            throw new KDBizException("该单据未选择采购方式!");
+        }
+
         return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
     }
-
 }
 
 
