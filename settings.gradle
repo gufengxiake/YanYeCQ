@@ -32,6 +32,14 @@ include(
 		':nckd-yanye-scm-report',
 		':nckd-yanye-scm-mservice',
 		':nckd-yanye-scm-webapi',
+
+
+		':nckd-yanye-occ-common',
+		':nckd-yanye-occ-business',
+		':nckd-yanye-occ-plugin',
+		':nckd-yanye-occ-report',
+		':nckd-yanye-occ-mservice',
+		':nckd-yanye-occ-webapi',
 )
 
 // -------------- 引入苍穹调试工程模块 --------------
@@ -62,3 +70,12 @@ project(':nckd-yanye-scm-plugin').projectDir = new File('yanye/scm/nckd-yanye-sc
 project(':nckd-yanye-scm-report').projectDir = new File('yanye/scm/nckd-yanye-scm-report')
 project(':nckd-yanye-scm-mservice').projectDir = new File('yanye/scm/nckd-yanye-scm-mservice')
 project(':nckd-yanye-scm-webapi').projectDir = new File('yanye/scm/nckd-yanye-scm-webapi')
+
+
+// -------------- 引入yanye云-occ应用模块 --------------
+project(':nckd-yanye-occ-common').projectDir = new File('yanye/occ/nckd-yanye-occ-common')
+project(':nckd-yanye-occ-business').projectDir = new File('yanye/occ/nckd-yanye-occ-business')
+project(':nckd-yanye-occ-plugin').projectDir = new File('yanye/occ/nckd-yanye-occ-plugin')
+project(':nckd-yanye-occ-report').projectDir = new File('yanye/occ/nckd-yanye-occ-report')
+project(':nckd-yanye-occ-mservice').projectDir = new File('yanye/occ/nckd-yanye-occ-mservice')
+project(':nckd-yanye-occ-webapi').projectDir = new File('yanye/occ/nckd-yanye-occ-webapi')
