@@ -27,6 +27,8 @@ import java.util.Objects;
 
 /**
  * 采购申请单-表单插件
+ *
+ * @author liuxiao
  */
 public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     /**
@@ -303,15 +305,26 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
 
                 //询比文件
-                DynamicObjectCollection fields = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
-                DynamicObject fbasedataId = fields.get(0).getDynamicObject("fbasedataId");
-                String name = fbasedataId.getString("name");
-                String url = (String) fbasedataId.get("url");
-                JSONObject uploadResult = ZcPlatformApiUtil.uploadFile(name, url);
-
-                Integer inquiryFileGroupId = uploadResult.getJSONObject("data").getInteger("attachmentId");
-                put("inquiryFileGroupId", inquiryFileGroupId);
+                DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
+                Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("XB", "XBWJ");
+                for (DynamicObject obj : xbAtts) {
+                    DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                    String name = fbasedataId.getString("name");
+                    String url = (String) fbasedataId.get("url");
+                    ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                }
+                put("inquiryFileGroupId", attGroupId);
                 //内部文件
+                ArrayList<Integer> attachmentIds = new ArrayList<>();
+                DynamicObjectCollection interAtts = (DynamicObjectCollection) model.getValue("nckd_internaldocuments");
+                for (DynamicObject obj : interAtts) {
+                    DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                    String name = fbasedataId.getString("name");
+                    String url = (String) fbasedataId.get("url");
+                    Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    attachmentIds.add(attachmentId);
+                }
+                put("internalAttachmentIds", attachmentIds);
 
                 //物料明细
                 DynamicObjectCollection materielEntry = model.getEntryEntity(PurapplybillConst.ENTRYENTITYID_BILLENTRY);
@@ -452,7 +465,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 put("noticeMedium", model.getValue(PurapplybillConst.NCKD_PUBLISHMEDIA1));
             }
         });
-
 
         return null;
     }

@@ -7,6 +7,8 @@ import java.util.EventObject;
 
 /**
  * 采购申请单-列表插件
+ * @author liuxiao
+ *
  */
 public class PurapplyBillListPlugin extends AbstractListPlugin {
     /**

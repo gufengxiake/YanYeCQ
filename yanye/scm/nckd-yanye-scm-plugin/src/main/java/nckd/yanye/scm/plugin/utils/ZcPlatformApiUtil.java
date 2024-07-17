@@ -1,6 +1,5 @@
 package nckd.yanye.scm.plugin.utils;
 
-import akka.japi.pf.FI;
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
 import cn.hutool.http.Method;
@@ -8,13 +7,15 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
-import kd.bos.fileservice.FileItem;
-import kd.bos.print.service.BosPrintServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
-import java.io.InputStream;
 
+/**
+ * 招采平台接口工具类
+ *
+ * @author liuxiao
+ */
 public class ZcPlatformApiUtil {
     /**
      * 授权类型，固定值: client_credentials
@@ -225,9 +226,10 @@ public class ZcPlatformApiUtil {
      * 上传附件
      *
      * @param
+     * @param attGroupId
      * @return
      */
-    public static JSONObject uploadFile(String name, String url) {
+    public static Integer uploadFile(String name, String url, Integer attGroupId) {
         String accessToken = getZcAccessToken();
 
         HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
@@ -239,9 +241,20 @@ public class ZcPlatformApiUtil {
         File file = new File(url);
         httpRequest.form("file", file);
         httpRequest.form("name", name);
+        httpRequest.form("groupId", attGroupId);
         HttpResponse execute = httpRequest.execute();
 
-        return JSON.parseObject(execute.body());
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        Integer attachmentId;
+        if ((boolean) responseObj.get("success")) {
+            JSONObject dataObject = responseObj.getJSONObject("data");
+            attachmentId = dataObject.getInteger("attachmentId");
+        } else {
+            throw new KDBizException(String.valueOf(responseObj.get("message")));
+        }
+        return attachmentId;
+
     }
 
     /**
@@ -333,6 +346,36 @@ public class ZcPlatformApiUtil {
         }
 
         return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
+    /**
+     * 新增附件组，返回id
+     */
+    public static Integer addAttachmentGroup(String bizType, String attachmentType) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachment-groups");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.body(new JSONObject() {
+            {
+                put("bizType", bizType);
+                put("attachmentType", attachmentType);
+            }
+        }.toString());
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        Integer groupId;
+        if ((boolean) responseObj.get("success")) {
+            JSONObject dataObject = responseObj.getJSONObject("data");
+            groupId = dataObject.getInteger("groupId");
+        } else {
+            throw new KDBizException(String.valueOf(responseObj.get("message")));
+        }
+        return groupId;
     }
 }
 

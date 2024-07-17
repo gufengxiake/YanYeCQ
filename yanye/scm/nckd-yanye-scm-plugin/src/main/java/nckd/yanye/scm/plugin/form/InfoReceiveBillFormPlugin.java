@@ -21,6 +21,8 @@ import java.util.EventObject;
 
 /**
  * 信息接收单-表单插件
+ * @author liuxiao
+ *
  */
 public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
