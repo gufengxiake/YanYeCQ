@@ -2,34 +2,33 @@ package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
-import com.kingdee.util.StringUtils;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
-import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.control.RichTextEditor;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.ORM;
+import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 import nckd.yanye.scm.plugin.utils.ZcPlatformApiUtil;
 
-import java.awt.Desktop;
-import java.net.URI;
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
 import java.util.Objects;
 
 /**
  * 采购申请单-表单插件
+ *
+ * @author liuxiao
  */
 public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     /**
@@ -53,7 +52,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         FormOperate formOperate = (FormOperate) args.getSource();
         String operateKey = formOperate.getOperateKey();
         //保存之前将富文本的数据保存在大文本中
-        if (StringUtils.equals(operateKey, "save") || StringUtils.equals(operateKey, "submit")) {
+        if ("save".equals(operateKey) || "submit".equals(operateKey)) {
             RichTextEditor richTextEditor = this.getControl(PurapplybillConst.NCKD_NOTICECONTENT);
             String text = richTextEditor.getText();
             this.getModel().setValue(PurapplybillConst.NCKD_BIGNOTICECONTENT, text);
@@ -64,7 +63,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     public void afterBindData(EventObject e) {
         //富文本数据回显
         String largeText = (String) this.getModel().getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT);
-        if (StringUtils.isEmpty(largeText)) {
+        if (largeText == null || largeText.trim().isEmpty()) {
             return;
         }
         RichTextEditor richTextEditor = this.getControl(PurapplybillConst.NCKD_NOTICECONTENT);
@@ -103,25 +102,36 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                     throw new KDBizException("该采购申请单未勾选“是否推送招采平台”!");
                 }
 
-                if ("pricecomparison".equals(model.getValue("nckd_procurements")) || "singlebrand".equals(model.getValue("nckd_procurements"))) {
-                    xb(model);
-                } else if ("competitive".equals(model.getValue("nckd_procurements"))) {
+                // 初始化结果json
+                JSONObject resultJson = null;
+
+                String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
+                if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+                    resultJson = xb(model);
+                } else if ("competitive".equals(procurements)) {
                     // 竞争性谈判的相关代码
-                } else if ("singlesupplier".equals(model.getValue("nckd_procurements"))) {
+                    resultJson = tp(model);
+
+                } else if ("singlesupplier".equals(procurements)) {
                     // 单一供应商的相关代码
-                } else if ("bidprocurement".equals(model.getValue("nckd_procurements"))) {
+                } else if ("bidprocurement".equals(procurements)) {
                     // 招投采购的相关代码
                 } else {
                     throw new KDBizException("该单据不可推送!");
                 }
 
+                //fixme
+                if (resultJson.getBooleanValue("success")) {
+                    this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, resultJson.getJSONObject("data").getString("orderId"));
+                    this.getModel().setValue(PurapplybillConst.NCKD_NOTICEID, resultJson.getJSONObject("data").getString("noticeId"));
+                    this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
+                    SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
+                    this.getView().showSuccessNotification("公告发布成功!");
+                } else {
+                    this.getView().showErrorNotification("发布失败!" + resultJson.getString("message"));
+                }
 
-//        if (true) {
-//            //设置已推送
-//            model.setValue("nckd_pushed", true);
-//            SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
-//            view.showSuccessNotification("公告发布成功!");
-//        }
+
                 break;
             // 公告查看
             case ANNOUNCEMENT:
@@ -157,8 +167,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
     /**
      * 询比价单-公告发布
+     *
+     * @param model
+     * @return
      */
-    private void xb(IDataModel model) {
+    private JSONObject xb(IDataModel model) {
         //组装json
         JSONObject xbJson = new JSONObject();
         //询比价单信息-order
@@ -175,11 +188,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 }
                 //报价方式
                 put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION));
-                //收货地址
+                //fixme 收货地址
                 String adminId = (String) model.getValue(PurapplybillConst.NCKD_ADDRESS);
                 String fullname = "";
                 ORM orm = ORM.create();
-                QFilter filter = new QFilter("id", "=", Long.parseLong(adminId));
+                QFilter filter = new QFilter("id", QCP.equals, Long.parseLong(adminId));
                 QFilter[] filters = new QFilter[]{filter};
                 List<DynamicObject> dynamicObjects = orm.query("bd_admindivision", "id,name,fullname,country.id,country.name", filters, "id asc");
 
@@ -292,15 +305,26 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
 
                 //询比文件
-                DynamicObjectCollection fields = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
-                DynamicObject fbasedataId = fields.get(0).getDynamicObject("fbasedataId");
-                String name = fbasedataId.getString("name");
-                String url = (String) fbasedataId.get("url");
-                JSONObject uploadResult = ZcPlatformApiUtil.uploadFile(name, url);
-
-                Integer inquiryFileGroupId = uploadResult.getJSONObject("data").getInteger("attachmentId");
-                put("inquiryFileGroupId", inquiryFileGroupId);
+                DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
+                Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("XB", "XBWJ");
+                for (DynamicObject obj : xbAtts) {
+                    DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                    String name = fbasedataId.getString("name");
+                    String url = (String) fbasedataId.get("url");
+                    ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                }
+                put("inquiryFileGroupId", attGroupId);
                 //内部文件
+                ArrayList<Integer> attachmentIds = new ArrayList<>();
+                DynamicObjectCollection interAtts = (DynamicObjectCollection) model.getValue("nckd_internaldocuments");
+                for (DynamicObject obj : interAtts) {
+                    DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                    String name = fbasedataId.getString("name");
+                    String url = (String) fbasedataId.get("url");
+                    Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    attachmentIds.add(attachmentId);
+                }
+                put("internalAttachmentIds", attachmentIds);
 
                 //物料明细
                 DynamicObjectCollection materielEntry = model.getEntryEntity(PurapplybillConst.ENTRYENTITYID_BILLENTRY);
@@ -330,16 +354,119 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         //调用公告发布接口
         JSONObject xbjd = ZcPlatformApiUtil.addXBD(xbJson);
 
-        //fixme
-        if (xbjd.getBooleanValue("success")) {
-            this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, xbjd.getJSONObject("data").getString("orderId"));
-            this.getModel().setValue(PurapplybillConst.NCKD_NOTICEID, xbjd.getJSONObject("data").getString("noticeId"));
-            this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
-            SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
-            this.getView().showSuccessNotification("公告发布成功!");
-        } else {
-            this.getView().showErrorNotification("发布失败!" + xbjd.getString("message"));
-        }
+        return xbjd;
+    }
+
+    /**
+     * 谈判采购-公告发布
+     *
+     * @param model
+     * @return
+     */
+    private JSONObject tp(IDataModel model) {
+        // 组装json
+        JSONObject xbJson = new JSONObject() {
+            {
+                // 采购单名称
+                put("orderName", model.getValue(PurapplybillConst.NCKD_NEGOTIATEDNAME));
+                // 谈判采购编号
+                put("customOrderCode", model.getValue(PurapplybillConst.NCKD_NEGOTIATEDNUM));
+                // 谈判采购预算（万元）
+                put("budgetAmount", model.getValue(PurapplybillConst.NCKD_NEGOTIATEDBUDGET));
+                // 报名开始时间
+                put("offerStartTime", model.getValue(PurapplybillConst.NCKD_REGSTARTTIME));
+                // 报名结束时间
+                put("offerEndTime", model.getValue(PurapplybillConst.NCKD_REGENDTIME));
+                // 提交响应文件截止时间
+                put("negotiateTime", model.getValue(PurapplybillConst.NCKD_SUBDEADTIME));
+                // 项目类型
+                put("projectType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE1));
+                // 处置方式
+                put("assetDisposalMethod", model.getValue(PurapplybillConst.NCKD_DISPOSALMETHOD1));
+                // 报价方式
+                put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION1));
+                // 谈判方式
+                put("negotiateMethod", model.getValue(PurapplybillConst.NCKD_NEGOTIATIONMODE));
+                // 谈判地址-国家
+                //fixme 地址信息
+                put("country", "中国");
+                // 谈判地址-所属省
+                put("province", "江西省");
+                // 谈判地址-所属市
+                put("city", "南昌市");
+                // 谈判地址-所属区县
+                put("area", "红谷滩区");
+                // 谈判地址-详细地址
+                put("address", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR1));
+                // 竞争方式
+                put("competeType", model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE));
+                // 公开范围
+                put("openScope", model.getValue(PurapplybillConst.NCKD_PUBLICSCOPE1));
+                // 报价时段查看供应商参与名单
+                put("offerTimeScope", model.getValue(PurapplybillConst.NCKD_VIEWLIST1));
+                // 报名审核
+                put("bidApproval", model.getValue(PurapplybillConst.NCKD_REGISTERAUDIT1));
+                // 评审办法
+                put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD1));
+                // 是否需要线上评审
+                put("isReview", model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1));
+                // todo 谈判文件
+                put("negotiateFileIds", new ArrayList<Integer>() {
+                    {
+
+                    }
+                });
+                // todo 内部附件
+                put("internalAttachments", new ArrayList<Integer>() {
+                    {
+
+                    }
+                });
+                // 标书费
+                put("fileFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE));
+                // 平台服务费
+                put("signUpFee", model.getValue(PurapplybillConst.NCKD_SERVICEFEE));
+            }
+        };
+
+        //邀请供应商列表
+        DynamicObjectCollection inviteCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS1);
+        xbJson.put("inviteList", new JSONArray() {
+            {
+                for (DynamicObject dynamicObject : inviteCollection) {
+                    JSONObject inviteObj = new JSONObject() {
+                        {
+                            //供应商id
+                            put("supplierId", dynamicObject.getString("fbasedataid." + SupplierConst.NCKD_PLATFORMSUPID));
+                            //供应商名称
+                            put("supplierName", dynamicObject.getString("fbasedataid." + SupplierConst.NAME));
+                        }
+                    };
+                    add(inviteObj);
+                }
+            }
+        });
+
+
+        // 公告
+        xbJson.put("notice", new JSONObject() {
+            {
+                //公告标题-“竞争方式”为有限竞争就取 邀请函标题
+                if ("2".equals(model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE))) {
+                    put("noticeTitle", model.getValue(PurapplybillConst.NCKD_INVITATIONTITLE));
+                } else {
+                    put("noticeTitle", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
+                }
+                //公告发布日期
+                put("noticePublishTime", model.getValue(PurapplybillConst.NCKD_TIMINGTIME));
+                //公告内容
+                put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
+                // 发布媒体
+                put("noticeMedium", model.getValue(PurapplybillConst.NCKD_PUBLISHMEDIA1));
+            }
+        });
+
+        return null;
     }
 
     /**
@@ -350,15 +477,34 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     private void announcement() {
         IFormView view = this.getView();
         IDataModel model = this.getModel();
+
         if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
+
+        String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
-        String url = ZcPlatformApiUtil.viewNotice(orderId);
+        String url = ZcPlatformApiUtil.viewNotice(procurements, orderId);
         // 跳转页面
         getView().openUrl(url);
-//        view.showConfirm(url, MessageBoxOptions.OK);
     }
 
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 

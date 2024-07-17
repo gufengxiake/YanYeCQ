@@ -11,6 +11,11 @@ import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
 
+/**
+ * 招采平台接口工具类
+ *
+ * @author liuxiao
+ */
 public class ZcPlatformApiUtil {
     /**
      * 授权类型，固定值: client_credentials
@@ -221,9 +226,10 @@ public class ZcPlatformApiUtil {
      * 上传附件
      *
      * @param
+     * @param attGroupId
      * @return
      */
-    public static JSONObject uploadFile(String name, String url) {
+    public static Integer uploadFile(String name, String url, Integer attGroupId) {
         String accessToken = getZcAccessToken();
 
         HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
@@ -231,11 +237,24 @@ public class ZcPlatformApiUtil {
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
-        httpRequest.form("file", new File(url));
+
+        File file = new File(url);
+        httpRequest.form("file", file);
         httpRequest.form("name", name);
+        httpRequest.form("groupId", attGroupId);
         HttpResponse execute = httpRequest.execute();
 
-        return JSON.parseObject(execute.body());
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        Integer attachmentId;
+        if ((boolean) responseObj.get("success")) {
+            JSONObject dataObject = responseObj.getJSONObject("data");
+            attachmentId = dataObject.getInteger("attachmentId");
+        } else {
+            throw new KDBizException(String.valueOf(responseObj.get("message")));
+        }
+        return attachmentId;
+
     }
 
     /**
@@ -285,29 +304,79 @@ public class ZcPlatformApiUtil {
      *
      * @param orderId
      */
-    public static String viewNotice(String orderId) {
+    public static String viewNotice(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
-        JSONObject configJson = new JSONObject() {
-            {
-                put("platform", "purchase");
-                put("page", "InquiryDetail");
-                put("params", new JSONObject() {
-                    {
-                        put("orderId", orderId);
-                    }
-                });
-                put("query", new JSONObject() {
-                    {
-                        put("loginCompanyId", 463);
-                    }
-                });
-            }
-        };
+        String config = "";
+        // 采购方式-询比价，单一品牌
+        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            JSONObject configJson = new JSONObject() {
+                {
+                    put("platform", "purchase");
+                    put("page", "InquiryDetail");
+                    put("params", new JSONObject() {
+                        {
+                            put("orderId", orderId);
+                        }
+                    });
+                    put("query", new JSONObject() {
+                        {
+                            put("loginCompanyId", 463);
+                        }
+                    });
+                }
+            };
+            config = configJson.toString();
 
-        String config = configJson.toString();
+
+            // 采购方式-竞争性谈判
+        } else if ("competitive".equals(procurements)) {
+            // 竞争性谈判的相关代码
+
+
+            // 采购方式-单一供应商
+        } else if ("singlesupplier".equals(procurements)) {
+            // 单一供应商的相关代码
+
+
+            // 采购方式-招投采购
+        } else if ("bidprocurement".equals(procurements)) {
+            // 招投采购的相关代码
+        } else {
+            throw new KDBizException("该单据未选择采购方式!");
+        }
+
         return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
     }
 
+    /**
+     * 新增附件组，返回id
+     */
+    public static Integer addAttachmentGroup(String bizType, String attachmentType) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachment-groups");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.body(new JSONObject() {
+            {
+                put("bizType", bizType);
+                put("attachmentType", attachmentType);
+            }
+        }.toString());
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        Integer groupId;
+        if ((boolean) responseObj.get("success")) {
+            JSONObject dataObject = responseObj.getJSONObject("data");
+            groupId = dataObject.getInteger("groupId");
+        } else {
+            throw new KDBizException(String.valueOf(responseObj.get("message")));
+        }
+        return groupId;
+    }
 }
 
 
