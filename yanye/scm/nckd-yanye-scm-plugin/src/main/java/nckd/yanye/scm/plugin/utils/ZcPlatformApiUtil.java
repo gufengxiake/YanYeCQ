@@ -31,6 +31,10 @@ public class ZcPlatformApiUtil {
      * 测试环境url
      */
     private static final String URL = "http://open-api.yingcaicheng.net";
+    /**
+     * 测试环境访问指定页面url
+     */
+    public static final String PASSPORTURL = "http://passport.yingcaicheng.net";
 
 
     /**
@@ -39,7 +43,7 @@ public class ZcPlatformApiUtil {
      * @return Access_token
      */
     public static String getZcAccessToken() {
-        HttpRequest httpRequest = new HttpRequest(URL + "/oauth/token");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/oauth/token");
 
         httpRequest.setMethod(Method.GET);
         httpRequest.form("client_id", ZC_CLIENT_ID);
@@ -71,7 +75,7 @@ public class ZcPlatformApiUtil {
 
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = new HttpRequest(URL + "/users/access-token");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/users/access-token");
 
         httpRequest.setMethod(Method.GET);
         httpRequest.form("platform", "1");
@@ -102,7 +106,7 @@ public class ZcPlatformApiUtil {
 
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = new HttpRequest(URL + "/enterprise/employees/page");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/employees/page");
 
         httpRequest.setMethod(Method.GET);
         httpRequest.form("page", "1");
@@ -133,7 +137,7 @@ public class ZcPlatformApiUtil {
         int page = 1;
         int size = 1000;
         while (true) {
-            HttpRequest httpRequest = new HttpRequest(URL + "/enterprise/companies/page");
+            HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
             httpRequest.setMethod(Method.GET);
             httpRequest.form("page", page);
             httpRequest.form("size", size);
@@ -171,7 +175,7 @@ public class ZcPlatformApiUtil {
         String string = xbJson.toString();
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = new HttpRequest(URL + "/sourcing/purchaser/inquiry-orders/release");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/inquiry-orders/release");
 
         httpRequest.setMethod(Method.POST);
         httpRequest.body(string);
@@ -187,7 +191,7 @@ public class ZcPlatformApiUtil {
 
 
     public static void test(String xbJson) {
-        HttpRequest httpRequest = new HttpRequest("http://passport.yingcaicheng.net/third-access?accessToken=${accessToken}&config=${config}");
+        HttpRequest httpRequest = HttpRequest.of("http://passport.yingcaicheng.net/third-access?accessToken=${accessToken}&config=${config}");
 
         JSONObject config = new JSONObject() {
             {
@@ -222,7 +226,7 @@ public class ZcPlatformApiUtil {
     public static JSONObject uploadFile(String name, String url) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = new HttpRequest(URL + "/file/attachments/upload");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
 
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
@@ -237,14 +241,73 @@ public class ZcPlatformApiUtil {
     /**
      * 询比单流标
      *
-     * @param inquiryOrderId
+     * @param orderId
+     * @param noticeId
      * @return
      */
-    public static JSONObject cancelXBD(String inquiryOrderId) {
-        HttpRequest httpRequest = new HttpRequest(URL + "/sourcing/purchaser/inquiry-orders/{orderId}/close/publish");
+    public static JSONObject cancelXBD(String orderId, String noticeId) {
+        String accessToken = getZcAccessToken();
 
-        return null;
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("identity", "purchaser");
+        httpRequest.header("x-trade-employee-id", getZcUserId());
+
+        JSONObject cancelJson = new JSONObject() {
+            {
+                // 是否公示 1：是 0：否
+                put("closePublicity", 0);
+                //流标类型 1：终止询比 2：重新询比
+                put("closeType", 1);
+                // 流标原因
+                put("closeReason", 5);
+                // 其他原因
+                put("otherReason", "其它原因");
+                //关闭公告
+                put("notice", new JSONObject() {
+                    {
+                        put("noticeTitle", "流标公告");
+                    }
+                });
+            }
+        };
+        httpRequest.body(cancelJson.toString());
+
+        HttpResponse execute = httpRequest.execute();
+
+        return JSON.parseObject(execute.body());
     }
+
+    /**
+     * 询比公告查看
+     *
+     * @param orderId
+     */
+    public static String viewNotice(String orderId) {
+        String userAccessToken = getZcUserToken();
+        JSONObject configJson = new JSONObject() {
+            {
+                put("platform", "purchase");
+                put("page", "InquiryDetail");
+                put("params", new JSONObject() {
+                    {
+                        put("orderId", orderId);
+                    }
+                });
+                put("query", new JSONObject() {
+                    {
+                        put("loginCompanyId", 463);
+                    }
+                });
+            }
+        };
+
+        String config = configJson.toString();
+        return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
 }
 
 

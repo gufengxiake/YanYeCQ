@@ -24,6 +24,12 @@
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-plugin" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-report" />
             <option value="$PROJECT_DIR$/yanye/hr/nckd-yanye-hr-webapi" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-business" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-common" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-mservice" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-plugin" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-report" />
+            <option value="$PROJECT_DIR$/yanye/occ/nckd-yanye-occ-webapi" />
             <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-business" />
             <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-common" />
             <option value="$PROJECT_DIR$/yanye/scm/nckd-yanye-scm-mservice" />

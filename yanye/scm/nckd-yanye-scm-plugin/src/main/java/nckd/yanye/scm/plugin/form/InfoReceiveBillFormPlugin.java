@@ -386,9 +386,9 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         if (result.isSuccess()) {
             this.getModel().setValue("nckd_generationstatus", true);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
-            this.getView().showSuccessNotification("成功");
+            this.getView().showSuccessNotification("下推采购合同成功!");
         } else {
-            this.getView().showErrorNotification("失败");
+            this.getView().showErrorNotification("下推采购合同失败!");
         }
     }
 
