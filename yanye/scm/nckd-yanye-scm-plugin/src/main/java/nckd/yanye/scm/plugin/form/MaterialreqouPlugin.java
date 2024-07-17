@@ -45,7 +45,7 @@ public class MaterialreqouPlugin extends AbstractBillPlugIn {
                 DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_im_evaluate_material", "nckd_evaluate_period", new QFilter[]{qFilter1, qFilter2, qFilter3});
                 if(dynamicObject != null){
                     Integer evaluatePeriod = (Integer) dynamicObject.get("nckd_evaluate_period");
-                    if(evaluatePeriod != null && evaluatePeriod != 0){
+                    if(evaluatePeriod != null){
                         this.getModel().setValue("nckd_evaluate_period", evaluatePeriod,rowIndex);
 
                         Date biztime = (Date) this.getModel().getValue("biztime");
@@ -106,7 +106,7 @@ public class MaterialreqouPlugin extends AbstractBillPlugIn {
                 DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("billentry");
                 for (DynamicObject dynamicObject : entryEntity) {
                     Integer evaluatePeriod = (Integer) dynamicObject.get("nckd_evaluate_period");
-                    if(evaluatePeriod != null && evaluatePeriod != 0){
+                    if(evaluatePeriod != null){
                         cal.setTime(biztime);
                         cal.add(Calendar.DATE, evaluatePeriod);
                         dynamicObject.set("nckd_evaluate_date",cal.getTime());
