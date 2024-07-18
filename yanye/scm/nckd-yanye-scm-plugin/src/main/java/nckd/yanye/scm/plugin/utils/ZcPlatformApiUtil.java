@@ -225,54 +225,15 @@ public class ZcPlatformApiUtil {
         switch (bizType) {
             case "XB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
-                // 是否对外网公示 1：是 0：否
-                cancelJson.put("closePublicity", 0);
-                //流标类型 1：终止 2：重新
-                cancelJson.put("closeType", 1);
-                // 流标原因
-                cancelJson.put("closeReason", 5);
-                // 其他原因
-                cancelJson.put("otherReason", "其它原因");
-                //关闭公告
-                cancelJson.put("notice", new JSONObject() {
-                    {
-                        put("noticeTitle", "测试流标公告标题");
-                        put("noticeContent", "测试流标公告内容");
-                    }
-                });
+                cancelJson = ZcPlatformJsonUtil.getXbCancelJson();
                 break;
             case "TP":
                 cancelOrderUrl = URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
-                // 是否对外网公示 1：是 0：否
-                cancelJson.put("closePublicity", 0);
-                //流标类型 1：终止 2：重新
-                cancelJson.put("closeType", 1);
-                // 流标原因
-                cancelJson.put("closeReason", 5);
-                // 其他原因
-                cancelJson.put("otherReason", "其它原因");
-                //关闭公告
-                cancelJson.put("notice", new JSONObject() {
-                    {
-                        put("title", "测试流标公告标题");
-                        put("content", "测试流标公告内容");
-                    }
-                });
+                cancelJson = ZcPlatformJsonUtil.getTpCancelJson();
                 break;
             case "ZB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
-                // 是否对外网发布 1：是 2：否
-                cancelJson.put("isPublicity", 2);
-                // 流标类型 1：终止招标 2：重新招标
-                cancelJson.put("closeType", 1);
-                // 流标原因
-                cancelJson.put("closeReason", 5);
-                // 其他原因
-                cancelJson.put("otherReason", "其它原因");
-                // 公告标题
-                cancelJson.put("title", "测试流标公告标题");
-                // 公告内容
-                cancelJson.put("content", "测试流标公告内容");
+                cancelJson = ZcPlatformJsonUtil.getZbCancelJson();
                 break;
             default:
                 break;
