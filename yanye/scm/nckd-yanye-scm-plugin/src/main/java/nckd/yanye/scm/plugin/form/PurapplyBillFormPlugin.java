@@ -6,7 +6,6 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.exception.KDBizException;
-import kd.bos.form.IFormView;
 import kd.bos.form.control.RichTextEditor;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
@@ -86,7 +85,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     @Override
     public void itemClick(ItemClickEvent evt) {
         IDataModel model = this.getModel();
-        IFormView view = this.getView();
         super.itemClick(evt);
         switch (evt.getItemKey()) {
             // 推送招采平台
@@ -105,6 +103,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 // 初始化结果json
                 JSONObject resultJson = null;
 
+                // 获取采购方式
                 String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
                 if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
                     resultJson = xb(model);
@@ -146,16 +145,27 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
                     throw new KDBizException("该采购申请单未推送至招采平台!");
                 }
+                JSONObject cancelJsonObject = null;
                 // 招采平台id
                 String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
-                // 对应公告id
-                String noticeId = (String) model.getValue(PurapplybillConst.NCKD_NOTICEID);
+                // 采购方式
+                String procurementType = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
+                if ("pricecomparison".equals(procurementType) || "singlebrand".equals(procurementType)) {
+                    cancelJsonObject = ZcPlatformApiUtil.cancelOrder(orderId, "XB");
+                } else if ("competitive".equals(procurementType)) {
+                    cancelJsonObject = ZcPlatformApiUtil.cancelOrder(orderId, "TP");
+                } else if ("singlesupplier".equals(procurementType)) {
+                    // 单一供应商的相关代码
+                } else if ("bidprocurement".equals(procurementType)) {
+                    // 招投采购的相关代码
+                } else {
+                    throw new KDBizException("该单据不可推送!");
+                }
 
-                JSONObject jsonObject = ZcPlatformApiUtil.cancelXBD(orderId, noticeId);
-                if (jsonObject.getBooleanValue("success")) {
+                if (cancelJsonObject.getBooleanValue("success")) {
                     this.getView().showSuccessNotification("作废成功!");
                 } else {
-                    this.getView().showErrorNotification("作废失败!" + jsonObject.getString("message"));
+                    this.getView().showErrorNotification("作废失败!" + cancelJsonObject.getString("message"));
                 }
 
                 break;
@@ -352,7 +362,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
 
         //调用公告发布接口
-        JSONObject xbjd = ZcPlatformApiUtil.addXBD(xbJson);
+        JSONObject xbjd = ZcPlatformApiUtil.addOrder(xbJson, "XB");
 
         return xbjd;
     }
@@ -365,7 +375,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     private JSONObject tp(IDataModel model) {
         // 组装json
-        JSONObject xbJson = new JSONObject() {
+        JSONObject tpJson = new JSONObject() {
             {
                 // 采购单名称
                 put("orderName", model.getValue(PurapplybillConst.NCKD_NEGOTIATEDNAME));
@@ -380,9 +390,12 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 // 提交响应文件截止时间
                 put("negotiateTime", model.getValue(PurapplybillConst.NCKD_SUBDEADTIME));
                 // 项目类型
-                put("projectType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE1));
-                // 处置方式
-                put("assetDisposalMethod", model.getValue(PurapplybillConst.NCKD_DISPOSALMETHOD1));
+                String projectType = (String) model.getValue(PurapplybillConst.NCKD_PROJECTTYPE1);
+                put("projectType", projectType);
+                // 处置方式-“项目类型”选择资产处置类显示该字段，同时必填
+                if ("5".equals(projectType)) {
+                    put("assetDisposalMethod", model.getValue(PurapplybillConst.NCKD_DISPOSALMETHOD1));
+                }
                 // 报价方式
                 put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION1));
                 // 谈判方式
@@ -399,9 +412,12 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 // 谈判地址-详细地址
                 put("address", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR1));
                 // 竞争方式
-                put("competeType", model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE));
-                // 公开范围
-                put("openScope", model.getValue(PurapplybillConst.NCKD_PUBLICSCOPE1));
+                String competeType = (String) model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE);
+                put("competeType", competeType);
+                // 公开范围-“竞争方式”选择有限竞争，则不显示该字段
+                if (!"2".equals(competeType)) {
+                    put("openScope", model.getValue(PurapplybillConst.NCKD_PUBLICSCOPE1));
+                }
                 // 报价时段查看供应商参与名单
                 put("offerTimeScope", model.getValue(PurapplybillConst.NCKD_VIEWLIST1));
                 // 报名审核
@@ -413,13 +429,29 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
                 // todo 谈判文件
                 put("negotiateFileIds", new ArrayList<Integer>() {
                     {
-
+                        DynamicObjectCollection tpAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS);
+                        Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("TP", "TPWJ");
+                        for (DynamicObject obj : tpAtts) {
+                            DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                            String name = fbasedataId.getString("name");
+                            String url = (String) fbasedataId.get("url");
+                            Integer negotiateFileId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                            this.add(negotiateFileId);
+                        }
                     }
                 });
                 // todo 内部附件
                 put("internalAttachments", new ArrayList<Integer>() {
                     {
-
+                        DynamicObjectCollection tpAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALDOCUMENTS1);
+                        Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("TP", "NBFJ");
+                        for (DynamicObject obj : tpAtts) {
+                            DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
+                            String name = fbasedataId.getString("name");
+                            String url = (String) fbasedataId.get("url");
+                            Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                            this.add(internalAttachmentId);
+                        }
                     }
                 });
                 // 标书费
@@ -431,7 +463,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
         //邀请供应商列表
         DynamicObjectCollection inviteCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS1);
-        xbJson.put("inviteList", new JSONArray() {
+        tpJson.put("inviteList", new JSONArray() {
             {
                 for (DynamicObject dynamicObject : inviteCollection) {
                     JSONObject inviteObj = new JSONObject() {
@@ -447,26 +479,30 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             }
         });
 
-
         // 公告
-        xbJson.put("notice", new JSONObject() {
+        tpJson.put("notice", new JSONObject() {
             {
                 //公告标题-“竞争方式”为有限竞争就取 邀请函标题
                 if ("2".equals(model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE))) {
-                    put("noticeTitle", model.getValue(PurapplybillConst.NCKD_INVITATIONTITLE));
+                    put("title", model.getValue(PurapplybillConst.NCKD_INVITATIONTITLE));
                 } else {
                     put("noticeTitle", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
                 }
                 //公告发布日期
-                put("noticePublishTime", model.getValue(PurapplybillConst.NCKD_TIMINGTIME));
+                String publishSet = (String) model.getValue(PurapplybillConst.NCKD_PUBLISHSET);
+                if ("timing".equals(publishSet)) {
+                    put("noticeReleaseTime", model.getValue(PurapplybillConst.NCKD_TIMINGTIME));
+                }
                 //公告内容
-                put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
+                put("content", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
                 // 发布媒体
                 put("noticeMedium", model.getValue(PurapplybillConst.NCKD_PUBLISHMEDIA1));
             }
         });
 
-        return null;
+
+        //调用公告发布接口
+        return ZcPlatformApiUtil.addOrder(tpJson, "TP");
     }
 
     /**
@@ -475,7 +511,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      * 如未发布公告，则进行提醒“该采购申请单未推送至招采平台”；
      */
     private void announcement() {
-        IFormView view = this.getView();
         IDataModel model = this.getModel();
 
         if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
@@ -490,6 +525,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     }
 
 }
+
 
 
 
