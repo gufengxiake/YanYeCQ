@@ -29,7 +29,8 @@ public class PurorderbillUnSubmitOpPlugin extends AbstractOperationServicePlugIn
         super.onPreparePropertys(e);
         //一般的操作插件校验表单的字段默认带出的有限，都是单据编码，名称等几个，要校验哪个需要自己加
         List<String> fieldKeys = e.getFieldKeys();
-        fieldKeys.add("conbillnumber");
+        fieldKeys.add("conbillid");
+        fieldKeys.add("material");
     }
 
     /**
