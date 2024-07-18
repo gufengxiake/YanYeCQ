@@ -36,6 +36,7 @@ public class ZcPlatformApiUtil {
      * 测试环境url
      */
     private static final String URL = "http://open-api.yingcaicheng.net";
+
     /**
      * 测试环境访问指定页面url
      */
@@ -195,8 +196,6 @@ public class ZcPlatformApiUtil {
             default:
                 break;
         }
-
-
         HttpRequest httpRequest = HttpRequest.of(URL + addorderUrl);
 
         httpRequest.setMethod(Method.POST);
@@ -209,41 +208,6 @@ public class ZcPlatformApiUtil {
 
         // 输出响应内容
         return JSON.parseObject(execute.body());
-    }
-
-    /**
-     * 上传附件
-     *
-     * @param
-     * @param attGroupId
-     * @return
-     */
-    public static Integer uploadFile(String name, String url, Integer attGroupId) {
-        String accessToken = getZcAccessToken();
-
-        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
-
-        httpRequest.setMethod(Method.POST);
-        httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
-
-        File file = new File(url);
-        httpRequest.form("file", file);
-        httpRequest.form("name", name);
-        httpRequest.form("groupId", attGroupId);
-        HttpResponse execute = httpRequest.execute();
-
-        JSONObject responseObj = JSON.parseObject(execute.body());
-
-        Integer attachmentId;
-        if ((boolean) responseObj.get("success")) {
-            JSONObject dataObject = responseObj.getJSONObject("data");
-            attachmentId = dataObject.getInteger("attachmentId");
-        } else {
-            throw new KDBizException(String.valueOf(responseObj.get("message")));
-        }
-        return attachmentId;
-
     }
 
     /**
@@ -296,7 +260,19 @@ public class ZcPlatformApiUtil {
                 });
                 break;
             case "ZB":
-                cancelOrderUrl = "/sourcing/purchaser/bidding-orders/v2/publish";
+                cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
+                // 是否对外网发布 1：是 2：否
+                cancelJson.put("isPublicity", 2);
+                // 流标类型 1：终止招标 2：重新招标
+                cancelJson.put("closeType", 1);
+                // 流标原因
+                cancelJson.put("closeReason", 5);
+                // 其他原因
+                cancelJson.put("otherReason", "其它原因");
+                // 公告标题
+                cancelJson.put("title", "测试流标公告标题");
+                // 公告内容
+                cancelJson.put("content", "测试流标公告内容");
                 break;
             default:
                 break;
@@ -315,26 +291,27 @@ public class ZcPlatformApiUtil {
     }
 
     /**
-     * 询比公告查看
+     * 采购单公告查看
      *
      * @param orderId
      */
     public static String viewNotice(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
         String page = null;
-        // 采购方式-询比价，单一品牌
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            // 采购方式-询比价，单一品牌
             page = "InquiryDetail";
 
-            // 采购方式-竞争性谈判
         } else if ("competitive".equals(procurements)) {
+            // 采购方式-竞争性谈判
             page = "NegotiationInfo";
 
-            // 采购方式-单一供应商
         } else if ("singlesupplier".equals(procurements)) {
+            // 采购方式-单一供应商
 
-            // 采购方式-招投采购
         } else if ("bidprocurement".equals(procurements)) {
+            // 采购方式-招投采购
+            page = "BiddingInfo";
 
         } else {
             throw new KDBizException("该单据未选择采购方式!");
@@ -360,6 +337,42 @@ public class ZcPlatformApiUtil {
 
         String config = configJson.toString();
         return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
+    /**
+     * 上传附件
+     *
+     * @param name
+     * @param url
+     * @param attGroupId
+     * @return
+     */
+    public static Integer uploadFile(String name, String url, Integer attGroupId) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
+
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+
+        File file = new File(url);
+        httpRequest.form("file", file);
+        httpRequest.form("name", name);
+        httpRequest.form("groupId", attGroupId);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        Integer attachmentId;
+        if ((boolean) responseObj.get("success")) {
+            JSONObject dataObject = responseObj.getJSONObject("data");
+            attachmentId = dataObject.getInteger("attachmentId");
+        } else {
+            throw new KDBizException(String.valueOf(responseObj.get("message")));
+        }
+        return attachmentId;
+
     }
 
     /**
