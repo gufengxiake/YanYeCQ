@@ -155,6 +155,7 @@ public class monthPlanBillPlugIn extends AbstractBillPlugIn {
             // 获取当月最后一天
             calendar.set(Calendar.DAY_OF_MONTH, calendar.getActualMaximum(Calendar.DAY_OF_MONTH));
             Date lastDayOfMonth = calendar.getTime();
+
             DynamicObjectCollection groupIds = (DynamicObjectCollection) this.getModel().getValue("nckd_mulmatgroup");
             BigInt[] stringArray = new BigInt[groupIds.size()];
             for (int i = 0; i < groupIds.size(); i++) {

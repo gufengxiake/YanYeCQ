@@ -29,6 +29,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
         toolbar.addItemClickListener(this);
     }
 
+
     // 注意itemClick和click的区别
     @Override
     public void itemClick(ItemClickEvent e) {
