@@ -1,5 +1,4 @@
-package nckd.yanye.hr.plugin.form;
-
+package nckd.yanye.hr.plugin.form.empout;
 
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.form.CloseCallBack;
@@ -14,35 +13,33 @@ import kd.sdk.hr.hspm.formplugin.infoclassify.InfoClassifyListPlugin;
 import java.util.List;
 
 /**
- * 信息批量维护：处分信息-标识：nckd_hspm_chufeninfolist
+ * 信息批量维护：
+ * 核心人力云->人员信息->分类维护列表
+ * 系统外任职经历 nckd_hspm_emporgreloulist
  */
-public class ChufenInfoListPlugin extends InfoClassifyListPlugin {
-    public ChufenInfoListPlugin(){
+public class EmpPorgrelOutListPlugin extends InfoClassifyListPlugin {
+
+    public EmpPorgrelOutListPlugin() {
 
     }
 
     protected void customerVisibleColumnList(List<String> visibleColumnList) {
-        visibleColumnList.add("nckd_chufenname");
-        visibleColumnList.add("nckd_chufentype.name");
-        visibleColumnList.add("nckd_weijifact");
-        visibleColumnList.add("nckd_datefield");
-        visibleColumnList.add("nckd_chufendate");
-        visibleColumnList.add("nckd_chufenenddate");
-        visibleColumnList.add("nckd_jinzhishixiang");
-        visibleColumnList.add("nckd_chufenpizhun");
-        visibleColumnList.add("nckd_chufenwenhao");
-        visibleColumnList.add("nckd_remark");
+//        visibleColumnList.add("nckd_kaoheyear");
+//        visibleColumnList.add("nckd_kaoheresult.name");
+//        visibleColumnList.add("nckd_pingjiaorg");
+//        visibleColumnList.add("nckd_wcjreason");
     }
 
     protected void beforeDoOperateForListBtnNew(BeforeDoOperationEventArgs args, InfoClassifyEntityKeyDTO infoClassifyEntityKeyDTO) {
-        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListBtnNew(infoClassifyEntityKeyDTO, ResManager.loadKDString("处分信息", "ChufenListPlugin_0", "hr-hspm-formplugin", new Object[0]));
+        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListBtnNew(infoClassifyEntityKeyDTO, ResManager.loadKDString("系统外任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
         formShowParameter.setCloseCallBack(new CloseCallBack(this, InfoClassifyFormOperateEnum.FORM_BTN_SAVE.getOperateKey()));
         this.getView().showForm(formShowParameter);
     }
 
     protected void billListHyperLinkClick(HyperLinkClickArgs args, Long pkId, InfoClassifyEntityKeyDTO infoClassifyEntityKeyDTO) {
-        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListHyperLink(pkId, infoClassifyEntityKeyDTO, ResManager.loadKDString("处分信息", "ChufenListPlugin_0", "hr-hspm-formplugin", new Object[0]));
+        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListHyperLink(pkId, infoClassifyEntityKeyDTO, ResManager.loadKDString("系统外任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
         formShowParameter.setCloseCallBack(new CloseCallBack(this, InfoClassifyFormOperateEnum.FORM_BTN_UPDATE.getOperateKey()));
         this.getView().showForm(formShowParameter);
     }
+
 }
