@@ -78,6 +78,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         for (DynamicObject entry : purcontractEntryList) {
                             JSONObject json = new JSONObject();
+                            json.put("conbillentity",purcontractBill.getPkValue());
                             json.put("id", purcontractBill.getString("id"));
                             json.put("billno", purcontractBill.getString("billno"));
                             json.put("entryid", entry.getString("id"));
@@ -95,6 +96,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         //int seq = dy.getInt("seq");
                         JSONObject json = map.get(dy.getDynamicObject("material").getPkValue());
                         if (json != null) {
+                            dy.set("conbillentity",json.get("conbillentity"));
                             dy.set("conbillid", json.get("id"));
                             dy.set("conbillnumber", json.get("billno"));
                             dy.set("conbillentryid", json.get("entryid"));
@@ -119,6 +121,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("taxamount", taxamount);
                             dy.set("curtaxamount", taxamount);
                         } else {
+                            dy.set("conbillentity",null);
                             dy.set("conbillid", null);
                             dy.set("conbillnumber", null);
                             dy.set("conbillentryid", null);
@@ -174,6 +177,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         Map<Object, DynamicObject> purcontractEntryMap = purcontractEntryList.stream().collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v));
                         DynamicObject purcontractEntry = purcontractEntryMap.get(material.getPkValue());
+                        this.getModel().setValue("conbillentity", purcontractBill.getPkValue(), rowIndex);
                         this.getModel().setValue("conbillid", purcontractBill.get("id"), rowIndex);
                         this.getModel().setValue("conbillnumber", purcontractBill.getString("billno"), rowIndex);
                         this.getModel().setValue("conbillentryid", purcontractEntry.get("id"), rowIndex);
@@ -212,6 +216,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
      */
     private void dealPurcontractEntry(DynamicObjectCollection billentry) {
         for (DynamicObject entry : billentry) {
+            entry.set("conbillentity",null);
             entry.set("conbillid", null);
             entry.set("conbillnumber", null);
             entry.set("conbillentryid", null);
@@ -237,6 +242,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
      * @param rowIndex
      */
     private void dealPurcontractEntryBySeq(int rowIndex) {
+        this.getModel().setValue("conbillentity", null, rowIndex);
         this.getModel().setValue("conbillid", null, rowIndex);
         this.getModel().setValue("conbillnumber", null, rowIndex);
         this.getModel().setValue("conbillentryid", null, rowIndex);
