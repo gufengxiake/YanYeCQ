@@ -3,7 +3,7 @@ package nckd.yanye.scm.common;
 /**
  * Module           : 供应链云--采购管理模块--采购申请单单据
  * Description      : 单据常量类
- * @date            : 2024-07-16
+ * @date            : 2024-07-18
  * @author          : Generator
  * @version         : 1.0
  */
@@ -878,26 +878,6 @@ public class PurapplybillConst {
     public static final String NCKD_SERVICEFEE = "nckd_servicefee";
 
     /**
-     * Type:String,Name:公告标题
-     */
-    public static final String NCKD_ANNOUNCEMENTTITLE1 = "nckd_announcementtitle1";
-
-    /**
-     * Type:String,Name:邀请函标题
-     */
-    public static final String NCKD_INVITATIONTITLE1 = "nckd_invitationtitle1";
-
-    /**
-     * Type:String,Name:发布设置
-     */
-    public static final String NCKD_PUBLISHSET1 = "nckd_publishset1";
-
-    /**
-     * Type:java.util.Date,Name:发布日期
-     */
-    public static final String NCKD_TIMINGTIME1 = "nckd_timingtime1";
-
-    /**
      * Type:String,Name:项目名称
      */
     public static final String NCKD_PROJECTNAME = "nckd_projectname";
@@ -1053,31 +1033,6 @@ public class PurapplybillConst {
     public static final String NCKD_MARGINAMOUNT = "nckd_marginamount";
 
     /**
-     * Type:String,Name:公告标题
-     */
-    public static final String NCKD_TEXTFIELD3 = "nckd_textfield3";
-
-    /**
-     * Type:String,Name:公告标题
-     */
-    public static final String NCKD_ANNOUNCEMENTTITLE2 = "nckd_announcementtitle2";
-
-    /**
-     * Type:String,Name:发布设置
-     */
-    public static final String NCKD_PUBLISHSET2 = "nckd_publishset2";
-
-    /**
-     * Type:java.util.Date,Name:发布日期
-     */
-    public static final String NCKD_TIMINGTIME2 = "nckd_timingtime2";
-
-    /**
-     * Type:String,Name:公告内容
-     */
-    public static final String NCKD_ANNOUNCEMENTCONT = "nckd_announcementcont";
-
-    /**
      * Type:DynamicObject,sourceEntityId:bd_admindivision,Name:谈判地点
      */
     public static final String NCKD_NEGOTIATIONADDR = "nckd_negotiationaddr";
@@ -1103,7 +1058,7 @@ public class PurapplybillConst {
     public static final String NCKD_BIGNOTICECONTENT = "nckd_bignoticecontent";
 
     /**
-     * Type:String,Name:行政区划
+     * Type:String,Name:收货地址
      */
     public static final String NCKD_ADDRESS = "nckd_address";
 
@@ -1132,11 +1087,14 @@ public class PurapplybillConst {
      */
     public static final String BILLHEAD_LK_BILLHEAD_LK_SID = "billhead_lk_sid";
 
-    /**
-     * 富文本编辑器
-     */
-    public static final String NCKD_NOTICECONTENT = "nckd_noticecontent";
 
-    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,dept,bizuser,comment,closer,closedate,canceler,canceldate,billentry.id,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.baseqty,billentry.baseunit,billentry.entrycomment,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.materialmasterid,billentry.materialversion,billentry.auxunit,billentry.auxqty,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.entryreqorg,billentry.deliverdate,billentry.purleadday,billentry.purdate,billentry.entryrecorg,billentry.entryoperatorgroup,billentry.entryoperator,billentry.supplier,billentry.price,billentry.taxrate,billentry.priceandtax,billentry.amount,billentry.amountandtax,billentry.entrypurog,billentry.reqdate,billentry.applyqty,billentry.entrypurdept,billentry.orderbaseqty,billentry.receivebaseqty,billentry.invbaseqty,billentry.orderqty,billentry.entryrecdept,billentry.entryreqdept,billentry.taxamount,billentry.receiveqty,billentry.invqty,billentry.taxrateid,billentry.project,billentry.joinqty,billentry.joinbaseqty,billentry.srcbillentity,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryid,billentry.srcbillentryseq,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.tracknumber,billentry.configuredcode,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.salbillnumber,billentry.avinvbaseqty,billentry.entrychangetype,billentry.purmethod,billentry.bomtime,billentry.ecostcenter,billentry.isredordermate,billentry.warehouse,closestatus,cancelstatus,biztime,billcretype,lastupdateuser,lastupdatetime,unitsrctype,totalallamount,currency,istax,inquirystatus,bidstatus,changestatus,changedate,changer,subversion,version,nckd_procurements,nckd_pushed,nckd_whetherpush,nckd_inquirylistname,nckd_projecttype,nckd_quotation,nckd_detailedaddr,nckd_publishmedia,nckd_quotationsign,nckd_quotationattsign,nckd_deadline,nckd_purchasetype,nckd_includestax,nckd_allowforpartial,nckd_quotationcurrency,nckd_controlprice,nckd_totalprice,nckd_mustupatt,nckd_inquirymethod,nckd_comparmethod,nckd_publicscope,nckd_viewlist,nckd_registeraudit,nckd_reviewmethod,nckd_whetherreviewol,nckd_internaldocuments,nckd_inquirydocument,nckd_remarks,nckd_announcementtitle,nckd_publishset,nckd_timingtime,nckd_disposalmethod,nckd_suppliers,nckd_invitationtitle,nckd_negotiatedname,nckd_negotiatednum,nckd_negotiatedbudget,nckd_regstarttime,nckd_subdeadtime,nckd_regendtime,nckd_projecttype1,nckd_disposalmethod1,nckd_quotation1,nckd_publishmedia1,nckd_negotiationmode,nckd_detailedaddr1,nckd_competitionmode,nckd_suppliers1,nckd_publicscope1,nckd_viewlist1,nckd_registeraudit1,nckd_reviewmethod1,nckd_whetherreviewol1,nckd_internaldocuments1,nckd_negotiatingdocuments,nckd_tenderfee,nckd_servicefee,nckd_announcementtitle1,nckd_invitationtitle1,nckd_publishset1,nckd_timingtime1,nckd_projectname,nckd_projectamount,nckd_projecttype2,nckd_quotation2,nckd_detailedaddr2,nckd_procurementscopeatt,nckd_internaldocuments2,nckd_suppliers2,nckd_projectfiles,nckd_contenttitle,nckd_details,nckd_tendername,nckd_tenderestimate,nckd_bidmethod,nckd_quotation3,nckd_regstarttime1,nckd_regendtime1,nckd_bidopentime,nckd_projecttype3,nckd_detailedaddr3,nckd_biddingmethod,nckd_publishingmethod,nckd_publicscope2,nckd_viewlist2,nckd_registeraudit2,nckd_allowjoint,nckd_bidonline,nckd_tenderfee1,nckd_uploadfile,nckd_otherannexes,nckd_marginamount,nckd_textfield3,nckd_announcementtitle2,nckd_publishset2,nckd_timingtime2,nckd_announcementcont,nckd_negotiationaddr,nckd_projectaddr,nckd_tenderaddr,nckd_purchaseid,nckd_bignoticecontent,nckd_address,nckd_noticeid,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid";
+    public static final String NCKD_NOTICECONTENT = "nckd_noticecontent";
+    public static final String NCKD_DEPOSITENDTIME = "nckd_depositendtime";
+    public static final String NCKD_INTERNALATTACHMENTS = "nckd_internalattachments";
+
+
+
+
+    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,dept,bizuser,comment,closer,closedate,canceler,canceldate,billentry.id,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.baseqty,billentry.baseunit,billentry.entrycomment,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.materialmasterid,billentry.materialversion,billentry.auxunit,billentry.auxqty,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.entryreqorg,billentry.deliverdate,billentry.purleadday,billentry.purdate,billentry.entryrecorg,billentry.entryoperatorgroup,billentry.entryoperator,billentry.supplier,billentry.price,billentry.taxrate,billentry.priceandtax,billentry.amount,billentry.amountandtax,billentry.entrypurog,billentry.reqdate,billentry.applyqty,billentry.entrypurdept,billentry.orderbaseqty,billentry.receivebaseqty,billentry.invbaseqty,billentry.orderqty,billentry.entryrecdept,billentry.entryreqdept,billentry.taxamount,billentry.receiveqty,billentry.invqty,billentry.taxrateid,billentry.project,billentry.joinqty,billentry.joinbaseqty,billentry.srcbillentity,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryid,billentry.srcbillentryseq,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.tracknumber,billentry.configuredcode,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.salbillnumber,billentry.avinvbaseqty,billentry.entrychangetype,billentry.purmethod,billentry.bomtime,billentry.ecostcenter,billentry.isredordermate,billentry.warehouse,closestatus,cancelstatus,biztime,billcretype,lastupdateuser,lastupdatetime,unitsrctype,totalallamount,currency,istax,inquirystatus,bidstatus,changestatus,changedate,changer,subversion,version,nckd_procurements,nckd_pushed,nckd_whetherpush,nckd_inquirylistname,nckd_projecttype,nckd_quotation,nckd_detailedaddr,nckd_publishmedia,nckd_quotationsign,nckd_quotationattsign,nckd_deadline,nckd_purchasetype,nckd_includestax,nckd_allowforpartial,nckd_quotationcurrency,nckd_controlprice,nckd_totalprice,nckd_mustupatt,nckd_inquirymethod,nckd_comparmethod,nckd_publicscope,nckd_viewlist,nckd_registeraudit,nckd_reviewmethod,nckd_whetherreviewol,nckd_internaldocuments,nckd_inquirydocument,nckd_remarks,nckd_announcementtitle,nckd_publishset,nckd_timingtime,nckd_disposalmethod,nckd_suppliers,nckd_invitationtitle,nckd_negotiatedname,nckd_negotiatednum,nckd_negotiatedbudget,nckd_regstarttime,nckd_subdeadtime,nckd_regendtime,nckd_projecttype1,nckd_disposalmethod1,nckd_quotation1,nckd_publishmedia1,nckd_negotiationmode,nckd_detailedaddr1,nckd_competitionmode,nckd_suppliers1,nckd_publicscope1,nckd_viewlist1,nckd_registeraudit1,nckd_reviewmethod1,nckd_whetherreviewol1,nckd_internaldocuments1,nckd_negotiatingdocuments,nckd_tenderfee,nckd_servicefee,nckd_projectname,nckd_projectamount,nckd_projecttype2,nckd_quotation2,nckd_detailedaddr2,nckd_procurementscopeatt,nckd_internaldocuments2,nckd_suppliers2,nckd_projectfiles,nckd_contenttitle,nckd_details,nckd_tendername,nckd_tenderestimate,nckd_bidmethod,nckd_quotation3,nckd_regstarttime1,nckd_regendtime1,nckd_bidopentime,nckd_projecttype3,nckd_detailedaddr3,nckd_biddingmethod,nckd_publishingmethod,nckd_publicscope2,nckd_viewlist2,nckd_registeraudit2,nckd_allowjoint,nckd_bidonline,nckd_tenderfee1,nckd_uploadfile,nckd_otherannexes,nckd_marginamount,nckd_negotiationaddr,nckd_projectaddr,nckd_tenderaddr,nckd_purchaseid,nckd_bignoticecontent,nckd_address,nckd_noticeid,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid,nckd_noticecontent";
 
 }

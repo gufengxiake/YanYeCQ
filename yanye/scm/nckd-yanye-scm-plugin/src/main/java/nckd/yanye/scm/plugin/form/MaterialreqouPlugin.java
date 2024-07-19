@@ -67,10 +67,13 @@ public class MaterialreqouPlugin extends AbstractBillPlugIn {
                 // 将弹性域字段的值赋值给其它字段
                 String valueStr = flexFieldVal.get("value").toString();
                 Map<String, Object> values = SerializationUtils.fromJsonString(valueStr, Map.class);
+                int rowIndex = e.getChangeSet()[0].getRowIndex();
 //                DynamicObject flexVal = BusinessDataServiceHelper.loadSingle(values.get("f000019"), "bos_adminorg");
-                this.getModel().setValue("nckd_orgfield", values.get("f000019"),0);
+                // 原需求部门
+                this.getModel().setValue("nckd_orgfield", values.get("f000019"),rowIndex);
 //				DynamicObject flexVal2 = BusinessDataServiceHelper.loadSingle(values.get("f000022"), "bos_assistantdata_detail");
-                this.getModel().setValue("nckd_brand", values.get("f000022"),0);
+                // 品牌
+                this.getModel().setValue("nckd_brand", values.get("f000022"),rowIndex);
 
                 // 判断需求部门和原需求部门是否一致
                 DynamicObject bizdept = (DynamicObject) this.getModel().getValue("bizdept");
