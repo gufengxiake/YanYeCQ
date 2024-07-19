@@ -34,6 +34,8 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         List<String> fieldKeys = e.getFieldKeys();
         fieldKeys.add("conbillid");
         fieldKeys.add("material");
+        fieldKeys.add("seq");
+        fieldKeys.add("materialname");
     }
 
     /**
@@ -51,83 +53,207 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         e.addValidator(new AbstractValidator() {
             @Override
             public void validate() {
+                ExtendedDataEntity[] dataEntities = this.getDataEntities();
+                List<DynamicObject> purorderbillList = Arrays.stream(dataEntities).map(e -> e.getDataEntity()).collect(Collectors.toList());
+                Set<Long> conbillids = new HashSet<>();
+                purorderbillList.forEach(k -> {
+                    DynamicObjectCollection billentry = k.getDynamicObjectCollection("billentry");
+                    Set<Long> conbillidSet = billentry.stream().map(h -> h.getLong("conbillid")).collect(Collectors.toSet());
+                    conbillids.addAll(conbillidSet);
+                });
+                //根据提交的采购订单去查询采购合同
+                QFilter qFilter = new QFilter("id", QCP.in, conbillids)
+                        .and("billstatus", QCP.equals, "C")
+                        .and("validstatus", QCP.equals, "B")
+                        .and("closestatus", QCP.equals, "A");
+                //String entityName, String selectProperties, QFilter[] filters
+                DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,type,totalallamount,nckd_totalallamount,billentry.id,billentry.material,billentry.nckd_priceandtaxup,billentry.nckd_priceandtaxlow" +
+                        ",billentry.qty,billentry.nckd_qty,billentry.amountandtax,billentry.nckd_amount,billentry,billentry.seq", qFilter.toArray());
+                //转成key id value DynamicObject采购合同
+                Map<Long, DynamicObject> map = Arrays.stream(purcontractArr).collect(Collectors.toMap(k -> k.getLong("id"), v -> v));
+
                 //提交时校验可能存在多条
                 for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
                     //获取采购订单
                     DynamicObject purorderbill = rowDataEntity.getDataEntity();
                     //获取采购订单的分录
-
+                    DynamicObjectCollection purorderbillEntryColl = purorderbill.getDynamicObjectCollection("billentry");
                     //查询采购合同，获取“合同类型”字段
-
-                    //判断 “合同类型”字段 是什么
-                    //总金额	MON
-                    //数量	NUM
-                    //单价	PRI
-                    //总金额、数量	M&N
-                    //总金额、单价	M&P
-                    //总金额、数量、单价	M&N&P
-                    //不控制	NAN
-                    Set<String> checkTypes = getCheckType("合同类型");
-                    for (String action : checkTypes) {
-                        if (action.equals("qty")) {
-                            qtyCheck(purorderbill);
-                        } else if (action.equals("amount")) {
-                            amountCheck(purorderbill);
-                        } else if (action.equals("price")) {
-                            priceCheck(purorderbill);
+                    for (DynamicObject purorderbillEntry : purorderbillEntryColl) {
+                        Object conbillid = purorderbillEntry.get("conbillid");
+                        //根据合同id为key找到采购合同
+                        DynamicObject purcontract = map.get(conbillid);
+                        if (ObjectUtil.isNotEmpty(purcontract)) {
+                            DynamicObject type = purcontract.getDynamicObject("type");
+                            String excutecontrol = type.getString("excutecontrol");
+                            //根据采购合同的合同类型，找到合同控制 来判断是单个控制还是组合控制
+                            Set<String> actions = new HashSet<>();
+                            getCheckType(actions, excutecontrol);
+                            checkDataByCheckType(actions, purorderbillEntry, purcontract, rowDataEntity, purorderbill);
+                        } else {
+                            int materialSeq = purorderbillEntry.getInt("seq");
+                            String materialName = purorderbillEntry.getString("materialname");
+                            this.addErrorMessage(rowDataEntity, String.format("第(%s)行的物料名称 (%s) 未关联合同id(conbillid)", materialSeq, materialName));
                         }
                     }
                 }
             }
+
+            /**
+             * 获得“合同类型”的合同控制 进行数据校验
+             *
+             * @param actions
+             * @param purorderbillEntry
+             * @param purcontract
+             * @param rowDataEntity
+             * @param purorderbill
+             */
+            private void checkDataByCheckType(Set<String> actions, DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject purorderbill) {
+                //判断 “合同类型”的合同控制字段 是什么
+                //总金额	MON
+                //数量	NUM
+                //单价	PRI
+                //总金额、数量	M&N
+                //总金额、单价	M&P
+                //总金额、数量、单价	M&N&P
+                //不控制	NAN
+                for (String action : actions) {
+                    if (action.equals("qty")) {
+                        qtyCheck(purorderbillEntry, purcontract, rowDataEntity, purorderbill);
+                    } else if (action.equals("amount")) {
+                        amountCheck(purorderbillEntry, purcontract, rowDataEntity, purorderbill);
+                    } else if (action.equals("price")) {
+                        priceCheck(purorderbillEntry, purcontract, rowDataEntity, purorderbill);
+                    }
+                }
+            }
+
+            /*
+             * ResManager.loadKDString("物料明细第%1$d行，合同：[%2$s] 的物料明细第%3$d行，已订货数量超额", "PerformDataValidator_1", "scmc-conm-business", new Object[0]);
+             *
+             * @param purorderbillEntry
+             * @param purcontract
+             */
+            private void qtyCheck(DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject purorderbill) {
+                //获取采购订单分录的物料
+                DynamicObject material = purorderbillEntry.getDynamicObject("material");
+                DynamicObjectCollection purcontractEntryColl = purcontract.getDynamicObjectCollection("billentry");
+                Map<Object, DynamicObject> purcontractEntryMap = purcontractEntryColl.stream().collect(Collectors.toMap(e -> e.getDynamicObject("material").getPkValue(), v -> v));
+                DynamicObject purcontractEntry = purcontractEntryMap.get(material.getPkValue());
+                //b）如果控制数量，则采购订单中物料明细行的数量≤采购合同对应行的数量-采购合同对应行的采购合同已下达订单数量；
+                //采购订单数据
+                BigDecimal qty = purorderbillEntry.getBigDecimal("qty");
+                //采购合同数量
+                BigDecimal qty1 = purcontractEntry.getBigDecimal("qty");
+                BigDecimal nckdQty = purcontractEntry.getBigDecimal("nckd_qty");
+                BigDecimal subtract = qty1.subtract(nckdQty);
+                if (qty.compareTo(subtract) > 0) {
+                    //"第(%s)行的物料名称 (%s) 与采购合同(%s)的第(%s)行存在重复物料"
+                    String billno = purorderbill.getString("billno");
+                    int seq = purorderbillEntry.getInt("seq");
+                    String purcontractBillno = purcontract.getString("billno");
+                    int purcontractEntrySeq = purcontractEntry.getInt("seq");
+                    this.addErrorMessage(rowDataEntity, String.format("%s 物料明细第(%s)行，合同：(%s) 的物料明细第(%s)行，已订货数量超额",
+                            billno, seq, purcontractBillno, purcontractEntrySeq));
+                }
+            }
+
+            /*
+             * ResManager.loadKDString("合同：[%s] 的已订货金额超额", "PerformDataValidator_3", "scmc-conm-business", new Object[0]);
+             *
+             * @param purorderbillEntry
+             * @param purcontract
+             */
+            private void amountCheck(DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject purorderbill) {
+                //获取采购订单分录
+                DynamicObjectCollection purorderbillEntryColl = purorderbill.getDynamicObjectCollection("billentry");
+                //根据合同id分组并sum价税合计
+                Map<Long, BigDecimal> purorderbillMap = purorderbillEntryColl.stream().collect(Collectors.groupingBy(k -> k.getLong("conbillid"), Collectors.reducing(BigDecimal.ZERO,
+                        k -> k.getBigDecimal("amountandtax"),
+                        BigDecimal::add)));
+                //DynamicObject material = purorderbillEntry.getDynamicObject("material");
+                //DynamicObjectCollection purcontractEntryColl = purcontract.getDynamicObjectCollection("billentry");
+                //Map<Object, DynamicObject> purcontractEntryMap = purcontractEntryColl.stream().collect(Collectors.toMap(e -> e.getDynamicObject("material").getPkValue(), v -> v));
+                //DynamicObject purcontractEntry = purcontractEntryMap.get(material.getPkValue());
+                //c）如果控制总金额，则采购订单中相同采购合同的物料明细行的“价税合计”的合计≤采购合同财务信息“已执行价税合计”，存在一个采购订单多行物料对应一个采购合同，故需要先将采购订单中相同采购合同的金额进行汇总后，再与采购合同进行比较判断；
+                //采购订单数据
+                BigDecimal groupAmountandtax = purorderbillMap.get(purorderbillEntry.get("conbillid"));
+                //采购合同数量
+                BigDecimal totalallamount = purcontract.getBigDecimal("totalallamount");
+                BigDecimal nckdTotalallamount = purcontract.getBigDecimal("nckd_totalallamount");
+                BigDecimal subtract = totalallamount.subtract(nckdTotalallamount);
+                if (groupAmountandtax.compareTo(subtract) > 0) {
+                    //%s 物料明细第(%s)行，对应合同：[%s] 的已订货金额超额
+                    String billno = purorderbill.getString("billno");
+                    int seq = purorderbillEntry.getInt("seq");
+                    String purcontractBillno = purcontract.getString("billno");
+                    this.addErrorMessage(rowDataEntity, String.format("%s 物料明细第(%s)行，对应合同：[%s] 的已订货金额超额",
+                            billno, seq, purcontractBillno));
+                }
+            }
+
+            /*
+             * ResManager.loadKDString("物料明细第%1$d行，含税单价与合同：[%2$s] 的物料明细第%3$d行含税单价不一致", "PerformDataValidator_4", "scmc-conm-business", new Object[0]);
+             *
+             * @param purorderbillEntry
+             * @param purcontract
+             */
+            private void priceCheck(DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject billno) {
+                //获取采购订单分录的物料
+                DynamicObject material = purorderbillEntry.getDynamicObject("material");
+                DynamicObjectCollection purcontractEntryColl = purcontract.getDynamicObjectCollection("billentry");
+                Map<Object, DynamicObject> purcontractEntryMap = purcontractEntryColl.stream().collect(Collectors.toMap(e -> e.getDynamicObject("material").getPkValue(), v -> v));
+                DynamicObject purcontractEntry = purcontractEntryMap.get(material.getPkValue());
+                //a）如果控制单价，则采购订单中物料明细行对应的含税单价必须在采购合同中上下限含税单价；
+                //采购订单数据
+                BigDecimal priceandtax = purorderbillEntry.getBigDecimal("priceandtax");
+                //采购合同数量
+                BigDecimal nckdPriceandtaxup = purcontractEntry.getBigDecimal("nckd_priceandtaxup");
+                BigDecimal nckdPriceandtaxlow = purcontractEntry.getBigDecimal("nckd_priceandtaxlow");
+                if (priceandtax.compareTo(nckdPriceandtaxup) > 0 || priceandtax.compareTo(nckdPriceandtaxlow) < 0) {
+                    //"第(%s)行的物料名称 (%s) 与采购合同(%s)的第(%s)行存在重复物料"
+                    int seq = purorderbillEntry.getInt("seq");
+                    String purcontractBillno = purcontract.getString("billno");
+                    int purcontractEntrySeq = purcontractEntry.getInt("seq");
+                    this.addErrorMessage(rowDataEntity, String.format("%s 物料明细第(%s)行，含税单价不在合同：(%s) 的物料明细第(%s)行含税单价上下限区间",
+                            billno, seq, purcontractBillno, purcontractEntrySeq));
+                }
+            }
+
+            /**
+             * 根据规则获取需要校验的字段
+             * @param actions
+             * @param excutecontrol
+             */
+            private void getCheckType(Set<String> actions, String excutecontrol) {
+                switch (excutecontrol) {
+                    case "MON":
+                        actions.add("amount");
+                        break;
+                    case "NUM":
+                        actions.add("qty");
+                        break;
+                    case "PRI":
+                        actions.add("price");
+                        break;
+                    case "M&N":
+                        actions.add("amount");
+                        actions.add("qty");
+                        break;
+                    case "M&P":
+                        actions.add("amount");
+                        actions.add("price");
+                        break;
+                    case "M&N&P":
+                        actions.add("amount");
+                        actions.add("qty");
+                        actions.add("price");
+                        break;
+                    case "NAN":
+                        break;
+                }
+            }
         });
-    }
-
-    /**
-     * 根据规则获取需要校验的字段
-     *
-     * @param checkType
-     * @return
-     */
-    private Set<String> getCheckType(String checkType) {
-        Set<String> actions = new LinkedHashSet();
-        switch (checkType) {
-            case "MON":
-                actions.add("amount");
-                break;
-            case "NUM":
-                actions.add("qty");
-                break;
-            case "PRI":
-                actions.add("price");
-                break;
-            case "M&N":
-                actions.add("amount");
-                actions.add("qty");
-                break;
-            case "M&P":
-                actions.add("amount");
-                actions.add("price");
-                break;
-            case "M&N&P":
-                actions.add("amount");
-                actions.add("qty");
-                actions.add("price");
-                break;
-            case "NAN":
-                return actions;
-        }
-        return actions;
-    }
-
-    private void qtyCheck(DynamicObject purorderbill) {
-
-    }
-
-    private void amountCheck(DynamicObject purorderbill) {
-
-    }
-
-    private void priceCheck(DynamicObject purorderbill) {
     }
 
     /**
@@ -139,14 +265,14 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         super.beginOperationTransaction(e);
         // 提交时校验
         DynamicObject[] entities = e.getDataEntities();
-        Set<Long> conbillid = new HashSet<>();
+        Set<Long> conbillids = new HashSet<>();
         Arrays.stream(entities).forEach(k -> {
             DynamicObjectCollection billentry = k.getDynamicObjectCollection("billentry");
             Set<Long> conbillidSet = billentry.stream().map(h -> h.getLong("conbillid")).collect(Collectors.toSet());
-            conbillid.addAll(conbillidSet);
+            conbillids.addAll(conbillidSet);
         });
         //根据提交的采购订单去查询采购合同
-        QFilter qFilter = new QFilter("id", QCP.in, conbillid)
+        QFilter qFilter = new QFilter("id", QCP.in, conbillids)
                 .and("billstatus", QCP.equals, "C")
                 .and("validstatus", QCP.equals, "B")
                 .and("closestatus", QCP.equals, "A");
