@@ -3,9 +3,12 @@ package nckd.yanye.scm.plugin.operate;
 import cn.hutool.core.util.ObjectUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
+import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -31,6 +34,100 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         List<String> fieldKeys = e.getFieldKeys();
         fieldKeys.add("conbillid");
         fieldKeys.add("material");
+    }
+
+    /**
+     * 5、采购订单根据匹配采购合同对应的“合同类型”字段对应的控制策略进行控制，在提交时进行校验，控制逻辑如下
+     * a）如果控制单价，则采购订单中物料明细行对应的含税单价必须在采购合同中上下限含税单价；
+     * b）如果控制数量，则采购订单中物料明细行的数量≤采购合同对应行的数量-采购合同对应行的采购合同已下达订单数量；
+     * c）如果控制总金额，则采购订单中相同采购合同的物料明细行的“价税合计”的合计≤采购合同财务信息“已执行价税合计”，存在一个采购订单多行物料对应一个采购合同，故需要先将采购订单中相同采购合同的金额进行汇总后，再与采购合同进行比较判断；
+     * d）如果选择组合控制，例如数量+单价，则进行组合控制，多种控制逻辑均生效；
+     *
+     * @param e
+     */
+    @Override
+    public void onAddValidators(AddValidatorsEventArgs e) {
+        super.onAddValidators(e);
+        e.addValidator(new AbstractValidator() {
+            @Override
+            public void validate() {
+                //提交时校验可能存在多条
+                for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
+                    //获取采购订单
+                    DynamicObject purorderbill = rowDataEntity.getDataEntity();
+                    //获取采购订单的分录
+
+                    //查询采购合同，获取“合同类型”字段
+
+                    //判断 “合同类型”字段 是什么
+                    //总金额	MON
+                    //数量	NUM
+                    //单价	PRI
+                    //总金额、数量	M&N
+                    //总金额、单价	M&P
+                    //总金额、数量、单价	M&N&P
+                    //不控制	NAN
+                    Set<String> checkTypes = getCheckType("合同类型");
+                    for (String action : checkTypes) {
+                        if (action.equals("qty")) {
+                            qtyCheck(purorderbill);
+                        } else if (action.equals("amount")) {
+                            amountCheck(purorderbill);
+                        } else if (action.equals("price")) {
+                            priceCheck(purorderbill);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * 根据规则获取需要校验的字段
+     *
+     * @param checkType
+     * @return
+     */
+    private Set<String> getCheckType(String checkType) {
+        Set<String> actions = new LinkedHashSet();
+        switch (checkType) {
+            case "MON":
+                actions.add("amount");
+                break;
+            case "NUM":
+                actions.add("qty");
+                break;
+            case "PRI":
+                actions.add("price");
+                break;
+            case "M&N":
+                actions.add("amount");
+                actions.add("qty");
+                break;
+            case "M&P":
+                actions.add("amount");
+                actions.add("price");
+                break;
+            case "M&N&P":
+                actions.add("amount");
+                actions.add("qty");
+                actions.add("price");
+                break;
+            case "NAN":
+                return actions;
+        }
+        return actions;
+    }
+
+    private void qtyCheck(DynamicObject purorderbill) {
+
+    }
+
+    private void amountCheck(DynamicObject purorderbill) {
+
+    }
+
+    private void priceCheck(DynamicObject purorderbill) {
     }
 
     /**
