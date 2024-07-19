@@ -170,6 +170,32 @@ public class ZcPlatformApiUtil {
         return allSuppliers;
     }
 
+    /**
+     * todo 根据id获取公司信息
+     * @param companyId
+     * @return
+     */
+    public static JSONObject getCompanyById(String companyId) {
+        String accessToken = getZcAccessToken();
+
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
+        httpRequest.setMethod(Method.GET);
+        httpRequest.form("page", 1);
+        httpRequest.form("size", 10);
+        // todo 接口没有根据id查公司的参数
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        if (responseObj.getBooleanValue("success")) {
+            JSONArray records = responseObj.getJSONObject("data").getJSONArray("records");
+        }
+
+        return null;
+    }
+
 
     /**
      * 采购单发布
