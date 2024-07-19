@@ -38,9 +38,9 @@ public class OccPricePolicy extends AbstractBillPlugIn {
             String number = "ocdbd_pricepolicy";
             //查询字段
             String fieldkey = "id,number,priceentry.id,priceentry.item.id,priceentry.price price";
-            Object priceC=this.getModel().getValue("nckd_pricescontrol");
+            Object priceC = this.getModel().getValue("nckd_pricescontrol");
             //价格管控
-            if (this.getModel().getValue("nckd_pricescontrol") == null||priceC.equals("")) {
+            if (this.getModel().getValue("nckd_pricescontrol") == null || priceC.equals("")) {
                 DynamicObject saleOrg = (DynamicObject) this.getModel().getValue("saleorg");
                 Object saleOrgId = saleOrg.getPkValue();
                 //过滤信息 先找本组织的价格

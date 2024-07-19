@@ -14,7 +14,11 @@ import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.EventObject;
 import java.util.HashSet;
-
+/**
+ * 采购订单按钮查询月度采购统计
+ * 表单插件
+ * author:吴国强 2024-07-12
+ */
 public class purOrderBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void registerListener(EventObject e) {
@@ -24,6 +28,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
         // 注意itemClick和click的区别
         toolbar.addItemClickListener(this);
     }
+
 
     // 注意itemClick和click的区别
     @Override
