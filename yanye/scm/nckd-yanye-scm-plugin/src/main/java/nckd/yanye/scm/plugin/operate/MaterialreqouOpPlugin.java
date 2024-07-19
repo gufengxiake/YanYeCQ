@@ -13,6 +13,7 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
+import kd.bos.exception.KDBizException;
 import kd.bos.metadata.botp.ConvertRuleReader;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
@@ -24,13 +25,13 @@ import org.apache.commons.lang.StringUtils;
  * @description  领料出库单审批通过后下推生成需求申请单并提交
  */
 public class MaterialreqouOpPlugin extends AbstractOperationServicePlugIn {
-//    @Override
-//    public void onPreparePropertys(PreparePropertysEventArgs e) {
-//        super.onPreparePropertys(e);
-//
-//        List<String> fieldKeys = e.getFieldKeys();
-//        fieldKeys.add("nckd_other_depart");
-//    }
+    @Override
+    public void onPreparePropertys(PreparePropertysEventArgs e) {
+        super.onPreparePropertys(e);
+
+        List<String> fieldKeys = e.getFieldKeys();
+        fieldKeys.add("nckd_other_depart");
+    }
 
     @Override
     public void afterExecuteOperationTransaction(AfterOperationArgs e) {
@@ -73,11 +74,16 @@ public class MaterialreqouOpPlugin extends AbstractOperationServicePlugIn {
 
             // 执行下推操作
             ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
-            if(result.isSuccess()){
-                // 获取下推目标单id
-                Set<Object> targetBillIds = result.getTargetBillIds();
-                // 需求申请单提交审批
-                OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_pm_requirapplybi_ext", targetBillIds.toArray(), OperateOption.create());
+            if(!result.isSuccess()){
+                throw new KDBizException("下推失败：" + result.getMessage());
+            }
+
+            // 获取下推目标单id
+            Set<Object> targetBillIds = result.getTargetBillIds();
+            // 需求申请单提交审批
+            OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_pm_requirapplybi_ext", targetBillIds.toArray(), OperateOption.create());
+            if(!submit.isSuccess()){
+                throw new KDBizException("发起审核失败：" + submit.getMessage());
             }
         }
     }

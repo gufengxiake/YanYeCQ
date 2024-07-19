@@ -9,6 +9,7 @@ import kd.bos.entity.botp.ConvertRuleElement;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.exception.KDBizException;
 import kd.bos.exception.KDException;
 import kd.bos.metadata.botp.ConvertRuleReader;
 import kd.bos.orm.query.QCP;
@@ -62,8 +63,9 @@ public class MaterialreqouTask extends AbstractTask {
 
         // 执行下推操作
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
-        if(result.isSuccess()){
-            SaveServiceHelper.save(dynamicObjects);
+        if(!result.isSuccess()){
+            throw new KDBizException(result.getMessage());
         }
+        //SaveServiceHelper.save(dynamicObjects);
     }
 }
