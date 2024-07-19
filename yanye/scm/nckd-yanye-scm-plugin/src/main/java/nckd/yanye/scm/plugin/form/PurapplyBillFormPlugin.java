@@ -4,9 +4,13 @@ import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.exception.KDBizException;
+import kd.bos.form.ConfirmCallBackListener;
+import kd.bos.form.MessageBoxOptions;
+import kd.bos.form.MessageBoxResult;
 import kd.bos.form.control.RichTextEditor;
-import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
@@ -69,33 +73,51 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         this.addItemClickListeners("tbmain");
     }
 
-    /**
-     * 按钮点击事件
-     *
-     * @param evt
-     */
     @Override
-    public void itemClick(ItemClickEvent evt) {
+    public void beforeItemClick(BeforeItemClickEvent evt) {
+        super.beforeItemClick(evt);
         IDataModel model = this.getModel();
-        super.itemClick(evt);
         switch (evt.getItemKey()) {
             // 推送招采平台
             case PUSHTOZC:
-                pushToZc(model);
+                evt.setCancel(true);
+                ConfirmCallBackListener pushToZcActionListener = new ConfirmCallBackListener("pushToZcAction", this);
+                this.getView().showConfirm("您确认将此采购单推送至招采平台吗？", MessageBoxOptions.YesNo, pushToZcActionListener);
                 break;
             // 公告查看
             case ANNOUNCEMENT:
-                announcement(model);
+                viewNotice(model);
                 break;
             case "制作标书":
                 // todo 询比采购线上评审文件制作
                 break;
             // 作废
             case CANCELORDER:
-                cancelOrder(model);
+                evt.setCancel(true);
+                ConfirmCallBackListener cancelOrderListener = new ConfirmCallBackListener("cancelOrderAction", this);
+                this.getView().showConfirm("您确认将此采购单作废吗？", MessageBoxOptions.YesNo, cancelOrderListener);
                 break;
             default:
                 break;
+        }
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        super.confirmCallBack(messageBoxClosedEvent);
+        //判断回调参数id
+        String callBackId = messageBoxClosedEvent.getCallBackId();
+
+        if ("pushToZcAction".equals(callBackId)) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                pushToZc(this.getModel());
+            }
+        }
+
+        if ("cancelOrderAction".equals(callBackId)) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                cancelOrder(this.getModel());
+            }
         }
     }
 
@@ -120,14 +142,13 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
             JSONObject xbJson = ZcPlatformJsonUtil.getXbJson(model);
-            //调用公告发布接口
             resultJson = ZcPlatformApiUtil.addOrder(xbJson, "XB");
         } else if ("competitive".equals(procurements)) {
             JSONObject tpJson = ZcPlatformJsonUtil.getTpJson(model);
-            //调用公告发布接口
             resultJson = ZcPlatformApiUtil.addOrder(tpJson, "TP");
         } else if ("singlesupplier".equals(procurements)) {
-            // todo 单一供应商的相关代码
+            JSONObject dyJson = ZcPlatformJsonUtil.getDyJson(model);
+            resultJson = ZcPlatformApiUtil.addOrder(dyJson, "ZB");
         } else if ("bidprocurement".equals(procurements)) {
             JSONObject zbJson = ZcPlatformJsonUtil.getZbJson(model);
             resultJson = ZcPlatformApiUtil.addOrder(zbJson, "ZB");
@@ -151,7 +172,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
-        JSONObject cancelJsonObject = null;
+        JSONObject cancelJsonObject;
         // 招采平台id
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
         // 采购方式
@@ -160,12 +181,10 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             cancelJsonObject = ZcPlatformApiUtil.cancelOrder(orderId, "XB");
         } else if ("competitive".equals(procurementType)) {
             cancelJsonObject = ZcPlatformApiUtil.cancelOrder(orderId, "TP");
-        } else if ("singlesupplier".equals(procurementType)) {
-            // 单一供应商的相关代码
-        } else if ("bidprocurement".equals(procurementType)) {
+        } else if ("singlesupplier".equals(procurementType) || "bidprocurement".equals(procurementType)) {
             cancelJsonObject = ZcPlatformApiUtil.cancelOrder(orderId, "ZB");
         } else {
-            throw new KDBizException("该单据不可推送!");
+            throw new KDBizException("该单据不可作废!");
         }
 
         if (cancelJsonObject.getBooleanValue("success")) {
@@ -180,7 +199,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      *
      * @param model
      */
-    private void announcement(IDataModel model) {
+    private void viewNotice(IDataModel model) {
         if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }

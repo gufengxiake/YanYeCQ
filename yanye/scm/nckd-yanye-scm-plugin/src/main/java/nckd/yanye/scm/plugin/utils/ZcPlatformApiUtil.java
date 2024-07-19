@@ -262,18 +262,12 @@ public class ZcPlatformApiUtil {
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
             // 采购方式-询比价，单一品牌
             page = "InquiryDetail";
-
         } else if ("competitive".equals(procurements)) {
             // 采购方式-竞争性谈判
             page = "NegotiationInfo";
-
-        } else if ("singlesupplier".equals(procurements)) {
-            // 采购方式-单一供应商
-
-        } else if ("bidprocurement".equals(procurements)) {
-            // 采购方式-招投采购
+        } else if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
+            // 采购方式-单一供应商，招投采购
             page = "BiddingInfo";
-
         } else {
             throw new KDBizException("该单据未选择采购方式!");
         }

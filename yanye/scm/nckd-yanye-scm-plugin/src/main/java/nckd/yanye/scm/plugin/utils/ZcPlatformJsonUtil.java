@@ -134,6 +134,10 @@ public class ZcPlatformJsonUtil {
             }
         });
 
+        // 公告标题
+        zbJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
+        // 公告内容
+        zbJson.put("content", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
         return zbJson;
     }
 
@@ -326,6 +330,67 @@ public class ZcPlatformJsonUtil {
     }
 
     /**
+     * 公告发布-单一供应商
+     *
+     * @param model
+     * @return
+     */
+    public static JSONObject getDyJson(IDataModel model) {
+        JSONObject dyJson = new JSONObject() {
+            {
+                // 招标方式-邀请招标，2
+                put("biddingMethod", 2);
+
+                // 项目名称
+                put("orderName", model.getValue(PurapplybillConst.NCKD_PROJECTNAME));
+                // 项目金额（万元）
+                put("budget", model.getValue(PurapplybillConst.NCKD_PROJECTAMOUNT));
+                // 项目类型
+                put("biddingType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE2));
+                // 报价方式
+                put("priceType", model.getValue(PurapplybillConst.NCKD_QUOTATION2));
+                // todo 项目地点
+                // 招标地址-国家
+                put("country", "中国");
+                // 招标地址-所属省
+                put("province", "江西省");
+                // 招标地址-所属市
+                put("city", "南昌市");
+                // 招标地址-所属区县
+                put("area", "红谷滩区");
+                // 招标地址-详细地址
+                put("detailAddress", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR2));
+            }
+        };
+
+        // 单一供应商
+        dyJson.put("inviteSup", new JSONArray() {
+            {
+                add(new JSONObject() {
+                    {
+                        DynamicObject inviteObj = (DynamicObject) model.getValue(PurapplybillConst.NCKD_SUPPLIERS2);
+                        // 供应商id
+                        put("supplierId", inviteObj.getString(SupplierConst.NCKD_PLATFORMSUPID));
+                        // 供应商名称
+                        put("supplierName", inviteObj.getString(SupplierConst.NAME));
+                        // 联合体公司
+
+                    }
+                });
+            }
+        });
+
+        // 采购范围-附件
+
+        // 公告标题
+        dyJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
+        // 公告内容
+        dyJson.put("content", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
+
+        return dyJson;
+    }
+
+    /**
      * 公告发布-谈判采购单
      *
      * @param model
@@ -476,12 +541,12 @@ public class ZcPlatformJsonUtil {
 //                // 其他原因
 //                put("otherReason", "其它原因");
 //                //关闭公告
-//                put("notice", new JSONObject() {
-//                    {
-//                        put("noticeTitle", "测试流标公告标题");
+                put("notice", new JSONObject() {
+                    {
+                        put("noticeTitle", "流标公告");
 //                        put("noticeContent", "测试流标公告内容");
-//                    }
-//                });
+                    }
+                });
             }
         };
         return xbCancelJson;
@@ -537,6 +602,5 @@ public class ZcPlatformJsonUtil {
 
         return zbCancelJson;
     }
-
 
 }
