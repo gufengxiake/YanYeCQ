@@ -1,11 +1,13 @@
 package nckd.yanye.occ.plugin.operate;
 
 import com.google.type.Decimal;
+import kd.bos.bill.BillShowParameter;
 import kd.bos.data.BusinessDataReader;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityType;
+import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.MainEntityType;
@@ -19,11 +21,16 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.exception.KDBizException;
+import kd.bos.metadata.dao.MetadataDao;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.mvc.FormConfigFactory;
+import kd.bos.mvc.SessionManager;
+import kd.bos.form.IFormView;
+import kd.bos.mvc.bill.BillModel;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -53,19 +60,18 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             billIds.add(dataEntity.getBillPkId());
 
         }
-        Map<String,BigDecimal>outQty=new HashMap<>();
-        for(DynamicObject dataObject:e.getDataEntities()){
+        Map<String, BigDecimal> outQty = new HashMap<>();
+        for (DynamicObject dataObject : e.getDataEntities()) {
             //获取单据体数据的集合
             DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
             for (DynamicObject entryObj : billentry) {
                 String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
                 BigDecimal qty = entryObj.getBigDecimal("qty");//核心单据行Id
-                if(!outQty.containsKey(mainbillentryid)){
-                    outQty.put(mainbillentryid,qty);
-                }
-                else {
+                if (!outQty.containsKey(mainbillentryid)) {
+                    outQty.put(mainbillentryid, qty);
+                } else {
 
-                    outQty.put(mainbillentryid,outQty.get(mainbillentryid).add(qty));
+                    outQty.put(mainbillentryid, outQty.get(mainbillentryid).add(qty));
                 }
             }
         }
@@ -88,13 +94,13 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         }
 
         //获取上游销售订单对应的采购订单分录
-        HashSet<Long>saloutBillIds=new HashSet<>();
-        if(sourceBillIds.containsKey("sm_salorder")){
-            saloutBillIds=sourceBillIds.get("sm_salorder");
+        HashSet<Long> saloutBillIds = new HashSet<>();
+        if (sourceBillIds.containsKey("sm_salorder")) {
+            saloutBillIds = sourceBillIds.get("sm_salorder");
         }
-        if(!saloutBillIds.isEmpty()){
-            Map<String,BigDecimal>srcQty=new HashMap<>();
-            for(Object salOutPk:saloutBillIds){
+        if (!saloutBillIds.isEmpty()) {
+            Map<String, BigDecimal> srcQty = new HashMap<>();
+            for (Object salOutPk : saloutBillIds) {
                 DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "sm_salorder");
                 //获取单据体数据的集合
                 DynamicObjectCollection goodsEntities = saloutBill.getDynamicObjectCollection("billentry");
@@ -102,8 +108,8 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                     //获取某行数据的id
                     Object entryId = entryObj.getPkValue();
                     String srcbillentryid = entryObj.getString("srcbillentryid");//来源单据行Id
-                    if(outQty.containsKey(entryId.toString())){
-                        srcQty.put(srcbillentryid,outQty.get(entryId.toString()));
+                    if (outQty.containsKey(entryId.toString())) {
+                        srcQty.put(srcbillentryid, outQty.get(entryId.toString()));
                     }
                 }
             }
@@ -177,36 +183,94 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                         }
                     }, targetMainType);
                     DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
-                    //修改仓库信息
-                    for (DynamicObject obj : saveDynamicObject) {
-                        DynamicObjectCollection entry = obj.getDynamicObjectCollection("billentry");
-                        for (DynamicObject entryRow : entry) {
-                            String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
-                            BigDecimal qty = srcQty.get(mainbillentryid);
-                            entryRow.set("qty", qty);
-                        }
-                    }
-
                     //保存
                     OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
                     if (operationResult1.isSuccess()) {
-                        OperateOption auditOption = OperateOption.create();
-                        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-                        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-                        //提交
-                        OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
-                        if (subResult.isSuccess()) {
-                            //审核
-                            OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
+                        MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
+                        String appId = getAppId(targetBill, dt);
+                        // 设置单据显示参数
+                        BillShowParameter para = new BillShowParameter();
+                        para.setFormId(targetBill);
+                        para.setPkId(0);
+                        para.setAppId(appId);
+
+                        // 创建单据配置
+                        FormConfigFactory.createConfigInCurrentAppService(para);
+                        // 获取单据页面视图
+                        final SessionManager sm = SessionManager.getCurrent();
+                        final IFormView formView = sm.getView(para.getPageId());
+                        if (formView != null) {
+
+                            // 设置视图应用id和数据模型
+                            formView.getFormShowParameter().setAppId(appId);
+
+                            formView.getModel().createNewData();
+
+                            formView.updateView();
+
                         }
+                        BillModel mode = (BillModel) formView.getModel();
+                        HashSet<Object>Ids=new HashSet<>();
+                        //修改数量
+                        for (DynamicObject obj : saveDynamicObject) {
+                            Object pkId=obj.getPkValue();
+
+                            mode.setPKValue(pkId);
+                            mode.load(pkId);
+                            DynamicObject dataObj=mode.getDataEntity();
+                            DynamicObjectCollection entry=dataObj.getDynamicObjectCollection("billentry");
+                            int row=0;
+                            for (DynamicObject entryRow : entry) {
+                                String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
+                                BigDecimal qty = srcQty.get(mainbillentryid);
+                                mode.setValue("qty",qty,row);
+                                row++;
+                            }
+                            OperationResult saveOp= formView.invokeOperation("save");
+                            if(saveOp.isSuccess()){
+                                Ids.add(pkId);
+                            }
+
+                        }
+                        formView.close();
+                        if(Ids.size()>0){
+                            OperateOption auditOption = OperateOption.create();
+                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                            //提交
+                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
+                            if (subResult.isSuccess()) {
+                                //审核
+                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
+                            }
+                        }
+
                     }
 
 
                 }
             }
         }
+        e.cancel=true;
 
 
+    }
 
+    private static String getAppId(String entityNumber, MainEntityType dt) {
+        String appId = dt.getAppId();
+        if (!"bos".equals(appId)) {
+            return appId;
+        } else {
+            String bizAppNumber = dt.getBizAppNumber();
+            if (StringUtils.isBlank(bizAppNumber)) {
+                bizAppNumber = MetadataDao.getAppNumberByEntityNumber(entityNumber);
+            }
+
+            if (StringUtils.isNotBlank(bizAppNumber)) {
+                appId = String.format("%s.%s", "bos", bizAppNumber);
+            }
+
+            return appId;
+        }
     }
 }
