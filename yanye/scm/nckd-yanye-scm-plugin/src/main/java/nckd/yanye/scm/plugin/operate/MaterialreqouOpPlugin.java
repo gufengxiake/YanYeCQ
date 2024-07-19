@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.operate;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -15,8 +16,12 @@ import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.metadata.botp.ConvertRuleReader;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -81,7 +86,7 @@ public class MaterialreqouOpPlugin extends AbstractOperationServicePlugIn {
             // 获取下推目标单id
             Set<Object> targetBillIds = result.getTargetBillIds();
             // 需求申请单提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_pm_requirapplybi_ext", targetBillIds.toArray(), OperateOption.create());
+            OperationResult submit = OperationServiceHelper.executeOperate("submit", "pm_requirapplybill", targetBillIds.toArray(), OperateOption.create());
             if(!submit.isSuccess()){
                 throw new KDBizException("发起审核失败：" + submit.getMessage());
             }

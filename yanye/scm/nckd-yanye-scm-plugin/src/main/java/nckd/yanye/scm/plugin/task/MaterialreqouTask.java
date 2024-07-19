@@ -4,11 +4,14 @@ import java.time.LocalDate;
 import java.util.*;
 
 import kd.bos.context.RequestContext;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.ConvertRuleElement;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.exception.KDException;
 import kd.bos.metadata.botp.ConvertRuleReader;
@@ -17,6 +20,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 /**
@@ -53,19 +57,30 @@ public class MaterialreqouTask extends AbstractTask {
         List<ListSelectedRow> rows = new ArrayList<>();
         QFilter qFilter1 = new QFilter("billentry.nckd_evaluate_flag", QCP.equals, "1");
         QFilter qFilter2 = new QFilter("billentry.nckd_evaluate_date", QCP.equals, LocalDate.now());
-        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("im_materialreqoutbill", "billentry.id", new QFilter[]{qFilter1, qFilter2});
+        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("im_materialreqoutbill", "id,billentry.id,billentry.nckd_already_evaluate", new QFilter[]{qFilter1, qFilter2});
         for (DynamicObject dynamicObject : dynamicObjects) {
             rows.add(new ListSelectedRow(dynamicObject.get("id")));
 
-            dynamicObject.set("nckd_already_evaluate",1);
+            DynamicObjectCollection billentry = dynamicObject.getDynamicObjectCollection("billentry");
+            for (DynamicObject object : billentry) {
+                object.set("nckd_already_evaluate",1);
+            }
         }
         pushArgs.setSelectedRows(rows);
 
         // 执行下推操作
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
         if(!result.isSuccess()){
-            throw new KDBizException(result.getMessage());
+            throw new KDBizException("下推失败：" + result.getMessage());
         }
-        //SaveServiceHelper.save(dynamicObjects);
+        Object[] save = SaveServiceHelper.save(dynamicObjects);
+
+        // 获取下推目标单id
+        Set<Object> targetBillIds = result.getTargetBillIds();
+        // 使用评价单提交审批
+        OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_im_use_evaluate_bill", targetBillIds.toArray(), OperateOption.create());
+        if(!submit.isSuccess()){
+            throw new KDBizException("发起审核失败：" + submit.getMessage());
+        }
     }
 }
