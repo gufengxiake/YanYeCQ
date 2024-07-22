@@ -22,7 +22,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
  * @date 2024-07-12 17:01
  * @description 领料出库单-表单插件
  */
-public class MaterialreqouPlugin extends AbstractBillPlugIn {
+public class MaterialreqouFormPlugin extends AbstractBillPlugIn {
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);
