@@ -68,7 +68,7 @@ public class BadDealbillAntiAuditOpPlugin extends AbstractOperationServicePlugIn
         DynamicObject[] procureMaterials = BusinessDataServiceHelper.load
                 ("im_purreceivebill", "id,exchangerate,billentry.amountandtax,billentry.actualprice," +
                         "billentry.actualtaxprice,billentry.taxrate,billentry.qty,billentry.curamountandtax," +
-                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid", qFilter1.toArray());
+                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid,billentry.price,billentry.priceandtax", qFilter1.toArray());
 
         Map<Long, DynamicObject> purreceivebillMap = Arrays.stream(procureMaterials).collect(Collectors.toMap(t -> t.getLong("id"), t -> t));
         //遍历来料不良品处理单全部分录
