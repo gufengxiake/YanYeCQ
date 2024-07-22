@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.utils;
+package nckd.yanye.scm.common.utils;
 
 
 import com.alibaba.fastjson.JSONArray;
