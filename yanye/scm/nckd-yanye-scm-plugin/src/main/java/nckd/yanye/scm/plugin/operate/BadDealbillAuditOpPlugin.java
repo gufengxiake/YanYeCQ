@@ -109,16 +109,16 @@ public class BadDealbillAuditOpPlugin extends AbstractOperationServicePlugIn {
                 BigDecimal unqualiqty = dynamic.getBigDecimal("qty");
                 BigDecimal original = originalAmount.subtract(discountAmount);
                 //实际含税单价
-                BigDecimal actualTaxPrice = originalAmount.divide(unqualiqty, 2, RoundingMode.HALF_UP);
+                BigDecimal actualTaxPrice = original.divide(unqualiqty, 6, RoundingMode.HALF_UP);
                 BigDecimal rate = taxrate.divide(new BigDecimal(100), 2, RoundingMode.HALF_UP);
                 //实际单价
-                BigDecimal actualPrice = actualTaxPrice.divide(BigDecimal.ONE.add(rate), 2, RoundingMode.HALF_UP);
-                dynamic.set("nckd_amountand_current", dynamic.getBigDecimal("curamountandtax"));
-                dynamic.set("amountandtax", original);
-                dynamic.set("curamountandtax", original.multiply(exchangerate));
-                dynamic.set("actualprice", actualPrice);
-                dynamic.set("actualtaxprice", actualTaxPrice);
-                dynamic.set("nckd_amountand", originalAmount);
+                BigDecimal actualPrice = actualTaxPrice.divide(BigDecimal.ONE.add(rate), 6, RoundingMode.HALF_UP);
+                dynamic.set("nckd_amountand_current", dynamic.getBigDecimal("curamountandtax"));//价税合计(原)(本位币)
+                dynamic.set("amountandtax", original);//价税合计
+                dynamic.set("curamountandtax", original.multiply(exchangerate));//价税合计(本位币)
+                dynamic.set("actualprice", actualPrice);//实际单价
+                dynamic.set("actualtaxprice", actualTaxPrice);//实际含税单价
+                dynamic.set("nckd_amountand", originalAmount);//价税合计(原)
             }
         });
         SaveServiceHelper.update(procureMaterials);
