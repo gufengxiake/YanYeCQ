@@ -171,29 +171,58 @@ public class ZcPlatformApiUtil {
     }
 
     /**
-     * todo 根据id获取公司信息
-     * @param companyId
+     * 根据公司名称或者社会信用代码查询公司id
+     *
+     * @param companyName      公司名称
+     * @param socialCreditCode 社会信用代码
      * @return
      */
-    public static JSONObject getCompanyById(String companyId) {
+    public static Integer getCompanyIdByParam(String companyName, String socialCreditCode) {
         String accessToken = getZcAccessToken();
-
 
         HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
         httpRequest.setMethod(Method.GET);
         httpRequest.form("page", 1);
         httpRequest.form("size", 10);
-        // todo 接口没有根据id查公司的参数
+        httpRequest.form("companyName", companyName);
+        httpRequest.form("socialCreditCode", socialCreditCode);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
-        if (responseObj.getBooleanValue("success")) {
-            JSONArray records = responseObj.getJSONObject("data").getJSONArray("records");
+        if (!responseObj.getBooleanValue("success")) {
+            throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
 
-        return null;
+        JSONArray records = responseObj.getJSONObject("data").getJSONArray("records");
+        // 第一个公司信息
+        JSONObject companyInfo = (JSONObject) records.get(0);
+        return companyInfo.getInteger("companyId");
+    }
+
+    /**
+     * 根据公司id查询公司信息
+     *
+     * @param companyName      公司名称
+     * @param socialCreditCode 社会信用代码
+     * @return
+     */
+    public static JSONObject getCompanyIdById(String companyID) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/" + companyID);
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        if (!responseObj.getBooleanValue("success")) {
+            throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
+        }
+
+        return responseObj;
     }
 
 
@@ -218,6 +247,10 @@ public class ZcPlatformApiUtil {
                 break;
             case "ZB":
                 addorderUrl = "/sourcing/purchaser/bidding-orders/v2/publish";
+                break;
+            case "dy":
+                //todo 单一供应商接口url
+                addorderUrl = "";
                 break;
             default:
                 break;
@@ -310,7 +343,9 @@ public class ZcPlatformApiUtil {
                 });
                 put("query", new JSONObject() {
                     {
-                        put("loginCompanyId", 463);
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                                "江西省盐业集团股份有限公司", "91360000158260136N"
+                        ));
                     }
                 });
             }

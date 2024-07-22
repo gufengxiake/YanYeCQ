@@ -204,12 +204,16 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
 
+
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
         String url = ZcPlatformApiUtil.viewNotice(procurements, orderId);
         // 跳转页面
         getView().openUrl(url);
+
     }
+
+
 
 }
 

@@ -5,7 +5,6 @@ import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
 import kd.bos.openapi.common.result.CustomApiResult;
 import nckd.yanye.scm.dto.Content;
-import nckd.yanye.scm.dto.ZcApiResult;
 
 import java.io.Serializable;
 
@@ -20,13 +19,13 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
     private static final Log log = LogFactory.getLog(yingcaichengCallBackApiPlugin.class);
 
     @ApiPostMapping(value = "/post", desc = "招采平台回调")
-    public CustomApiResult<@ApiResponseBody("返回参数") ZcApiResult> getCallBack(@ApiParam(value = "回调编号", required = true) String callbackCode,
-                                                                                 @ApiParam(value = "应用id", required = true) String openAppKey,
-                                                                                 @ApiParam(value = "业务类型编号", required = true) String businessType,
-                                                                                 @ApiParam(value = "业务节点编号", required = true) String businessNode,
-                                                                                 @ApiParam(value = "内容", required = true) Content content
+    public CustomApiResult<@ApiResponseBody("返回参数") String> getCallBack(
+            @ApiParam(value = "回调编号", required = true) String callbackCode,
+            @ApiParam(value = "应用id", required = true) String openAppKey,
+            @ApiParam(value = "业务类型编号", required = true) String businessType,
+            @ApiParam(value = "业务节点编号", required = true) String businessNode,
+            @ApiParam(value = "内容", required = true) Content content
     ) {
-
         // 随机数
         String nonce = content.getNonce();
         // 时间戳
@@ -70,7 +69,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // todo 新增公司
 
 
-        CustomApiResult<ZcApiResult> result = CustomApiResult.success(new ZcApiResult(true, "200", "调用成功", ""));
+        CustomApiResult<String> result = CustomApiResult.success("success");
         return result;
     }
 }
