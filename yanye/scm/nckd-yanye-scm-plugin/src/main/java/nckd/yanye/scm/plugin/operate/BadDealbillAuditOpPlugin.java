@@ -15,7 +15,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
-
+/**
+ * Module           :质量云-来料质量管理-不合格品处理
+ * Description      :来料不良品处理单反审核插件
+ *
+ * @author : yaosijie
+ * @date : 2024/7/22
+ */
 public class BadDealbillAuditOpPlugin extends AbstractOperationServicePlugIn {
 
     @Override
