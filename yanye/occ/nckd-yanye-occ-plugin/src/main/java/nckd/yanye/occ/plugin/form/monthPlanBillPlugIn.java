@@ -63,6 +63,7 @@ public class monthPlanBillPlugIn extends AbstractBillPlugIn {
 
     }
 
+    //查询
     private void queryMonthPlan(Object orgId, Date startdate, Date enddate, BigInt[] groupIds) {
         //表单标识
         String number = "nckd_pm_monthpurapply";//月度需求申请单

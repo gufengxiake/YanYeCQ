@@ -97,7 +97,7 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
         if (!botpbill1_Ids.isEmpty()) {
             String sourceBill = "ocbsoc_saleorder";//要货订单
             String targetBill = "ocbsoc_returnorder";//退货申请单
-            String ruleId = "1985077720819698688";
+            String ruleId = "1985077720819698688";//单据转换Id
             // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
             for (Object pk : botpbill1_Ids) {
 

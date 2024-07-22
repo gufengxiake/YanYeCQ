@@ -61,7 +61,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
             //订单日期
             Date date= (Date) this.getModel().getValue("biztime");
             // 自定义传参，把当前单据的文本字段传过去
-            formShowParameter.setCustomParam("orgId",orgId);
+            formShowParameter.setCustomParam("orgId",orgId);//组织Id
             formShowParameter.setCustomParam("groupId",matGroupIds);
             formShowParameter.setCustomParam("date",date);
             // 设置回调事件，回调插件为当前插件，标识为kdec_sfform
