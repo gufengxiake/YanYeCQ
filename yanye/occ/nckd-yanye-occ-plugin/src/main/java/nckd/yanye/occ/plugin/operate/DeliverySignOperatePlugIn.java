@@ -74,7 +74,7 @@ public class DeliverySignOperatePlugIn extends AbstractOperationServicePlugIn {
         if (!botpbill1_Ids.isEmpty()) {
             String sourceBill = "im_saloutbill";//销售出库单
             String targetBill = "ar_finarbill";//财务应收单
-            String ruleId = "1960290499453537280";
+            String ruleId = "1960290499453537280";//单据转换Id
             // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
             for (Object pk : botpbill1_Ids) {
 
