@@ -15,7 +15,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
  * @date 2024-07-13 18:48
  * @description  领料申请单-表单插件
  */
-public class MaterialreqbiPlugin extends AbstractBillPlugIn {
+public class MaterialreqbiFormPlugin extends AbstractBillPlugIn {
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);

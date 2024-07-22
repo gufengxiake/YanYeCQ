@@ -25,6 +25,7 @@ public class OccPricePolicy extends AbstractBillPlugIn {
         //商品
         if (propName.equals("item") || propName.equals("unit")) {
             Date billDate = DateTime.now().toDate();
+            //获取当前行
             int index = e.getChangeSet()[0].getRowIndex();
             DynamicObject item = (DynamicObject) this.getModel().getValue("item", index);
             if (item == null) return;
