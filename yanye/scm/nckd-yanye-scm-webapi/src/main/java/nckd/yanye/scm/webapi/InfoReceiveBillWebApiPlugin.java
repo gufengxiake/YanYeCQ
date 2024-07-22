@@ -15,6 +15,7 @@ import java.util.Map;
 
 /**
  * 信息接收单保存api插件
+ * @author liuxiao
  */
 public class InfoReceiveBillWebApiPlugin implements ApiSavePlugin {
     @Override

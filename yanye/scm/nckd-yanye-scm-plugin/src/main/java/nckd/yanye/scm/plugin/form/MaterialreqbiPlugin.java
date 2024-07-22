@@ -27,13 +27,18 @@ public class MaterialreqbiPlugin extends AbstractBillPlugIn {
                 // 将弹性域字段的值赋值给其它字段
                 String valueStr = flexFieldVal.get("value").toString();
                 Map<String, Object> values = SerializationUtils.fromJsonString(valueStr, Map.class);
-                DynamicObject flexVal = BusinessDataServiceHelper.loadSingle(values.get("f000019"), "bos_adminorg");
-                this.getModel().setValue("nckd_orgfield", flexVal);
+//                DynamicObject flexVal = BusinessDataServiceHelper.loadSingle(values.get("f000019"), "bos_adminorg");
+//                this.getModel().setValue("nckd_orgfield", flexVal);
+                int rowIndex = e.getChangeSet()[0].getRowIndex();
+                // 原需求部门
+                this.getModel().setValue("nckd_orgfield", values.get("f000019"),rowIndex);
+                // 品牌
+                this.getModel().setValue("nckd_brand", values.get("f000022"),rowIndex);
 
                 // 判断申请部门和原需求部门是否一致
                 DynamicObject applydept = (DynamicObject) this.getModel().getValue("applydept");
                 if(applydept != null){
-                    if(!applydept.get(0).equals(flexVal.get(0))){
+                    if(!applydept.get(0).equals(values.get("f000019"))){
                         this.getModel().setValue("nckd_other_depart",1);
                     }
                 }

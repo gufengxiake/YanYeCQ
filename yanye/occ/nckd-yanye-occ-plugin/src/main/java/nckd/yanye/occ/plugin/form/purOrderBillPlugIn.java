@@ -2,19 +2,20 @@ package nckd.yanye.occ.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.form.CloseCallBack;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Toolbar;
 import kd.bos.form.control.events.ItemClickEvent;
-import org.apache.kafka.common.serialization.VoidDeserializer;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.EventObject;
 import java.util.HashSet;
-
+/**
+ * 采购订单按钮查询月度采购统计
+ * 表单插件
+ * author:吴国强 2024-07-12
+ */
 public class purOrderBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void registerListener(EventObject e) {
@@ -24,6 +25,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
         // 注意itemClick和click的区别
         toolbar.addItemClickListener(this);
     }
+
 
     // 注意itemClick和click的区别
     @Override

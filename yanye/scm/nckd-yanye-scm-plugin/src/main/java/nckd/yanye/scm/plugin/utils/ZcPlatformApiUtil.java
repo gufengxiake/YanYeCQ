@@ -36,6 +36,7 @@ public class ZcPlatformApiUtil {
      * 测试环境url
      */
     private static final String URL = "http://open-api.yingcaicheng.net";
+
     /**
      * 测试环境访问指定页面url
      */
@@ -169,18 +170,92 @@ public class ZcPlatformApiUtil {
         return allSuppliers;
     }
 
-
     /**
-     * 询比单发布
+     * 根据公司名称或者社会信用代码查询公司id
      *
-     * @param xbJson 询比单json
-     * @return 结果
+     * @param companyName      公司名称
+     * @param socialCreditCode 社会信用代码
+     * @return
      */
-    public static JSONObject addXBD(JSONObject xbJson) {
-        String string = xbJson.toString();
+    public static Integer getCompanyIdByParam(String companyName, String socialCreditCode) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/inquiry-orders/release");
+        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
+        httpRequest.setMethod(Method.GET);
+        httpRequest.form("page", 1);
+        httpRequest.form("size", 10);
+        httpRequest.form("companyName", companyName);
+        httpRequest.form("socialCreditCode", socialCreditCode);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        if (!responseObj.getBooleanValue("success")) {
+            throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
+        }
+
+        JSONArray records = responseObj.getJSONObject("data").getJSONArray("records");
+        // 第一个公司信息
+        JSONObject companyInfo = (JSONObject) records.get(0);
+        return companyInfo.getInteger("companyId");
+    }
+
+    /**
+     * 根据公司id查询公司信息
+     *
+     * @param companyName      公司名称
+     * @param socialCreditCode 社会信用代码
+     * @return
+     */
+    public static JSONObject getCompanyIdById(String companyID) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/" + companyID);
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        if (!responseObj.getBooleanValue("success")) {
+            throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
+        }
+
+        return responseObj;
+    }
+
+
+    /**
+     * 采购单发布
+     *
+     * @param bodyJson Body 参数
+     * @param bizType
+     * @return 结果
+     */
+    public static JSONObject addOrder(JSONObject bodyJson, String bizType) {
+        String string = bodyJson.toString();
+        String accessToken = getZcAccessToken();
+
+        String addorderUrl = "";
+        switch (bizType) {
+            case "XB":
+                addorderUrl = "/sourcing/purchaser/inquiry-orders/release";
+                break;
+            case "TP":
+                addorderUrl = "/sourcing/purchaser/hosp-negotiate-orders/v2/release";
+                break;
+            case "ZB":
+                addorderUrl = "/sourcing/purchaser/bidding-orders/v2/publish";
+                break;
+            case "dy":
+                //todo 单一供应商接口url
+                addorderUrl = "";
+                break;
+            default:
+                break;
+        }
+        HttpRequest httpRequest = HttpRequest.of(URL + addorderUrl);
 
         httpRequest.setMethod(Method.POST);
         httpRequest.body(string);
@@ -194,38 +269,97 @@ public class ZcPlatformApiUtil {
         return JSON.parseObject(execute.body());
     }
 
+    /**
+     * 采购单流标
+     *
+     * @param orderId
+     * @return
+     */
+    public static JSONObject cancelOrder(String orderId, String bizType) {
+        String accessToken = getZcAccessToken();
 
-    public static void test(String xbJson) {
-        HttpRequest httpRequest = HttpRequest.of("http://passport.yingcaicheng.net/third-access?accessToken=${accessToken}&config=${config}");
+        String cancelOrderUrl = "";
+        JSONObject cancelJson = new JSONObject();
 
-        JSONObject config = new JSONObject() {
+        switch (bizType) {
+            case "XB":
+                cancelOrderUrl = URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
+                cancelJson = ZcPlatformJsonUtil.getXbCancelJson();
+                break;
+            case "TP":
+                cancelOrderUrl = URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
+                cancelJson = ZcPlatformJsonUtil.getTpCancelJson();
+                break;
+            case "ZB":
+                cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
+                cancelJson = ZcPlatformJsonUtil.getZbCancelJson();
+                break;
+            default:
+                break;
+        }
+
+        HttpRequest httpRequest = HttpRequest.of(cancelOrderUrl);
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("identity", "purchaser");
+        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.body(cancelJson.toString());
+        HttpResponse execute = httpRequest.execute();
+
+        return JSON.parseObject(execute.body());
+    }
+
+    /**
+     * 采购单公告查看
+     *
+     * @param orderId
+     */
+    public static String viewNotice(String procurements, String orderId) {
+        String userAccessToken = getZcUserToken();
+        String page = null;
+        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            // 采购方式-询比价，单一品牌
+            page = "InquiryDetail";
+        } else if ("competitive".equals(procurements)) {
+            // 采购方式-竞争性谈判
+            page = "NegotiationInfo";
+        } else if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
+            // 采购方式-单一供应商，招投采购
+            page = "BiddingInfo";
+        } else {
+            throw new KDBizException("该单据未选择采购方式!");
+        }
+
+        String finalPage = page;
+        JSONObject configJson = new JSONObject() {
             {
                 put("platform", "purchase");
-                put("page", "InquiryOnlineReviewSetting");
+                put("page", finalPage);
+                put("params", new JSONObject() {
+                    {
+                        put("orderId", orderId);
+                    }
+                });
                 put("query", new JSONObject() {
                     {
-                        // 登录公司id
-                        put("loginCompanyId", 0);
-                        // 评审单id，必填
-                        put("reviewId", 0);
-                        // 评审模式，必填
-                        put("reviewModel", 0);
-                        // 原评审单id，选填，澄清时使用
-                        put("copyReviewId", 0);
-                        // 第三方跳转标识
-                        put("from", "ThirdAccess");
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                                "江西省盐业集团股份有限公司", "91360000158260136N"
+                        ));
                     }
                 });
             }
         };
 
+        String config = configJson.toString();
+        return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
     }
-
 
     /**
      * 上传附件
      *
-     * @param
+     * @param name
+     * @param url
      * @param attGroupId
      * @return
      */
@@ -255,97 +389,6 @@ public class ZcPlatformApiUtil {
         }
         return attachmentId;
 
-    }
-
-    /**
-     * 询比单流标
-     *
-     * @param orderId
-     * @param noticeId
-     * @return
-     */
-    public static JSONObject cancelXBD(String orderId, String noticeId) {
-        String accessToken = getZcAccessToken();
-
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish");
-        httpRequest.setMethod(Method.POST);
-        httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
-        httpRequest.header("identity", "purchaser");
-        httpRequest.header("x-trade-employee-id", getZcUserId());
-
-        JSONObject cancelJson = new JSONObject() {
-            {
-                // 是否公示 1：是 0：否
-                put("closePublicity", 0);
-                //流标类型 1：终止询比 2：重新询比
-                put("closeType", 1);
-                // 流标原因
-                put("closeReason", 5);
-                // 其他原因
-                put("otherReason", "其它原因");
-                //关闭公告
-                put("notice", new JSONObject() {
-                    {
-                        put("noticeTitle", "流标公告");
-                    }
-                });
-            }
-        };
-        httpRequest.body(cancelJson.toString());
-
-        HttpResponse execute = httpRequest.execute();
-
-        return JSON.parseObject(execute.body());
-    }
-
-    /**
-     * 询比公告查看
-     *
-     * @param orderId
-     */
-    public static String viewNotice(String procurements, String orderId) {
-        String userAccessToken = getZcUserToken();
-        String config = "";
-        // 采购方式-询比价，单一品牌
-        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
-            JSONObject configJson = new JSONObject() {
-                {
-                    put("platform", "purchase");
-                    put("page", "InquiryDetail");
-                    put("params", new JSONObject() {
-                        {
-                            put("orderId", orderId);
-                        }
-                    });
-                    put("query", new JSONObject() {
-                        {
-                            put("loginCompanyId", 463);
-                        }
-                    });
-                }
-            };
-            config = configJson.toString();
-
-
-            // 采购方式-竞争性谈判
-        } else if ("competitive".equals(procurements)) {
-            // 竞争性谈判的相关代码
-
-
-            // 采购方式-单一供应商
-        } else if ("singlesupplier".equals(procurements)) {
-            // 单一供应商的相关代码
-
-
-            // 采购方式-招投采购
-        } else if ("bidprocurement".equals(procurements)) {
-            // 招投采购的相关代码
-        } else {
-            throw new KDBizException("该单据未选择采购方式!");
-        }
-
-        return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
     }
 
     /**
