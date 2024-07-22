@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.utils;
+package nckd.yanye.scm.common.utils;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -102,7 +102,7 @@ public class ZcPlatformApiUtil {
     }
 
     /**
-     * 获取员工id
+     * 获取当前登录员工的招采平台id
      *
      * @return
      */
@@ -204,8 +204,7 @@ public class ZcPlatformApiUtil {
     /**
      * 根据公司id查询公司信息
      *
-     * @param companyName      公司名称
-     * @param socialCreditCode 社会信用代码
+     * @param companyID
      * @return
      */
     public static JSONObject getCompanyIdById(String companyID) {
@@ -222,7 +221,7 @@ public class ZcPlatformApiUtil {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
 
-        return responseObj;
+        return responseObj.getJSONObject("data");
     }
 
 
@@ -313,7 +312,9 @@ public class ZcPlatformApiUtil {
     /**
      * 采购单公告查看
      *
+     * @param procurements
      * @param orderId
+     * @return
      */
     public static String viewNotice(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
@@ -393,6 +394,10 @@ public class ZcPlatformApiUtil {
 
     /**
      * 新增附件组，返回id
+     *
+     * @param bizType
+     * @param attachmentType
+     * @return
      */
     public static Integer addAttachmentGroup(String bizType, String attachmentType) {
         String accessToken = getZcAccessToken();
