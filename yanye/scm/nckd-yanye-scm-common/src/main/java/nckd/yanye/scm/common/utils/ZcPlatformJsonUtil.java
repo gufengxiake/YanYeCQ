@@ -78,6 +78,23 @@ public class ZcPlatformJsonUtil {
                 put("bookFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE1));
             }
         };
+        // 邀请供应商列表
+        DynamicObjectCollection inviteSupCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS3);
+        zbJson.put("inviteSup", new JSONArray() {
+            {
+                for (DynamicObject inviteSup : inviteSupCollection) {
+                    JSONObject inviteObj = new JSONObject() {
+                        {
+                            //供应商id
+                            put("supplierId", inviteSup.getString("fbasedataid." + SupplierConst.NCKD_PLATFORMSUPID));
+                            //供应商名称
+                            put("supplierName", inviteSup.getString("fbasedataid." + SupplierConst.NAME));
+                        }
+                    };
+                    this.add(inviteObj);
+                }
+            }
+        });
         // 保证金
         zbJson.put("guarantee", new JSONObject() {
             {

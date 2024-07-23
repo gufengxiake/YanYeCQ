@@ -1091,6 +1091,7 @@ public class PurapplybillConst {
     public static final String NCKD_NOTICECONTENT = "nckd_noticecontent";
     public static final String NCKD_DEPOSITENDTIME = "nckd_depositendtime";
     public static final String NCKD_INTERNALATTACHMENTS = "nckd_internalattachments";
+    public static final String NCKD_SUPPLIERS3 = "nckd_suppliers3";
 
 
 

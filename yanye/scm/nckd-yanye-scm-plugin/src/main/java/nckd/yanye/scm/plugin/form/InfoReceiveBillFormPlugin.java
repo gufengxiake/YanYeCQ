@@ -21,8 +21,8 @@ import java.util.EventObject;
 
 /**
  * 信息接收单-表单插件
- * @author liuxiao
  *
+ * @author liuxiao
  */
 public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
@@ -395,13 +395,14 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     }
 
     /**
-     * 查看成交通知书
+     * todo 查看成交通知书
      */
     private void viewNotice() {
 
     }
 
 
+    // todo 方法需要修改
     public static OperationResult addSupplier(String supplierId, String uscc) {
         //根据招采平台供应商id查询供应商信息
         DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(

@@ -207,7 +207,7 @@ public class ZcPlatformApiUtil {
      * @param companyID
      * @return
      */
-    public static JSONObject getCompanyIdById(String companyID) {
+    public static JSONObject getCompanyDataById(String companyID) {
         String accessToken = getZcAccessToken();
 
         HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/" + companyID);
@@ -424,6 +424,33 @@ public class ZcPlatformApiUtil {
             throw new KDBizException(String.valueOf(responseObj.get("message")));
         }
         return groupId;
+    }
+
+    /**
+     * 查询成交通知书
+     *
+     * @param orderId
+     * @param winId
+     * @return
+     */
+    public static JSONObject getWinData(Integer purchaseType, String orderId, String winId) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/wins/" + winId);
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.form("purchaseType", purchaseType);
+
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getJSONObject("data");
+        } else {
+            throw new KDBizException("查询成交通知书失败!");
+        }
     }
 }
 
