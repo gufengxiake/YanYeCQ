@@ -24,16 +24,21 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
     @Override
     public void registerListener(EventObject e) {
         //注册基础资料点击前的监听
-        BasedataEdit basedataEdit = this.getView().getControl("nckd_materielfield");
-        basedataEdit.addBeforeF7SelectListener(this);
+        BasedataEdit materielfieldEdit = this.getView().getControl("nckd_materielfield");
+        materielfieldEdit.addBeforeF7SelectListener(this);
+        BasedataEdit warehouseEdit = this.getView().getControl("nckd_warehouse");
+        warehouseEdit.addBeforeF7SelectListener(this);
+        BasedataEdit mainproduceEdit = this.getView().getControl("nckd_mainproduce");
+        mainproduceEdit.addBeforeF7SelectListener(this);
+
         super.registerListener(e);
     }
 
     @Override
     public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
         String name = beforeF7SelectEvent.getProperty().getName();
+        List<QFilter> qFilters = new ArrayList<>();
         if (name.equals("nckd_materielfield")){
-            List<QFilter> qFilters = new ArrayList<>();
             //构造物料库存信息查询条件（"1" 表示物料允许负库存）
             QFilter qFilter = new QFilter("isallowneginv", QCP.equals, "1");
             DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("bd_materialinventoryinfo", "id,masterid", new QFilter[]{qFilter});
@@ -45,7 +50,17 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
             //构造物料信息查询条件
             QFilter MetesqFilter = new QFilter("id", QCP.in, mates);
             qFilters.add(MetesqFilter);
-            beforeF7SelectEvent.setCustomQFilters(qFilters);
+        }else if (name.equals("nckd_warehouse")){
+            DynamicObject dynamicObject = (DynamicObject)this.getModel().getValue("org");
+            Long orgId = dynamicObject.getLong("id");
+            //构造仓库查询条件
+            QFilter qFilter = new QFilter("org", QCP.equals, orgId);
+            qFilters.add(qFilter);
+        }else if (name.equals("nckd_mainproduce")){
+            //构造物料生产信息查询条件("10030" 标识自制件)
+            QFilter qFilter = new QFilter("materialattr", QCP.equals, "10030");
+            qFilters.add(qFilter);
         }
+        beforeF7SelectEvent.setCustomQFilters(qFilters);
     }
 }
