@@ -251,7 +251,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                 }
             }
         }
-        e.cancel=true;
+        //e.cancel=true;
 
 
     }
