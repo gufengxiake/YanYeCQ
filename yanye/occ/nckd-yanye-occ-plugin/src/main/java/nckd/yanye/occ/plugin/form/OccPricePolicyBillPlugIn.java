@@ -17,7 +17,7 @@ import java.util.Date;
  * 表单插件
  * author:吴国强 2024-07-12
  */
-public class OccPricePolicy extends AbstractBillPlugIn {
+public class OccPricePolicyBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
 
