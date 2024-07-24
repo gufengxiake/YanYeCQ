@@ -19,7 +19,7 @@ import java.util.*;
  * @author : yaosijie
  * @date : 2024/7/23
  */
-public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implements Plugin, BeforeF7SelectListener {
+public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implements BeforeF7SelectListener {
 
     @Override
     public void registerListener(EventObject e) {

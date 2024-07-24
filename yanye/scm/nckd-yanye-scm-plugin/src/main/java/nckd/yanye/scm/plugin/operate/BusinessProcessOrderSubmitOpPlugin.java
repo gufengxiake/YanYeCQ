@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * @author : yaosijie
  * @date : 2024/7/24
  */
-public class BusinessProcessOrderSubmitOpPlugin extends AbstractOperationServicePlugIn implements Plugin {
+public class BusinessProcessOrderSubmitOpPlugin extends AbstractOperationServicePlugIn {
 
 
     @Override
