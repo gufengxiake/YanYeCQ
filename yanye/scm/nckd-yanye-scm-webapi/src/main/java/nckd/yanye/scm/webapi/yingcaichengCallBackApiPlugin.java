@@ -1,8 +1,10 @@
 package nckd.yanye.scm.webapi;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
@@ -12,7 +14,6 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.InforeceivebillConst;
-import nckd.yanye.scm.common.PurorderbillConst;
 import nckd.yanye.scm.common.SupplierConst;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.dto.Content;
@@ -56,55 +57,65 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         log.debug("时间戳:{}", timestamp);
         log.debug("签名:{}", signature);
         log.debug("加密消息体:{}", encryptBody);
-
-
-        // 判断节点编号-非成交业务不做处理
-        if (!"win-release".equals(businessNode)) {
-            return CustomApiResult.success("success");
-        }
-
-        // 签名校验
-        if (ZcEncryptUtil.checkSignature(signature, timestamp, nonce)) {
-            return CustomApiResult.success("success");
-        }
-
-        // 解密消息体
-        String decryptMsg = ZcEncryptUtil.decryptBody(encryptBody);
-        JSONObject msgObj = JSON.parseObject(decryptMsg);
-
-        // 采购单id
-        String orderId = msgObj.getString("orderId");
-        // 业主公司 id
-        String supplierId = msgObj.getJSONObject("tenderInfo").getString("ownerCompanyId");
-        // 新增供应商
-//        saveSupplier(supplierId);
-
-        // todo 生成信息接收单
-        // 成交通知书
-        JSONObject winData = ZcPlatformApiUtil.getWinData(msgObj.getInteger("purchaseType"),
-                orderId,
-                msgObj.getString("winId")
-        );
-        DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
-
+//
+//
+//        // 判断节点编号-非成交业务不做处理
+//        if (!"win-release".equals(businessNode)) {
+//            return CustomApiResult.success("success");
+//        }
+//
+//        // 签名校验
+//        if (ZcEncryptUtil.checkSignature(signature, timestamp, nonce)) {
+//            return CustomApiResult.success("success");
+//        }
+//
+//        // 解密消息体
+//        String decryptMsg = ZcEncryptUtil.decryptBody(encryptBody);
+//        JSONObject msgObj = JSON.parseObject(decryptMsg);
+//
+//        // 采购单id
+//        String orderId = msgObj.getString("orderId");
+//
+//        // todo 生成信息接收单
+//        // 成交通知书data
+//        JSONObject winData = ZcPlatformApiUtil.getWinData(msgObj.getInteger("purchaseType"),
+//                orderId,
+//                msgObj.getString("winId")
+//        );
+//        // 对应采购单data
+//        JSONObject orderData = ZcPlatformApiUtil.getOrderData(orderId, msgObj.getInteger("purchaseType"));
+//
+//        DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
+//
 //        // 单据编号
-//        receiveObject.set(InforeceivebillConst.BILLNO, );
+//        receiveObject.set(InforeceivebillConst.BILLNO, winData.getString("winId"));
 //        // 采购申请单单号
-//        receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, );
-//        // 采购类型
-//        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, );
-//        // 供应商id
-//        receiveObject.set(InforeceivebillConst.NCKD_SUPPLIERID, );
-//        // 供应商名称
-//        receiveObject.set(InforeceivebillConst.NCKD_SUPPLIERNAME, );
-//        // 社会统一信用代码
-//        receiveObject.set(InforeceivebillConst.NCKD_USCC, );
-//        // 招采成交价税合计
-//        receiveObject.set(InforeceivebillConst.NCKD_TOTALPRICE, );
-//        //
-
-
-
+////        receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, );
+//        // 采购类型:单次采购 or 协议供货
+//        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, orderData.getString("negotiatePurchaseType"));
+//        // todo 采购方式
+//        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, "");
+//        // todo 采购方式
+//        receiveObject.set(InforeceivebillConst.NCKD_PROCUREMENTS, msgObj.getString("purchaseType"));
+//        // 中标供应商分录
+//        JSONArray suppliers = winData.getJSONArray("suppliers");
+//        for (int i = 0; i < suppliers.size(); i++) {
+//            JSONObject supplier = suppliers.getJSONObject(i);
+//            String supplierId = supplier.getString("supplierId");
+//            String supplierName = supplier.getString("supplierName");
+//            // 新增供应商
+//            saveSupplier(supplierId);
+//            DynamicObjectCollection winEntryEntity = receiveObject.getDynamicObjectCollection("nckd_winentryentity");
+//            DynamicObject addNew = winEntryEntity.addNew();
+//            // 供应商id
+//            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_SUPPLIERID, supplierId);
+//            // 供应商名称
+//            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_SUPPLIERNAME, supplierName);
+//            // 社会统一信用代码
+//            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_USCC, supplier.getString("supplierScc"));
+//            // 中标价
+//            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_BIDPRICE, supplier.getString("bidPrice"));
+//        }
 
 
         // todo 生成 采购订单 或 采购合同

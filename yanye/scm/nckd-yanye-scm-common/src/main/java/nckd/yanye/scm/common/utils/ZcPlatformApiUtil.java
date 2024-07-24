@@ -426,12 +426,14 @@ public class ZcPlatformApiUtil {
         return groupId;
     }
 
+
     /**
      * 查询成交通知书
      *
-     * @param orderId
-     * @param winId
-     * @return
+     * @param purchaseType 采购类型
+     * @param orderId      采购单id
+     * @param winId        成交id
+     * @return 成交data
      */
     public static JSONObject getWinData(Integer purchaseType, String orderId, String winId) {
         String accessToken = getZcAccessToken();
@@ -450,6 +452,54 @@ public class ZcPlatformApiUtil {
             return responseObj.getJSONObject("data");
         } else {
             throw new KDBizException("查询成交通知书失败!");
+        }
+    }
+
+
+    public static JSONObject getOrderData(String orderId, Integer purchaseType) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId);
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.form("purchaseType", purchaseType);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getJSONObject("data");
+        } else {
+            throw new KDBizException("查询采购单失败!");
+        }
+    }
+
+
+    /**
+     * 查询成交授标
+     *
+     * @param purchaseType 采购类型
+     * @param orderId      采购单id
+     * @param awardId      授标id
+     * @return 授标data
+     */
+    public static JSONObject getCompanyDataById(Integer purchaseType, String orderId, String awardId) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/win-awards/" + awardId);
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.form("purchaseType", purchaseType);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getJSONObject("data");
+        } else {
+            throw new KDBizException("查询成交授标失败!");
         }
     }
 }
