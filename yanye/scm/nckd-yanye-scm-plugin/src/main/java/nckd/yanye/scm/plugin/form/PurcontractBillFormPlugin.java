@@ -10,8 +10,8 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import java.math.BigDecimal;
 
 /**
- * Module           :供应链云-采购管理-采购铬铜
- * Description      :采购铬铜表单插件
+ * Module           :供应链云-采购管理-采购合同
+ * Description      :采购合同表单插件
  *
  * @author : zhujintao
  * @date : 2024/7/16

@@ -25,7 +25,7 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-public class monthPlanBillPlugIn extends AbstractBillPlugIn {
+public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void afterCreateNewData(EventObject e) {
         // 获取当前页面的FormShowParameter对象
