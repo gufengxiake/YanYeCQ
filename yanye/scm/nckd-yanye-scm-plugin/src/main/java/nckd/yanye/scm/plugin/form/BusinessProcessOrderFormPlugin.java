@@ -23,6 +23,7 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
 
     @Override
     public void registerListener(EventObject e) {
+        super.registerListener(e);
         //注册基础资料点击前的监听
         BasedataEdit materielfieldEdit = this.getView().getControl("nckd_materielfield");
         materielfieldEdit.addBeforeF7SelectListener(this);
@@ -30,8 +31,12 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
         warehouseEdit.addBeforeF7SelectListener(this);
         BasedataEdit mainproduceEdit = this.getView().getControl("nckd_mainproduce");
         mainproduceEdit.addBeforeF7SelectListener(this);
+        BasedataEdit useworkshoptEdit = this.getView().getControl("nckd_useworkshop");
+        useworkshoptEdit.addBeforeF7SelectListener(this);
+        BasedataEdit wareorderworkshopEdit = this.getView().getControl("nckd_wareorderworkshop");
+        wareorderworkshopEdit.addBeforeF7SelectListener(this);
 
-        super.registerListener(e);
+
     }
 
     @Override
@@ -57,9 +62,22 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
             QFilter qFilter = new QFilter("org", QCP.equals, orgId);
             qFilters.add(qFilter);
         }else if (name.equals("nckd_mainproduce")){
-            //构造物料生产信息查询条件("10030" 标识自制件)
+            //构造物料生产信息查询条件("10030" 表示自制件)
             QFilter qFilter = new QFilter("materialattr", QCP.equals, "10030");
             qFilters.add(qFilter);
+        }else if (name.equals("nckd_useworkshop") || name.equals("nckd_wareorderworkshop")){
+            Set<Long> orgIds = new HashSet<>();
+            DynamicObject dynamicObject = (DynamicObject)this.getModel().getValue("org");
+            Long orgId = dynamicObject.getLong("id");
+            //构造业务单元分配部门查询条件
+            QFilter qFilter = new QFilter("fromorg", QCP.equals, orgId);
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("bos_org_orgrelation_dept", "id,toorg", new QFilter[]{qFilter});
+            Arrays.asList(dynamicObjects).forEach(t->{
+                orgIds.add(t.getLong("toorg.masterid"));
+            });
+            //构造行政组织查询条件
+            QFilter orgqFilter = new QFilter("id", QCP.in, orgIds);
+            qFilters.add(orgqFilter);
         }
         beforeF7SelectEvent.setCustomQFilters(qFilters);
     }
