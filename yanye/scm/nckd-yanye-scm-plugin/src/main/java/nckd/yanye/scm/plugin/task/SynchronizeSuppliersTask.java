@@ -21,8 +21,8 @@ import java.util.Map;
 
 /**
  * 同步招采平台供应商id-定时任务
- * @author liuxiao
  *
+ * @author liuxiao
  */
 public class SynchronizeSuppliersTask extends AbstractTask {
     @Override

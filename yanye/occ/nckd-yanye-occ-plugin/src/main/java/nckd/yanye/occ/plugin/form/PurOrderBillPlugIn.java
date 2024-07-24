@@ -22,7 +22,7 @@ import java.util.HashSet;
  * 表单插件
  * author:吴国强 2024-07-12
  */
-public class purOrderBillPlugIn extends AbstractBillPlugIn {
+public class PurOrderBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
@@ -56,7 +56,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
             EntryGrid EntryEntity = this.getControl("billentry");
             int[] rows = EntryEntity.getSelectRows();
             if (rows.length <= 0) {
-                this.getView().showMessage("请至少选中一行数据!");
+                this.getView().showErrorNotification("请至少选中一行数据!");
                 return;
             }
             HashSet<Object> matGroupIds = new HashSet<>();
@@ -90,7 +90,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
                 //物流路线
                 DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", 0);
                 if (address == null) {
-                    this.getView().showMessage("物流路线为空!");
+                    this.getView().showErrorNotification("物流路线为空!");
                     return;
                 }
                 Object addressId = address.getPkValue();
@@ -98,19 +98,19 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
                 //承运方类型
                 Object yfTepy = this.getModel().getValue("nckd_yunfeity", 0);
                 if (yfTepy == null||yfTepy.equals("")) {
-                    this.getView().showMessage("承运方类型不允许为空");
+                    this.getView().showErrorNotification("承运方类型不允许为空");
                     return;
                 } else if (yfTepy.equals("A")) {
                     //承运方类型为组织
                     DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("nckd_orgyf", 0);
                     if (cyOrg == null) {
-                        this.getView().showMessage("承运组织为空!");
+                        this.getView().showErrorNotification("承运组织为空!");
                         return;
                     }
                     Object cyOrgId = cyOrg.getPkValue();
                     DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_cys", 0);
                     if (supplier == null) {
-                        this.getView().showMessage("承运商为空");
+                        this.getView().showErrorNotification("承运商为空");
                         return;
                     }
                     Object supplierId = supplier.getPkValue();
@@ -120,14 +120,14 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
                     //承运方类型为供应商
                     DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("org", 0);
                     if (cyOrg == null) {
-                        this.getView().showMessage("采购组织为空!");
+                        this.getView().showErrorNotification("采购组织为空!");
                         return;
                     }
                     Object cyOrgId = cyOrg.getPkValue();
                     //承运方类型为供应商
                     DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_cys", 0);
                     if (supplier == null) {
-                        this.getView().showMessage("承运商为空");
+                        this.getView().showErrorNotification("承运商为空");
                         return;
                     }
                     Object supplierId = supplier.getPkValue();
@@ -164,7 +164,7 @@ public class purOrderBillPlugIn extends AbstractBillPlugIn {
 
             }
         } else {
-            this.getView().showMessage("未查询到对应单价,请检查采购合同是否维护运费单价!");
+            this.getView().showErrorNotification("未查询到对应单价,请检查采购合同是否维护运费单价!");
         }
     }
 }

@@ -10,10 +10,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-import nckd.yanye.scm.common.PurapplybillConst;
-import nckd.yanye.scm.common.PurcontractConst;
-import nckd.yanye.scm.common.PurorderbillConst;
-import nckd.yanye.scm.common.SupplierConst;
+import nckd.yanye.scm.common.*;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -65,7 +62,15 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 break;
             // 生成采购订单/合同
             case ADDORDER:
-                addOrder();
+                String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
+                // 1-单次采购-下推采购订单；2-协议采购-下推采购合同
+                if ("1".equals(purchaseType)) {
+                    addOrder();
+                } else if ("2".equals(purchaseType)) {
+                    addContract();
+                } else {
+                    throw new KDBizException("采购类型不正确!");
+                }
                 break;
             // 生成采购合同
             case ADDCONTRACT:
