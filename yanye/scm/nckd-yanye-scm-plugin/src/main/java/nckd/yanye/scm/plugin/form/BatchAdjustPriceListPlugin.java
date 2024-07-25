@@ -3,7 +3,6 @@ package nckd.yanye.scm.plugin.form;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -22,7 +21,6 @@ import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.fi.cal.business.account.CloseAccountParamBuilder;
 import kd.fi.cal.common.helper.AccountingSysHelper;
-import kd.fi.cal.common.util.DateUtils;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -134,20 +132,20 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
 
             // 获取下推目标单id
             Set<Object> targetBillIds = result.getTargetBillIds();
-            List<DynamicObject> list = new ArrayList<>();
-            for (Object billId : targetBillIds) {
-                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle(billId, "nckd_endpriceadjust");
-                DynamicObjectCollection entryentity = loadSingle.getDynamicObjectCollection("nckd_entryentity");
-                map.keySet().stream().forEach(s -> {
-                    String[] split = s.split("-");
-                    DynamicObject dynamicObject = entryentity.addNew();
-                    dynamicObject.set("nckd_supplieradjust", split[0]);
-                    dynamicObject.set("nckd_material", split[1]);
-                });
+            QFilter qf = new QFilter("id", QCP.in, targetBillIds);
+            DynamicObject[] load = BusinessDataServiceHelper.load("nckd_endpriceadjust","id,nckd_businessdate,nckd_accountingperiod,nckd_entryentity.nckd_supplieradjust,nckd_entryentity.nckd_material",qf.toArray());
+            DynamicObject dynamicObject1 = load[0];
+            dynamicObject1.set("nckd_businessdate",currentperiod.getDate("enddate"));
+            dynamicObject1.set("nckd_accountingperiod",currentperiod);
+            DynamicObjectCollection entryentity = dynamicObject1.getDynamicObjectCollection("nckd_entryentity");
+            map.keySet().stream().forEach(s -> {
+                String[] split = s.split("-");
+                DynamicObject dynamicObject = entryentity.addNew();
+                dynamicObject.set("nckd_supplieradjust", split[0]);
+                dynamicObject.set("nckd_material", split[1]);
+            });
 
-                list.add(loadSingle);
-            }
-            SaveServiceHelper.save((DynamicObject[]) list.toArray());
+            SaveServiceHelper.save(load);
         }
     }
 
