@@ -8,7 +8,6 @@ import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.util.CollectionUtils;
-import kd.sdk.plugin.Plugin;
 
 import java.util.ArrayList;
 import java.util.Arrays;

@@ -2,6 +2,8 @@ package nckd.yanye.scm.plugin.form;
 
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.form.control.EntryGrid;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
@@ -9,7 +11,6 @@ import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.sdk.plugin.Plugin;
 
 import java.util.*;
 /**
@@ -56,15 +57,25 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
             QFilter MetesqFilter = new QFilter("id", QCP.in, mates);
             qFilters.add(MetesqFilter);
         }else if (name.equals("nckd_warehouse")){
-            DynamicObject dynamicObject = (DynamicObject)this.getModel().getValue("org");
-            Long orgId = dynamicObject.getLong("id");
+            DynamicObjectCollection collection = this.getModel().getEntryEntity("nckd_bussinessentries");
+            EntryGrid entryGrid = this.getView().getControl("nckd_bussinessentries");
+            int[] rows = entryGrid.getSelectRows();
+            DynamicObject dynamicObject = collection.get(rows[0]);
+            Long orgId = dynamicObject.getLong("nckd_inventoryorg.masterid");
             //构造仓库查询条件
             QFilter qFilter = new QFilter("org", QCP.equals, orgId);
             qFilters.add(qFilter);
         }else if (name.equals("nckd_mainproduce")){
+            DynamicObjectCollection collection = this.getModel().getEntryEntity("nckd_bussinessentries");
+            EntryGrid entryGrid = this.getView().getControl("nckd_bussinessentries");
+            int[] rows = entryGrid.getSelectRows();
+            DynamicObject dynamicObject = collection.get(rows[0]);
+            String number = dynamicObject.getString("nckd_materielfield.number");
             //构造物料生产信息查询条件("10030" 表示自制件)
             QFilter qFilter = new QFilter("materialattr", QCP.equals, "10030");
+            QFilter mateqFilter = new QFilter("masterid.number", QCP.not_equals, number);
             qFilters.add(qFilter);
+            qFilters.add(mateqFilter);
         }else if (name.equals("nckd_useworkshop") || name.equals("nckd_wareorderworkshop")){
             Set<Long> orgIds = new HashSet<>();
             DynamicObject dynamicObject = (DynamicObject)this.getModel().getValue("org");
