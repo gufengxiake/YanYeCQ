@@ -57,8 +57,11 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
             QFilter MetesqFilter = new QFilter("id", QCP.in, mates);
             qFilters.add(MetesqFilter);
         }else if (name.equals("nckd_warehouse")){
-            DynamicObject dynamicObject = (DynamicObject)this.getModel().getValue("org");
-            Long orgId = dynamicObject.getLong("id");
+            DynamicObjectCollection collection = this.getModel().getEntryEntity("nckd_bussinessentries");
+            EntryGrid entryGrid = this.getView().getControl("nckd_bussinessentries");
+            int[] rows = entryGrid.getSelectRows();
+            DynamicObject dynamicObject = collection.get(rows[0]);
+            Long orgId = dynamicObject.getLong("nckd_inventoryorg.masterid");
             //构造仓库查询条件
             QFilter qFilter = new QFilter("org", QCP.equals, orgId);
             qFilters.add(qFilter);
