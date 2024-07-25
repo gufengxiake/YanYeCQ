@@ -21,7 +21,7 @@ import org.apache.commons.lang.time.DateFormatUtils;
 /**
  * @author husheng
  * @date 2024-07-24 18:02
- * @description     关账时校验存是否在未审核的月末调价单
+ * @description 关账-检查项插件-校验存是否在未审核的月末调价单
  */
 public class CloseAccountCheck extends DataEntityDataCheck {
     @Override

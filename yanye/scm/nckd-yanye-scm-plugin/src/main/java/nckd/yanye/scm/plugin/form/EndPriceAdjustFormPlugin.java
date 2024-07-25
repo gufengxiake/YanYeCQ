@@ -13,7 +13,7 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 /**
  * @author husheng
  * @date 2024-07-25 9:17
- * @description 根据供应商和物料计算新金额
+ * @description 月末调价单-表单插件
  */
 public class EndPriceAdjustFormPlugin extends AbstractBillPlugIn {
     @Override

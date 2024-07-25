@@ -26,7 +26,7 @@ import org.apache.commons.lang.StringUtils;
 /**
  * @author husheng
  * @date 2024-07-22 17:31
- * @description 暂估批量调价 下推新增月末调价单
+ * @description 暂估应付单-列表插件
  */
 public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
     @Override
@@ -41,10 +41,14 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         super.itemClick(evt);
 
         if (evt.getItemKey().equals("nckd_baritemap")) {
+            //暂估批量调价 下推新增月末调价单
             this.batchAdjustPrice();
         }
     }
 
+    /**
+     * 暂估批量调价 下推新增月末调价单
+     */
     private void batchAdjustPrice() {
         ListSelectedRowCollection selectedRows = this.getSelectedRows();
         Object[] keyValues = selectedRows.getPrimaryKeyValues();
