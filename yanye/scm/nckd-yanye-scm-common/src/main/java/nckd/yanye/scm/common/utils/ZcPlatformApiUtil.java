@@ -245,11 +245,8 @@ public class ZcPlatformApiUtil {
                 addorderUrl = "/sourcing/purchaser/hosp-negotiate-orders/v2/release";
                 break;
             case "ZB":
+            case "DY":
                 addorderUrl = "/sourcing/purchaser/bidding-orders/v2/publish";
-                break;
-            case "dy":
-                //todo 单一供应商接口url
-                addorderUrl = "";
                 break;
             default:
                 break;
@@ -353,7 +350,7 @@ public class ZcPlatformApiUtil {
         };
 
         String config = configJson.toString();
-        return (PASSPORTURL + "/third-access?accessToken=" + userAccessToken + "&config=" + config);
+        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
     }
 
     /**
@@ -456,6 +453,13 @@ public class ZcPlatformApiUtil {
     }
 
 
+    /**
+     * 查询采购单
+     *
+     * @param orderId
+     * @param purchaseType
+     * @return
+     */
     public static JSONObject getOrderData(String orderId, Integer purchaseType) {
         String accessToken = getZcAccessToken();
 
@@ -484,7 +488,7 @@ public class ZcPlatformApiUtil {
      * @param awardId      授标id
      * @return 授标data
      */
-    public static JSONObject getCompanyDataById(Integer purchaseType, String orderId, String awardId) {
+    public static JSONObject getAwardData(Integer purchaseType, String orderId, String awardId) {
         String accessToken = getZcAccessToken();
 
         HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/win-awards/" + awardId);
@@ -500,6 +504,80 @@ public class ZcPlatformApiUtil {
             return responseObj.getJSONObject("data");
         } else {
             throw new KDBizException("查询成交授标失败!");
+        }
+    }
+
+
+    /**
+     * 采购单公告查看
+     *
+     * @param procurements
+     * @param orderId
+     * @return
+     */
+    public static String viewWinNotice(String procurements, Integer orderId) {
+        String userAccessToken = getZcUserToken();
+        String page = null;
+        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            // 采购方式-询比价，单一品牌
+            page = "InquiryOrderWinner";
+        } else if ("competitive".equals(procurements)) {
+            // 采购方式-竞争性谈判
+            page = "NegotiationWinnerDetail";
+        } else if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
+            // 采购方式-单一供应商，招投采购
+            page = "BiddingWinnerDetail";
+        } else {
+            throw new KDBizException("该单据未选择采购方式!");
+        }
+
+        String finalPage = page;
+        JSONObject configJson = new JSONObject() {
+            {
+                put("platform", "purchase");
+                put("page", finalPage);
+                put("params", new JSONObject() {
+                    {
+                        put("orderId", orderId);
+                    }
+                });
+                put("query", new JSONObject() {
+                    {
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                                "江西省盐业集团股份有限公司", "91360000158260136N"
+                        ));
+                    }
+                });
+            }
+        };
+
+        String config = configJson.toString();
+        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
+    /**
+     * 查询采购单-品目列表
+     *
+     * @param purchaseType
+     * @param orderId
+     * @return
+     */
+    public static JSONArray getOrderItemsData(Integer purchaseType, String orderId) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/items");
+        httpRequest.setMethod(Method.GET);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.form("purchaseType", purchaseType);
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getJSONArray("data");
+        } else {
+            throw new KDBizException("查询品目列表失败!");
         }
     }
 }

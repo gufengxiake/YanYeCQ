@@ -11,6 +11,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.*;
+import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -27,13 +28,10 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      */
     final static String ADDSUPPLIER = "bar_addsupplier";
     /**
-     * 按钮标识-生成采购订单
+     * 按钮标识-生成采购订单或合同
      */
-    final static String ADDORDER = "bar_addorder";
-    /**
-     * 按钮标识-生成采购合同
-     */
-    final static String ADDCONTRACT = "bar_addcontract";
+    final static String ADDORDERORCONT = "bar_addorderorcont";
+
     /**
      * 按钮标识-查看成交通知书
      */
@@ -61,7 +59,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 addSup();
                 break;
             // 生成采购订单/合同
-            case ADDORDER:
+            case ADDORDERORCONT:
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
                 // 1-单次采购-下推采购订单；2-协议采购-下推采购合同
                 if ("1".equals(purchaseType)) {
@@ -71,10 +69,6 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 } else {
                     throw new KDBizException("采购类型不正确!");
                 }
-                break;
-            // 生成采购合同
-            case ADDCONTRACT:
-                addContract();
                 break;
             // 查看成交通知书
             case VIEWNOTICE:
@@ -403,7 +397,10 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      * todo 查看成交通知书
      */
     private void viewNotice() {
-
+        String procurements = "";
+        Integer orderId = 1;
+        String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
+        getView().openUrl(url);
     }
 
 
