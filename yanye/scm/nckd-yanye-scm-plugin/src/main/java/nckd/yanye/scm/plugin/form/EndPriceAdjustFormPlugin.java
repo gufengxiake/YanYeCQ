@@ -13,7 +13,7 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 /**
  * @author husheng
  * @date 2024-07-25 9:17
- * @description
+ * @description 根据供应商和物料计算新金额
  */
 public class EndPriceAdjustFormPlugin extends AbstractBillPlugIn {
     @Override
@@ -21,6 +21,7 @@ public class EndPriceAdjustFormPlugin extends AbstractBillPlugIn {
         super.propertyChanged(e);
 
         String name = e.getProperty().getName();
+        // 根据供应商和物料计算新金额
         if("nckd_adjustunitprice".equals(name)){
             ChangeData changeData = e.getChangeSet()[0];
             DynamicObject dynamicObject = changeData.getDataEntity();
