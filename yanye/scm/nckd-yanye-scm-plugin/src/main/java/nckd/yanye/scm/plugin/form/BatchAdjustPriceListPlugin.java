@@ -11,6 +11,7 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.exception.KDBizException;
+import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.list.plugin.AbstractListPlugin;
 import kd.bos.metadata.botp.ConvertRuleReader;
@@ -19,6 +20,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.util.CollectionUtils;
 import kd.fi.cal.business.account.CloseAccountParamBuilder;
 import kd.fi.cal.common.helper.AccountingSysHelper;
 import org.apache.commons.lang.StringUtils;
@@ -33,6 +35,7 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
     public void registerListener(EventObject e) {
         super.registerListener(e);
 
+        this.addItemClickListeners("nckd_baritemap");
         this.addItemClickListeners("nckd_baritemap");
     }
 
@@ -207,5 +210,39 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         }
 
         return closedate;
+    }
+
+    @Override
+    public void beforeItemClick(BeforeItemClickEvent evt) {
+        ListSelectedRowCollection selectedRows = this.getSelectedRows();
+        super.beforeItemClick(evt);
+        if (evt.getItemKey().equals("nckd_baritemap")){
+            Object[] keyValues = selectedRows.getPrimaryKeyValues();
+            QFilter qFilter = new QFilter("id", QCP.in, keyValues);
+            DynamicObject[] busbills = BusinessDataServiceHelper.load("ap_busbill", "id,sourcebillid,sourcebillno,billno", new QFilter[]{qFilter});
+            Set<String> billnos = new HashSet<>();
+            //暂估应付单map key:源单编码（采购入库单编码） value:暂估应付单
+            Map<String,DynamicObject> billnoMap = new HashMap<>();
+            for (DynamicObject dynamicObject : Arrays.asList(busbills)) {
+                billnos.add(dynamicObject.getString("sourcebillno"));
+                billnoMap.put(dynamicObject.getString("sourcebillno"),dynamicObject);
+            }
+            QFilter newrecordFilter = new QFilter("cal_feeshare_newrecord.entry.billno",QCP.in,billnos);
+            DynamicObject[] newrecordDynamics = BusinessDataServiceHelper.load("cal_feeshare_newrecord", "id,entry.billno", new QFilter[]{newrecordFilter});
+            DynamicObjectCollection collectionAll = new DynamicObjectCollection();
+            for (DynamicObject dynamicObject : Arrays.asList(newrecordDynamics)){
+                collectionAll.addAll(dynamicObject.getDynamicObjectCollection("entry"));
+            }
+            List<String> msg = new ArrayList<>();
+            Map<String,List<DynamicObject>> listMap = collectionAll.stream().collect(Collectors.groupingBy(t->t.getString("billno")));
+            for (Map.Entry<String,List<DynamicObject>> entry: listMap.entrySet()){
+                if(billnoMap.containsKey(entry.getKey())){
+                    msg.add("暂估应付单单据编号:"+billnoMap.get(entry.getKey()).getString("billno")+"对应的采购入库单“单据编号”已做费用分摊，不允许进行调价，请将采购入库单费用反分摊后在进行调价");
+                }
+            }
+            if (CollectionUtils.isNotEmpty(msg)){
+                throw new KDBizException(msg.stream().collect(Collectors.joining(",")));
+            }
+        }
     }
 }
