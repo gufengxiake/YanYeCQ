@@ -64,7 +64,14 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
             Long orgId = dynamicObject.getLong("nckd_inventoryorg.masterid");
             //构造仓库查询条件
             QFilter qFilter = new QFilter("org", QCP.equals, orgId);
-            qFilters.add(qFilter);
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("im_warehousesetup", "id,org,warehouse", new QFilter[]{qFilter});
+            Set<Long> warehouseIds = new HashSet<>();
+            for (DynamicObject dynamic : Arrays.asList(dynamicObjects)){
+                warehouseIds.add(dynamic.getLong("warehouse.masterid"));
+            }
+            //构造物料生产信息查询条件
+            QFilter producFilter = new QFilter("id", QCP.in, warehouseIds);
+            qFilters.add(producFilter);
         }else if (name.equals("nckd_mainproduce")){
             DynamicObjectCollection collection = this.getModel().getEntryEntity("nckd_bussinessentries");
             EntryGrid entryGrid = this.getView().getControl("nckd_bussinessentries");
