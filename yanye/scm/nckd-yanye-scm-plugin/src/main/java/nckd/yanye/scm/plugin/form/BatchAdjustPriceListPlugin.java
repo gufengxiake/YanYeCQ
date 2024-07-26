@@ -73,7 +73,6 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         Long orgId = null;
         String period = null;
         SimpleDateFormat format = new SimpleDateFormat("yyyyMM");
-        Map<String, List<DynamicObject>> map = new HashMap<>();
         for (DynamicObject dataEntity : busbills) {
             Long id = (Long) dataEntity.getDynamicObject("org").get("id");
             if (Objects.isNull(orgId)) {
@@ -96,12 +95,6 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
             if(bizdate.compareTo(closedate) < 0){
                 throw new KDBizException("当前期间存货核算模块必须未关账!");
             }
-
-            DynamicObjectCollection entry = dataEntity.getDynamicObjectCollection("entry");
-            Map<String, List<DynamicObject>> collect = entry.stream().collect(Collectors.groupingBy(dynamicObject -> {
-                return dynamicObject.getDynamicObject("nckd_supplier").getPkValue() + "-" + dynamicObject.getDynamicObject("e_material").getPkValue();
-            }));
-            map.putAll(collect);
 
             rows.add(new ListSelectedRow(dataEntity.getPkValue()));
         }
@@ -140,17 +133,26 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
             // 获取下推目标单id
             Set<Object> targetBillIds = result.getTargetBillIds();
             QFilter qf = new QFilter("id", QCP.in, targetBillIds);
-            DynamicObject[] load = BusinessDataServiceHelper.load("nckd_endpriceadjust","id,nckd_businessdate,nckd_accountingperiod,nckd_entryentity.nckd_supplieradjust,nckd_entryentity.nckd_material",qf.toArray());
-            DynamicObject dynamicObject1 = load[0];
-            dynamicObject1.set("nckd_businessdate",currentperiod.getDate("enddate"));
-            dynamicObject1.set("nckd_accountingperiod",currentperiod);
-            DynamicObjectCollection entryentity = dynamicObject1.getDynamicObjectCollection("nckd_entryentity");
-            map.keySet().stream().forEach(s -> {
-                String[] split = s.split("-");
-                DynamicObject dynamicObject = entryentity.addNew();
-                dynamicObject.set("nckd_supplieradjust", split[0]);
-                dynamicObject.set("nckd_material", split[1]);
-            });
+            DynamicObject[] load = BusinessDataServiceHelper.load("nckd_endpriceadjust",
+                    "id,nckd_businessdate,nckd_accountingperiod,entryentity.nckd_supplier,entryentity.nckd_materialcode,nckd_entryentity.nckd_supplieradjust,nckd_entryentity.nckd_material",
+                    qf.toArray());
+            for (DynamicObject object : load) {
+                object.set("nckd_businessdate",currentperiod.getDate("enddate"));
+                object.set("nckd_accountingperiod",currentperiod);
+
+                DynamicObjectCollection entry = object.getDynamicObjectCollection("entryentity");
+                Map<String, List<DynamicObject>> collect = entry.stream().collect(Collectors.groupingBy(dynamicObject -> {
+                    return dynamicObject.getDynamicObject("nckd_supplier").getPkValue() + "-" + dynamicObject.getDynamicObject("nckd_materialcode").getPkValue();
+                }));
+
+                DynamicObjectCollection entryentity = object.getDynamicObjectCollection("nckd_entryentity");
+                collect.keySet().stream().forEach(s -> {
+                    String[] split = s.split("-");
+                    DynamicObject dynamicObject = entryentity.addNew();
+                    dynamicObject.set("nckd_supplieradjust", split[0]);
+                    dynamicObject.set("nckd_material", split[1]);
+                });
+            }
 
             SaveServiceHelper.save(load);
         }

@@ -36,7 +36,10 @@ public class EndPriceAdjustFormPlugin extends AbstractBillPlugIn {
                 if(Objects.equals(supplieradjust,nckdSupplier) && Objects.equals(material,materialcode)){
                     //税率
                     DynamicObject nckdTaxrate = object.getDynamicObject("nckd_taxrate");
-                    BigDecimal taxrate = nckdTaxrate.getBigDecimal("taxrate").divide(new BigDecimal(100));
+                    BigDecimal taxrate = new BigDecimal(0);
+                    if(nckdTaxrate != null){
+                        nckdTaxrate.getBigDecimal("taxrate").divide(new BigDecimal(100));
+                    }
                     //数量
                     BigDecimal quantity = object.getBigDecimal("nckd_quantity");
                     //新含税单价
