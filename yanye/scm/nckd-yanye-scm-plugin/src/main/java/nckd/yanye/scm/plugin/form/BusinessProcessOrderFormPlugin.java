@@ -54,7 +54,7 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
                 mates.add(dynamicObject.getLong("masterid"));
             });
             //构造物料信息查询条件
-            QFilter MetesqFilter = new QFilter("id", QCP.in, mates);
+            QFilter MetesqFilter = new QFilter("masterid", QCP.in, mates);
             qFilters.add(MetesqFilter);
         }else if (name.equals("nckd_warehouse")){
             DynamicObjectCollection collection = this.getModel().getEntryEntity("nckd_bussinessentries");
