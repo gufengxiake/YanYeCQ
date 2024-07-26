@@ -90,11 +90,11 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                             Set<String> actions = new HashSet<>();
                             getCheckType(actions, excutecontrol);
                             checkDataByCheckType(actions, purorderbillEntry, purcontract, rowDataEntity, purorderbill);
-                        } else {
+                        } /*else {
                             int materialSeq = purorderbillEntry.getInt("seq");
                             String materialName = purorderbillEntry.getString("materialname");
                             this.addErrorMessage(rowDataEntity, String.format("第(%s)行的物料名称 (%s) 未关联合同id(conbillid)", materialSeq, materialName));
-                        }
+                        }*/
                     }
                 }
             }
@@ -153,7 +153,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                     int seq = purorderbillEntry.getInt("seq");
                     String purcontractBillno = purcontract.getString("billno");
                     int purcontractEntrySeq = purcontractEntry.getInt("seq");
-                    this.addErrorMessage(rowDataEntity, String.format("%s 物料明细第(%s)行，合同：(%s) 的物料明细第(%s)行，已订货数量超额",
+                    this.addErrorMessage(rowDataEntity, String.format("%s 物料明细第(%s)行，对应合同：(%s) 的物料明细第(%s)行，已订货数量超额",
                             billno, seq, purcontractBillno, purcontractEntrySeq));
                 }
             }
@@ -198,7 +198,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
              * @param purorderbillEntry
              * @param purcontract
              */
-            private void priceCheck(DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject billno) {
+            private void priceCheck(DynamicObject purorderbillEntry, DynamicObject purcontract, ExtendedDataEntity rowDataEntity, DynamicObject purorderbill) {
                 //获取采购订单分录的物料
                 DynamicObject material = purorderbillEntry.getDynamicObject("material");
                 DynamicObjectCollection purcontractEntryColl = purcontract.getDynamicObjectCollection("billentry");
@@ -212,6 +212,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                 BigDecimal nckdPriceandtaxlow = purcontractEntry.getBigDecimal("nckd_priceandtaxlow");
                 if (priceandtax.compareTo(nckdPriceandtaxup) > 0 || priceandtax.compareTo(nckdPriceandtaxlow) < 0) {
                     //"第(%s)行的物料名称 (%s) 与采购合同(%s)的第(%s)行存在重复物料"
+                    String billno = purorderbill.getString("billno");
                     int seq = purorderbillEntry.getInt("seq");
                     String purcontractBillno = purcontract.getString("billno");
                     int purcontractEntrySeq = purcontractEntry.getInt("seq");
