@@ -208,7 +208,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         String url = ZcPlatformApiUtil.viewNotice(procurements, orderId);
         // 跳转页面
         getView().openUrl(url);
-
     }
 
 

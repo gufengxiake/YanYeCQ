@@ -6,6 +6,8 @@ import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -22,6 +24,9 @@ import java.util.Objects;
  * @author liuxiao
  */
 public class ZcPlatformJsonUtil {
+
+    private static final Log log = LogFactory.getLog(ZcPlatformJsonUtil.class);
+
 
     /**
      * 公告发布-招标采购单
@@ -303,7 +308,9 @@ public class ZcPlatformJsonUtil {
                 for (DynamicObject obj : xbAtts) {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
-                    String url = (String) fbasedataId.get("url");
+                    String url = fbasedataId.getString("url");
+                    log.debug("询比文件name:{}", name);
+                    log.debug("询比文件url:{}", url);
                     ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);

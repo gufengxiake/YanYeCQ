@@ -138,9 +138,9 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 品目列表
         JSONArray orderItemsData = ZcPlatformApiUtil.getOrderItemsData(msgObj.getInteger("purchaseType"), orderId);
         HashMap<Integer, HashMap<String, String>> itemMap = new HashMap<>();
-        for (int i = 0; i < orderItemsData.size(); i++) {
+        for (Object orderItemsDatum : orderItemsData) {
             HashMap<String, String> map = new HashMap<>();
-            JSONObject item = (JSONObject) orderItemsData.get(i);
+            JSONObject item = (JSONObject) orderItemsDatum;
             // 品目id
             Integer itemId = item.getInteger("itemId");
             // 品目编号
@@ -168,6 +168,10 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getInteger("awardNum"));
             // 含税单价
             addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, item.getInteger("offerPrice"));
+            // 税率
+            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getInteger("offerTaxRate"));
+            // 价税合计
+            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, item.getInteger("offerPrice") * item.getInteger("awardNum"));
         }
 
         // 信息接收单状态-C：已审核
