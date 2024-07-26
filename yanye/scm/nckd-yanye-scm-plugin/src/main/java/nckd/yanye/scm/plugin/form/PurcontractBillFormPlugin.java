@@ -1,11 +1,11 @@
 package nckd.yanye.scm.plugin.form;
 
 import cn.hutool.core.util.ObjectUtil;
-import com.kingdee.util.StringUtils;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 
