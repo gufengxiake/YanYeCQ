@@ -16,14 +16,14 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn {
     public void propertyChanged(PropertyChangedArgs e) {
 
         String propName = e.getProperty().getName();
-        //商品
+        //批准数量
         if (propName.equals("approveqty")) {
-            DynamicObject billType= (DynamicObject) this.getModel().getValue("billtypeid",0);
+            DynamicObject billType= (DynamicObject) this.getModel().getValue("billtypedata",0);
             String name=billType.getString("name");
             Object id=billType.getPkValue();
             this.setStock(name,id);
 
-        }
+        }//单据类型
         else if(propName.equalsIgnoreCase("billtypedata")){
             DynamicObject billType= (DynamicObject) e.getChangeSet()[0].getNewValue();
             if(billType!=null){
@@ -69,7 +69,7 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn {
             if(dept!=null){
                 Object deptId=dept.getPkValue();
 
-                //从部门仓库设置基础资料中获取对应仓库
+                //从部门 仓库设置基础资料中获取对应仓库
                 // 构造QFilter
                 QFilter qFilter = new QFilter("createorg", QCP.equals,orgId)
                         .and("status",QCP.equals,"C")
@@ -89,4 +89,6 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn {
             }
         }
     }
+
+
 }

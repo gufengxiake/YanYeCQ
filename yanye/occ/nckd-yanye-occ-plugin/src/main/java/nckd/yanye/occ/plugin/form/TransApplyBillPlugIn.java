@@ -84,26 +84,25 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
             Object ywyId = ywy.getPkValue();
             //单据类型
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-            if(billtype==null){
+            if (billtype == null) {
                 this.getView().showErrorNotification("单据类型为空");
                 return;
             }
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
-            if(id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")){
-                DynamicObject org= (DynamicObject) this.getModel().getValue("org",0);
-                Object orgId=org.getPkValue();
+            if (id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")) {
+                DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+                Object orgId = org.getPkValue();
                 ListShowParameter listPara = ShowFormHelper.createShowListForm("nckd_xsyjhyebf", true);//第二个参数为是否支持多选;
                 ListFilterParameter listFilterParameter = new ListFilterParameter();
                 listFilterParameter.setFilter(new QFilter("nckd_qty", QCP.not_equals, 0)
                         .and("nckd_fapplyuserid.id", QCP.equals, ywyId)
-                        .and("nckd_orgfield.id",QCP.equals,orgId));
+                        .and("nckd_orgfield.id", QCP.equals, orgId));
                 listPara.setListFilterParameter(listFilterParameter);
                 // 设置回调
                 listPara.setCloseCallBack(new CloseCallBack(this, "return"));
                 this.getView().showForm(listPara);
-            }
-            else {
+            } else {
                 this.getView().showErrorNotification("单据类型不为借货归还申请,请修改!");
             }
 
@@ -128,17 +127,23 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
 
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("nckd_xsyjhyebf",
-                    "id,nckd_fmaterialid.number number,nckd_qty", qFilter.toArray(), "");
-            if(collections.size()>0){
+                    "id,nckd_fmaterialid.number number,nckd_qty,nckd_fwarehouseid.number stocknumber,nckd_lotnum", qFilter.toArray(), "");
+            if (collections.size() > 0) {
                 //清空单据体
                 this.getModel().deleteEntryData("billentry");
-                this.getModel().batchCreateNewEntryRow("billentry",collections.size());
-                int row=0;
+                this.getModel().batchCreateNewEntryRow("billentry", collections.size());
+                int row = 0;
                 for (DynamicObject object : collections) {
-                    Object matId= object.get("number");
-                    BigDecimal qty= object.getBigDecimal("nckd_qty");
-                    this.getModel().setItemValueByNumber("material",matId.toString(),row);
-                    this.getModel().setValue("qty",qty,row);
+                    Object matId = object.get("number");//物料编码
+                    BigDecimal qty = object.getBigDecimal("nckd_qty");//库存数量
+                    String stockNumber = object.getString("stocknumber");//仓库编码
+                    String lotNum = object.getString("nckd_lotnum");//批号
+                    this.getModel().setItemValueByNumber("material", matId.toString(), row);
+                    this.getModel().setValue("qty", qty, row);
+                    this.getModel().setItemValueByNumber("warehouse", stockNumber, row);
+                    this.getModel().setValue("lotnumber", lotNum, row);
+                    this.getModel().setItemValueByNumber("lot",lotNum,row);
+
                     row++;
                 }
             }

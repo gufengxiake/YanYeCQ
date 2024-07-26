@@ -121,17 +121,24 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
 
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("nckd_xsyjhyebf",
-                    "id,nckd_fmaterialid.number number,nckd_qty", qFilter.toArray(), "");
+                    "id,nckd_fmaterialid.number number,nckd_qty,nckd_fwarehouseid.number stocknumber,nckd_lotnum", qFilter.toArray(), "");
             if(collections.size()>0){
                 //清空单据体
                 this.getModel().deleteEntryData("billentry");
                 this.getModel().batchCreateNewEntryRow("billentry",collections.size());
                 int row=0;
                 for (DynamicObject object : collections) {
-                    Object matId= object.get("number");
-                    BigDecimal qty= object.getBigDecimal("nckd_qty");
+                    Object matId = object.get("number");//物料编码
+                    BigDecimal qty = object.getBigDecimal("nckd_qty");//库存数量
+                    String stockNumber = object.getString("stocknumber");//仓库编码
+                    String lotNum = object.getString("nckd_lotnum");//批号
                     this.getModel().setItemValueByNumber("material",matId.toString(),row);
                     this.getModel().setValue("qty",qty,row);
+                    this.getModel().setItemValueByNumber("outwarehouse", stockNumber, row);//调出仓库
+                    this.getModel().setValue("lotnumber", lotNum, row);//调出批号
+                    this.getModel().setValue("inlotnumber", lotNum, row);//调入批号
+                    this.getModel().setItemValueByNumber("lot",lotNum,row);//调出批号主档
+                    this.getModel().setItemValueByNumber("inlot",lotNum,row);//调入批号主档
                     row++;
                 }
             }
