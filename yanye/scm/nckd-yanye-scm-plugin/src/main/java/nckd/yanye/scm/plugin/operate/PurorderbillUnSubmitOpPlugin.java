@@ -31,6 +31,7 @@ public class PurorderbillUnSubmitOpPlugin extends AbstractOperationServicePlugIn
         List<String> fieldKeys = e.getFieldKeys();
         fieldKeys.add("conbillid");
         fieldKeys.add("material");
+        fieldKeys.add("qty");
     }
 
     /**
