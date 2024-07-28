@@ -2,9 +2,6 @@ package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.ExtendedDataEntity;
-import kd.bos.entity.MainEntityType;
-import kd.bos.entity.formula.RowDataModel;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
@@ -23,7 +20,6 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn  {
 
     /**
      * 操作执行前，准备加载单据数据之前，触发此事件
-     * @remark
      * 插件可以在此事件中，指定需要加载的字段
      */
     @Override
@@ -40,7 +36,6 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn  {
 
     /**
      * 操作校验执行完毕，开启事务保存单据之前，触发此事件
-     * @remark
      * 可以在此事件，对单据数据包进行整理、取消操作
      */
     @Override
