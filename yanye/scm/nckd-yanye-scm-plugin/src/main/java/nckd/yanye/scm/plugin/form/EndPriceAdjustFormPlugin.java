@@ -38,7 +38,7 @@ public class EndPriceAdjustFormPlugin extends AbstractBillPlugIn {
                     DynamicObject nckdTaxrate = object.getDynamicObject("nckd_taxrate");
                     BigDecimal taxrate = new BigDecimal(0);
                     if(nckdTaxrate != null){
-                        nckdTaxrate.getBigDecimal("taxrate").divide(new BigDecimal(100));
+                        taxrate = nckdTaxrate.getBigDecimal("taxrate").divide(new BigDecimal(100));
                     }
                     //数量
                     BigDecimal quantity = object.getBigDecimal("nckd_quantity");
