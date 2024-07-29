@@ -63,19 +63,16 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
 
             // 隐藏：聘任终止日期
             this.getView().setVisible(false , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(false);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(false);
 
             // 隐藏：聘任单位
             this.getView().setVisible(false , "nckd_pinrenorg");
             BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
             apiaddressProperty3.setMustInput(false);
             BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop2.setMustInput(false);
+            prop3.setMustInput(false);
         }
 
+        // “是否公司聘任”字段
         Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
         if(nckd_ispinren) {
             // 显示：聘任日期
@@ -86,16 +83,12 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
             prop.setMustInput(true);
             // 显示：聘任终止日期
             this.getView().setVisible(true , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(true);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(true);
             // 显示：聘任单位
             this.getView().setVisible(true , "nckd_pinrenorg");
             BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
             apiaddressProperty3.setMustInput(true);
             BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop2.setMustInput(true);
+            prop3.setMustInput(true);
         }else {
             // 隐藏：聘任单位
             this.getView().setVisible(false , "nckd_pinrenorg");
@@ -105,7 +98,7 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
             prop3.setMustInput(false);
             // 隐藏：聘任日期
             this.getView().setVisible(false , "nckd_pinrendate");
-            // API地址设置为非必填，页面上的必填和数据校验的必填中去掉
+            // 页面上的必填和数据校验的必填中去掉
             DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
             apiaddressProperty.setMustInput(false);
             DateProp prop = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrendate");
@@ -113,10 +106,6 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
 
             // 隐藏：聘任终止日期
             this.getView().setVisible(false , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(false);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(false);
 
         }
 
@@ -135,17 +124,39 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
         public void propertyChanged(PropertyChangedArgs e) {
         String fieldKey = e.getProperty().getName();
         IDataModel model = this.getModel();
-        // 1)
+        // 1) 类型：nckd_type 职称，职业技能
         if(StringUtils.equals("nckd_type", fieldKey)) {
             // 类型 值切换
             String nckd_type = (String)model.getValue("nckd_type");
             // 当“类型”字段选择码值为“职称”(zhicheng)后，展示“是否公司聘任”该字段，
             if("zhicheng".equals(nckd_type)) {
-                // 显示“是否公司聘任”该字段
+                // 1.1)职称,显示“是否公司聘任”该字段
                 this.getView().setVisible(true , "nckd_ispinren");
             } else {
+                // 1.2)职业技能
+                // 置空4个值
+                this.getModel().setValue("nckd_ispinren",false); // 是否公司聘任,不选
+                this.getModel().setValue("nckd_pinrendate",null); // 聘任日期
+                this.getModel().setValue("nckd_pinrenenddaten",null); // 聘任终止日期
+                this.getModel().setValue("nckd_pinrenorg",null); // 聘任单位
                 // 隐藏,“是否公司聘任”该字段
                 this.getView().setVisible(false , "nckd_ispinren");
+                // 隐藏：聘任日期
+                this.getView().setVisible(false , "nckd_pinrendate");
+                DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
+                apiaddressProperty.setMustInput(false);
+                DateProp prop = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrendate");
+                prop.setMustInput(false);
+
+                // 隐藏：聘任终止日期
+                this.getView().setVisible(false , "nckd_pinrenenddaten");
+
+                // 隐藏：聘任单位
+                this.getView().setVisible(false , "nckd_pinrenorg");
+                BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
+                apiaddressProperty3.setMustInput(false);
+                BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
+                prop3.setMustInput(false);
             }
         }
        // 2)
@@ -156,11 +167,11 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
                 this.getView().showMessage("该职称/职业技能登记将保存为最高职称/职业技能");
             }
         }
-        // 3)
+        // 3)是否公司聘任
         if(StringUtils.equals("nckd_ispinren", fieldKey)) {
             // 是否公司聘任 值切换
-            Boolean nckd_iszuigao = (Boolean)model.getValue("nckd_ispinren");
-            if(nckd_iszuigao) {
+            Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
+            if(nckd_ispinren) {
                 // 显示：聘任单位
                 this.getView().setVisible(true , "nckd_pinrenorg");
                 BasedataEdit apiaddressPropertyp1 = (BasedataEdit)this.getControl("nckd_pinrenorg");
@@ -180,6 +191,10 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
                 DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
                 prop2.setMustInput(true);
             }else {
+                // 置空3个值
+                this.getModel().setValue("nckd_pinrendate",null); // 聘任日期
+                this.getModel().setValue("nckd_pinrenenddaten",null); // 聘任终止日期
+                this.getModel().setValue("nckd_pinrenorg",null); // 聘任单位
                 // 隐藏：聘任日期
                 this.getView().setVisible(false , "nckd_pinrendate");
                 // API地址设置为非必填，页面上的必填和数据校验的必填中去掉

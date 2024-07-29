@@ -26,7 +26,7 @@ public class EmpEmpOutCardEditPlugin extends AbstractFormDrawEdit {
             // 系统外任职经历基础页面 hrpi_emporgrelout
             this.setValueFromDb(formShowParameter, "nckd_hrpi_emporgrelout", (String)null);
         }
-
+//        this.getView().setVisible(true, "bar_modify");
         this.getModel().setDataChanged(false);
     }
 

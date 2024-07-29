@@ -31,13 +31,13 @@ public class EmpPorgrelOutListPlugin extends InfoClassifyListPlugin {
     }
 
     protected void beforeDoOperateForListBtnNew(BeforeDoOperationEventArgs args, InfoClassifyEntityKeyDTO infoClassifyEntityKeyDTO) {
-        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListBtnNew(infoClassifyEntityKeyDTO, ResManager.loadKDString("系统外任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
+        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListBtnNew(infoClassifyEntityKeyDTO, ResManager.loadKDString("上线前任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
         formShowParameter.setCloseCallBack(new CloseCallBack(this, InfoClassifyFormOperateEnum.FORM_BTN_SAVE.getOperateKey()));
         this.getView().showForm(formShowParameter);
     }
 
     protected void billListHyperLinkClick(HyperLinkClickArgs args, Long pkId, InfoClassifyEntityKeyDTO infoClassifyEntityKeyDTO) {
-        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListHyperLink(pkId, infoClassifyEntityKeyDTO, ResManager.loadKDString("系统外任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
+        FormShowParameter formShowParameter = InfoClassifyOpenWindowUtil.openWindowForListHyperLink(pkId, infoClassifyEntityKeyDTO, ResManager.loadKDString("上线前任职经历", "porgreloutListPlugin_0", "hr-hspm-formplugin", new Object[0]));
         formShowParameter.setCloseCallBack(new CloseCallBack(this, InfoClassifyFormOperateEnum.FORM_BTN_UPDATE.getOperateKey()));
         this.getView().showForm(formShowParameter);
     }

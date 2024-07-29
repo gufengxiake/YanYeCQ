@@ -68,7 +68,7 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
 
         Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
         if(nckd_ispinren) {
-            // 显示：聘任日期
+            // 勾选了“是否聘任”，显示：聘任日期
             this.getView().setVisible(true , "nckd_pinrendate");
             DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
             apiaddressProperty.setMustInput(true);
@@ -164,7 +164,7 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
                 prop2.setMustInput(true);
             }else {
                 // 隐藏：聘任日期
-//                this.getView().setVisible(false , "nckd_pinrendate");
+                this.getView().setVisible(false , "nckd_pinrendate");
                 // API地址设置为非必填，页面上的必填和数据校验的必填中去掉
                 DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
                 apiaddressProperty.setMustInput(false);
