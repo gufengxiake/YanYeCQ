@@ -88,8 +88,8 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             case ANNOUNCEMENT:
                 viewNotice(model);
                 break;
-            case "制作标书":
-                // todo 询比采购线上评审文件制作
+            case "bar_baritemap":
+                makeBidFile(model);
                 break;
             // 作废
             case CANCELORDER:
@@ -126,9 +126,9 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("采购申请单未审核!");
         }
 
-        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == true)) {
-            throw new KDBizException("该采购申请单已经推送至招采平台!");
-        }
+//        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == true)) {
+//            throw new KDBizException("该采购申请单已经推送至招采平台!");
+//        }
 
         if (((boolean) model.getValue(PurapplybillConst.NCKD_WHETHERPUSH) == false) ||
                 model.getValue(PurapplybillConst.NCKD_PROCUREMENTS) == "annualcontract") {
@@ -211,7 +211,17 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     }
 
 
-
+    /**
+     * 制作标书
+     */
+    private void makeBidFile(IDataModel model) {
+        String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
+        String reviewId = "2776";
+        String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
+        String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
+        // 跳转页面
+        getView().openUrl(url);
+    }
 }
 
 

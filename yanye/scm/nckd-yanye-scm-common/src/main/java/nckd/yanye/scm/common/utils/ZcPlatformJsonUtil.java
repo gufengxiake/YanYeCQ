@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.fileservice.FileServiceFactory;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.orm.ORM;
@@ -35,6 +36,8 @@ public class ZcPlatformJsonUtil {
      * @return
      */
     public static JSONObject getZbJson(IDataModel model) {
+        String biddingMethod = (String) model.getValue(PurapplybillConst.NCKD_BIDDINGMETHOD);
+
         //组装json
         JSONObject zbJson = new JSONObject() {
             {
@@ -66,7 +69,7 @@ public class ZcPlatformJsonUtil {
                 // 招标地址-详细地址
                 put("detailAddress", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR3));
                 // 招标方式
-                put("biddingMethod", model.getValue(PurapplybillConst.NCKD_BIDDINGMETHOD));
+                put("biddingMethod", biddingMethod);
                 // 发布方式
                 put("releaseMethod", model.getValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD));
                 // 公开范围
@@ -83,23 +86,25 @@ public class ZcPlatformJsonUtil {
                 put("bookFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE1));
             }
         };
-        // 邀请供应商列表
-        DynamicObjectCollection inviteSupCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS3);
-        zbJson.put("inviteSup", new JSONArray() {
-            {
-                for (DynamicObject inviteSup : inviteSupCollection) {
-                    JSONObject inviteObj = new JSONObject() {
-                        {
-                            //供应商id
-                            put("supplierId", inviteSup.getString("fbasedataid." + SupplierConst.NCKD_PLATFORMSUPID));
-                            //供应商名称
-                            put("supplierName", inviteSup.getString("fbasedataid." + SupplierConst.NAME));
-                        }
-                    };
-                    this.add(inviteObj);
+        // 邀请供应商列表-邀请招标
+        if ("2".equals(biddingMethod)) {
+            DynamicObjectCollection inviteSupCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS3);
+            zbJson.put("inviteSup", new JSONArray() {
+                {
+                    for (DynamicObject inviteSup : inviteSupCollection) {
+                        JSONObject inviteObj = new JSONObject() {
+                            {
+                                //供应商id
+                                put("supplierId", inviteSup.getString("fbasedataid." + SupplierConst.NCKD_PLATFORMSUPID));
+                                //供应商名称
+                                put("supplierName", inviteSup.getString("fbasedataid." + SupplierConst.NAME));
+                            }
+                        };
+                        this.add(inviteObj);
+                    }
                 }
-            }
-        });
+            });
+        }
         // 保证金
         zbJson.put("guarantee", new JSONObject() {
             {
@@ -247,7 +252,7 @@ public class ZcPlatformJsonUtil {
                 //询比方式
                 String inquiryMethod = (String) model.getValue(PurapplybillConst.NCKD_INQUIRYMETHOD);
                 put("inquiryType", inquiryMethod);
-                //fixme 供应商。询比方式邀请询比必填
+                //邀请供应商。询比方式邀请询比必填
                 if ("1".equals(inquiryMethod)) {
                     DynamicObjectCollection inviteCollection = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_SUPPLIERS);
                     xbJson.put("inviteList", new JSONArray() {
@@ -278,6 +283,7 @@ public class ZcPlatformJsonUtil {
 
                 //报价时段查看供应商参与名单
                 put("isSignupShowListing", model.getValue(PurapplybillConst.NCKD_VIEWLIST));
+
                 //报名审核-邀请询比，不传
                 if (!"1".equals(inquiryMethod)) {
                     put("checkType", model.getValue(PurapplybillConst.NCKD_REGISTERAUDIT));
@@ -286,11 +292,16 @@ public class ZcPlatformJsonUtil {
                 //评审办法
                 put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD));
 
-                //是否需要线上评审
-                put("isReview", model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL));
+                //todo 是否需要线上评审。选是按钮制作电子标书
+                String isReview = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL);
+                put("isReview", isReview);
+                if ("1".equals(isReview)) {
+                    //todo
+                }
 
                 //备注说明
                 put("remarks", model.getValue(PurapplybillConst.NCKD_REMARKS));
+
                 //公告标题-如果是邀请询比就取 邀请函标题
                 if ("1".equals(inquiryMethod)) {
                     put("noticeTitle", model.getValue(PurapplybillConst.NCKD_INVITATIONTITLE));
@@ -309,9 +320,9 @@ public class ZcPlatformJsonUtil {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = fbasedataId.getString("url");
-                    log.debug("询比文件name:{}", name);
-                    log.debug("询比文件url:{}", url);
-                    ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                    log.debug("询比单询比文件名:{}。真实路径:{}。", name, realPath);
+                    ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
                 //内部文件
@@ -333,6 +344,8 @@ public class ZcPlatformJsonUtil {
                         for (DynamicObject materiel : materielEntry) {
                             JSONObject materielObject = new JSONObject() {
                                 {
+                                    // spuCode
+                                    put("spuCode", materiel.getString("seq"));
                                     // 品目名称
                                     put("materielName", materiel.get(PurapplybillConst.BILLENTRY_MATERIALNAME));
                                     // 计量单位
@@ -350,7 +363,7 @@ public class ZcPlatformJsonUtil {
             }
         });
 
-        return xbJson;
+        return addItemSchemaList(xbJson);
     }
 
     /**
@@ -625,6 +638,123 @@ public class ZcPlatformJsonUtil {
         };
 
         return zbCancelJson;
+    }
+
+
+    /**
+     * 添加品目元数据
+     *
+     * @param jsonObject
+     * @return
+     */
+    public static JSONObject addItemSchemaList(JSONObject jsonObject) {
+        jsonObject.put("itemSchemaList", new JSONArray()
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "品目编码")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "materielCode")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 1)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "品目名称")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "materielName")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 2)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "采购量")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "materielNum")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 3)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "计量单位")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "unitType")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 4)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "预算单价")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "budgetUnitPrice")
+                        .fluentPut("supplierVisible", 2)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 5)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "参数型号")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "materielModel")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 6)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "品牌/制造商")
+                        .fluentPut("defineType", 2)
+                        .fluentPut("defineCode", "materielBrand")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "交货地点")
+                        .fluentPut("defineType", 2)
+                        .fluentPut("defineCode", "deliveryAddress")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "交货周期（天）")
+                        .fluentPut("defineType", 2)
+                        .fluentPut("defineCode", "deliveryDay")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "参数型号")
+                        .fluentPut("defineType", 3)
+                        .fluentPut("defineCode", "offerMaterielModel")
+                        .fluentPut("supplierRequire", 2)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "品牌/制造商")
+                        .fluentPut("defineType", 3)
+                        .fluentPut("defineCode", "offerMaterielBrand")
+                        .fluentPut("supplierRequire", 2)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "交货周期（天）")
+                        .fluentPut("defineType", 3)
+                        .fluentPut("defineCode", "offerDeliveryDay")
+                        .fluentPut("supplierRequire", 2)
+                        .fluentPut("isEnable", 1)
+                        .fluentPut("columnType", 0)
+                )
+                .fluentAdd(new JSONObject()
+                        .fluentPut("columnName", "控制价")
+                        .fluentPut("defineType", 1)
+                        .fluentPut("defineCode", "controlPrice")
+                        .fluentPut("supplierVisible", 1)
+                        .fluentPut("isEnable", 0)
+                        .fluentPut("columnType", 7)
+                )
+        );
+        return jsonObject;
     }
 
 }

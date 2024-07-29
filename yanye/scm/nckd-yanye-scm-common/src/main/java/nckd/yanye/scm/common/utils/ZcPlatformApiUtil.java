@@ -580,6 +580,81 @@ public class ZcPlatformApiUtil {
             throw new KDBizException("查询品目列表失败!");
         }
     }
+
+    /**
+     * 线上评审文件制作
+     *
+     * @param procurements 采购方式
+     * @param reviewId     评审单id
+     * @param reviewMode   评审模式
+     * @return url
+     */
+    public static String getOnlineReview(String procurements, String reviewId, String reviewMode) {
+
+        String userAccessToken = getZcUserToken();
+        String page = null;
+        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
+            // 采购方式-询比价，单一品牌
+            page = "InquiryOnlineReviewSetting";
+        } else if ("competitive".equals(procurements)) {
+            // 采购方式-竞争性谈判
+            page = "NegotiationOnlineReviewSetting";
+        } else if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
+            // 采购方式-单一供应商，招投采购
+            page = "KpbBidFileForm";
+        } else {
+            throw new KDBizException("该单据未选择采购方式!");
+        }
+
+        String finalPage = page;
+        JSONObject configJson = new JSONObject() {
+            {
+                put("platform", "purchase");
+                put("page", finalPage);
+                put("query", new JSONObject() {
+                    {
+                        // 登录公司id，选填
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                                "江西省盐业集团股份有限公司", "91360000158260136N"
+                        ));
+                        // 评审单id，必填
+                        put("reviewId", reviewId);
+                        // 评审模式，必填
+                        put("reviewMode", reviewMode);
+                        // 第三方跳转标识
+                        put("from", "ThirdAccess");
+                    }
+                });
+            }
+        };
+
+        if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
+            configJson = new JSONObject() {
+                {
+                    put("platform", "purchase");
+                    put("page", "KpbBidFileForm");
+                    put("params", new JSONObject() {
+                        {
+                            // 电子标书id，必填
+                            put("kpbFileId", reviewId);
+                        }
+                    });
+                }
+            };
+            configJson.put("query", new JSONObject() {
+                {
+                    // 登录公司id，选填
+                    put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                            "江西省盐业集团股份有限公司", "91360000158260136N"
+                    ));
+                }
+            });
+        }
+
+        String config = configJson.toString();
+        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
+    }
+
 }
 
 
