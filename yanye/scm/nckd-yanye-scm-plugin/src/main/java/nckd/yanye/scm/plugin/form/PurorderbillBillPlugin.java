@@ -78,7 +78,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         for (DynamicObject entry : purcontractEntryList) {
                             JSONObject json = new JSONObject();
-                            json.put("conbillentity",purcontractBill.getPkValue());
+                            json.put("conbillentity",purcontractBill);
                             json.put("id", purcontractBill.getString("id"));
                             json.put("billno", purcontractBill.getString("billno"));
                             json.put("entryid", entry.getString("id"));
@@ -96,7 +96,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         //int seq = dy.getInt("seq");
                         JSONObject json = map.get(dy.getDynamicObject("material").getPkValue());
                         if (json != null) {
-                            dy.set("conbillentity",json.get("conbillentity"));
+                            dy.set("conbillentity",((DynamicObject)json.get("conbillentity")).getDynamicObjectType().getName());
                             dy.set("conbillid", json.get("id"));
                             dy.set("conbillnumber", json.get("billno"));
                             dy.set("conbillentryid", json.get("entryid"));
@@ -177,7 +177,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         Map<Object, DynamicObject> purcontractEntryMap = purcontractEntryList.stream().collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v));
                         DynamicObject purcontractEntry = purcontractEntryMap.get(material.getPkValue());
-                        this.getModel().setValue("conbillentity", purcontractBill.getPkValue(), rowIndex);
+                        this.getModel().setValue("conbillentity", purcontractBill.getDynamicObjectType().getName(), rowIndex);
                         this.getModel().setValue("conbillid", purcontractBill.get("id"), rowIndex);
                         this.getModel().setValue("conbillnumber", purcontractBill.getString("billno"), rowIndex);
                         this.getModel().setValue("conbillentryid", purcontractEntry.get("id"), rowIndex);

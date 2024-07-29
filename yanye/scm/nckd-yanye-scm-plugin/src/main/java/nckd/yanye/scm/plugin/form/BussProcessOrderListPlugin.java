@@ -77,6 +77,12 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
         Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
         //获取完整数据
         DynamicObject[] bussProcessOrderArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+        //判断单据是不是都是审核状态，必须全部为审核状态才可以进行此操作
+        Set<Object> billstatusSet = Arrays.stream(bussProcessOrderArr).map(e -> e.getString("billstatus")).collect(Collectors.toSet());
+        if (!(billstatusSet.size() == 1 && billstatusSet.toArray()[0].equals("C"))) {
+            this.getView().showErrorNotification("所选单据必须全部为审核状态才可以进行此操作");
+            return;
+        }
         //判断所选数据是不是处于对应的业务期间
         Set<Object> orgSet = Arrays.stream(bussProcessOrderArr).map(e -> e.getDynamicObject("org").getPkValue()).collect(Collectors.toSet());
         //拼装业务期间查询QFilter
@@ -132,9 +138,9 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             //countzeroinv  freezeoutin  enablecheck   nogenotherinout
             invcountscheme.set("defaultvalue", "B");
             //获取新建单据的多选基础资料并赋值
-            List<DynamicObject> inventoryOrgList = bussProcessOrderEntry.stream().map(e -> e.getDynamicObject("nckd_inventoryorg")).collect(Collectors.toList());
+            Set<DynamicObject> inventoryOrgSet = bussProcessOrderEntry.stream().map(e -> e.getDynamicObject("nckd_inventoryorg")).collect(Collectors.toSet());
             DynamicObjectCollection mulorgColl = invcountscheme.getDynamicObjectCollection("mulorg");
-            for (DynamicObject dy : inventoryOrgList) {
+            for (DynamicObject dy : inventoryOrgSet) {
                 DynamicObject mulorg = new DynamicObject(mulorgColl.getDynamicObjectType());
                 mulorg.set("fbasedataId", dy);
                 mulorgColl.add(mulorg);
@@ -143,10 +149,10 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             invcountscheme.set("mulorg", mulorgColl);
             invcountscheme.set("warehouse", null);
             invcountscheme.set("location", null);
-            List<DynamicObject> materialList = bussProcessOrderEntry.stream().map(e -> e.getDynamicObject("nckd_materielfield")).collect(Collectors.toList());
+            Set<DynamicObject> materialSet = bussProcessOrderEntry.stream().map(e -> e.getDynamicObject("nckd_materielfield").getDynamicObject("masterid")).collect(Collectors.toSet());
             //获取新建单据的多选基础资料并赋值
             DynamicObjectCollection materialColl = invcountscheme.getDynamicObjectCollection("material");
-            for (DynamicObject dy : materialList) {
+            for (DynamicObject dy : materialSet) {
                 DynamicObject material = new DynamicObject(materialColl.getDynamicObjectType());
                 material.set("fbasedataId", dy);
                 materialColl.add(material);
@@ -165,18 +171,24 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             if (!saveOperationResult.isSuccess()) {
                 this.getView().showErrorNotification(billno + "对应的盘点方案新增失败");
                 break;
+            } else {
+                this.getView().showSuccessNotification(billno + "对应的盘点方案新增成功");
             }
             //生成了暂存的盘点方案，然后提交
             OperationResult submitOperationResult = OperationServiceHelper.executeOperate("submit", "im_invcountscheme", new DynamicObject[]{invcountscheme}, OperateOption.create());
             if (!submitOperationResult.isSuccess()) {
                 this.getView().showErrorNotification(billno + "对应的盘点方案提交失败");
                 break;
+            } else {
+                this.getView().showSuccessNotification(billno + "对应的盘点方案提交成功");
             }
             //再审核
             OperationResult auditOperationResult = OperationServiceHelper.executeOperate("audit", "im_invcountscheme", new DynamicObject[]{invcountscheme}, OperateOption.create());
             if (!auditOperationResult.isSuccess()) {
                 this.getView().showErrorNotification(billno + "对应的盘点方案审核失败");
                 break;
+            } else {
+                this.getView().showSuccessNotification(billno + "对应的盘点方案审核成功");
             }
             //保存库存截止时间直接带到负库存物料检查单
             bussProcessOrder.set("nckd_inventoryclosedate", enddate);
@@ -197,13 +209,29 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
         Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
         //获取完整数据
         DynamicObject[] bussProcessOrderArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+        //判断单据是不是都是审核状态，必须全部为审核状态才可以进行此操作
+        Set<Object> billstatusSet = Arrays.stream(bussProcessOrderArr).map(e -> e.getString("billstatus")).collect(Collectors.toSet());
+        if (!(billstatusSet.size() == 1 && billstatusSet.toArray()[0].equals("C"))) {
+            this.getView().showErrorNotification("所选单据必须全部为审核状态才可以进行此操作");
+            return;
+        }
         //获取盘点方案编码用于查询盘点表
         Set<Object> invcountschemebillnoSet = Arrays.stream(bussProcessOrderArr).map(e -> e.getString("nckd_invcountschemeno")).collect(Collectors.toSet());
         //拼装业务期间查询QFilter
         QFilter qFilter = new QFilter("schemenumber", QCP.in, invcountschemebillnoSet);
         //查询盘点方案对应的盘点表，可能存在多个
         DynamicObject[] invcountbillArr = BusinessDataServiceHelper.load("im_invcountbill",
-                "id,org,schemenumber,billentry.material,billentry.unit,billentry.baseunit,billentry.warehouse,billentry.location,billentry.lotnumber,billentry.qty,billentry.baseqty", qFilter.toArray());
+                "id,org,schemenumber,billentry.material,billentry.unit,billentry.baseunit,billentry.warehouse,billentry.location,billentry.lotnumber,billentry.qtyacc,billentry.baseqtyacc", qFilter.toArray());
+        //判断盘点表是不是都生成了
+        //获取物料-业务处理对应单上的盘点方案编码
+        Set<Object> invcountschemeNoSet = Arrays.stream(bussProcessOrderArr).map(e -> e.getString("nckd_invcountschemeno")).collect(Collectors.toSet());
+        //获取盘点表上的盘点方案编码
+        Set<Object> schemenumberSet = Arrays.stream(invcountbillArr).map(e -> e.getString("schemenumber")).collect(Collectors.toSet());
+        //两边数量应该一致，粗略的判断一下
+        if(invcountschemeNoSet.size() != schemenumberSet.size()){
+            this.getView().showErrorNotification("有盘点方案存在未生成的盘点表,请检查盘点方案是否一一生成盘点表");
+            return;
+        }
         //分组，根据盘点方案编号分组
         Map<String, List<DynamicObject>> invcountbillMap = Arrays.stream(invcountbillArr).collect(Collectors.groupingBy(e -> e.getString("schemenumber")));
         //遍历选中数据生成盘点表
@@ -225,6 +253,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             int month = DateUtil.month(inventoryclosedate) + 1;
             negainventoryOrder.set("nckd_periodnumber", month);
             negainventoryOrder.set("nckd_inventoryclosedate", inventoryclosedate);
+            negainventoryOrder.set("nckd_invcountschemeno", schemenumber);
             negainventoryOrder.set("billstatus", "A");
             long currUserId = RequestContext.get().getCurrUserId();
             negainventoryOrder.set("creator", currUserId);
@@ -239,7 +268,9 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                 //这一部分直接由物料-业务处理对应单 分录带过来
                 DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
                 negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
+                negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));
                 negainventoryOrderEntry.set("nckd_isinventory", e.getBoolean("nckd_isinventory"));
+                negainventoryOrderEntry.set("nckd_inventoryorg", e.getDynamicObject("nckd_inventoryorg"));
                 DynamicObject nckdWarehouse = e.getDynamicObject("nckd_warehouse");
                 negainventoryOrderEntry.set("nckd_warehouse", nckdWarehouse);
                 negainventoryOrderEntry.set("nckd_businessdocument", e.getString("nckd_businessdocument"));
@@ -254,11 +285,11 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                 DynamicObject invcountbill = invcountbillListMap.get(nckdInventoryorg.getPkValue());
                 DynamicObjectCollection invcountbillEntryColl = invcountbill.getDynamicObjectCollection("billentry");
                 for (DynamicObject invcountbillEntry : invcountbillEntryColl) {
-                    if (invcountbillEntry.getDynamicObject("material").getPkValue().equals(nckdMaterielfield.getPkValue())
+                    if (invcountbillEntry.getDynamicObject("material").getDynamicObject("masterid").getPkValue().equals(nckdMaterielfield.getDynamicObject("masterid").getPkValue())
                             && invcountbillEntry.getDynamicObject("warehouse").getPkValue().equals(nckdWarehouse.getPkValue())) {
-                        negainventoryOrderEntry.set("nckd_number", invcountbillEntry.getBigDecimal("qty"));
+                        negainventoryOrderEntry.set("nckd_number", invcountbillEntry.getBigDecimal("qtyacc"));
                         negainventoryOrderEntry.set("nckd_unitofmeasurement", invcountbillEntry.getDynamicObject("unit").getPkValue());
-                        negainventoryOrderEntry.set("nckd_basicunitnumber", invcountbillEntry.getBigDecimal("baseqty"));
+                        negainventoryOrderEntry.set("nckd_basicunitnumber", invcountbillEntry.getBigDecimal("baseqtyacc"));
                         negainventoryOrderEntry.set("nckd_basicunit", invcountbillEntry.getDynamicObject("baseunit").getPkValue());
                         negainventoryOrderEntry.set("nckd_basewarehouse", invcountbillEntry.getDynamicObject("warehouse").getPkValue());
                         negainventoryOrderEntry.set("nckd_position", invcountbillEntry.getDynamicObject("location") != null ? invcountbillEntry.getDynamicObject("location").getPkValue() : null);
@@ -272,6 +303,8 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
             if (!saveOperationResult.isSuccess()) {
                 this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增失败");
+            } else {
+                this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增成功");
             }
         }
     }

@@ -71,8 +71,9 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                             .and("validstatus", QCP.equals, "B")
                             .and("closestatus", QCP.equals, "A")
                             .and("billentry.material", QCP.in, mapIdAndSeq.keySet())
-                            .and(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimebegin", QCP.less_equals, biztimeend)
-                                    .or(new QFilter("biztimeend", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
+                            .and(new QFilter("biztimebegin", QCP.less_equals, biztimebegin).and("biztimeend", QCP.large_equals, biztimebegin)
+                                    .or(new QFilter("biztimebegin", QCP.less_equals, biztimeend).and("biztimeend", QCP.large_equals, biztimeend))
+                                    .or(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
                     //String entityName, String selectProperties, QFilter[] filters
                     DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.material,billentry.seq", qFilter.toArray());
                     if (purcontractArr.length > 0) {
