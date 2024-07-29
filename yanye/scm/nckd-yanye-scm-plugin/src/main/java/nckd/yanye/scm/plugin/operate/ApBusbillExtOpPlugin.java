@@ -24,7 +24,7 @@ public class ApBusbillExtOpPlugin extends AbstractOperationServicePlugIn {
             DynamicObjectCollection entry = i.getDynamicObjectCollection("entry");
             for (DynamicObject dynamicObject : entry) {
                 dynamicObject.set("nckd_billnumber", billno + "_" + dynamicObject.get("seq"));
-                dynamicObject.set("nckd_supplier", asstact.get("id"));
+                dynamicObject.set("nckd_supplier", asstact);
             }
         });
     }
