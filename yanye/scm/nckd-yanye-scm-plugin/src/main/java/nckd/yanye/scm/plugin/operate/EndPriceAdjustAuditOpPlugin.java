@@ -12,6 +12,7 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
+import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -41,8 +42,8 @@ public class EndPriceAdjustAuditOpPlugin extends AbstractOperationServicePlugIn 
     }
 
     @Override
-    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
-        super.afterExecuteOperationTransaction(e);
+    public void beginOperationTransaction(BeginOperationTransactionArgs e) {
+        super.beginOperationTransaction(e);
 
         for (DynamicObject dataEntity : e.getDataEntities()) {
             // 获取月末调价单暂估数据页签分录
