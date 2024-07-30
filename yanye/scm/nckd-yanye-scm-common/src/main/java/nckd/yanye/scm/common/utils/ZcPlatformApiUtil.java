@@ -515,17 +515,17 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static String viewWinNotice(String procurements, Integer orderId) {
+    public static String viewWinNotice(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
         String page = null;
-        if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
-            // 采购方式-询比价，单一品牌
+        if ("2".equals(procurements)) {
+            // 采购方式-询比价
             page = "InquiryOrderWinner";
-        } else if ("competitive".equals(procurements)) {
+        } else if ("8".equals(procurements)) {
             // 采购方式-竞争性谈判
             page = "NegotiationWinnerDetail";
-        } else if ("singlesupplier".equals(procurements) || "bidprocurement".equals(procurements)) {
-            // 采购方式-单一供应商，招投采购
+        } else if ("1".equals(procurements)) {
+            // 采购方式-招投采购
             page = "BiddingWinnerDetail";
         } else {
             throw new KDBizException("该单据未选择采购方式!");
@@ -582,6 +582,88 @@ public class ZcPlatformApiUtil {
     }
 
     /**
+     * 预先生成评审单
+     *
+     * @return 评审单id reviewId
+     */
+    public static Integer getPurchaseReviews(String reviewModel) {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/purchase-reviews/advance");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("identity", "purchaser");
+
+        JSONObject jsonObject = new JSONObject()
+//                //评审时间
+//                .fluentPut("reviewTime", )
+//                // 评审耗时
+//                .fluentPut("consumeHour", )
+//                //评审地址
+//                .fluentPut("reviewAddress", )
+//                // 其它备注说明
+//                .fluentPut("otherRemark", )
+                // 评审模式
+                .fluentPut("reviewModel", reviewModel);
+//                // 由专家打分
+//                .fluentPut("isReviewerScore", 1);
+
+        httpRequest.body(jsonObject.toString());
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getJSONObject("data").getInteger("reviewId");
+        } else {
+            throw new KDBizException("预先生成评审单失败!");
+        }
+    }
+
+    /**
+     * 预先生成标书
+     *
+     * @return 标书id
+     */
+    public static Integer getBiddingFiles() {
+        String accessToken = getZcAccessToken();
+
+        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/kpb/bidding-files/advance");
+        httpRequest.setMethod(Method.POST);
+        httpRequest.header("Authorization", "Bearer " + accessToken);
+        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("identity", "purchaser");
+
+        JSONObject jsonObject = new JSONObject()
+                //电子标书名称
+                .fluentPut("fileName", "电子标书");
+//                // 开标地址-国家
+//                .fluentPut("openBidCountry", )
+//                // 开标地址-省
+//                .fluentPut("openBidProvince", )
+//                // 开标地址-市
+//                .fluentPut("openBidCity", )
+//                // 开标地址-区县
+//                .fluentPut("openBidArea", )
+//                // 开标地址-详细地址
+//                .fluentPut("openBidAddress", 1);
+
+        httpRequest.body(jsonObject.toString());
+        HttpResponse execute = httpRequest.execute();
+
+        JSONObject responseObj = JSON.parseObject(execute.body());
+
+        if (responseObj.getBooleanValue("success")) {
+            return responseObj.getInteger("data");
+        } else {
+            throw new KDBizException("预先生成标书失败!");
+        }
+    }
+
+    /**
      * 线上评审文件制作
      *
      * @param procurements 采购方式
@@ -589,7 +671,7 @@ public class ZcPlatformApiUtil {
      * @param reviewMode   评审模式
      * @return url
      */
-    public static String getOnlineReview(String procurements, String reviewId, String reviewMode) {
+    public static String getOnlineReview(String procurements, Integer reviewId, String reviewMode) {
 
         String userAccessToken = getZcUserToken();
         String page = null;

@@ -12,6 +12,7 @@ import kd.bos.logging.LogFactory;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 
@@ -80,8 +81,9 @@ public class ZcPlatformJsonUtil {
                 put("isApproval", model.getValue(PurapplybillConst.NCKD_REGISTERAUDIT2));
                 //允许联合体报名
                 put("isCombo", model.getValue(PurapplybillConst.NCKD_ALLOWJOINT));
-                // todo-在线开评标。赋值biddingFileId。在线生成标书
-                put("isKpbProject", model.getValue(PurapplybillConst.NCKD_BIDONLINE));
+                // todo-在线开评标。
+                String isKpbProject = (String) model.getValue(PurapplybillConst.NCKD_BIDONLINE);
+                put("isKpbProject", isKpbProject);
                 // 标书费
                 put("bookFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE1));
             }
@@ -296,7 +298,8 @@ public class ZcPlatformJsonUtil {
                 String isReview = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL);
                 put("isReview", isReview);
                 if ("1".equals(isReview)) {
-                    //todo
+                    // 先 预先生成评审单。再根据评审单id跳转
+
                 }
 
                 //备注说明
@@ -313,7 +316,7 @@ public class ZcPlatformJsonUtil {
                 //公告内容
                 put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
 
-                //询比文件
+                //fixme 询比文件
                 DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
                 Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("XB", "XBWJ");
                 for (DynamicObject obj : xbAtts) {
@@ -321,6 +324,8 @@ public class ZcPlatformJsonUtil {
                     String name = fbasedataId.getString("name");
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                    realPath = UrlService.getAttachmentFullUrl(realPath);
+                    
                     log.debug("询比单询比文件名:{}。真实路径:{}。", name, realPath);
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }

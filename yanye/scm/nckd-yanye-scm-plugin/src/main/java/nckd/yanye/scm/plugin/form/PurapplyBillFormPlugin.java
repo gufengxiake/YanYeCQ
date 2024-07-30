@@ -212,12 +212,14 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
 
     /**
-     * 制作标书
+     * todo 制作标书
      */
     private void makeBidFile(IDataModel model) {
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
-        String reviewId = "2776";
         String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
+        Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
+        reviewId = ZcPlatformApiUtil.getBiddingFiles();
+
         String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
         // 跳转页面
         getView().openUrl(url);
