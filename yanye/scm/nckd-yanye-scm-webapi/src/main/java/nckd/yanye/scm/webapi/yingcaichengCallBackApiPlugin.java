@@ -86,6 +86,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         );
 
         if (purapplyBillObj.length == 0) {
+            log.error("招采平台回调失败!未找到对应的采购单!");
             throw new KDBizException("招采平台回调失败!未找到对应的采购单!");
         }
 

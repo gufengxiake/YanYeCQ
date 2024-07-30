@@ -397,14 +397,26 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      * todo 查看成交通知书
      */
     private void viewNotice() {
-        String procurements = "";
-        Integer orderId = 1;
+        // 采购方式
+        String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
+        // 采购单id
+        String orderId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_ORDERID);
+        // 成交id
+        String winId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_WINID);
+
         String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
         getView().openUrl(url);
+
     }
 
 
-    // todo 方法需要修改
+    /**
+     * fixme 新增供应商
+     *
+     * @param supplierId
+     * @param uscc
+     * @return
+     */
     public static OperationResult addSupplier(String supplierId, String uscc) {
         //根据招采平台供应商id查询供应商信息
         DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
