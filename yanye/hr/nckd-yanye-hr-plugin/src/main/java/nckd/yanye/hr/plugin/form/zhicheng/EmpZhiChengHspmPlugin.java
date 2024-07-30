@@ -186,10 +186,6 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
                 prop.setMustInput(true);
                 // 显示：聘任终止日期
                 this.getView().setVisible(true , "nckd_pinrenenddaten");
-                DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-                apiaddressProperty2.setMustInput(true);
-                DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-                prop2.setMustInput(true);
             }else {
                 // 置空3个值
                 this.getModel().setValue("nckd_pinrendate",null); // 聘任日期
@@ -205,10 +201,6 @@ public class EmpZhiChengHspmPlugin extends AbstractBasePlugIn implements Plugin 
 
                 // 隐藏：聘任终止日期
                 this.getView().setVisible(false , "nckd_pinrenenddaten");
-                DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-                apiaddressProperty2.setMustInput(false);
-                DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-                prop2.setMustInput(false);
 
                 // 隐藏：聘任单位
                 this.getView().setVisible(false , "nckd_pinrenorg");

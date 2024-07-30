@@ -53,17 +53,13 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
 
             // 隐藏：聘任终止日期
             this.getView().setVisible(false , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(false);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(false);
 
             // 隐藏：聘任单位
             this.getView().setVisible(false , "nckd_pinrenorg");
             BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
             apiaddressProperty3.setMustInput(false);
             BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop2.setMustInput(false);
+            prop3.setMustInput(false);
         }
 
         Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
@@ -76,16 +72,12 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
             prop.setMustInput(true);
             // 显示：聘任终止日期
             this.getView().setVisible(true , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(true);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(true);
             // 显示：聘任单位
             this.getView().setVisible(true , "nckd_pinrenorg");
             BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
             apiaddressProperty3.setMustInput(true);
             BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop2.setMustInput(true);
+            prop3.setMustInput(true);
         }else {
             // 隐藏：聘任单位
             this.getView().setVisible(false , "nckd_pinrenorg");
@@ -99,17 +91,13 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
 
             // 隐藏：聘任终止日期
             this.getView().setVisible(false , "nckd_pinrenenddaten");
-            DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-            apiaddressProperty2.setMustInput(false);
-            DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-            prop2.setMustInput(false);
 
             // 隐藏：聘任单位
             this.getView().setVisible(false , "nckd_pinrenorg");
             BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
             apiaddressProperty3.setMustInput(false);
             BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop2.setMustInput(false);
+            prop3.setMustInput(false);
         }
     }
 
@@ -158,10 +146,6 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
                 prop.setMustInput(true);
                 // 显示：聘任终止日期
                 this.getView().setVisible(true , "nckd_pinrenenddaten");
-                DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-                apiaddressProperty2.setMustInput(true);
-                DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-                prop2.setMustInput(true);
             }else {
                 // 隐藏：聘任日期
                 this.getView().setVisible(false , "nckd_pinrendate");
@@ -173,10 +157,6 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
 
                 // 隐藏：聘任终止日期
                 this.getView().setVisible(false , "nckd_pinrenenddaten");
-                DateEdit apiaddressProperty2 = (DateEdit)this.getControl("nckd_pinrenenddaten");
-                apiaddressProperty2.setMustInput(false);
-                DateProp prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenenddaten");
-                prop2.setMustInput(false);
 
                 // 隐藏：聘任单位
                 this.getView().setVisible(false , "nckd_pinrenorg");
