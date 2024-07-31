@@ -16,7 +16,12 @@ import org.apache.commons.lang3.StringUtils;
 import java.util.EventObject;
 
 /**
+ * 调入申请，标识 nckd_hdm_transferinbi_ext
+ * 批量调动人员申请单，标识 nckd_hdm_transferbat_ext1
+ * 二开插件-查看页面职级和干部类型赋值
  * 动态表单插件
+ * author: tangyuxuan
+ * date:2024-07-30
  */
 public class TransferBillViewEditEx extends HRCoreBaseBillEdit  {
 

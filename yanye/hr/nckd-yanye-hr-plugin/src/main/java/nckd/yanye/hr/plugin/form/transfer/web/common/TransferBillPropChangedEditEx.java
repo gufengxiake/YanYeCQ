@@ -13,7 +13,13 @@ import kd.hr.hbp.formplugin.web.HRCoreBaseBillEdit;
 import kd.hr.hdm.business.domain.transfer.service.external.PersonExternalService;
 import java.util.Collections;
 
-
+/**
+ * 调入申请，标识 nckd_hdm_transferinbi_ext
+ * 批量调动人员申请单，标识 nckd_hdm_transferbat_ext1
+ * 二开插件-携带员工职级和干部类型
+ * author: tangyuxuan
+ * date:2024-07-30
+ */
 public class TransferBillPropChangedEditEx extends HRCoreBaseBillEdit  {
 
     private static final Log LOGGER = LogFactory.getLog(TransferBillPropChangedEditEx.class);

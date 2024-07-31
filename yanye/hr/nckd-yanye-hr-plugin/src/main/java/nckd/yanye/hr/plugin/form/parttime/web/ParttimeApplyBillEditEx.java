@@ -13,6 +13,12 @@ import kd.hr.hdm.common.util.HRServiceUtil;
 import java.util.Collections;
 import java.util.Map;
 
+/**
+ * 员工兼职申请单,标识 nckd_hdm_parttimeappl_ext
+ * 二开插件-携带职级及干部类型
+ * author: tangyuxuan
+ * date:2024-07-30
+ */
 public class ParttimeApplyBillEditEx extends HRCoreBaseBillEdit {
 
     private static final Log LOGGER = LogFactory.getLog(ParttimeApplyBillEditEx.class);
