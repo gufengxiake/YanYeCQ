@@ -5,6 +5,9 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.datamodel.RowDataEntity;
+import kd.bos.entity.datamodel.events.AfterAddRowEventArgs;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
 import kd.bos.form.control.events.ItemClickEvent;
@@ -29,38 +32,113 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
         super.registerListener(e);
         BasedataEdit inWareHouseEdit = this.getView().getControl("warehouse");
         inWareHouseEdit.addBeforeF7SelectListener(this);
-        BasedataEdit wareHoseEdit=this.getView().getControl("outwarehouse");
+        BasedataEdit wareHoseEdit = this.getView().getControl("outwarehouse");
         wareHoseEdit.addBeforeF7SelectListener(this);
     }
+
     @Override
     public void beforeF7Select(BeforeF7SelectEvent evt) {
-        String name= evt.getProperty().getName();
-        if(name.equalsIgnoreCase("warehouse")){
-            DynamicObject billtype= (DynamicObject) this.getModel().getValue("billtype",0);
-            String nameq=billtype.getString("name");
-            Object id=billtype.getPkValue();
-            if(id.equals("1980435041267748864")||nameq.equalsIgnoreCase("借货单")){
+        String name = evt.getProperty().getName();
+        if (name.equalsIgnoreCase("warehouse")) {
+            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
+            if(billtype==null){return;}
+            String nameq = billtype.getString("name");
+            Object id = billtype.getPkValue();
+            if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
                 ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
                 List<QFilter> qFilters = new ArrayList<>();
                 qFilters.add(new QFilter("nckd_isjh", QCP.equals, "1"));
                 formShowParameter.getListFilterParameter().setQFilters(qFilters);
+            } else {
+                ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+                List<QFilter> qFilters = new ArrayList<>();
+                qFilters.add(new QFilter("nckd_isjh", QCP.not_equals, "1"));
+                formShowParameter.getListFilterParameter().setQFilters(qFilters);
             }
 
-        }else if(name.equalsIgnoreCase("outwarehouse")){
-            DynamicObject billtype= (DynamicObject) this.getModel().getValue("billtype",0);
-            String nameq=billtype.getString("name");
-            Object id=billtype.getPkValue();
-            if(id.equals("1980435141796826112")||nameq.equalsIgnoreCase("借货归还单")){
+        } else if (name.equalsIgnoreCase("outwarehouse")) {
+            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
+            if(billtype==null){return;}
+            String nameq = billtype.getString("name");
+            Object id = billtype.getPkValue();
+            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
                 ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
                 List<QFilter> qFilters = new ArrayList<>();
                 qFilters.add(new QFilter("nckd_isjh", QCP.equals, "1"));
+                formShowParameter.getListFilterParameter().setQFilters(qFilters);
+            } else {
+                ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+                List<QFilter> qFilters = new ArrayList<>();
+                qFilters.add(new QFilter("nckd_isjh", QCP.not_equals, "1"));
                 formShowParameter.getListFilterParameter().setQFilters(qFilters);
             }
         }
 
 
+    }
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        String propName = e.getProperty().getName();
+        if("billtype".equals(propName)){
+            DynamicObject billtype= (DynamicObject) e.getChangeSet()[0].getNewValue();
+            String nameq = billtype.getString("name");
+            Object id = billtype.getPkValue();
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+            Object orgId = org.getPkValue();
+            // 构造QFilter
+            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+            // 将选中的id对应的数据从数据库加载出来
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+                    "id", qFilter.toArray(), "");
+            DynamicObject stock=collections.get(0);
+            String stockId=stock.getString(("id"));
+            int row=this.getModel().getEntryRowCount("billentry");
+            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
 
+                for (int i=0;i<row;i++) {
 
+                    this.getModel().setItemValueByID("outwarehouse", stockId, i);
+                }
+            }
+            else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+                for (int i=0;i<row;i++) {
+
+                    this.getModel().setItemValueByID("warehouse", stockId, i);
+                }
+            }
+        }
+    }
+    @Override
+    public void afterAddRow(AfterAddRowEventArgs e) {
+        super.afterAddRow(e);
+        if ("billentry".equals(e.getEntryProp().getName())) {
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+            Object orgId = org.getPkValue();
+            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
+            String nameq = billtype.getString("name");
+            Object id = billtype.getPkValue();
+            // 构造QFilter
+            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+            // 将选中的id对应的数据从数据库加载出来
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+                    "id", qFilter.toArray(), "");
+            DynamicObject stock=collections.get(0);
+            String stockId=stock.getString(("id"));
+            RowDataEntity[] rowdata = e.getRowDataEntities();
+            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
+
+                for (RowDataEntity rowDataEntity : rowdata) {
+                    int currentindex = rowDataEntity.getRowIndex();
+                    this.getModel().setItemValueByID("outwarehouse", stockId, currentindex);
+                }
+            }
+            else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+                for (RowDataEntity rowDataEntity : rowdata) {
+                    int currentindex = rowDataEntity.getRowIndex();
+                    this.getModel().setItemValueByID("warehouse", stockId, currentindex);
+                }
+            }
+        }
     }
     @Override
     public void itemClick(ItemClickEvent e) {
@@ -69,34 +147,39 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
         String itemKey = e.getItemKey();
         //一键还货按钮
         if (itemKey.equalsIgnoreCase("nckd_return")) {
-            DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy", 0);
-            if (ywy == null) {
-                this.getView().showErrorNotification("请先维护业务员!");
-                return;
-            }
-            Object ywyId = ywy.getPkValue();
+
             //单据类型
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-            if(billtype==null){
+            if (billtype == null) {
                 this.getView().showErrorNotification("请先维护单据类型");
                 return;
             }
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
-            if(id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")){
-                DynamicObject org= (DynamicObject) this.getModel().getValue("org",0);
-                Object orgId=org.getPkValue();
+            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
+                DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy", 0);
+                if (ywy == null) {
+                    this.getView().showErrorNotification("请先维护业务员!");
+                    return;
+                }
+                Object ywyId = ywy.getPkValue();
+                DynamicObject dept=(DynamicObject)this.getModel().getValue("dept",0);
+                if(dept==null){
+                    this.getView().showErrorNotification("请先维护调入部门!");
+                    return;
+                }
+                DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+                Object orgId = org.getPkValue();
                 ListShowParameter listPara = ShowFormHelper.createShowListForm("nckd_xsyjhyebf", true);//第二个参数为是否支持多选;
                 ListFilterParameter listFilterParameter = new ListFilterParameter();
                 listFilterParameter.setFilter(new QFilter("nckd_qty", QCP.not_equals, 0)
                         .and("nckd_fapplyuserid.id", QCP.equals, ywyId)
-                        .and("nckd_orgfield.id",QCP.equals,orgId));
+                        .and("nckd_orgfield.id", QCP.equals, orgId));
                 listPara.setListFilterParameter(listFilterParameter);
                 // 设置回调
                 listPara.setCloseCallBack(new CloseCallBack(this, "return"));
                 this.getView().showForm(listPara);
-            }
-            else {
+            } else {
                 this.getView().showErrorNotification("单据类型不为借货归还单,请修改!");
             }
 
@@ -122,23 +205,42 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("nckd_xsyjhyebf",
                     "id,nckd_fmaterialid.number number,nckd_qty,nckd_fwarehouseid.number stocknumber,nckd_lotnum", qFilter.toArray(), "");
-            if(collections.size()>0){
+            if (collections.size() > 0) {
                 //清空单据体
                 this.getModel().deleteEntryData("billentry");
-                this.getModel().batchCreateNewEntryRow("billentry",collections.size());
-                int row=0;
+                this.getModel().batchCreateNewEntryRow("billentry", collections.size());
+                DynamicObject dept=(DynamicObject)this.getModel().getValue("dept",0);
+                Object deptId=dept.getPkValue();
+                DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+                Object orgId = org.getPkValue();
+                //从部门 仓库设置基础资料中获取对应仓库
+                // 构造QFilter
+                QFilter sFilter = new QFilter("createorg", QCP.equals,orgId)
+                        .and("status",QCP.equals,"C")
+                        .and("nckd_bm",QCP.equals,deptId);
+
+                //查找部门对应仓库
+                DynamicObjectCollection stockDycll = QueryServiceHelper.query("nckd_bmcksz",
+                        "id,nckd_ck.number number", sFilter.toArray(), "modifytime");
+                String number="";
+                if(!stockDycll.isEmpty()){
+                    DynamicObject stockItem=stockDycll.get(0);
+                    number=stockItem.getString("number");
+                }
+                int row = 0;
                 for (DynamicObject object : collections) {
                     Object matId = object.get("number");//物料编码
                     BigDecimal qty = object.getBigDecimal("nckd_qty");//库存数量
                     String stockNumber = object.getString("stocknumber");//仓库编码
                     String lotNum = object.getString("nckd_lotnum");//批号
-                    this.getModel().setItemValueByNumber("material",matId.toString(),row);
-                    this.getModel().setValue("qty",qty,row);
+                    this.getModel().setItemValueByNumber("material", matId.toString(), row);
+                    this.getModel().setValue("qty", qty, row);
                     this.getModel().setItemValueByNumber("outwarehouse", stockNumber, row);//调出仓库
+                    this.getModel().setItemValueByNumber("warehouse", number, row);//调入仓库
                     this.getModel().setValue("lotnumber", lotNum, row);//调出批号
                     this.getModel().setValue("inlotnumber", lotNum, row);//调入批号
-                    this.getModel().setItemValueByNumber("lot",lotNum,row);//调出批号主档
-                    this.getModel().setItemValueByNumber("inlot",lotNum,row);//调入批号主档
+                    this.getModel().setItemValueByNumber("lot", lotNum, row);//调出批号主档
+                    this.getModel().setItemValueByNumber("inlot", lotNum, row);//调入批号主档
                     row++;
                 }
             }

@@ -25,7 +25,6 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn  {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
-        // 要求加载预计送货日期、最迟送货日期字段
         e.getFieldKeys().add("resultseq");//促销结果组号
         e.getFieldKeys().add("orderentryid");//要货订单分录Id
         e.getFieldKeys().add("approveqty");//批准数量
@@ -95,15 +94,6 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn  {
 
         }
 
-//        // 向系统传回校验通过的单据
-//        e.getSelectedRows().clear();
-//        if (passDataEntitys.isEmpty()){
-//            e.cancel = true;     // 没有单据通过了校验，取消后续操作
-//        }
-//        else {
-//            e.getSelectedRows().addAll(passDataEntitys);
-//        }
-       // e.cancel=true;
     }
 
 }
