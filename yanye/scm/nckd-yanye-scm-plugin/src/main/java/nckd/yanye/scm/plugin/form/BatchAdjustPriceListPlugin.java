@@ -36,7 +36,7 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         super.registerListener(e);
 
         this.addItemClickListeners("nckd_baritemap");
-        this.addItemClickListeners("nckd_baritemap");
+//        this.addItemClickListeners("nckd_baritemap");
     }
 
     @Override

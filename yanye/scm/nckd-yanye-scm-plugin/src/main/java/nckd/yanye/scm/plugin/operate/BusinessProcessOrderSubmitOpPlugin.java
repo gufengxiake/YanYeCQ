@@ -3,16 +3,14 @@ package nckd.yanye.scm.plugin.operate;
 import dm.jdbc.util.StringUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
-import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
-import kd.bos.exception.KDBizException;
-import kd.bos.util.CollectionUtils;
+import kd.bos.entity.validate.AbstractValidator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Module           :制造云-生产任务管理-生产工单（新）
@@ -34,35 +32,35 @@ public class BusinessProcessOrderSubmitOpPlugin extends AbstractOperationService
         fieldKeys.add("nckd_businessdocument");
         fieldKeys.add("nckd_useworkshop");
     }
-
-
     @Override
-    public void beginOperationTransaction(BeginOperationTransactionArgs e) {
-        super.beginOperationTransaction(e);
-        DynamicObject[] entities = e.getDataEntities();
-        List<String> msgList = new ArrayList<>();
-        Arrays.asList(entities).forEach(k -> {
-            String billno = k.getString("billno");
-            //拿到分录数据
-            DynamicObjectCollection dynamicObjects = k.getDynamicObjectCollection("nckd_bussinessentries");
-            for (DynamicObject dynamicObject : dynamicObjects){
-                //对应业务单据
-                String businessdocument = dynamicObject.getString("nckd_businessdocument");
-                //正库存领用车间
-                String useworkshop = dynamicObject.getString("nckd_useworkshop");
-                //入库单对应车间
-                String wareorderworkshop = dynamicObject.getString("nckd_wareorderworkshop");
-                if (("3".equals(businessdocument) || "4".equals(businessdocument)) && StringUtil.isEmpty(useworkshop)){
-                    msgList.add("单据编号："+billno+",【对应业务单据】为生产领料单或领料出库单时，正库存领用车间必录");
-                }else if (("1".equals(businessdocument) || "2".equals(businessdocument)) && StringUtil.isEmpty(wareorderworkshop)){
-                    msgList.add("单据编号："+billno+",【对应业务单据】为完工入库单或生产入库单时，入库单对应车间必录");
-                }
+    public void onAddValidators(AddValidatorsEventArgs e) {
+        super.onAddValidators(e);
+        e.addValidator(new AbstractValidator() {
+            @Override
+            public void validate() {
+                ExtendedDataEntity[] entities = this.getDataEntities();
+                Arrays.asList(entities).forEach(k -> {
+                    DynamicObject dynamic = k.getDataEntity();
+                    String billno = dynamic.getString("billno");
+                    //拿到分录数据
+                    DynamicObjectCollection dynamicObjects = dynamic.getDynamicObjectCollection("nckd_bussinessentries");
+                    for (DynamicObject dynamicObject : dynamicObjects){
+                        //对应业务单据
+                        String businessdocument = dynamicObject.getString("nckd_businessdocument");
+                        //正库存领用车间
+                        String useworkshop = dynamicObject.getString("nckd_useworkshop");
+                        //入库单对应车间
+                        String wareorderworkshop = dynamicObject.getString("nckd_wareorderworkshop");
+                        if (("3".equals(businessdocument) || "4".equals(businessdocument)) && StringUtil.isEmpty(useworkshop)){
+                            this.addErrorMessage(k, String.format("单据编号：(%s),【对应业务单据】为生产领料单或领料出库单时，正库存领用车间必录",
+                                    billno));
+                        }else if (("1".equals(businessdocument) || "2".equals(businessdocument)) && StringUtil.isEmpty(wareorderworkshop)){
+                            this.addErrorMessage(k, String.format("单据编号：(%s),【对应业务单据】为完工入库单或生产入库单时，入库单对应车间必录",
+                                    billno));
+                        }
+                    }
+                });
             }
         });
-        if (CollectionUtils.isNotEmpty(msgList)){
-            String msg = msgList.stream().collect(Collectors.joining(","));
-            throw new KDBizException(msg);
-        }
     }
-
 }
