@@ -61,5 +61,20 @@ public class TransferBillPropChangedEditEx extends HRCoreBaseBillEdit  {
                 }
             }
         }
+
+        if(propertyName.equals("ermanfile")) {
+            if (null == newValue) {
+                view.invokeOperation("refresh");
+            } else {
+                DynamicObject hrF7 = (DynamicObject) newValue;
+                DynamicObject empposrel = hrF7.getDynamicObject("empposrel");
+                empposrel = BusinessDataServiceHelper.loadSingle(empposrel.getPkValue(),empposrel.getDataEntityType().getName());
+                model.setValue("nckd_oldzhiji", (Object)null, rowIndex);
+                model.setValue("nckd_oldganbutype", (Object)null, rowIndex);
+                model.setValue("nckd_oldzhiji", empposrel.get("nckd_zhiji_id"), rowIndex);
+                model.setValue("nckd_oldganbutype", empposrel.get("nckd_ganbutype_id"), rowIndex);
+            }
+        }
+
     }
 }
