@@ -148,52 +148,53 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("biztype",biztype);//业务类型
         DynamicObject invscheme = BusinessDataServiceHelper.loadSingle(767845948062835712l, "im_invscheme");
         invcountscheme.set("invscheme",invscheme);//库存事务
-        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
-        invcountscheme.set("billstatus","A");//单据状态
+//        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
+//        invcountscheme.set("billstatus","A");//单据状态
         invcountscheme.set("productionorg",warDynamicObject.getDynamicObject("org"));//生产组织()
-        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//业务组织
+//        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//业务组织
 //        invcountscheme.set("bizorg",RequestContext.get().getDebt());//业务部门
         invcountscheme.set("bizdept",warDynamicObject.getLong("entrustdept"));//业务部门
         invcountscheme.set("shipper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//货主
-        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
-        invcountscheme.set("settlecurrency",1);//结算币别
-        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
-        invcountscheme.set("asyncstatus","B");//异步状态
+//        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
+//        invcountscheme.set("settlecurrency",1);//结算币别
+//        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
+//        invcountscheme.set("asyncstatus","B");//异步状态
+        getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,"",inventoryDynamicObject);
 
-        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
-        invcountscheme.set("createtime",new Date());
-        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
-
-        invcountscheme.set("modifytime", new Date());
+//        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("createtime",new Date());
+//        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("modifytime", new Date());
 
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
-        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
-        negainventoryOrderEntry.set("linetype",linetype);//行类型
-        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
-        Object materieNumber = materielObject.getPkValue();
-        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
-        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
-        negainventoryOrderEntry.set("material",material);//物料编码
-        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
+//        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
+//        negainventoryOrderEntry.set("linetype",linetype);//行类型
+//        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
+//        Object materieNumber = materielObject.getPkValue();
+//        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
+//        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
+//        negainventoryOrderEntry.set("material",material);//物料编码
+//        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
         negainventoryOrderEntry.set("producttype",dynamicObject.getString("nckd_sideproduct"));//产品类型
         negainventoryOrderEntry.set("qualitystatus","A");//质量状态
-        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
-        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
-        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
-        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
-        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
-        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
+//        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
+//        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+//        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+//        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+//        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
+//        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
+//        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
+//        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
         negainventoryOrderEntry.set("ownertype","bos_org");//入库货主类型
         negainventoryOrderEntry.set("owner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库货主
-        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
-        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
+//        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
+//        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
         negainventoryOrderEntry.set("entrysettleorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//结算组织
         negainventoryOrderEntry.set("manubill",warDynamicObject.getString("billno"));//生产工单编号
         negainventoryOrderEntry.set("mainbillnumber",warDynamicObject.getString("billno"));//核心单据编号
-        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
+        getDynamicObject(negainventoryOrderEntry,dynamicObject,"");
+//        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+//        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_mdc_mftmanuinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的完工入库单新增失败");
@@ -232,42 +233,44 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("biztype",biztype);//业务类型
         DynamicObject invscheme = BusinessDataServiceHelper.loadSingle(697663348556242944l, "im_invscheme");
         invcountscheme.set("invscheme",invscheme);//库存事务
-        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
-        invcountscheme.set("billstatus","A");//单据状态
-        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//业务组织
+//        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
+//        invcountscheme.set("billstatus","A");//单据状态
+//        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//业务组织
         invcountscheme.set("bizdept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//业务部门
-        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
-        invcountscheme.set("settlecurrency",1);//结算币别
-        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
-        invcountscheme.set("asyncstatus","B");//异步状态
-        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
-        invcountscheme.set("createtime",new Date());
-        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
-        invcountscheme.set("modifytime", new Date());
+//        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
+//        invcountscheme.set("settlecurrency",1);//结算币别
+//        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
+//        invcountscheme.set("asyncstatus","B");//异步状态
+//        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("createtime",new Date());
+//        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("modifytime", new Date());
+        getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,"",inventoryDynamicObject);
 
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
-        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
-        negainventoryOrderEntry.set("linetype",linetype);//行类型
-        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
-        Object materieNumber = materielObject.getPkValue();
-        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
-        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
-        negainventoryOrderEntry.set("material",material);//物料编码
-        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
-        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
-        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
-        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
-        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
-        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
-        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
-        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
+//        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
+//        negainventoryOrderEntry.set("linetype",linetype);//行类型
+//        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
+//        Object materieNumber = materielObject.getPkValue();
+//        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
+//        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
+//        negainventoryOrderEntry.set("material",material);//物料编码
+//        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
+//        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
+//        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+//        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+//        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+//        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
+//        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+//        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
+//        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
+//        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
+//        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
         negainventoryOrderEntry.set("ownertype","bos_org");//入库货主类型
         negainventoryOrderEntry.set("owner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库货主
-        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
-        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
+//        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
+//        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
+        getDynamicObject(negainventoryOrderEntry,dynamicObject,"");
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_productinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的生产入库单新增失败");
@@ -288,57 +291,57 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("biztype",biztype);//业务类型
         DynamicObject invscheme = BusinessDataServiceHelper.loadSingle(699728741555085312l, "im_invscheme");
         invcountscheme.set("invscheme",invscheme);//库存事务
-        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
-        invcountscheme.set("billstatus","A");//单据状态
-        invcountscheme.set("asyncstatus","B");//异步状态
-        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//需求组织
-        invcountscheme.set("bizdept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//业务部门
+//        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
+//        invcountscheme.set("billstatus","A");//单据状态
+//        invcountscheme.set("asyncstatus","B");//异步状态
+//        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//需求组织
+//        invcountscheme.set("bizdept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//业务部门
         invcountscheme.set("supplyownertype","bos_org");//货主类型
-        invcountscheme.set("supplyowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//供应货主
-        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
-        invcountscheme.set("settlecurrency",1);//结算币别
-        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
+//        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
+//        invcountscheme.set("settlecurrency",1);//结算币别
+//        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
         invcountscheme.set("supplyowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//供应货主
         invcountscheme.set("settleorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//核算组织
         invcountscheme.set("billcretype","B");//单据生成类型
 
-        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
-        invcountscheme.set("createtime",new Date());
-        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
-        invcountscheme.set("modifytime", new Date());
-
+//        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("createtime",new Date());
+//        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
+//        invcountscheme.set("modifytime", new Date());
+        getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,"LL",inventoryDynamicObject);
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
+        getDynamicObject(negainventoryOrderEntry,dynamicObject,"LL");
+
 //        for (DynamicObject dynamicObj : invcountschemebillEntryColl){
-        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
-        negainventoryOrderEntry.set("linetype",linetype);//行类型
-        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
-        Object materieNumber = materielObject.getPkValue();
-        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
-        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
-        DynamicObject materi = BusinessDataServiceHelper.loadSingle("bd_material", qFilter.toArray());
-        negainventoryOrderEntry.set("material",material);//物料编码
-        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
-        negainventoryOrderEntry.set("materialmasterid",materi);//主物料
-        DynamicObject dynamicObject1 = dynamicObject.getDynamicObject("nckd_unitofmeasurement");
-        negainventoryOrderEntry.set("unit",dynamicObject1);//计量单位
-        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
-        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
-        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
-        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
-        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
-        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
+//        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
+//        negainventoryOrderEntry.set("linetype",linetype);//行类型
+//        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
+//        Object materieNumber = materielObject.getPkValue();
+//        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
+//        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
+//        DynamicObject materi = BusinessDataServiceHelper.loadSingle("bd_material", qFilter.toArray());
+//        negainventoryOrderEntry.set("material",material);//物料编码
+//        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
+//        negainventoryOrderEntry.set("materialmasterid",materi);//主物料
+//        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
+//        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+//        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+//        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+//        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
+//        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+//        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
+//        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
+//        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
+//        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
         negainventoryOrderEntry.set("outinvtype",688884005529250816l);//出库库存类型
         negainventoryOrderEntry.set("outinvstatus",691928582720825344l);//出库库存状态
         negainventoryOrderEntry.set("outownertype","bos_org");//出库货主类型
         negainventoryOrderEntry.set("outowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库货主
         negainventoryOrderEntry.set("outkeepertype","bos_org");//出库保管者类型
         negainventoryOrderEntry.set("outkeeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库保管者
-        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
+//        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
 
-        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
+//        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_materialreqoutbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的领料出库单新增失败");
@@ -384,5 +387,49 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         pushArgs.setBuildConvReport(false);
         pushArgs.setSelectedRows(rows);
         return pushArgs;
+    }
+
+    private static void getDynamicObject(DynamicObject negainventoryOrderEntry,DynamicObject dynamicObject,String type){
+        DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
+        negainventoryOrderEntry.set("linetype",linetype);//行类型
+        DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
+        Object materieNumber = materielObject.getPkValue();
+        QFilter qFilter = new QFilter("masterid",QCP.equals,materieNumber);
+        DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter.toArray());
+        negainventoryOrderEntry.set("material",material);//物料编码
+        negainventoryOrderEntry.set("materialname",material.getString("masterid.name"));//物料名称
+        if ("LL".equals(type)){
+            DynamicObject materi = BusinessDataServiceHelper.loadSingle("bd_material", qFilter.toArray());
+            negainventoryOrderEntry.set("materialmasterid",materi);//主物料
+        }
+        negainventoryOrderEntry.set("unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
+        negainventoryOrderEntry.set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+        negainventoryOrderEntry.set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+        negainventoryOrderEntry.set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+        negainventoryOrderEntry.set("lotnumber",dynamicObject.getString("nckd_batchnumber"));//批号
+        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+        negainventoryOrderEntry.set("warehouse",nckdWarehouseDy);//仓库
+        negainventoryOrderEntry.set("location",dynamicObject.getDynamicObject("nckd_position"));//仓位
+        negainventoryOrderEntry.set("invtype",688884005529250816l);//入库库存类型
+        negainventoryOrderEntry.set("invstatus",691928582720825344l);//入库库存状态
+        negainventoryOrderEntry.set("keepertype","bos_org");//入库保管者类型
+        negainventoryOrderEntry.set("keeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库保管者
+    }
+
+    private static void getInvcountSchemeDynamicObject(DynamicObject invcountscheme,DynamicObject dynamicObject,String type,DynamicObject inventoryDynamicObject){
+
+        /**制单信息**/
+        invcountscheme.set("creator", RequestContext.get().getCurrUserId());
+        invcountscheme.set("createtime",new Date());
+        invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
+        invcountscheme.set("modifytime", new Date());
+
+        invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
+        invcountscheme.set("settlecurrency",1);//结算币别
+        invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
+        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//需求组织
+        invcountscheme.set("asyncstatus","B");//异步状态
+        invcountscheme.set("billstatus","A");//单据状态
+        invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
     }
 }
