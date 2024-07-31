@@ -42,6 +42,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     final static String CANCELORDER = "bar_cancelorder";
 
+    /**
+     * 按钮标识-制作标书/评审单
+     */
+    public static final String BAR_BARITEMAP = "bar_baritemap";
+
 
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
@@ -88,7 +93,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             case ANNOUNCEMENT:
                 viewNotice(model);
                 break;
-            case "bar_baritemap":
+            case BAR_BARITEMAP:
                 makeBidFile(model);
                 break;
             // 作废
@@ -107,13 +112,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         super.confirmCallBack(messageBoxClosedEvent);
         //判断回调参数id
         String callBackId = messageBoxClosedEvent.getCallBackId();
-
         if ("pushToZcAction".equals(callBackId)) {
             if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
                 pushToZc(this.getModel());
             }
         }
-
         if ("cancelOrderAction".equals(callBackId)) {
             if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
                 cancelOrder(this.getModel());
@@ -215,14 +218,21 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      * todo 制作标书
      */
     private void makeBidFile(IDataModel model) {
+        // 采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
-        String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
-        Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
-        reviewId = ZcPlatformApiUtil.getBiddingFiles();
-
-        String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
-        // 跳转页面
-        getView().openUrl(url);
+        if ("bidprocurement".equals(procurements)) {
+            Integer reviewId = ZcPlatformApiUtil.getBiddingFiles();
+            String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
+            String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
+            // 跳转页面
+            getView().openUrl(url);
+        } else {
+            String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
+            Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
+            String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
+            // 跳转页面
+            getView().openUrl(url);
+        }
     }
 }
 

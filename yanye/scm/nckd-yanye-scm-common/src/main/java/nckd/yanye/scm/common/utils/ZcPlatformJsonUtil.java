@@ -12,6 +12,7 @@ import kd.bos.logging.LogFactory;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.service.attachment.FilePathService;
 import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
@@ -129,7 +130,9 @@ public class ZcPlatformJsonUtil {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = (String) fbasedataId.get("url");
-                    Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    String realPath = new FilePathService().getRealPath(url);
+
+                    Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                     this.add(internalAttachmentId);
                 }
             }
@@ -143,7 +146,10 @@ public class ZcPlatformJsonUtil {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = (String) fbasedataId.get("url");
-                    Integer biddingAttachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                    realPath = "/data/kdshare/fileserver" + realPath;
+
+                    Integer biddingAttachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                     this.add(biddingAttachmentId);
                 }
             }
@@ -157,7 +163,10 @@ public class ZcPlatformJsonUtil {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = (String) fbasedataId.get("url");
-                    Integer otherAttachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                    realPath = "/data/kdshare/fileserver" + realPath;
+
+                    Integer otherAttachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                     this.add(otherAttachmentId);
                 }
             }
@@ -294,13 +303,9 @@ public class ZcPlatformJsonUtil {
                 //评审办法
                 put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD));
 
-                //todo 是否需要线上评审。选是按钮制作电子标书
+                // 是否需要线上评审。选是按钮制作电子标书
                 String isReview = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL);
                 put("isReview", isReview);
-                if ("1".equals(isReview)) {
-                    // 先 预先生成评审单。再根据评审单id跳转
-
-                }
 
                 //备注说明
                 put("remarks", model.getValue(PurapplybillConst.NCKD_REMARKS));
@@ -317,16 +322,15 @@ public class ZcPlatformJsonUtil {
                 put("noticeContent", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
 
                 //fixme 询比文件
-                DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue("nckd_inquirydocument");
+                DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INQUIRYDOCUMENT);
                 Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("XB", "XBWJ");
                 for (DynamicObject obj : xbAtts) {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
-                    realPath = UrlService.getAttachmentFullUrl(realPath);
-                    
-                    log.debug("询比单询比文件名:{}。真实路径:{}。", name, realPath);
+                    realPath = "/data/kdshare/fileserver" + realPath;
+
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
@@ -337,7 +341,10 @@ public class ZcPlatformJsonUtil {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
                     String url = (String) fbasedataId.get("url");
-                    Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                    String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                    realPath = "/data/kdshare/fileserver" + realPath;
+
+                    Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                     attachmentIds.add(attachmentId);
                 }
                 put("internalAttachmentIds", attachmentIds);
@@ -423,6 +430,13 @@ public class ZcPlatformJsonUtil {
         });
 
         // 采购范围-附件
+        String nckdProcurementscopeatt = PurapplybillConst.NCKD_PROCUREMENTSCOPEATT;
+
+        // 内部文件-附件
+        String nckdInternaldocuments2 = PurapplybillConst.NCKD_INTERNALDOCUMENTS2;
+
+        // 项目文件-附件
+        String nckdProjectfiles = PurapplybillConst.NCKD_PROJECTFILES;
 
         // 公告标题
         dyJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
@@ -500,7 +514,10 @@ public class ZcPlatformJsonUtil {
                             DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                             String name = fbasedataId.getString("name");
                             String url = (String) fbasedataId.get("url");
-                            Integer negotiateFileId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                            String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                            realPath = "/data/kdshare/fileserver" + realPath;
+
+                            Integer negotiateFileId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                             this.add(negotiateFileId);
                         }
                     }
@@ -514,7 +531,10 @@ public class ZcPlatformJsonUtil {
                             DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                             String name = fbasedataId.getString("name");
                             String url = (String) fbasedataId.get("url");
-                            Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, url, attGroupId);
+                            String realPath = FileServiceFactory.getAttachmentFileService().getFileServiceExt().getRealPath(url);
+                            realPath = "/data/kdshare/fileserver" + realPath;
+
+                            Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                             this.add(internalAttachmentId);
                         }
                     }
