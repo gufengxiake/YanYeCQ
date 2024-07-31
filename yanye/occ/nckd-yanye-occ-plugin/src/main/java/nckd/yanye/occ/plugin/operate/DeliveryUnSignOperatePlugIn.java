@@ -32,13 +32,14 @@ import java.util.*;
  * author:吴国强 2024-07-12
  */
 public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn {
+    @Override
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
+        super.beforeExecuteOperationTransaction(e);
         if (e.getValidExtDataEntities().isEmpty()) {
 
             return;
 
         }
-
 
         // 获取当前单据（下游单据）的主实体编码、单据内码
 
@@ -47,9 +48,7 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
         Set<Object> billIds = new HashSet<>();
 
         for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
-
             billIds.add(dataEntity.getBillPkId());
-
         }
 
 
@@ -71,13 +70,13 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
         }
 
         //获取上游销售出库单的仓库信息
-        HashSet<Long>saloutBillIds=new HashSet<>();
-        Map<String,DynamicObject>stockIdMap=new HashMap<>();
-        if(sourceBillIds.containsKey("im_saloutbill")){
-            saloutBillIds=sourceBillIds.get("im_saloutbill");
+        HashSet<Long> saloutBillIds = new HashSet<>();
+        Map<String, DynamicObject> stockIdMap = new HashMap<>();
+        if (sourceBillIds.containsKey("im_saloutbill")) {
+            saloutBillIds = sourceBillIds.get("im_saloutbill");
         }
-        if(!saloutBillIds.isEmpty()){
-            for(Object salOutPk:saloutBillIds){
+        if (!saloutBillIds.isEmpty()) {
+            for (Object salOutPk : saloutBillIds) {
                 DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "im_saloutbill");
                 //获取单据体数据的集合
                 DynamicObjectCollection goodsEntities = saloutBill.getDynamicObjectCollection("billentry");
@@ -85,8 +84,8 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
                     //获取某行数据的id
                     Object entryId = entryObj.getPkValue();
                     String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
-                    DynamicObject stock=entryObj.getDynamicObject("warehouse");
-                    if(stock!=null){
+                    DynamicObject stock = entryObj.getDynamicObject("warehouse");
+                    if (stock != null) {
                         stockIdMap.put(mainbillentryid, stock);
                     }
 
@@ -98,6 +97,7 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
             String sourceBill = "ocbsoc_saleorder";//要货订单
             String targetBill = "ocbsoc_returnorder";//退货申请单
             String ruleId = "1985077720819698688";//单据转换Id
+            //HashSet<DynamicObject>billDycoll=new HashSet<>();
             // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
             for (Object pk : botpbill1_Ids) {
 
@@ -165,34 +165,40 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
                 }, targetMainType);
                 DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
                 //修改仓库信息
-                for(DynamicObject obj:saveDynamicObject){
-                    DynamicObjectCollection entry=obj.getDynamicObjectCollection("itementry");
-                    for(DynamicObject entryRow:entry){
+                for (DynamicObject obj : saveDynamicObject) {
+                    DynamicObjectCollection entry = obj.getDynamicObjectCollection("itementry");
+                    for (DynamicObject entryRow : entry) {
                         String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
-                        DynamicObject stock= stockIdMap.get(mainbillentryid);
-                        entryRow.set("stockid",stock);
+                        DynamicObject stock = stockIdMap.get(mainbillentryid);
+                        entryRow.set("stockid", stock);
                     }
                 }
 
                 //保存
                 OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
-                if(operationResult1.isSuccess()){
-                    OperateOption auditOption=OperateOption.create();
+                if (operationResult1.isSuccess()) {
+                    OperateOption auditOption = OperateOption.create();
                     auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
                     auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
                     //提交
                     OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
-                    if(subResult.isSuccess()){
+                    if (subResult.isSuccess()) {
                         //审核
                         OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
                     }
                 }
 
-
+                //订单状态 拒签
+                saloutBill.set("billstatus", "G");
+                //签收状态 拒签
+                saloutBill.set("signstatus", "E");
+                SaveServiceHelper.saveOperate(botpbill1_EntityNumber, new DynamicObject[]{saloutBill}, OperateOption.create());
             }
+
         }
-
+        for (DynamicObject dataEntity : e.getDataEntities()) {
+            dataEntity.set("billstatus", "E");
+        }
     }
-
 
 }

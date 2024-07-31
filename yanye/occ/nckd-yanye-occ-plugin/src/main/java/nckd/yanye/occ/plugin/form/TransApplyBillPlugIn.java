@@ -5,6 +5,9 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.datamodel.RowDataEntity;
+import kd.bos.entity.datamodel.events.AfterAddRowEventArgs;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.flydb.core.interpreter.scalar.IsNullOrNot;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
@@ -54,6 +57,11 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                 List<QFilter> qFilters = new ArrayList<>();
                 qFilters.add(new QFilter("nckd_isjh", QCP.equals, "1"));
                 formShowParameter.getListFilterParameter().setQFilters(qFilters);
+            }else {
+                ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+                List<QFilter> qFilters = new ArrayList<>();
+                qFilters.add(new QFilter("nckd_isjh", QCP.not_equals, "1"));
+                formShowParameter.getListFilterParameter().setQFilters(qFilters);
             }
 
         } else if (name.equalsIgnoreCase("warehouse")) {
@@ -66,6 +74,78 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                 qFilters.add(new QFilter("nckd_isjh", QCP.equals, "1"));
                 formShowParameter.getListFilterParameter().setQFilters(qFilters);
             }
+            else {
+                ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+                List<QFilter> qFilters = new ArrayList<>();
+                qFilters.add(new QFilter("nckd_isjh", QCP.not_equals, "1"));
+                formShowParameter.getListFilterParameter().setQFilters(qFilters);
+            }
+        }
+    }
+     @Override
+     public void propertyChanged(PropertyChangedArgs e) {
+         String propName = e.getProperty().getName();
+         if("billtype".equals(propName)){
+             DynamicObject billtype= (DynamicObject) e.getChangeSet()[0].getNewValue();
+             String nameq = billtype.getString("name");
+             Object id = billtype.getPkValue();
+             DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+             Object orgId = org.getPkValue();
+             // 构造QFilter
+             QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+             // 将选中的id对应的数据从数据库加载出来
+             DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+                     "id", qFilter.toArray(), "");
+             DynamicObject stock=collections.get(0);
+             String stockId=stock.getString(("id"));
+             int row=this.getModel().getEntryRowCount("billentry");
+             if (id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")) {
+
+                 for (int i=0;i<row;i++) {
+
+                     this.getModel().setItemValueByID("warehouse", stockId, i);
+                 }
+             }
+             else if (id.equals("1994937113375673344") || nameq.equalsIgnoreCase("借货申请")) {
+                 for (int i=0;i<row;i++) {
+
+                     this.getModel().setItemValueByID("inwarehouse", stockId, i);
+                 }
+             }
+         }
+    }
+
+
+    @Override
+    public void afterAddRow(AfterAddRowEventArgs e) {
+        super.afterAddRow(e);
+        if ("billentry".equals(e.getEntryProp().getName())) {
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+            Object orgId = org.getPkValue();
+            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
+            String nameq = billtype.getString("name");
+            Object id = billtype.getPkValue();
+            // 构造QFilter
+            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+            // 将选中的id对应的数据从数据库加载出来
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+                    "id", qFilter.toArray(), "");
+            DynamicObject stock=collections.get(0);
+            String stockId=stock.getString(("id"));
+            RowDataEntity[] rowdata = e.getRowDataEntities();
+            if (id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")) {
+
+                for (RowDataEntity rowDataEntity : rowdata) {
+                    int currentindex = rowDataEntity.getRowIndex();
+                    this.getModel().setItemValueByID("warehouse", stockId, currentindex);
+                }
+            }
+            else if (id.equals("1994937113375673344") || nameq.equalsIgnoreCase("借货申请")) {
+                for (RowDataEntity rowDataEntity : rowdata) {
+                    int currentindex = rowDataEntity.getRowIndex();
+                    this.getModel().setItemValueByID("inwarehouse", stockId, currentindex);
+                }
+            }
         }
     }
 
@@ -76,12 +156,7 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
         String itemKey = e.getItemKey();
         //一键还货按钮
         if (itemKey.equalsIgnoreCase("nckd_return")) {
-            DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy", 0);
-            if (ywy == null) {
-                this.getView().showErrorNotification("请先维护业务员!");
-                return;
-            }
-            Object ywyId = ywy.getPkValue();
+
             //单据类型
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
             if (billtype == null) {
@@ -91,6 +166,17 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
             if (id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")) {
+                DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy", 0);
+                if (ywy == null) {
+                    this.getView().showErrorNotification("请先维护业务员!");
+                    return;
+                }
+                DynamicObject dept=(DynamicObject)this.getModel().getValue("applydept",0);
+                if(dept==null){
+                    this.getView().showErrorNotification("请先维护申请部门!");
+                    return;
+                }
+                Object ywyId = ywy.getPkValue();
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
                 Object orgId = org.getPkValue();
                 ListShowParameter listPara = ShowFormHelper.createShowListForm("nckd_xsyjhyebf", true);//第二个参数为是否支持多选;
@@ -132,6 +218,24 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                 //清空单据体
                 this.getModel().deleteEntryData("billentry");
                 this.getModel().batchCreateNewEntryRow("billentry", collections.size());
+                DynamicObject dept=(DynamicObject)this.getModel().getValue("applydept",0);
+                Object deptId=dept.getPkValue();
+                DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+                Object orgId = org.getPkValue();
+                //从部门 仓库设置基础资料中获取对应仓库
+                // 构造QFilter
+                QFilter sFilter = new QFilter("createorg", QCP.equals,orgId)
+                        .and("status",QCP.equals,"C")
+                        .and("nckd_bm",QCP.equals,deptId);
+
+                //查找部门对应仓库
+                DynamicObjectCollection stockDycll = QueryServiceHelper.query("nckd_bmcksz",
+                        "id,nckd_ck.number number", sFilter.toArray(), "modifytime");
+                String number="";
+                if(!stockDycll.isEmpty()){
+                    DynamicObject stockItem=stockDycll.get(0);
+                    number=stockItem.getString("number");
+                }
                 int row = 0;
                 for (DynamicObject object : collections) {
                     Object matId = object.get("number");//物料编码
@@ -141,8 +245,9 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                     this.getModel().setItemValueByNumber("material", matId.toString(), row);
                     this.getModel().setValue("qty", qty, row);
                     this.getModel().setItemValueByNumber("warehouse", stockNumber, row);
+                    this.getModel().setItemValueByNumber("inwarehouse", number, row);
                     this.getModel().setValue("lotnumber", lotNum, row);
-                    this.getModel().setItemValueByNumber("lot",lotNum,row);
+                    this.getModel().setItemValueByNumber("lot", lotNum, row);
 
                     row++;
                 }

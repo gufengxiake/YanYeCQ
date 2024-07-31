@@ -18,7 +18,7 @@ import java.util.EventObject;
 import java.util.HashSet;
 
 /**
- * 采购订单按钮查询月度采购统计
+ * 采购订单表单插件
  * 表单插件
  * author:吴国强 2024-07-12
  */
@@ -48,7 +48,7 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
             //组织信息
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             if (org == null) {
-                this.getView().showErrMessage("采购组织为空!", "为空提示!");
+                this.getView().showErrorNotification("采购组织为空!");
                 return;
             }
             Object orgId = org.getPkValue();
@@ -60,19 +60,24 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                 return;
             }
             HashSet<Object> matGroupIds = new HashSet<>();
+            HashSet<Object> matGroupNums = new HashSet<>();
             for (int i : rows) {
                 DynamicObject mat = (DynamicObject) this.getModel().getValue("material", i);
                 if (mat != null) {
-                    Object groupId = mat.getString("masterid.group.id");
-                    Object groupName = mat.getString("masterid.group.name");
+                    //物料分组Id
+                    Object groupId=mat.getString("masterid.group.id");
                     matGroupIds.add(groupId);
+                    //物料分组编码
+                    Object groupNum=mat.getString("masterid.group.number");
+                    matGroupNums.add(groupNum);
                 }
             }
             //订单日期
             Date date = (Date) this.getModel().getValue("biztime");
             // 自定义传参，把当前单据的文本字段传过去
             formShowParameter.setCustomParam("orgId", orgId);//组织Id
-            formShowParameter.setCustomParam("groupId", matGroupIds);
+            formShowParameter.setCustomParam("groupIds", matGroupIds);
+            formShowParameter.setCustomParam("groupNum", matGroupNums);
             formShowParameter.setCustomParam("date", date);
             // 设置回调事件，回调插件为当前插件，标识为kdec_sfform
             //formShowParameter.setCloseCallBack(new CloseCallBack(this,"kdec_sfform"));
@@ -135,6 +140,9 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
 
                 }
 
+            }
+            else{
+                this.getView().showSuccessNotification("承运方未选择企业,无需获取运费单价!");
             }
 
 
