@@ -44,9 +44,11 @@ public class MaterialreqouTask extends AbstractTask {
             for (DynamicObject object : billentry) {
                 Boolean evaluateFlag = (Boolean) object.get("nckd_evaluate_flag");
                 Date evaluateDate = (Date) object.get("nckd_evaluate_date");
-                LocalDate localDate = evaluateDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                if(evaluateFlag && localDate.equals(LocalDate.now())){
-                    object.set("nckd_already_evaluate",1);
+                if(evaluateDate != null){
+                    LocalDate localDate = evaluateDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                    if(evaluateFlag && localDate.equals(LocalDate.now())){
+                        object.set("nckd_already_evaluate",1);
+                    }
                 }
             }
         }
