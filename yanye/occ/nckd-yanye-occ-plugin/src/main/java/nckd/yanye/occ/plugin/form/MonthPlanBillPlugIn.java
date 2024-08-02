@@ -137,8 +137,8 @@ public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
                         purQty=purQty.add(billItem.getBigDecimal("qty")) ;
                     }
 
-                    //采购订单已关闭或已终止  取采购订单的采购数量-已入库数量
-                    String closeFieldkey="org.id orgid,billentry.qty-billentry.invqty qty";
+                    //采购订单已关闭或已终止  取采购订单的已入库数量
+                    String closeFieldkey="org.id orgid,billentry.invqty qty";
                     QFilter closeFilter=new QFilter("org.id", QCP.equals, orgId)
                             .and("billstatus", QCP.equals, "C")
                             .and("billentry.material.masterid.group.id", QCP.in, groupIds)
