@@ -18,6 +18,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -72,7 +73,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             //构造查询生产工单分录条件
             QFilter qFilter = new QFilter("treeentryentity.material", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C");
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept", new QFilter[]{qFilter});
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept", new QFilter[]{qFilter});
             //key,物料生产信息，value:生产工单
             Map<Object,DynamicObject> map = new HashMap<>();
             //key,物料生产信息，value:生产工单物料信息分录
@@ -150,8 +151,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         DynamicObject invscheme = BusinessDataServiceHelper.loadSingle(767845948062835712l, "im_invscheme");
         invcountscheme.set("invscheme",invscheme);//库存事务
         invcountscheme.set("productionorg",warDynamicObject.getDynamicObject("org"));//生产组织()
-        invcountscheme.set("bizdept",warDynamicObject.getLong("entrustdept"));//业务部门
+        invcountscheme.set("bizdept",RequestContext.get().getOrgId());//业务部门
         invcountscheme.set("shipper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//货主
+        invcountscheme.set("billcretype", 0);//单据生成类型
         getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,"",inventoryDynamicObject);
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
         negainventoryOrderEntry.set("producttype",dynamicObject.getString("nckd_sideproduct"));//产品类型
@@ -160,8 +162,23 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         negainventoryOrderEntry.set("owner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库货主
         negainventoryOrderEntry.set("entrysettleorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//结算组织
         negainventoryOrderEntry.set("manubill",warDynamicObject.getString("billno"));//生产工单编号
+        negainventoryOrderEntry.set("mainbillid",warDynamicObject.getLong("id"));//核心单据ID
         negainventoryOrderEntry.set("mainbillnumber",warDynamicObject.getString("billno"));//核心单据编号
-        getDynamicObject(negainventoryOrderEntry,dynamicObject,"");
+        negainventoryOrderEntry.set("manubillid",warDynamicObject.getLong("id"));//生产工单ID
+        negainventoryOrderEntry.set("mainbillentity","pom_mftorder");//核心单据实体
+        negainventoryOrderEntry.set("srcbillentity","pom_mftorder");//来源单据实体
+        negainventoryOrderEntry.set("srcbillid",warDynamicObject.getLong("id"));//来源单据ID
+        negainventoryOrderEntry.set("srcbillnumber",warDynamicObject.getString("billno"));//来源单据编号
+        negainventoryOrderEntry.set("materialattr","10030");//物料属性
+        negainventoryOrderEntry.set("backflushstatus","D");//倒冲标识
+        negainventoryOrderEntry.set("isadd",1);//是否新增行
+        negainventoryOrderEntry.set("mainbillentryseq",1);//核心单据分录序号
+        List<DynamicObject> collections = warDynamicObject.getDynamicObjectCollection("treeentryentity")
+                .stream().filter(t-> "C".equals(t.getString("producttype"))).collect(Collectors.toList());;
+        negainventoryOrderEntry.set("manuentryid", CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("id") : 0);//生产工单行ID
+        negainventoryOrderEntry.set("producedept",CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("producedept.masterid") : 0);//来源单据编号
+
+        getDynamicObject(negainventoryOrderEntry,dynamicObject,"LL");
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_mdc_mftmanuinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的完工入库单新增失败");
