@@ -5,7 +5,6 @@ import java.util.*;
 import kd.bos.algo.DataSet;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -31,6 +30,7 @@ public class CloseAccountCheck extends DataEntityDataCheck {
 
     public List<ExceptionObj> collectExceptionObj(DataCheckParam param){
         Set<Long> ownerIds = param.getCalorg();
+        List<ExceptionObj> exceptionObjs = new ArrayList(16);
 
         // 查询对应组织的会计期间
         QFilter filter = new QFilter("org", QCP.in, ownerIds)
@@ -43,12 +43,16 @@ public class CloseAccountCheck extends DataEntityDataCheck {
         QFilter qFilter = new QFilter("nckd_adjustaccountsorg", QCP.in, ownerIds)
                 .and("nckd_accountingperiod",QCP.equals,currentperiod.getPkValue())
                 .and("billstatus",QCP.not_equals,"C");
-        DynamicObject[] endpriceadjusts = BusinessDataServiceHelper.load("nckd_endpriceadjust", "id", qFilter.toArray());
+        DynamicObject[] endpriceadjusts = BusinessDataServiceHelper.load("nckd_endpriceadjust", "id,billno", qFilter.toArray());
         if(endpriceadjusts.length > 0){
-            throw new KDBizException("存在未审核的月末调价单");
+            for (DynamicObject endpriceadjust : endpriceadjusts) {
+                ExceptionObj exceptionObj = new ExceptionObj((Long) endpriceadjust.getPkValue(), this.getDataEntityType());
+                exceptionObj.setDescription("存在未审核的月末调价单:" + endpriceadjust.getString("billno"));
+                exceptionObjs.add(exceptionObj);
+            }
         }
 
-        return null;
+        return exceptionObjs;
     }
 
     @Override
