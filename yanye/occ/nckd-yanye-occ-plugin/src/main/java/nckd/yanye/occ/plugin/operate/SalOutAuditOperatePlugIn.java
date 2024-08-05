@@ -19,6 +19,7 @@ import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.metadata.dao.MetadataDao;
@@ -41,6 +42,13 @@ import java.util.*;
  * author:吴国强 2024-07-12
  */
 public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
+    @Override
+    public void onPreparePropertys(PreparePropertysEventArgs e) {
+        super.onPreparePropertys(e);
+        e.getFieldKeys().add("mainbillentryid");//核心单据行Id
+        e.getFieldKeys().add("qty");//数量
+
+    }
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
         if (e.getValidExtDataEntities().isEmpty()) {
 
