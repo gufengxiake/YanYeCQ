@@ -67,7 +67,8 @@ public class BadDealbillAuditOpPlugin extends AbstractOperationServicePlugIn {
         DynamicObject[] procureMaterials = BusinessDataServiceHelper.load
                 ("im_purreceivebill", "id,exchangerate,billentry.amountandtax,billentry.actualprice," +
                         "billentry.actualtaxprice,billentry.taxrate,billentry.qty,billentry.curamountandtax," +
-                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid", qFilter1.toArray());
+                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid" +
+                        ",billentry.amount,billentry.curamount,billentry.taxamount,billentry.curtaxamount", qFilter1.toArray());
 
         Map<Long, DynamicObject> purreceivebillMap = Arrays.stream(procureMaterials).collect(Collectors.toMap(t -> t.getLong("id"), t -> t));
         //遍历来料不良品处理单全部分录
@@ -119,6 +120,23 @@ public class BadDealbillAuditOpPlugin extends AbstractOperationServicePlugIn {
                 dynamic.set("actualprice", actualPrice);//实际单价
                 dynamic.set("actualtaxprice", actualTaxPrice);//实际含税单价
                 dynamic.set("nckd_amountand", originalAmount);//价税合计(原)
+                dynamic.set("actualtaxprice", actualTaxPrice);//含税单价
+                dynamic.set("actualprice", actualPrice);// 单价
+                dynamic.set("nckd_taxpricecurrent", actualTaxPrice);//含税单价（原）
+                dynamic.set("nckd_pricecurrent", actualPrice);//单价（原）
+                dynamic.set("nckd_amount", dynamic.getBigDecimal("amount"));// 金额(原)
+                dynamic.set("nckd_amountcurrency", dynamic.getBigDecimal("curamount"));// 金额（本币位）(原)
+                dynamic.set("nckd_taxamount", dynamic.getBigDecimal("taxamount"));// 税额(原)
+                dynamic.set("nckd_taxamountcurrent", dynamic.getBigDecimal("curtaxamount"));// 税额（本币位）(原)
+                BigDecimal amount = actualPrice.multiply(unqualiqty);// 金额
+                BigDecimal currentamount = actualPrice.multiply(unqualiqty).multiply(unqualiqty);// 金额（本币位）
+                dynamic.set("amount", amount);// 金额
+                dynamic.set("curamount", currentamount);// 金额（本币位）
+                dynamic.set("taxamount", original.subtract(amount));// 税额
+                dynamic.set("curtaxamount", original.multiply(exchangerate).subtract(currentamount));// 税额（本币位）
+
+
+
             }
         });
         SaveServiceHelper.update(procureMaterials);

@@ -68,7 +68,9 @@ public class BadDealbillAntiAuditOpPlugin extends AbstractOperationServicePlugIn
         DynamicObject[] procureMaterials = BusinessDataServiceHelper.load
                 ("im_purreceivebill", "id,exchangerate,billentry.amountandtax,billentry.actualprice," +
                         "billentry.actualtaxprice,billentry.taxrate,billentry.qty,billentry.curamountandtax," +
-                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid,billentry.price,billentry.priceandtax", qFilter1.toArray());
+                        "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid,billentry.price,billentry.priceandtax" +
+                        ",billentry.nckd_pricecurrent,billentry.nckd_taxpricecurrent,billentry.nckd_amount,billentry.nckd_amountcurrency" +
+                        ",billentry.nckd_taxamount,billentry.nckd_taxamountcurrent", qFilter1.toArray());
 
         Map<Long, DynamicObject> purreceivebillMap = Arrays.stream(procureMaterials).collect(Collectors.toMap(t -> t.getLong("id"), t -> t));
         //遍历来料不良品处理单全部分录
@@ -98,10 +100,17 @@ public class BadDealbillAntiAuditOpPlugin extends AbstractOperationServicePlugIn
                 //采购收货单的对应物料的分录
                 DynamicObject dynamic = materialmasterMap.get(materielid);
                 //采购收货单的对应物料的分录
-                dynamic.set("amountandtax",dynamic.getBigDecimal("nckd_amountand"));
-                dynamic.set("curamountandtax",dynamic.getBigDecimal("nckd_amountand_current"));
-                dynamic.set("actualprice",dynamic.getBigDecimal("price"));
-                dynamic.set("actualtaxprice",dynamic.getBigDecimal("priceandtax"));
+                dynamic.set("amountandtax",dynamic.getBigDecimal("nckd_amountand"));//价税合计
+                dynamic.set("curamountandtax",dynamic.getBigDecimal("nckd_amountand_current"));//价税合计(本位币)
+                dynamic.set("actualprice",dynamic.getBigDecimal("nckd_pricecurrent"));//实际单价
+                dynamic.set("actualtaxprice",dynamic.getBigDecimal("nckd_taxpricecurrent"));//实际含税单价
+
+                dynamic.set("price",dynamic.getBigDecimal("nckd_taxpricecurrent"));//含税单价
+                dynamic.set("priceandtax",dynamic.getBigDecimal("nckd_pricecurrent"));// 单价
+                dynamic.set("amount",dynamic.getBigDecimal("nckd_pricecurrent"));// 金额
+                dynamic.set("curamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 金额（本币位）
+                dynamic.set("taxamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 税额
+                dynamic.set("curtaxamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 税额（本币位）
             }
         });
         SaveServiceHelper.update(procureMaterials);
