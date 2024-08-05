@@ -55,6 +55,7 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                     //获取条件
                     Date biztimebegin = bill.getDate("biztimebegin");
                     Date biztimeend = bill.getDate("biztimeend");
+                    DynamicObject org = bill.getDynamicObject("org");
                     DynamicObject supplier = bill.getDynamicObject("supplier");
                     //获取分录行
                     DynamicObjectCollection entryColl = bill.getDynamicObjectCollection("billentry");
@@ -66,7 +67,8 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                     Map<Object, String> mapIdAndName = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
                             .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getDynamicObject("material").getDynamicObject("masterid").getString("name")));
                     //构造查询条件 ，这里没办法 每个合同的条件都不一样
-                    QFilter qFilter = new QFilter("supplier", QCP.equals, supplier.getPkValue())
+                    QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue())
+                            .and("supplier", QCP.equals, supplier.getPkValue())
                             .and("billstatus", QCP.equals, "C")
                             .and("validstatus", QCP.equals, "B")
                             .and("closestatus", QCP.equals, "A")

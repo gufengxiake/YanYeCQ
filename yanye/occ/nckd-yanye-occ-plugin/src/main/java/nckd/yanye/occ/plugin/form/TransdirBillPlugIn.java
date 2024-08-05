@@ -1,5 +1,6 @@
 package nckd.yanye.occ.plugin.form;
 
+import com.alibaba.druid.util.StringUtils;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -41,7 +42,9 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
         String name = evt.getProperty().getName();
         if (name.equalsIgnoreCase("warehouse")) {
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-            if(billtype==null){return;}
+            if (billtype == null) {
+                return;
+            }
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
             if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
@@ -58,7 +61,9 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
 
         } else if (name.equalsIgnoreCase("outwarehouse")) {
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-            if(billtype==null){return;}
+            if (billtype == null) {
+                return;
+            }
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
             if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
@@ -76,38 +81,39 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
 
 
     }
+
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         String propName = e.getProperty().getName();
-        if("billtype".equals(propName)){
-            DynamicObject billtype= (DynamicObject) e.getChangeSet()[0].getNewValue();
+        if ("billtype".equals(propName)) {
+            DynamicObject billtype = (DynamicObject) e.getChangeSet()[0].getNewValue();
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
             DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
             Object orgId = org.getPkValue();
             // 构造QFilter
-            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
                     "id", qFilter.toArray(), "");
-            DynamicObject stock=collections.get(0);
-            String stockId=stock.getString(("id"));
-            int row=this.getModel().getEntryRowCount("billentry");
+            DynamicObject stock = collections.get(0);
+            String stockId = stock.getString(("id"));
+            int row = this.getModel().getEntryRowCount("billentry");
             if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
 
-                for (int i=0;i<row;i++) {
+                for (int i = 0; i < row; i++) {
 
                     this.getModel().setItemValueByID("outwarehouse", stockId, i);
                 }
-            }
-            else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-                for (int i=0;i<row;i++) {
+            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+                for (int i = 0; i < row; i++) {
 
                     this.getModel().setItemValueByID("warehouse", stockId, i);
                 }
             }
         }
     }
+
     @Override
     public void afterAddRow(AfterAddRowEventArgs e) {
         super.afterAddRow(e);
@@ -118,12 +124,12 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             String nameq = billtype.getString("name");
             Object id = billtype.getPkValue();
             // 构造QFilter
-            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals,orgId);
+            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
                     "id", qFilter.toArray(), "");
-            DynamicObject stock=collections.get(0);
-            String stockId=stock.getString(("id"));
+            DynamicObject stock = collections.get(0);
+            String stockId = stock.getString(("id"));
             RowDataEntity[] rowdata = e.getRowDataEntities();
             if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
 
@@ -131,8 +137,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                     int currentindex = rowDataEntity.getRowIndex();
                     this.getModel().setItemValueByID("outwarehouse", stockId, currentindex);
                 }
-            }
-            else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
                 for (RowDataEntity rowDataEntity : rowdata) {
                     int currentindex = rowDataEntity.getRowIndex();
                     this.getModel().setItemValueByID("warehouse", stockId, currentindex);
@@ -140,6 +145,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             }
         }
     }
+
     @Override
     public void itemClick(ItemClickEvent e) {
         super.itemClick(e);
@@ -163,8 +169,8 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                     return;
                 }
                 Object ywyId = ywy.getPkValue();
-                DynamicObject dept=(DynamicObject)this.getModel().getValue("dept",0);
-                if(dept==null){
+                DynamicObject dept = (DynamicObject) this.getModel().getValue("dept", 0);
+                if (dept == null) {
                     this.getView().showErrorNotification("请先维护调入部门!");
                     return;
                 }
@@ -191,8 +197,9 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
     public void closedCallBack(ClosedCallBackEvent closedCallBackEvent) {
 
         super.closedCallBack(closedCallBackEvent);
+        String key = closedCallBackEvent.getActionId();
         // 接收回调
-        if (closedCallBackEvent.getReturnData() instanceof ListSelectedRowCollection) {
+        if (StringUtils.equalsIgnoreCase("return", key) && closedCallBackEvent.getReturnData() instanceof ListSelectedRowCollection) {
             ListSelectedRowCollection selectCollections = (ListSelectedRowCollection) closedCallBackEvent.getReturnData();
             ArrayList list = new ArrayList();
             for (ListSelectedRow row : selectCollections) {
@@ -209,23 +216,23 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                 //清空单据体
                 this.getModel().deleteEntryData("billentry");
                 this.getModel().batchCreateNewEntryRow("billentry", collections.size());
-                DynamicObject dept=(DynamicObject)this.getModel().getValue("dept",0);
-                Object deptId=dept.getPkValue();
+                DynamicObject dept = (DynamicObject) this.getModel().getValue("dept", 0);
+                Object deptId = dept.getPkValue();
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
                 Object orgId = org.getPkValue();
                 //从部门 仓库设置基础资料中获取对应仓库
                 // 构造QFilter
-                QFilter sFilter = new QFilter("createorg", QCP.equals,orgId)
-                        .and("status",QCP.equals,"C")
-                        .and("nckd_bm",QCP.equals,deptId);
+                QFilter sFilter = new QFilter("createorg", QCP.equals, orgId)
+                        .and("status", QCP.equals, "C")
+                        .and("nckd_bm", QCP.equals, deptId);
 
                 //查找部门对应仓库
                 DynamicObjectCollection stockDycll = QueryServiceHelper.query("nckd_bmcksz",
                         "id,nckd_ck.number number", sFilter.toArray(), "modifytime");
-                String number="";
-                if(!stockDycll.isEmpty()){
-                    DynamicObject stockItem=stockDycll.get(0);
-                    number=stockItem.getString("number");
+                String number = "";
+                if (!stockDycll.isEmpty()) {
+                    DynamicObject stockItem = stockDycll.get(0);
+                    number = stockItem.getString("number");
                 }
                 int row = 0;
                 for (DynamicObject object : collections) {

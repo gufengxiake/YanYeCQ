@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.form;
 
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -121,7 +122,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             invcountscheme.set("org", orgDy);
             Date date = new Date();
             String yyyyMMdd = DateUtil.format(date, "yyyyMMdd");
-            int i = 0;
+            int i = RandomUtil.randomInt(10000);
             String code = String.format("%04d", ++i);
             String invcountschemebillno = "PDFA-" + yyyyMMdd + "-" + code;
             invcountscheme.set("billno", invcountschemebillno);
@@ -228,7 +229,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
         //获取盘点表上的盘点方案编码
         Set<Object> schemenumberSet = Arrays.stream(invcountbillArr).map(e -> e.getString("schemenumber")).collect(Collectors.toSet());
         //两边数量应该一致，粗略的判断一下
-        if(invcountschemeNoSet.size() != schemenumberSet.size()){
+        if (invcountschemeNoSet.size() != schemenumberSet.size()) {
             this.getView().showErrorNotification("有盘点方案存在未生成的盘点表,请检查盘点方案是否一一生成盘点表");
             return;
         }
@@ -247,7 +248,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             DynamicObject negainventoryOrder = BusinessDataServiceHelper.newDynamicObject("nckd_negainventoryorder");
             Date date = new Date();
             String yyyyMMdd = DateUtil.format(date, "yyyyMMdd");
-            int i = 0;
+            int i = RandomUtil.randomInt(10000);
             String code = String.format("%04d", ++i);
             negainventoryOrder.set("billno", "FKCWLJCD-" + yyyyMMdd + "-" + code);
             int month = DateUtil.month(inventoryclosedate) + 1;

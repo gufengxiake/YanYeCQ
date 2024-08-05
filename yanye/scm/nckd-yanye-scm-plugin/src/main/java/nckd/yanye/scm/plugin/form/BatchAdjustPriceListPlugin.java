@@ -92,7 +92,7 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
                 throw new KDBizException("所选暂估应付单的单据日期必须在存货核算模块当前期间!");
             }
 
-            if(closedate == null || bizdate.compareTo(closedate) < 0){
+            if(closedate != null && bizdate.compareTo(closedate) < 0){
                 throw new KDBizException("所选暂估应付单的当前期间存货核算模块必须未关账!");
             }
 

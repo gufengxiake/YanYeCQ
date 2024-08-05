@@ -9,7 +9,6 @@ import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.ShowType;
-import kd.bos.form.control.Control;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.events.HyperLinkClickEvent;
 import kd.bos.form.events.HyperLinkClickListener;
@@ -66,7 +65,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             .and("biztimebegin", QCP.less_equals, bizDate)
                             .and("biztimeend", QCP.large_equals, bizDate);
                     //String entityName, String selectProperties, QFilter[] filters
-                    DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.id,billentry.material,billentry.lineno,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.seq", qFilter.toArray());
+                    DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.id,billentry.material,billentry.lineno,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.taxrate,billentry.seq", qFilter.toArray());
                     //直接没查到，那就置空
                     if (purcontractArr.length == 0) {
                         dealPurcontractEntry(billentry);
@@ -78,7 +77,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         for (DynamicObject entry : purcontractEntryList) {
                             JSONObject json = new JSONObject();
-                            json.put("conbillentity",purcontractBill);
+                            json.put("conbillentity", purcontractBill);
                             json.put("id", purcontractBill.getString("id"));
                             json.put("billno", purcontractBill.getString("billno"));
                             json.put("entryid", entry.getString("id"));
@@ -87,6 +86,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             json.put("price", entry.getBigDecimal("price"));
                             json.put("priceandtax", entry.getBigDecimal("priceandtax"));
                             json.put("taxrateid", entry.getDynamicObject("taxrateid"));
+                            json.put("taxrate", entry.getBigDecimal("taxrate"));
                             map.put(entry.getDynamicObject("material").getPkValue(), json);
                         }
                     }
@@ -96,7 +96,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         //int seq = dy.getInt("seq");
                         JSONObject json = map.get(dy.getDynamicObject("material").getPkValue());
                         if (json != null) {
-                            dy.set("conbillentity",((DynamicObject)json.get("conbillentity")).getDynamicObjectType().getName());
+                            dy.set("conbillentity", ((DynamicObject) json.get("conbillentity")).getDynamicObjectType().getName());
                             dy.set("conbillid", json.get("id"));
                             dy.set("conbillnumber", json.get("billno"));
                             dy.set("conbillentryid", json.get("entryid"));
@@ -107,6 +107,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             BigDecimal priceandtax = json.getBigDecimal("priceandtax");
                             dy.set("priceandtax", priceandtax);
                             dy.set("taxrateid", json.get("taxrateid"));
+                            dy.set("taxrate", json.get("taxrate"));
                             //价税合计（含本位币）=含税单价*数量---保留两位小数
                             //金额（含本位币）=单价*数量--------保留两位小数
                             //税额（含本位币）=价税合计-金额---------保留两位小数
@@ -121,7 +122,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("taxamount", taxamount);
                             dy.set("curtaxamount", taxamount);
                         } else {
-                            dy.set("conbillentity",null);
+                            dy.set("conbillentity", null);
                             dy.set("conbillid", null);
                             dy.set("conbillnumber", null);
                             dy.set("conbillentryid", null);
@@ -130,6 +131,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("price", null);
                             dy.set("priceandtax", null);
                             dy.set("taxrateid", null);
+                            dy.set("taxrate", null);
                             dy.set("amountandtax", null);
                             dy.set("curamountandtax", null);
                             dy.set("amount", null);
@@ -138,6 +140,13 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("curtaxamount", null);
                         }
                     }
+                    //需要合计billentry上的税额、金额、价税合计到财务信息上
+                    BigDecimal amount = billentry.stream().map(k -> k.getBigDecimal("amount")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal taxamount = billentry.stream().map(k -> k.getBigDecimal("taxamount")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal amountandtax = billentry.stream().map(k -> k.getBigDecimal("amountandtax")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    this.getModel().setValue("totalamount", amount);
+                    this.getModel().setValue("totaltaxamount", taxamount);
+                    this.getModel().setValue("totalallamount", amountandtax);
                 }
             }
         }
@@ -168,7 +177,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             .and("biztimebegin", QCP.less_equals, bizDate)
                             .and("biztimeend", QCP.large_equals, bizDate);
                     //String entityName, String selectProperties, QFilter[] filters
-                    DynamicObject purcontractBill = BusinessDataServiceHelper.loadSingle("conm_purcontract", "id,billno,billentry.id,billentry.lineno,billentry.material,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.seq", qFilter.toArray());
+                    DynamicObject purcontractBill = BusinessDataServiceHelper.loadSingle("conm_purcontract", "id,billno,billentry.id,billentry.lineno,billentry.material,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.taxrate,billentry.seq", qFilter.toArray());
                     if (ObjectUtils.isEmpty(purcontractBill)) {
                         dealPurcontractEntryBySeq(rowIndex);
                         return;
@@ -188,6 +197,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         BigDecimal priceandtax = purcontractEntry.getBigDecimal("priceandtax");
                         this.getModel().setValue("priceandtax", priceandtax, rowIndex);
                         this.getModel().setValue("taxrateid", purcontractEntry.getDynamicObject("taxrateid"), rowIndex);
+                        this.getModel().setValue("taxrate", purcontractEntry.getBigDecimal("taxrate"), rowIndex);
                         //价税合计（含本位币）=含税单价*数量---保留两位小数
                         //金额（含本位币）=单价*数量--------保留两位小数
                         //税额（含本位币）=价税合计-金额---------保留两位小数
@@ -216,7 +226,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
      */
     private void dealPurcontractEntry(DynamicObjectCollection billentry) {
         for (DynamicObject entry : billentry) {
-            entry.set("conbillentity",null);
+            entry.set("conbillentity", null);
             entry.set("conbillid", null);
             entry.set("conbillnumber", null);
             entry.set("conbillentryid", null);
@@ -225,6 +235,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
             entry.set("price", null);
             entry.set("priceandtax", null);
             entry.set("taxrateid", null);
+            entry.set("taxrate", null);
 
             entry.set("amountandtax", null);
             entry.set("curamountandtax", null);
@@ -251,6 +262,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
         this.getModel().setValue("price", null, rowIndex);
         this.getModel().setValue("priceandtax", null, rowIndex);
         this.getModel().setValue("taxrateid", null, rowIndex);
+        this.getModel().setValue("taxrate", null, rowIndex);
 
         this.getModel().setValue("amountandtax", null, rowIndex);
         this.getModel().setValue("curamountandtax", null, rowIndex);
@@ -273,7 +285,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
     public void hyperLinkClick(HyperLinkClickEvent hyperLinkClickEvent) {
         String key = hyperLinkClickEvent.getFieldName();
         //采购订单匹配到采购合同后，将采购合同号进行记录，且点击该字段可直接跳转至采购合同
-        if(StringUtils.equals("conbillnumber",key)){
+        if (StringUtils.equals("conbillnumber", key)) {
             int rowIndex = hyperLinkClickEvent.getRowIndex();
             BillShowParameter billShowParameter = new BillShowParameter();
             billShowParameter.setFormId("conm_purcontract");
