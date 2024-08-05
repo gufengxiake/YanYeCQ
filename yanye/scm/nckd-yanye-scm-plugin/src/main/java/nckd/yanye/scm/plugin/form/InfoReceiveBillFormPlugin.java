@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.form;
 
+import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.OperationResult;
@@ -85,7 +86,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     private void addSup() {
         String supplierId = (String) this.getModel().getValue("nckd_supplierid");
         String uscc = (String) this.getModel().getValue("nckd_uscc");
-        OperationResult result = addSupplier(supplierId, uscc);
+        OperationResult result = addSupplier(supplierId);
         if (result.isSuccess()) {
             this.getView().showSuccessNotification("生成成功!");
         } else {
@@ -406,7 +407,6 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
 
         String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
         getView().openUrl(url);
-
     }
 
 
@@ -414,10 +414,14 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      * fixme 新增供应商
      *
      * @param supplierId
-     * @param uscc
      * @return
      */
-    public static OperationResult addSupplier(String supplierId, String uscc) {
+    public static OperationResult addSupplier(String supplierId) {
+        // 查询成交公司数据
+        JSONObject companyData = ZcPlatformApiUtil.getCompanyDataById(supplierId);
+        // 成交公司统一社会信用代码
+        String uscc = companyData.getString("socialCreditCode");
+
         //根据招采平台供应商id查询供应商信息
         DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
                 SupplierConst.FORMBILLID,
@@ -437,10 +441,8 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 DynamicObject supplier = load[0];
                 supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
                 supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
-                //todo 保存成功校验
                 return SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
             }
-
 
             //不存在，则新增保存至金蝶供应商
             DynamicObject supplier = BusinessDataServiceHelper.newDynamicObject(SupplierConst.FORMBILLID);
@@ -448,18 +450,15 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                     "100000",
                     "bos_org"
             );
-            //todo 查询招采平台供应商信息
 
-            //编码
-//            supplier.set(SupplierConst.NUMBER, "123");
             //名称
-            supplier.set(SupplierConst.NAME, "测试11");
+            supplier.set(SupplierConst.NAME, companyData.getString("companyName"));
             //创建组织
             supplier.set(SupplierConst.CREATEORG, org);
             //业务组织
             supplier.set(SupplierConst.USEORG, org);
             //统一社会信用代码
-            supplier.set(SupplierConst.SOCIETYCREDITCODE, "123123");
+            supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
             //招采平台id
             supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
             //控制策略：自由分配

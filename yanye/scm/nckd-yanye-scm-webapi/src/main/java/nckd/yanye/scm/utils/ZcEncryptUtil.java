@@ -17,9 +17,9 @@ import java.util.stream.Stream;
 public class ZcEncryptUtil {
 
     /**
-     * todo 应用密钥
+     * todo 消息加密密钥
      */
-    private static final String SECRET = "123123";
+    private static final String SECRET = "he0163jv3a7THByu";
 
 
     /**

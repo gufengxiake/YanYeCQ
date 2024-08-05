@@ -1,6 +1,8 @@
 package nckd.yanye.scm.plugin.form;
 
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import com.kingdee.util.StringUtils;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.exception.KDBizException;
@@ -93,6 +95,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             case ANNOUNCEMENT:
                 viewNotice(model);
                 break;
+            // 制作标书
             case BAR_BARITEMAP:
                 makeBidFile(model);
                 break;
@@ -129,17 +132,17 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("采购申请单未审核!");
         }
 
-//        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == true)) {
-//            throw new KDBizException("该采购申请单已经推送至招采平台!");
-//        }
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), true)) {
+            throw new KDBizException("该采购申请单已经推送至招采平台!");
+        }
 
-        if (((boolean) model.getValue(PurapplybillConst.NCKD_WHETHERPUSH) == false) ||
-                model.getValue(PurapplybillConst.NCKD_PROCUREMENTS) == "annualcontract") {
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_WHETHERPUSH), false) ||
+                Objects.equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS), "annualcontract")) {
             throw new KDBizException("该采购申请单未勾选“是否推送招采平台”!");
         }
 
         // 初始化结果json
-        JSONObject resultJson = null;
+        JSONObject resultJson;
 
         // 获取采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
@@ -203,7 +206,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      * @param model
      */
     private void viewNotice(IDataModel model) {
-        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
@@ -220,8 +223,15 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     private void makeBidFile(IDataModel model) {
         // 采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
+
+        if (StringUtils.isEmpty(procurements)) {
+            throw new KDBizException("请选择采购方式!");
+        }
+
         if ("bidprocurement".equals(procurements)) {
             Integer reviewId = ZcPlatformApiUtil.getBiddingFiles();
+            // 赋值线上评审id
+            model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
             String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
             String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
             // 跳转页面
@@ -229,6 +239,8 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         } else {
             String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
             Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
+            // 赋值线上评审id
+            model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
             String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
             // 跳转页面
             getView().openUrl(url);

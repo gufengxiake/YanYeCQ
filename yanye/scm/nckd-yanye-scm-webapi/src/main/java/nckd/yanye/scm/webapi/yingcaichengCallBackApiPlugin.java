@@ -5,7 +5,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
@@ -51,17 +50,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 加密消息体
         String encryptBody = content.getEncryptBody();
 
-
-        log.debug("招采平台回调开始!回调编号:{}", callbackCode);
-        log.debug("应用id:{}", openAppKey);
-        log.debug("业务类型编号:{}", businessType);
-        log.debug("业务节点编号:{}", businessNode);
-        log.debug("随机数:{}", nonce);
-        log.debug("时间戳:{}", timestamp);
-        log.debug("签名:{}", signature);
-        log.debug("加密消息体:{}", encryptBody);
-
-
         // 判断节点编号-非成交业务不做处理
         if (!"win-release".equals(businessNode)) {
             return CustomApiResult.success("success");
@@ -86,8 +74,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         );
 
         if (purapplyBillObj.length == 0) {
-            log.error("招采平台回调失败!未找到对应的采购单!");
-            throw new KDBizException("招采平台回调失败!未找到对应的采购单!");
+            return CustomApiResult.success("success");
         }
 
         // todo 生成信息接收单
@@ -177,11 +164,12 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
+        // 供应商/订单生成失败原因
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "测试。不生成");
 
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
         // todo 生成 采购订单 或 采购合同
-
 
         return CustomApiResult.success("success");
     }

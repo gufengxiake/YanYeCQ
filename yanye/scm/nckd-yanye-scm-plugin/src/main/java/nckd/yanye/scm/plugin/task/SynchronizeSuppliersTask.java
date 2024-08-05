@@ -33,11 +33,11 @@ public class SynchronizeSuppliersTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         //获取招采平台供应商列表
-        JSONArray zcSupplierArray = ZcPlatformApiUtil.getZcSupplier();
+        JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier();
         //遍历招采平台供应商列表，对应社会统一代码与id
         HashMap<String, String> supplierMap = new HashMap<>();
-        for (int i = 0; i < zcSupplierArray.size(); i++) {
-            JSONObject zcSupplier = zcSupplierArray.getJSONObject(i);
+        for (int i = 0; i < allSuppliers.size(); i++) {
+            JSONObject zcSupplier = allSuppliers.getJSONObject(i);
             String socialCreditCode = zcSupplier.getString("socialCreditCode");
             String companyId = zcSupplier.getString("companyId");
             supplierMap.put(socialCreditCode, companyId);
@@ -49,6 +49,7 @@ public class SynchronizeSuppliersTask extends AbstractTask {
                 SupplierConst.ALLPROPERTY,
                 new QFilter[]{new QFilter(SupplierConst.SOCIETYCREDITCODE, QCP.in, new HashSet<>(supplierMap.keySet()))}
         );
+
         //如果供应商存在，赋值招采平台供应商id
         for (DynamicObject supplierObj : load) {
             String socialCreditCode = supplierObj.getString(SupplierConst.SOCIETYCREDITCODE);
