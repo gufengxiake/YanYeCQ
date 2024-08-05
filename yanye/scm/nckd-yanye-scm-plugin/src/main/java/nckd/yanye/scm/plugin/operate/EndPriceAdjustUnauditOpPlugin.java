@@ -44,8 +44,8 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
     }
 
     @Override
-    public void beginOperationTransaction(BeginOperationTransactionArgs e) {
-        super.beginOperationTransaction(e);
+    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
+        super.afterExecuteOperationTransaction(e);
 
         for (DynamicObject dataEntity : e.getDataEntities()) {
             // 获取月末调价单暂估数据页签分录
