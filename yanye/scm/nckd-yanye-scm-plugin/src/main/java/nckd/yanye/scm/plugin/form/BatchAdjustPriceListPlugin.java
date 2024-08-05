@@ -1,9 +1,12 @@
 package nckd.yanye.scm.plugin.form;
 
+import static kd.bos.entity.botp.ConvertOpType.Push;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import kd.bos.bill.BillShowParameter;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
@@ -11,6 +14,8 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.exception.KDBizException;
+import kd.bos.form.FormShowParameter;
+import kd.bos.form.ShowType;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.list.plugin.AbstractListPlugin;
@@ -18,6 +23,7 @@ import kd.bos.metadata.botp.ConvertRuleReader;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
@@ -36,7 +42,6 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         super.registerListener(e);
 
         this.addItemClickListeners("nckd_baritemap");
-//        this.addItemClickListeners("nckd_baritemap");
     }
 
     @Override
@@ -54,6 +59,10 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
      */
     private void batchAdjustPrice() {
         ListSelectedRowCollection selectedRows = this.getSelectedRows();
+        if(selectedRows.size() == 0){
+            throw new KDBizException("请选择数据!");
+        }
+
         Object[] keyValues = selectedRows.getPrimaryKeyValues();
         QFilter qFilter = new QFilter("id", QCP.in, keyValues);
         DynamicObject[] busbills = BusinessDataServiceHelper.load("ap_busbill", "org,bizdate,entry.id,entry.nckd_supplier,entry.e_material", new QFilter[]{qFilter});
@@ -69,7 +78,6 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
         // 获取对应组织的上次关账日期
         Date closedate = this.loadGrid(busbills[0].getDynamicObject("org").getLong("id"));
 
-        List<ListSelectedRow> rows = new ArrayList<>();
         Long orgId = null;
         String period = null;
         SimpleDateFormat format = new SimpleDateFormat("yyyyMM");
@@ -92,14 +100,39 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
                 throw new KDBizException("所选暂估应付单的单据日期必须在存货核算模块当前期间!");
             }
 
-            if(closedate != null && bizdate.compareTo(closedate) < 0){
+            if(closedate != null && bizdate.compareTo(closedate) <= 0){
                 throw new KDBizException("所选暂估应付单的当前期间存货核算模块必须未关账!");
             }
-
-            rows.add(new ListSelectedRow(dataEntity.getPkValue()));
         }
 
-        if (rows.size() > 0) {
+        List<ListSelectedRow> list = selectedRows.stream().map(row -> {
+            ListSelectedRow listSelectedRow = new ListSelectedRow();
+            listSelectedRow.setPrimaryKeyValue(row.getPrimaryKeyValue());
+            listSelectedRow.setEntryEntityKey(row.getEntryEntityKey());
+            listSelectedRow.setEntryPrimaryKeyValue(row.getEntryPrimaryKeyValue());
+            return listSelectedRow;
+        }).collect(Collectors.toList());
+
+        if (list.size() > 0) {
+            List<Object> collect1 = list.stream().map(row -> {
+                return row.getEntryPrimaryKeyValue();
+            }).collect(Collectors.toList());
+            DynamicObject[] busbillDynamicObject = BusinessDataServiceHelper.load("ap_busbill",
+                    "entry.id,entry.nckd_billnumber",
+                    new QFilter[]{new QFilter("entry.id",QCP.in,collect1)});
+
+            Arrays.stream(busbillDynamicObject).forEach(dynamicObject -> {
+                dynamicObject.getDynamicObjectCollection("entry").forEach(object -> {
+                    if(collect1.contains(object.get("id"))){
+                        boolean exists = QueryServiceHelper.exists("nckd_endpriceadjust",
+                                new QFilter[]{new QFilter("entryentity.nckd_oddnumber", QCP.equals, object.getString("nckd_billnumber"))});
+                        if(exists){
+                            throw new KDBizException("请勿重复下推!");
+                        }
+                    }
+                });
+            });
+
             // 创建下推参数
             PushArgs pushArgs = new PushArgs();
             //源单单据标识
@@ -112,8 +145,8 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
             pushArgs.setHasRight(true);
             //下推后默认保存
             pushArgs.setAutoSave(true);
-            //是否生成单据转换报告
-            pushArgs.setBuildConvReport(false);
+            // 是否输出详细错误报告
+            pushArgs.setBuildConvReport(true);
 
             // 单据转换规则id
             ConvertRuleReader reader = new ConvertRuleReader();
@@ -122,7 +155,7 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
                 pushArgs.setRuleId(ruleIds.get(0));
             }
 
-            pushArgs.setSelectedRows(rows);
+            pushArgs.setSelectedRows(list);
 
             // 执行下推操作
             ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
@@ -155,6 +188,13 @@ public class BatchAdjustPriceListPlugin extends AbstractListPlugin {
             }
 
             SaveServiceHelper.save(load);
+
+            BillShowParameter billShowParameter = new BillShowParameter();
+            billShowParameter.setFormId("nckd_endpriceadjust");
+            billShowParameter.setPkId(targetBillIds.toArray()[0]);
+            // 打开方式
+            billShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
+            this.getView().showForm(billShowParameter);
         }
     }
 
