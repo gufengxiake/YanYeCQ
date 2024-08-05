@@ -34,10 +34,10 @@ public class PurcontractBillFormPlugin extends AbstractBillPlugIn {
             //int rowIndex = changeData.getRowIndex(); //修改行所在行行号
             //获取所在行的含税单价下限
             BigDecimal nckdPriceandtaxup = (BigDecimal) newValue;
-            BigDecimal nckdPriceandtaxlow = dataEntity.getBigDecimal("nckd_priceandtaxlow");
-            if (nckdPriceandtaxup.compareTo(nckdPriceandtaxlow) < 0) {
+            BigDecimal priceandtax = dataEntity.getBigDecimal("priceandtax");
+            if (nckdPriceandtaxup.compareTo(priceandtax) < 0) {
                 dataEntity.set("nckd_priceandtaxup", oldValue);
-                this.getView().showErrorNotification("含税单价上限不能小于含税单价下限");
+                this.getView().showErrorNotification("含税单价上限不能小于含税单价");
                 this.getView().updateView();
                 return;
             }
@@ -54,10 +54,10 @@ public class PurcontractBillFormPlugin extends AbstractBillPlugIn {
             //int rowIndex = changeData.getRowIndex(); //修改行所在行行号
             //获取所在行的含税单价上限
             BigDecimal nckdPriceandtaxlow = (BigDecimal) newValue;
-            BigDecimal nckdPriceandtaxup = dataEntity.getBigDecimal("nckd_priceandtaxup");
-            if (nckdPriceandtaxup.compareTo(nckdPriceandtaxlow) < 0) {
+            BigDecimal priceandtax = dataEntity.getBigDecimal("priceandtax");
+            if (priceandtax.compareTo(nckdPriceandtaxlow) < 0) {
                 dataEntity.set("nckd_priceandtaxlow", oldValue);
-                this.getView().showErrorNotification("含税单价上限不能小于含税单价下限");
+                this.getView().showErrorNotification("含税单价不能小于含税单价下限");
                 this.getView().updateView();
                 return;
             }
