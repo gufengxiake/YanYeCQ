@@ -41,7 +41,7 @@ public class MaterialreqConvertPlugIn extends AbstractConvertPlugIn {
                     QFilter qFilter2 = new QFilter("useorg.id", QCP.equals, org.getPkValue());
                     QFilter qFilter3 = new QFilter("status", QCP.equals, "C");
                     DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_im_evaluate_material", "nckd_evaluate_period", new QFilter[]{qFilter1, qFilter2, qFilter3});
-                    if (dynamicObject != null) {
+                    if (loadSingle != null) {
                         Integer evaluatePeriod = (Integer) loadSingle.get("nckd_evaluate_period");
                         if (evaluatePeriod != null) {
                             object.set("nckd_evaluate_period", evaluatePeriod);
