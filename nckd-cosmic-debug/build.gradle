@@ -35,8 +35,6 @@ dependencies {
 	implementation project(':nckd-yanye-scm-report')
 	implementation project(':nckd-yanye-scm-mservice')
 	implementation project(':nckd-yanye-scm-webapi')
-	
-
 
 
 	// 引入yanye云 occ应用模块
@@ -46,5 +44,13 @@ dependencies {
 	implementation project(':nckd-yanye-occ-report')
 	implementation project(':nckd-yanye-occ-mservice')
 	implementation project(':nckd-yanye-occ-webapi')
+
+	// 引入yanye云 tmc资金模块
+	implementation project(':nckd-yanye-tmc-common')
+	implementation project(':nckd-yanye-tmc-business')
+	implementation project(':nckd-yanye-tmc-plugin')
+	implementation project(':nckd-yanye-tmc-report')
+	implementation project(':nckd-yanye-tmc-mservice')
+	implementation project(':nckd-yanye-tmc-webapi')
 
 }
