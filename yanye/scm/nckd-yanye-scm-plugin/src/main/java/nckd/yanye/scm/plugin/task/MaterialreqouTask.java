@@ -36,7 +36,8 @@ public class MaterialreqouTask extends AbstractTask {
         List<ListSelectedRow> rows = new ArrayList<>();
         QFilter qFilter1 = new QFilter("billentry.nckd_evaluate_flag", QCP.equals, "1");
         QFilter qFilter2 = new QFilter("billentry.nckd_evaluate_date", QCP.equals, LocalDate.now());
-        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("im_materialreqoutbill", "id,billentry.id,billentry.nckd_already_evaluate,billentry.nckd_evaluate_flag,billentry.nckd_evaluate_date", new QFilter[]{qFilter1, qFilter2});
+        QFilter qFilter3 = new QFilter("billstatus", QCP.equals, "C");
+        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("im_materialreqoutbill", "id,billentry.id,billentry.nckd_already_evaluate,billentry.nckd_evaluate_flag,billentry.nckd_evaluate_date", new QFilter[]{qFilter1, qFilter2, qFilter3});
         for (DynamicObject dynamicObject : dynamicObjects) {
             rows.add(new ListSelectedRow(dynamicObject.get("id")));
 

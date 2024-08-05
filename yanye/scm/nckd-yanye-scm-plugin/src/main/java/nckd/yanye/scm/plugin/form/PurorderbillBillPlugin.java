@@ -9,7 +9,6 @@ import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.ShowType;
-import kd.bos.form.control.Control;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.events.HyperLinkClickEvent;
 import kd.bos.form.events.HyperLinkClickListener;
@@ -78,7 +77,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         DynamicObjectCollection purcontractEntryList = purcontractBill.getDynamicObjectCollection("billentry");
                         for (DynamicObject entry : purcontractEntryList) {
                             JSONObject json = new JSONObject();
-                            json.put("conbillentity",purcontractBill);
+                            json.put("conbillentity", purcontractBill);
                             json.put("id", purcontractBill.getString("id"));
                             json.put("billno", purcontractBill.getString("billno"));
                             json.put("entryid", entry.getString("id"));
@@ -97,7 +96,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                         //int seq = dy.getInt("seq");
                         JSONObject json = map.get(dy.getDynamicObject("material").getPkValue());
                         if (json != null) {
-                            dy.set("conbillentity",((DynamicObject)json.get("conbillentity")).getDynamicObjectType().getName());
+                            dy.set("conbillentity", ((DynamicObject) json.get("conbillentity")).getDynamicObjectType().getName());
                             dy.set("conbillid", json.get("id"));
                             dy.set("conbillnumber", json.get("billno"));
                             dy.set("conbillentryid", json.get("entryid"));
@@ -123,7 +122,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("taxamount", taxamount);
                             dy.set("curtaxamount", taxamount);
                         } else {
-                            dy.set("conbillentity",null);
+                            dy.set("conbillentity", null);
                             dy.set("conbillid", null);
                             dy.set("conbillnumber", null);
                             dy.set("conbillentryid", null);
@@ -141,6 +140,13 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
                             dy.set("curtaxamount", null);
                         }
                     }
+                    //需要合计billentry上的税额、金额、价税合计到财务信息上
+                    BigDecimal amount = billentry.stream().map(k -> k.getBigDecimal("amount")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal taxamount = billentry.stream().map(k -> k.getBigDecimal("taxamount")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    BigDecimal amountandtax = billentry.stream().map(k -> k.getBigDecimal("amountandtax")).reduce(BigDecimal.ZERO, BigDecimal::add);
+                    this.getModel().setValue("totalamount", amount);
+                    this.getModel().setValue("totaltaxamount", taxamount);
+                    this.getModel().setValue("totalallamount", amountandtax);
                 }
             }
         }
@@ -220,7 +226,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
      */
     private void dealPurcontractEntry(DynamicObjectCollection billentry) {
         for (DynamicObject entry : billentry) {
-            entry.set("conbillentity",null);
+            entry.set("conbillentity", null);
             entry.set("conbillid", null);
             entry.set("conbillnumber", null);
             entry.set("conbillentryid", null);
@@ -279,7 +285,7 @@ public class PurorderbillBillPlugin extends AbstractBillPlugIn implements HyperL
     public void hyperLinkClick(HyperLinkClickEvent hyperLinkClickEvent) {
         String key = hyperLinkClickEvent.getFieldName();
         //采购订单匹配到采购合同后，将采购合同号进行记录，且点击该字段可直接跳转至采购合同
-        if(StringUtils.equals("conbillnumber",key)){
+        if (StringUtils.equals("conbillnumber", key)) {
             int rowIndex = hyperLinkClickEvent.getRowIndex();
             BillShowParameter billShowParameter = new BillShowParameter();
             billShowParameter.setFormId("conm_purcontract");

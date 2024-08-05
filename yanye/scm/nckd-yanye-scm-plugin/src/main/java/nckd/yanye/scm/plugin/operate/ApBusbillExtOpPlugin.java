@@ -1,10 +1,12 @@
 package nckd.yanye.scm.plugin.operate;
 
 import java.util.Arrays;
+import java.util.List;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 
 /**
@@ -13,6 +15,14 @@ import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
  * @description  暂估应付单保存插件
  */
 public class ApBusbillExtOpPlugin extends AbstractOperationServicePlugIn {
+    @Override
+    public void onPreparePropertys(PreparePropertysEventArgs e) {
+        super.onPreparePropertys(e);
+
+        List<String> fieldKeys = e.getFieldKeys();
+        fieldKeys.add("nckd_billnumber");
+        fieldKeys.add("nckd_supplier");
+    }
 
     @Override
     public void beginOperationTransaction(BeginOperationTransactionArgs e) {
