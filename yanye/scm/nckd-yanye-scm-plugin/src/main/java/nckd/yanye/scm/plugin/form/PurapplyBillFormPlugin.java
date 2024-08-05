@@ -1,12 +1,13 @@
 package nckd.yanye.scm.plugin.form;
 
-import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.kingdee.util.StringUtils;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.ConfirmCallBackListener;
+import kd.bos.form.IFormView;
 import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.MessageBoxResult;
 import kd.bos.form.control.RichTextEditor;
@@ -49,6 +50,60 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     public static final String BAR_BARITEMAP = "bar_baritemap";
 
+
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        IDataModel model = this.getModel();
+        IFormView view = this.getView();
+        // 显隐
+        // 公告发布日期
+        view.setVisible("timing".equals(model.getValue(PurapplybillConst.NCKD_PUBLISHSET)), PurapplybillConst.NCKD_TIMINGTIME);
+
+        /*
+         * 询比价
+         */
+        // 处置方式
+        view.setVisible("5".equals(model.getValue(PurapplybillConst.NCKD_PROJECTTYPE)), PurapplybillConst.NCKD_DISPOSALMETHOD);
+        // 控制总价
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_CONTROLPRICE)), PurapplybillConst.NCKD_TOTALPRICE);
+        // 供应商
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_INQUIRYMETHOD)), PurapplybillConst.NCKD_SUPPLIERS);
+        // 公开范围
+        view.setVisible("0".equals(model.getValue(PurapplybillConst.NCKD_INQUIRYMETHOD)), PurapplybillConst.NCKD_PUBLICSCOPE);
+        // 报名审核
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_INQUIRYMETHOD)), PurapplybillConst.NCKD_REGISTERAUDIT);
+
+        /*
+         * 竞争性谈判
+         */
+        // 处置方式
+        view.setVisible("5".equals(model.getValue(PurapplybillConst.NCKD_PROJECTTYPE1)), PurapplybillConst.NCKD_DISPOSALMETHOD1);
+        // 供应商
+        view.setVisible("2".equals(model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE)), PurapplybillConst.NCKD_SUPPLIERS1);
+        // 公开范围
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_COMPETITIONMODE)), PurapplybillConst.NCKD_PUBLICSCOPE1);
+
+        /*
+         * 招标采购
+         */
+        // 招标方式
+        String biddingMethod = (String) model.getValue(PurapplybillConst.NCKD_BIDDINGMETHOD);
+        // 公开范围
+        view.setVisible("1".equals(biddingMethod), PurapplybillConst.NCKD_PUBLICSCOPE2);
+        // 报名审核
+        view.setVisible("2".equals(biddingMethod), PurapplybillConst.NCKD_REGISTERAUDIT2);
+        // 供应商
+        view.setVisible("2".equals(biddingMethod), PurapplybillConst.NCKD_SUPPLIERS3);
+        // 允许联合体报名
+        view.setVisible("2".equals(biddingMethod), PurapplybillConst.NCKD_ALLOWJOINT);
+        // 发布方式-自动赋值
+        if ("1".equals(biddingMethod)) {
+            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "1");
+        }
+        if ("2".equals(biddingMethod)) {
+            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "2");
+        }
+    }
 
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
@@ -162,7 +217,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("该单据不可推送!");
         }
 
-        //fixme
         if (resultJson.getBooleanValue("success")) {
             this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, resultJson.getJSONObject("data").getString("orderId"));
             this.getModel().setValue(PurapplybillConst.NCKD_NOTICEID, resultJson.getJSONObject("data").getString("noticeId"));
@@ -175,7 +229,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     }
 
     private void cancelOrder(IDataModel model) {
-        if (((boolean) model.getValue(PurapplybillConst.NCKD_PUSHED) == false)) {
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
         JSONObject cancelJsonObject;

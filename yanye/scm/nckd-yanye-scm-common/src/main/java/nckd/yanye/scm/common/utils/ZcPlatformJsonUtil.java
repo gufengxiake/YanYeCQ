@@ -176,6 +176,8 @@ public class ZcPlatformJsonUtil {
                                 {
                                     // spuCode
                                     put("spuCode", materiel.getString("seq"));
+                                    // 品目编码
+                                    put("materielCode", materiel.getString("number"));
                                     // 品目名称
                                     put("materielName", materiel.get(PurapplybillConst.BILLENTRY_MATERIALNAME));
                                     // 计量单位
@@ -255,38 +257,13 @@ public class ZcPlatformJsonUtil {
                 put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD1));
                 // 是否需要线上评审
                 put("isReview", model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1));
-                // todo 谈判文件
-                put("negotiateFileIds", new ArrayList<Integer>() {
-                    {
-                        DynamicObjectCollection tpAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS);
-                        Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("TP", "TPWJ");
-                        for (DynamicObject obj : tpAtts) {
-                            DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
-                            String name = fbasedataId.getString("name");
-                            String url = (String) fbasedataId.get("url");
-                            String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
 
-                            Integer negotiateFileId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
-                            this.add(negotiateFileId);
-                        }
-                    }
-                });
-                // todo 内部附件
-                put("internalAttachments", new ArrayList<Integer>() {
-                    {
-                        DynamicObjectCollection tpAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALDOCUMENTS1);
-                        Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("TP", "NBFJ");
-                        for (DynamicObject obj : tpAtts) {
-                            DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
-                            String name = fbasedataId.getString("name");
-                            String url = (String) fbasedataId.get("url");
-                            String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+                // 谈判文件
+                put("negotiateFileIds", getAttIdList(model, PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS));
 
-                            Integer internalAttachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
-                            this.add(internalAttachmentId);
-                        }
-                    }
-                });
+                // 内部附件
+                put("internalAttachments", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS1));
+
                 // 标书费
                 put("fileFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE));
                 // 平台服务费
@@ -384,7 +361,7 @@ public class ZcPlatformJsonUtil {
                 put("isApproval", model.getValue(PurapplybillConst.NCKD_REGISTERAUDIT2));
                 //允许联合体报名
                 put("isCombo", model.getValue(PurapplybillConst.NCKD_ALLOWJOINT));
-                // todo-在线开评标。
+                // 在线开评标。
                 String isKpbProject = (String) model.getValue(PurapplybillConst.NCKD_BIDONLINE);
                 put("isKpbProject", isKpbProject);
                 // 标书费

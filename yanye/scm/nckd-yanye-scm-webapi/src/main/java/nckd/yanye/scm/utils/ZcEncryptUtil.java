@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 public class ZcEncryptUtil {
 
     /**
-     * todo 消息加密密钥
+     * 消息加密密钥
      */
     private static final String SECRET = "he0163jv3a7THByu";
 
