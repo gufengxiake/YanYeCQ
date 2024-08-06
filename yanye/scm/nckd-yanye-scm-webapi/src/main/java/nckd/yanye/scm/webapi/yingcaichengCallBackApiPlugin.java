@@ -56,8 +56,8 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         }
 
         // 签名校验
-        if (ZcEncryptUtil.checkSignature(signature, timestamp, nonce)) {
-            return CustomApiResult.success("success");
+        if (!ZcEncryptUtil.checkSignature(signature, timestamp, nonce)) {
+            return CustomApiResult.success("failed");
         }
 
         // 解密消息体
@@ -120,47 +120,53 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 物料明细分录
         // 先抓取采购申请单，然后赋值招采平台成交授标品目
         // 先查成交授标，获取成交品目信息。再根据itemId查品目列表，获取品目信息。对应起来。再根据品目编号，赋值分录
-        JSONObject awardData = ZcPlatformApiUtil.getAwardData(msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
-        JSONArray items = awardData.getJSONArray("items");
+        // fixme 查成交授标报错
 
-        // 品目列表
-        JSONArray orderItemsData = ZcPlatformApiUtil.getOrderItemsData(msgObj.getInteger("purchaseType"), orderId);
-        HashMap<Integer, HashMap<String, String>> itemMap = new HashMap<>();
-        for (Object orderItemsDatum : orderItemsData) {
-            HashMap<String, String> map = new HashMap<>();
-            JSONObject item = (JSONObject) orderItemsDatum;
-            // 品目id
-            Integer itemId = item.getInteger("itemId");
-            // 品目编号
-            String itemCode = item.getString("itemCode");
-            // 品目名称
-            String itemName = item.getString("itemName");
-            // 单位
-            String unit = item.getString("unit");
-            map.put("itemCode", itemCode);
-            map.put("itemName", itemName);
-            map.put("unit", unit);
-            itemMap.put(itemId, map);
+        // 询比才有物料
+        if ("XB".equals(businessType)) {
+            JSONObject awardData = ZcPlatformApiUtil.getAwardData(msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
+            JSONArray items = awardData.getJSONArray("items");
+
+            // 品目列表
+            JSONArray orderItemsData = ZcPlatformApiUtil.getOrderItemsData(msgObj.getInteger("purchaseType"), orderId);
+            HashMap<Integer, HashMap<String, String>> itemMap = new HashMap<>();
+            for (Object orderItemsDatum : orderItemsData) {
+                HashMap<String, String> map = new HashMap<>();
+                JSONObject item = (JSONObject) orderItemsDatum;
+                // 品目id
+                Integer itemId = item.getInteger("itemId");
+                // 品目编号
+                String itemCode = item.getString("itemCode");
+                // 品目名称
+                String itemName = item.getString("itemName");
+                // 单位
+                String unit = item.getString("unit");
+                map.put("itemCode", itemCode);
+                map.put("itemName", itemName);
+                map.put("unit", unit);
+                itemMap.put(itemId, map);
+            }
+
+            for (int i = 0; i < items.size(); i++) {
+                JSONObject item = items.getJSONObject(i);
+                Integer itemId = item.getInteger("itemId");
+                DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
+                DynamicObject addNew = materialEntry.addNew();
+                // 物料名称
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
+                // 单位
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_UNIT, itemMap.get(itemId).get("unit"));
+                // 数量
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getInteger("awardNum"));
+                // 含税单价
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, item.getInteger("offerPrice"));
+                // 税率
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getInteger("offerTaxRate"));
+                // 价税合计
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, item.getInteger("offerPrice") * item.getInteger("awardNum"));
+            }
         }
 
-        for (int i = 0; i < items.size(); i++) {
-            JSONObject item = items.getJSONObject(i);
-            Integer itemId = item.getInteger("itemId");
-            DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
-            DynamicObject addNew = materialEntry.addNew();
-            // 物料名称
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
-            // 单位
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_UNIT, itemMap.get(itemId).get("unit"));
-            // 数量
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getInteger("awardNum"));
-            // 含税单价
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, item.getInteger("offerPrice"));
-            // 税率
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getInteger("offerTaxRate"));
-            // 价税合计
-            addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, item.getInteger("offerPrice") * item.getInteger("awardNum"));
-        }
 
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
@@ -170,7 +176,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
         // todo 生成 采购订单 或 采购合同
-
 
 
         return CustomApiResult.success("success");

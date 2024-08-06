@@ -7,11 +7,9 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
-import kd.bos.fileservice.FileServiceFactory;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
-import java.io.InputStream;
 
 /**
  * 招采平台接口工具类
@@ -508,7 +506,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
-            throw new KDBizException("查询成交授标失败!");
+            throw new KDBizException("查询成交授标失败!" + responseObj.get("message"));
         }
     }
 
