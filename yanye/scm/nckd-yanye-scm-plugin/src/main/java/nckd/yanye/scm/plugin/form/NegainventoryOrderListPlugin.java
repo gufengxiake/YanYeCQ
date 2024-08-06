@@ -258,7 +258,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("supplyowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//供应货主
         invcountscheme.set("settleorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//核算组织
         invcountscheme.set("billcretype","B");//单据生成类型
-        invcountscheme.set("supplyownertype",dynamicObject.getDynamicObject("nckd_useworkshop"));//需求部门
+        invcountscheme.set("bizdept",dynamicObject.getDynamicObject("nckd_useworkshop"));//需求部门
         getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,inventoryDynamicObject);
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
@@ -357,7 +357,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("createtime",new Date());
         invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
         invcountscheme.set("modifytime", new Date());
-        Date date = inventoryDynamicObject.getDate("nckd_inventoryclosedate");
+//        Date date = inventoryDynamicObject.getDate("nckd_inventoryclosedate");
         invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
         invcountscheme.set("settlecurrency",1);//结算币别
         invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
