@@ -148,6 +148,11 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
                 this.getView().setVisible(true , "nckd_pinrenenddaten");
             }else {
                 // 隐藏：聘任日期
+                // 置空3个值
+                this.getModel().setValue("nckd_pinrendate",null); // 聘任日期
+                this.getModel().setValue("nckd_pinrenenddaten",null); // 聘任终止日期
+                this.getModel().setValue("nckd_pinrenorg",null); // 聘任单位
+                // 隐藏：聘任日期
                 this.getView().setVisible(false , "nckd_pinrendate");
                 // API地址设置为非必填，页面上的必填和数据校验的必填中去掉
                 DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
