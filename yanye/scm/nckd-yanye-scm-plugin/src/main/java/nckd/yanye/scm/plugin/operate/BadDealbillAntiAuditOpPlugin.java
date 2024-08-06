@@ -70,7 +70,8 @@ public class BadDealbillAntiAuditOpPlugin extends AbstractOperationServicePlugIn
                         "billentry.actualtaxprice,billentry.taxrate,billentry.qty,billentry.curamountandtax," +
                         "billentry.nckd_amountand,billentry.nckd_amountand_current,billentry.srcbillid,billentry.materialmasterid,billentry.price,billentry.priceandtax" +
                         ",billentry.nckd_pricecurrent,billentry.nckd_taxpricecurrent,billentry.nckd_amount,billentry.nckd_amountcurrency" +
-                        ",billentry.nckd_taxamount,billentry.nckd_taxamountcurrent", qFilter1.toArray());
+                        ",billentry.nckd_taxamount,billentry.nckd_taxamountcurrent,billentry.price,billentry.priceandtax,billentry.amount" +
+                        ",billentry.curamount,billentry.taxamount,billentry.curtaxamount", qFilter1.toArray());
 
         Map<Long, DynamicObject> purreceivebillMap = Arrays.stream(procureMaterials).collect(Collectors.toMap(t -> t.getLong("id"), t -> t));
         //遍历来料不良品处理单全部分录
@@ -105,12 +106,12 @@ public class BadDealbillAntiAuditOpPlugin extends AbstractOperationServicePlugIn
                 dynamic.set("actualprice",dynamic.getBigDecimal("nckd_pricecurrent"));//实际单价
                 dynamic.set("actualtaxprice",dynamic.getBigDecimal("nckd_taxpricecurrent"));//实际含税单价
 
-                dynamic.set("price",dynamic.getBigDecimal("nckd_taxpricecurrent"));//含税单价
-                dynamic.set("priceandtax",dynamic.getBigDecimal("nckd_pricecurrent"));// 单价
-                dynamic.set("amount",dynamic.getBigDecimal("nckd_pricecurrent"));// 金额
-                dynamic.set("curamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 金额（本币位）
-                dynamic.set("taxamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 税额
-                dynamic.set("curtaxamount",dynamic.getBigDecimal("nckd_pricecurrent"));// 税额（本币位）
+                dynamic.set("price",dynamic.getBigDecimal("nckd_pricecurrent"));//单价
+                dynamic.set("priceandtax",dynamic.getBigDecimal("nckd_taxpricecurrent"));// 含税单价
+                dynamic.set("amount",dynamic.getBigDecimal("nckd_amount"));// 金额
+                dynamic.set("curamount",dynamic.getBigDecimal("nckd_amountcurrency"));// 金额（本币位）
+                dynamic.set("taxamount",dynamic.getBigDecimal("nckd_taxamount"));// 税额
+                dynamic.set("curtaxamount",dynamic.getBigDecimal("nckd_taxamountcurrent"));// 税额（本币位）
             }
         });
         SaveServiceHelper.update(procureMaterials);
