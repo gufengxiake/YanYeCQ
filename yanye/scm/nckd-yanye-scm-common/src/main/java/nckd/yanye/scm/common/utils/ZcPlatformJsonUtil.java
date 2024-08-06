@@ -710,7 +710,8 @@ public class ZcPlatformJsonUtil {
      * @return 全路径
      */
     public static String convertToFullPath(String relativePath) {
-        String basePath = "/data/fileserver";
+//        String basePath = "/data/fileserver";
+        String basePath = "";
         // 分割路径和文件名
         int lastSlashIndex = relativePath.lastIndexOf('/');
         String path = relativePath.substring(0, lastSlashIndex);
