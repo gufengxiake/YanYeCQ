@@ -115,7 +115,7 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
             getModel().setValue("nckd_trancontractno", row.getBillNo());//运费合同编码
             int entryRowCount = this.getModel().getEntryRowCount("billentry");
             for (int i = 0; i < entryRowCount; i++) {
-                getModel().setValue("nckd_freightprice", taxPrice, i);
+                getModel().setValue("nckd_yfprice", taxPrice, i);
                 getModel().setValue("nckd_damagerate", damagerate, i);
             }
 
