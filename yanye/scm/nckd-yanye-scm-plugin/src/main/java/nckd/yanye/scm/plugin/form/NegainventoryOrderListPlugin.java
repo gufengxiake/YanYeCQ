@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.form;
 
+import dm.jdbc.util.StringUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -192,7 +193,6 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
 
     //完工入库单（下推）
     private void pushDownCompletedWarehouseReceipt(DynamicObject dynamicObject,Map<Object,DynamicObject> map){
-        Object masterid = dynamicObject.getDynamicObject("nckd_materielfield").getPkValue();
         String number = dynamicObject.getString("nckd_materielfield.masterid.number");
         //生产工单
         DynamicObject warDynamicObject = map.get(number);
@@ -200,7 +200,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             this.getView().showErrorNotification("物料编码："+number + "对应的生产工单不存在");
             return;
         }
-        PushArgs pushArgs = getPushArgs(warDynamicObject,"pom_mftorder","im_mdc_mftmanuinbill");
+        PushArgs pushArgs = getPushArgs(warDynamicObject,"pom_mftorder","im_mdc_mftmanuinbill","921672118725403648");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败：" + result.getMessage());
@@ -258,6 +258,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("supplyowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//供应货主
         invcountscheme.set("settleorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//核算组织
         invcountscheme.set("billcretype","B");//单据生成类型
+        invcountscheme.set("supplyownertype",dynamicObject.getDynamicObject("nckd_useworkshop"));//需求部门
         getInvcountSchemeDynamicObject(invcountscheme,dynamicObject,inventoryDynamicObject);
         DynamicObject negainventoryOrderEntry = invcountschemebillEntryColl.addNew();
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
@@ -278,8 +279,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     }
     //生产领料单（下推）
     private void pushDownProductionMaterialReceipt(DynamicObject dynamicObject,Map<Object,DynamicObject> map){
-        Object masterid = dynamicObject.getDynamicObject("nckd_mainproduce").getPkValue();
-        String number = dynamicObject.getString("nckd_materielfield.masterid.number");
+        String number = dynamicObject.getString("nckd_mainproduce.masterid.number");
         //生产工单
         DynamicObject warDynamicObject = map.get(number);
         if (Objects.isNull(warDynamicObject)){
@@ -293,7 +293,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             this.getView().showErrorNotification("生产工单编码："+warDynamicObject.getString("billno") + "对应的组件清单不存在");
             return;
         }
-        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder");
+        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","932403241491308544");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败：" + result.getMessage());
@@ -304,7 +304,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     }
 
     @NotNull
-    private static PushArgs getPushArgs(DynamicObject dynamicObject,String sourceEntityNumber,String targetEntityNumber) {
+    private static PushArgs getPushArgs(DynamicObject dynamicObject,String sourceEntityNumber,String targetEntityNumber,String ruleId) {
         List<ListSelectedRow> rows = Arrays.asList(new ListSelectedRow(dynamicObject.getPkValue()));
         // 创建下推参数
         PushArgs pushArgs = new PushArgs();
@@ -315,7 +315,10 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         //下推后默认保存
         pushArgs.setAutoSave(true);
         //是否生成单据转换报告
-        pushArgs.setBuildConvReport(false);
+        pushArgs.setBuildConvReport(true);
+        if (StringUtil.isNotEmpty(ruleId)){
+            pushArgs.setRuleId(ruleId);
+        }
         pushArgs.setSelectedRows(rows);
         return pushArgs;
     }
@@ -354,11 +357,11 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("createtime",new Date());
         invcountscheme.set("modifier", RequestContext.get().getCurrUserId());
         invcountscheme.set("modifytime", new Date());
-
+        Date date = inventoryDynamicObject.getDate("nckd_inventoryclosedate");
         invcountscheme.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//记账日期
         invcountscheme.set("settlecurrency",1);//结算币别
         invcountscheme.set("dept",dynamicObject.getDynamicObject("nckd_inventoryorg"));//库管部门
-        invcountscheme.set("bizorg",RequestContext.get().getOrgId());//需求组织
+        invcountscheme.set("bizorg",dynamicObject.getDynamicObject("nckd_inventoryorg"));//需求组织
         invcountscheme.set("asyncstatus","B");//异步状态
         invcountscheme.set("billstatus","A");//单据状态
         invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
