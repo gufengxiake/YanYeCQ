@@ -12,6 +12,7 @@ import kd.bos.logging.LogFactory;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -161,6 +162,9 @@ public class ZcPlatformJsonUtil {
                     String name = fbasedataId.getString("name");
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+                    realPath = convertToFullPath(realPath);
+
+
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
@@ -690,6 +694,7 @@ public class ZcPlatformJsonUtil {
             String name = fbasedataId.getString("name");
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+            realPath = convertToFullPath(realPath);
 
             Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
             attList.add(attachmentId);
@@ -697,5 +702,28 @@ public class ZcPlatformJsonUtil {
         return attList;
     }
 
+
+    /**
+     * 将相对路径转换为全路径。
+     *
+     * @param relativePath 相对路径
+     * @return 全路径
+     */
+    public static String convertToFullPath(String relativePath) {
+        String basePath = "/data/fileserver";
+        // 分割路径和文件名
+        int lastSlashIndex = relativePath.lastIndexOf('/');
+        String path = relativePath.substring(0, lastSlashIndex);
+        String fileName = relativePath.substring(lastSlashIndex + 1);
+        String encodedFilename = null;
+
+        try {
+            encodedFilename = URLEncoder.encode(fileName, "UTF-8").replace("%", "");
+        } catch (Exception e) {
+            throw new RuntimeException("文件名编码失败", e);
+        }
+
+        return basePath + path + "/" + encodedFilename;
+    }
 
 }
