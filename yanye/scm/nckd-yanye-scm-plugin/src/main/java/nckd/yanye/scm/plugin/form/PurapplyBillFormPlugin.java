@@ -299,6 +299,17 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             // 跳转页面
             getView().openUrl(url);
         }
+
+
+
+
+
+
+
+
+
+
+
     }
 }
 

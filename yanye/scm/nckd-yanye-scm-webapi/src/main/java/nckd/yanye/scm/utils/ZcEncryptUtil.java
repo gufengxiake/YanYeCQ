@@ -19,7 +19,7 @@ public class ZcEncryptUtil {
     /**
      * 消息加密密钥
      */
-    private static final String SECRET = "he0163jv3a7THByu";
+    private static final String SECRET = "klJX6UYwi1CeyeZZ";
 
 
     /**

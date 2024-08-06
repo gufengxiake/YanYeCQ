@@ -8,7 +8,6 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
 import kd.bos.fileservice.FileServiceFactory;
-import kd.bos.sdk.util.KHttpClientUtils;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
@@ -374,6 +373,7 @@ public class ZcPlatformApiUtil {
         httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
 
         File file = new File(url);
+
 
         httpRequest.form("file", file);
         httpRequest.form("name", name);
