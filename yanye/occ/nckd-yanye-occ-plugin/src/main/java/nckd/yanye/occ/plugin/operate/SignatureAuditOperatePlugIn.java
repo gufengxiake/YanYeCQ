@@ -82,8 +82,8 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                         //entryQtyMap.put(sourceentryId, signQty.subtract(outQty));
                     }
                     if (unableQty.compareTo(BigDecimal.ZERO) > 0) {
-                        Object sourcebillId = entryRowData.get("nckd_sourcebillid");
-                        Object sourceentryId = entryRowData.get("nckd_sourceentryid");
+                        BigDecimal sourcebillId = entryRowData.getBigDecimal("nckd_sourcebillid");
+                        BigDecimal sourceentryId = entryRowData.getBigDecimal("nckd_sourceentryid");
                         ListSelectedRow row = new ListSelectedRow();
                         //必填，设置源单单据id
                         row.setPrimaryKeyValue(sourcebillId);
@@ -223,7 +223,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                 if (!bhlselectedRows.isEmpty()) {
                     String sourceBill = "im_saloutbill";//销售出库
                     String targetBill = "im_saloutbill";//销售出库
-                    String ruleId = "705622291240812544";//单据转换Id
+                    String ruleId = "2010828900610867200";//单据转换Id
                     // 创建下推参数
                     PushArgs pushArgs = new PushArgs();
                     // 必填，源单标识
@@ -268,6 +268,17 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
                     //保存
                     OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
+                    if (operationResult1.isSuccess()) {
+                        OperateOption auditOption = OperateOption.create();
+                        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                        //提交
+                        OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
+                        if (subResult.isSuccess()) {
+                            //审核
+                            OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
+                        }
+                    }
                 }
                 //销售出库单（承运商）
                 if (!bhlselectedRows.isEmpty()) {
@@ -317,6 +328,20 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
                     //保存
                     OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
+                    if (operationResult1.isSuccess()) {
+                        OperateOption auditOption = OperateOption.create();
+                        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                        //提交
+                        OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
+                        if (subResult.isSuccess()) {
+                            //审核
+                            OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
+                        }
+                        else {
+                            errMessage.append("提交销售出库(承运商)出错："+subResult.getMessage());
+                        }
+                    }
                 }
                 if (errMessage.length() > 0) {
                     throw new KDBizException(errMessage.toString());

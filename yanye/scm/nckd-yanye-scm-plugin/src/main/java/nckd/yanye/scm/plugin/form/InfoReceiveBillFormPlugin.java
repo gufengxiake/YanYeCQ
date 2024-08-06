@@ -85,7 +85,6 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      */
     private void addSup() {
         String supplierId = (String) this.getModel().getValue("nckd_supplierid");
-        String uscc = (String) this.getModel().getValue("nckd_uscc");
         OperationResult result = addSupplier(supplierId);
         if (result.isSuccess()) {
             this.getView().showSuccessNotification("生成成功!");

@@ -74,12 +74,16 @@ public class EndPriceAdjustAuditOpPlugin extends AbstractOperationServicePlugIn 
                         if (StringUtils.equals(object.getString("nckd_billnumber"), dynamicObject.getString("nckd_oddnumber"))) {
                             // 单价
                             object.set("e_unitprice", dynamicObject.getBigDecimal("nckd_newunitprice"));
+                            // 实际单价
+                            object.set("e_actunitprice", dynamicObject.getBigDecimal("nckd_newunitprice"));
                             // 税额
                             object.set("e_tax", dynamicObject.getBigDecimal("nckd_newtax"));
                             // 税额本位币
                             object.set("e_taxlocalamt", dynamicObject.getBigDecimal("nckd_newtax"));
                             // 含税单价
                             object.set("e_taxunitprice", dynamicObject.getBigDecimal("nckd_newftaxunitprice"));
+                            // 实际含税单价
+                            object.set("e_acttaxunitprice", dynamicObject.getBigDecimal("nckd_newftaxunitprice"));
                             // 金额
                             object.set("e_amount", dynamicObject.getBigDecimal("nckd_newamount"));
                             // 金额本位币
@@ -106,6 +110,14 @@ public class EndPriceAdjustAuditOpPlugin extends AbstractOperationServicePlugIn 
                 apBusbill.set("localamt", amount);//金额(本位币)
                 apBusbill.set("tax", tax);//税额
                 apBusbill.set("taxlocamt", tax);//税额(本位币)
+                apBusbill.set("unwoffamt", pricetaxtotal);//未冲回应付金额
+                apBusbill.set("unwofflocamt", pricetaxtotal);//未冲回应付金额(本位币)
+                apBusbill.set("unwoffnotaxamt", amount);//未冲回金额
+                apBusbill.set("unwoffnotaxlocamt", amount);//未冲回金额(本位币)
+                apBusbill.set("unwofftax", tax);//未冲回税额
+                apBusbill.set("unwofftaxlocal", tax);//未冲回税额(本位币)
+                apBusbill.set("uninvoicedamt", pricetaxtotal);//未确认应付金额(含税)
+                apBusbill.set("uninvoicedlocamt", pricetaxtotal);//未确认应付金额(含税本位币)
                 SaveServiceHelper.update(apBusbill);
 
 
@@ -115,12 +127,16 @@ public class EndPriceAdjustAuditOpPlugin extends AbstractOperationServicePlugIn 
                         if (Objects.equals(billentry.getPkValue(), dynamicObject.get("e_srcentryid")) && list.contains(dynamicObject.getPkValue())) {
                             // 单价
                             billentry.set("price", dynamicObject.getBigDecimal("e_unitprice"));
+                            // 实际单价
+                            billentry.set("actualprice", dynamicObject.getBigDecimal("e_unitprice"));
                             // 税额
                             billentry.set("taxamount", dynamicObject.getBigDecimal("e_tax"));
                             // 税额本位币
                             billentry.set("curtaxamount", dynamicObject.getBigDecimal("e_taxlocalamt"));
                             // 含税单价
                             billentry.set("priceandtax", dynamicObject.getBigDecimal("e_taxunitprice"));
+                            // 实际含税单价
+                            billentry.set("actualtaxprice", dynamicObject.getBigDecimal("e_taxunitprice"));
                             // 金额
                             billentry.set("amount", dynamicObject.getBigDecimal("e_amount"));
                             // 金额本位币
