@@ -40,6 +40,13 @@ include(
 		':nckd-yanye-occ-report',
 		':nckd-yanye-occ-mservice',
 		':nckd-yanye-occ-webapi',
+
+		':nckd-yanye-tmc-common',
+		':nckd-yanye-tmc-business',
+		':nckd-yanye-tmc-plugin',
+		':nckd-yanye-tmc-report',
+		':nckd-yanye-tmc-mservice',
+		':nckd-yanye-tmc-webapi',
 )
 
 // -------------- 引入苍穹调试工程模块 --------------
@@ -79,3 +86,11 @@ project(':nckd-yanye-occ-plugin').projectDir = new File('yanye/occ/nckd-yanye-oc
 project(':nckd-yanye-occ-report').projectDir = new File('yanye/occ/nckd-yanye-occ-report')
 project(':nckd-yanye-occ-mservice').projectDir = new File('yanye/occ/nckd-yanye-occ-mservice')
 project(':nckd-yanye-occ-webapi').projectDir = new File('yanye/occ/nckd-yanye-occ-webapi')
+
+// -------------- 引入yanye云-tmc资金模块 --------------
+project(':nckd-yanye-tmc-common').projectDir = new File('yanye/tmc/nckd-yanye-tmc-common')
+project(':nckd-yanye-tmc-business').projectDir = new File('yanye/tmc/nckd-yanye-tmc-business')
+project(':nckd-yanye-tmc-plugin').projectDir = new File('yanye/tmc/nckd-yanye-tmc-plugin')
+project(':nckd-yanye-tmc-report').projectDir = new File('yanye/tmc/nckd-yanye-tmc-report')
+project(':nckd-yanye-tmc-mservice').projectDir = new File('yanye/tmc/nckd-yanye-tmc-mservice')
+project(':nckd-yanye-tmc-webapi').projectDir = new File('yanye/tmc/nckd-yanye-tmc-webapi')

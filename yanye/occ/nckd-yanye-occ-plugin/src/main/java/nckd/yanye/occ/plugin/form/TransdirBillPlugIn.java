@@ -96,6 +96,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             // 将选中的id对应的数据从数据库加载出来
             DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
                     "id", qFilter.toArray(), "");
+            if(collections.isEmpty()){return;}
             DynamicObject stock = collections.get(0);
             String stockId = stock.getString(("id"));
             int row = this.getModel().getEntryRowCount("billentry");
