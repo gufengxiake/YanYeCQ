@@ -10,6 +10,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.EntityType;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.list.BillList;
@@ -264,6 +265,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             //分录赋值
             DynamicObjectCollection negainventoryOrderEntryColl = negainventoryOrder.getDynamicObjectCollection("nckd_negainentries");
             DynamicObjectCollection bussProcessOrderEntryColl = bussProcessOrder.getDynamicObjectCollection("nckd_bussinessentries");
+            StringBuffer msg = new StringBuffer();
             bussProcessOrderEntryColl.forEach(e -> {
                 DynamicObject negainventoryOrderEntry = negainventoryOrderEntryColl.addNew();
                 //这一部分直接由物料-业务处理对应单 分录带过来
@@ -295,9 +297,14 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                         negainventoryOrderEntry.set("nckd_basewarehouse", invcountbillEntry.getDynamicObject("warehouse").getPkValue());
                         negainventoryOrderEntry.set("nckd_position", invcountbillEntry.getDynamicObject("location") != null ? invcountbillEntry.getDynamicObject("location").getPkValue() : null);
                         negainventoryOrderEntry.set("nckd_batchnumber", invcountbillEntry.getString("lotnumber"));
-                        break;
+                    }
+                    if (invcountbillEntry.getDynamicObject("material").getDynamicObject("masterid").getPkValue().equals(nckdMaterielfield.getDynamicObject("masterid").getPkValue())
+                            && !invcountbillEntry.getDynamicObject("warehouse").getPkValue().equals(nckdWarehouse.getPkValue())) {
+                        String name = nckdMaterielfield.getDynamicObject("masterid").getString("name");
+                        msg.append("物料(").append(name).append(")存在其他仓库的的库存").append("\r\n");
                     }
                 }
+                msg.append("物料(").append("name").append(")存在其他仓库的的库存").append("\r\n");
                 //negainventoryOrderEntryColl.add(negainventoryOrderEntry);
             });
             //调用保存操作
@@ -306,6 +313,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                 this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增失败");
             } else {
                 this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增成功");
+                this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
             }
         }
     }
