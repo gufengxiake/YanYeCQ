@@ -9,10 +9,16 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.fileservice.extension.FileServiceExtFactory;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 
-import java.net.URLEncoder;
+import java.io.BufferedInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Objects;
 
@@ -162,8 +168,8 @@ public class ZcPlatformJsonUtil {
                     String name = fbasedataId.getString("name");
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+                    realPath = UrlService.getAttachmentFullUrl(realPath);
                     realPath = convertToFullPath(realPath);
-
 
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
@@ -181,7 +187,7 @@ public class ZcPlatformJsonUtil {
                                     // spuCode
                                     put("spuCode", materiel.getString("seq"));
                                     // 品目编码
-                                    put("materielCode", materiel.getString("number"));
+                                    put("materielCode", materiel.getDynamicObject("material").getString("masterid.number"));
                                     // 品目名称
                                     put("materielName", materiel.get(PurapplybillConst.BILLENTRY_MATERIALNAME));
                                     // 计量单位
@@ -198,6 +204,30 @@ public class ZcPlatformJsonUtil {
                 });
             }
         });
+
+//        xbJson.put("chargeList", new JSONArray()
+//                .fluentAdd(new JSONObject()
+//                        // 配置id
+//                        .fluentPut("configId", 1)
+//                        // 费用科目
+//                        .fluentPut("costSubject", 1)
+//                        // 收费主体
+//                        .fluentPut("chargeSubject", 1)
+//                        // 收费设置
+//                        .fluentPut("chargeType", 3)
+//                )
+//                .fluentAdd(new JSONObject()
+//                        .fluentPut("configId", 2)
+//                        .fluentPut("costSubject", 3)
+//                        .fluentPut("chargeSubject", 1)
+//                        .fluentPut("chargeType", 3)
+//                ).fluentAdd(new JSONObject()
+//                        .fluentPut("configId", 3)
+//                        .fluentPut("costSubject", 5)
+//                        .fluentPut("chargeSubject", 1)
+//                        .fluentPut("chargeType", 3)
+//                )
+//        );
 
         return addItemSchemaList(xbJson);
     }
@@ -694,6 +724,7 @@ public class ZcPlatformJsonUtil {
             String name = fbasedataId.getString("name");
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+            realPath = UrlService.getAttachmentFullUrl(realPath);
             realPath = convertToFullPath(realPath);
 
             Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
@@ -704,26 +735,31 @@ public class ZcPlatformJsonUtil {
 
 
     /**
-     * 将相对路径转换为全路径。
+     * 下载文件并返回文件绝对路径
      *
-     * @param relativePath 相对路径
-     * @return 全路径
+     * @param fileUrl
+     * @return
      */
-    public static String convertToFullPath(String relativePath) {
-        String basePath = "/data/fileserver";
-        // 分割路径和文件名
-        int lastSlashIndex = relativePath.lastIndexOf('/');
-        String path = relativePath.substring(0, lastSlashIndex);
-        String fileName = relativePath.substring(lastSlashIndex + 1);
-        String encodedFilename = null;
-
+    public static String convertToFullPath(String fileUrl) {
+        String saveDir = "/home/temp";
         try {
-            encodedFilename = URLEncoder.encode(fileName, "UTF-8").replace("%", "");
-        } catch (Exception e) {
-            throw new RuntimeException("文件名编码失败", e);
+            URL url = new URL(fileUrl);
+            String fileName = Paths.get(url.getPath()).getFileName().toString();
+            Path savePath = Paths.get(saveDir, fileName);
+
+            try (BufferedInputStream in = new BufferedInputStream(url.openStream());
+                 FileOutputStream fileOutputStream = new FileOutputStream(savePath.toString())) {
+                byte[] dataBuffer = new byte[1024];
+                int bytesRead;
+                while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
+                    fileOutputStream.write(dataBuffer, 0, bytesRead);
+                }
+            }
+            return savePath.toAbsolutePath().toString();
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
         }
 
-        return basePath + path + "/" + encodedFilename;
     }
-
 }

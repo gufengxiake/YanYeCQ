@@ -7,6 +7,8 @@ import kd.bd.assistant.er.util.ErReimburseSettingUtil;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.datamodel.events.ChangeData;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.UserProp;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -28,15 +30,54 @@ public class ErTripreimburseExtFormPlugin extends AbstractBillPlugIn {
         // 公司
         DynamicObject company = (DynamicObject) this.getModel().getValue("company");
 
+        //设置报销级别
+        this.setReimburselevel(applier, company);
+    }
+
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        super.propertyChanged(e);
+
+        String name = e.getProperty().getName();
+        if ("company".equals(name)) { //申请人公司
+            ChangeData changeData = e.getChangeSet()[0];
+            DynamicObject company = (DynamicObject) changeData.getNewValue();
+            if (company != null) {
+                // 申请人
+                DynamicObject applier = (DynamicObject) this.getModel().getValue("applier");
+
+                //设置报销级别
+                this.setReimburselevel(applier, company);
+            }
+        } else if ("applier".equals(name)) { //申请人
+            ChangeData changeData = e.getChangeSet()[0];
+            DynamicObject applier = (DynamicObject) changeData.getNewValue();
+            if (applier != null) {
+                // 申请人公司
+                DynamicObject company = (DynamicObject) this.getModel().getValue("company");
+
+                //设置报销级别
+                this.setReimburselevel(applier, company);
+            }
+        }
+    }
+
+    /**
+     * 设置报销级别
+     *
+     * @param applier 申请人
+     * @param company 申请人公司
+     */
+    private void setReimburselevel(DynamicObject applier, DynamicObject company) {
         // 获取报销级别设置信息
         QFilter qFilter = new QFilter("number", QCP.equals, applier.get("number"));
         DynamicObject reimbursesettings = BusinessDataServiceHelper.loadSingle("er_reimbursesetting", qFilter.toArray());
 
         // 报销级别
-        this.getModel().setValue("nckd_reimburselevel_bill", this.getReimburse(reimbursesettings,company));
+        this.getModel().setValue("nckd_reimburselevel_bill", this.getReimburse(reimbursesettings, company));
     }
 
-    public Object getReimburse(DynamicObject reimbursesettings,DynamicObject company) {
+    public Object getReimburse(DynamicObject reimbursesettings, DynamicObject company) {
         Object reimburseLevel = null;
         DynamicObjectCollection orgEntrys = reimbursesettings.getDynamicObjectCollection("entryentity");
         if (!orgEntrys.isEmpty()) {
@@ -46,9 +87,9 @@ public class ErTripreimburseExtFormPlugin extends AbstractBillPlugIn {
                 Map<Object, Object> reimburseLevelMap = ErReimburseSettingUtil.getReimburseLevel((Long) reimbursesettings.getPkValue(), (List) companys.stream().map(ErTripreimburseExtFormPlugin.OrgInfo::getOrgId).collect(Collectors.toList()));
                 Iterator<ErTripreimburseExtFormPlugin.OrgInfo> companyIter = companys.iterator();
 
-                for(int var10 = 0; var10 < companys.size(); ++var10) {
+                for (int var10 = 0; var10 < companys.size(); ++var10) {
                     ErTripreimburseExtFormPlugin.OrgInfo next = companyIter.next();
-                    if(Objects.equals(next.getOrgId(),company.getPkValue())){
+                    if (Objects.equals(next.getOrgId(), company.getPkValue())) {
                         reimburseLevel = reimburseLevelMap.get(next.getOrgId());
                     }
                 }
