@@ -110,7 +110,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         FormOperate formOperate = (FormOperate) args.getSource();
         String operateKey = formOperate.getOperateKey();
         //保存之前将富文本的数据保存在大文本中
-        if ("save".equals(operateKey) || "submit".equals(operateKey)) {
+        if ("save".equals(operateKey) || "submit".equals(operateKey) || "submitAndSubmit".equals(operateKey)) {
             RichTextEditor richTextEditor = this.getControl(PurapplybillConst.NCKD_NOTICECONTENT);
             String text = richTextEditor.getText();
             this.getModel().setValue(PurapplybillConst.NCKD_BIGNOTICECONTENT, text);
@@ -299,17 +299,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             // 跳转页面
             getView().openUrl(url);
         }
-
-
-
-
-
-
-
-
-
-
-
     }
 }
 

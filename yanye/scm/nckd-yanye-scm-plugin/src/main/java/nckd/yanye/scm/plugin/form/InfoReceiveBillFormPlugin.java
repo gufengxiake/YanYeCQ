@@ -393,21 +393,20 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     }
 
     /**
-     * todo 查看成交通知书
+     * 查看成交通知书
      */
     private void viewNotice() {
         // 采购方式
         String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
         // 采购单id
         String orderId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_ORDERID);
-
         String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
         getView().openUrl(url);
     }
 
 
     /**
-     * fixme 新增供应商
+     * 新增供应商
      *
      * @param supplierId
      * @return
