@@ -10,6 +10,7 @@ import kd.bos.exception.KDBizException;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
+import java.util.HashMap;
 
 /**
  * 招采平台接口工具类
@@ -271,24 +272,23 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static JSONObject cancelOrder(String orderId, String bizType) {
+    public static JSONObject cancelOrder(HashMap<String, String> cancelMap, String orderId, String bizType) {
         String accessToken = getZcAccessToken();
 
         String cancelOrderUrl = "";
         JSONObject cancelJson = new JSONObject();
-
         switch (bizType) {
             case "XB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
-                cancelJson = ZcPlatformJsonUtil.getXbCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getXbCancelJson(cancelMap);
                 break;
             case "TP":
                 cancelOrderUrl = URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
-                cancelJson = ZcPlatformJsonUtil.getTpCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getTpCancelJson(cancelMap);
                 break;
             case "ZB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
-                cancelJson = ZcPlatformJsonUtil.getZbCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getZbCancelJson(cancelMap);
                 break;
             default:
                 break;
