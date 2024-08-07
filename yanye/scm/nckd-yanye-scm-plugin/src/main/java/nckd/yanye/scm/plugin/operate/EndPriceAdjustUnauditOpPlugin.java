@@ -1,17 +1,21 @@
 package nckd.yanye.scm.plugin.operate;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
+import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -40,22 +44,39 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
         fieldKeys.add("nckd_oldamount");
         fieldKeys.add("nckd_oldtotalprice");
         fieldKeys.add("nckd_oldcostamount");
+        fieldKeys.add("nckd_businessdate");
+        fieldKeys.add("nckd_adjustaccountsorg");
     }
 
     @Override
     public void onAddValidators(AddValidatorsEventArgs e) {
         super.onAddValidators(e);
-        DynamicObject[] dataEntities = e.getDataEntities();
-        for (DynamicObject dataEntity : dataEntities) {
-            Date bizdate = dataEntity.getDate("nckd_businessdate");
+        e.addValidator(new AbstractValidator() {
+            @Override
+            public void validate() {
+                ExtendedDataEntity[] dataEntities = this.getDataEntities();
+                Arrays.stream(dataEntities).forEach(k -> {
+                    DynamicObject dataEntity = k.getDataEntity();
+                    Date bizdate = dataEntity.getDate("nckd_businessdate");
 
-            // 获取对应组织的上次关账日期
-            Date closedate = this.loadGrid(dataEntity.getDynamicObject("nckd_adjustaccountsorg").getLong("id"));
+                    // 获取对应组织的上次关账日期
+                    Date closedate = loadGrid(dataEntity.getDynamicObject("nckd_adjustaccountsorg").getLong("id"));
 
-            if(closedate != null && bizdate.compareTo(closedate) <= 0){
-                throw new KDBizException("已关账，月末调价单不允许反审核!");
+                    try {
+                        if(closedate != null && getYearMonthDay(bizdate).compareTo(getYearMonthDay(closedate)) <= 0){
+                            this.addErrorMessage(k, "已关账，月末调价单不允许反审核");
+                        }
+                    } catch (ParseException parseException) {
+                        parseException.printStackTrace();
+                    }
+                });
             }
-        }
+        });
+    }
+
+    private static Date getYearMonthDay(Date date) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        return sdf.parse(sdf.format(date));
     }
 
     /**
