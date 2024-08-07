@@ -35,7 +35,7 @@ public class SyncPostTask extends AbstractTask {
             QFilter qFilter = new QFilter("id", QCP.equals, position.getLong("id"));
             DynamicObject bosPosition = BusinessDataServiceHelper.loadSingle("bos_position", qFilter.toArray());
 
-            DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle(position.get("adminorg"), "bos_adminorg");
+            DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle(position.getDynamicObject("adminorg").getPkValue(), "bos_adminorg");
             DynamicObject object = bosAdminorg.getDynamicObjectCollection("structure").stream().filter(d ->
                     "01".equals(d.getDynamicObject("view").getString("number"))
             ).findFirst().orElse(null);
