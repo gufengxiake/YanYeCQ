@@ -20,6 +20,7 @@ import java.net.URL;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Objects;
 
 /**
@@ -204,31 +205,6 @@ public class ZcPlatformJsonUtil {
                 });
             }
         });
-
-//        xbJson.put("chargeList", new JSONArray()
-//                .fluentAdd(new JSONObject()
-//                        // 配置id
-//                        .fluentPut("configId", 1)
-//                        // 费用科目
-//                        .fluentPut("costSubject", 1)
-//                        // 收费主体
-//                        .fluentPut("chargeSubject", 1)
-//                        // 收费设置
-//                        .fluentPut("chargeType", 3)
-//                )
-//                .fluentAdd(new JSONObject()
-//                        .fluentPut("configId", 2)
-//                        .fluentPut("costSubject", 3)
-//                        .fluentPut("chargeSubject", 1)
-//                        .fluentPut("chargeType", 3)
-//                ).fluentAdd(new JSONObject()
-//                        .fluentPut("configId", 3)
-//                        .fluentPut("costSubject", 5)
-//                        .fluentPut("chargeSubject", 1)
-//                        .fluentPut("chargeType", 3)
-//                )
-//        );
-
         return addItemSchemaList(xbJson);
     }
 
@@ -530,22 +506,22 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-询比采购单
      */
-    public static JSONObject getXbCancelJson() {
+    public static JSONObject getXbCancelJson(HashMap<String, String> cancelMap) {
         JSONObject xbCancelJson = new JSONObject() {
             {
                 // 是否对外网公示 1：是 0：否
-                put("closePublicity", 0);
+                put("closePublicity", 1);
                 //流标类型 1：终止 2：重新
                 put("closeType", 1);
-//                // 流标原因
-//                put("closeReason", 5);
-//                // 其他原因
-//                put("otherReason", "其它原因");
-//                //关闭公告
+                // 流标原因
+                put("closeReason", cancelMap.get("closeReason"));
+                // 其他原因
+                put("otherReason", cancelMap.get("otherReason"));
+                //关闭公告
                 put("notice", new JSONObject() {
                     {
-                        put("noticeTitle", "流标公告");
-//                        put("noticeContent", "测试流标公告内容");
+                        put("noticeTitle", cancelMap.get("title"));
+                        put("noticeContent", cancelMap.get("content"));
                     }
                 });
             }
@@ -556,24 +532,24 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-谈判采购单
      */
-    public static JSONObject getTpCancelJson() {
+    public static JSONObject getTpCancelJson(HashMap<String, String> cancelMap) {
         JSONObject tPCancelJson = new JSONObject() {
             {
                 // 是否对外网公示 1：是 0：否
-                put("closePublicity", 0);
+                put("closePublicity", 1);
                 //流标类型 1：终止 2：重新
                 put("closeType", 1);
-//                // 流标原因
-//                put("closeReason", 5);
-//                // 其他原因
-//                put("otherReason", "其它原因");
-//                //关闭公告
-//                put("notice", new JSONObject() {
-//                    {
-//                        put("title", "测试流标公告标题");
-//                        put("content", "测试流标公告内容");
-//                    }
-//                });
+                // 流标原因
+                put("closeReason", cancelMap.get("closeReason"));
+                // 其他原因
+                put("otherReason", cancelMap.get("otherReason"));
+                //关闭公告
+                put("notice", new JSONObject() {
+                    {
+                        put("title", cancelMap.get("title"));
+                        put("content", cancelMap.get("content"));
+                    }
+                });
             }
         };
         return tPCancelJson;
@@ -583,21 +559,21 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-招标采购单
      */
-    public static JSONObject getZbCancelJson() {
+    public static JSONObject getZbCancelJson(HashMap<String, String> cancelMap) {
         JSONObject zbCancelJson = new JSONObject() {
             {
                 // 是否对外网发布 1：是 2：否
-                put("isPublicity", 2);
+                put("isPublicity", 1);
                 // 流标类型 1：终止招标 2：重新招标
                 put("closeType", 1);
-//                // 流标原因
-//                put("closeReason", 5);
-//                // 其他原因
-//                put("otherReason", "其它原因");
-//                // 公告标题
-//                put("title", "测试流标公告标题");
-//                // 公告内容
-//                put("content", "测试流标公告内容");
+                // 流标原因
+                put("closeReason", cancelMap.get("closeReason"));
+                // 其他原因
+                put("otherReason", cancelMap.get("otherReason"));
+                // 公告标题
+                put("title", cancelMap.get("title"));
+                // 公告内容
+                put("content", cancelMap.get("content"));
             }
         };
 
