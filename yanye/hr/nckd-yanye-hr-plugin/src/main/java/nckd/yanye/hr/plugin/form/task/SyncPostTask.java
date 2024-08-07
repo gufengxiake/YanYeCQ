@@ -22,7 +22,7 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 public class SyncPostTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
-        this.syncPosition();
+//        this.syncPosition();
         this.syncPersonnelPosition();
     }
 
@@ -30,7 +30,11 @@ public class SyncPostTask extends AbstractTask {
      * 组织发展云-组织管理-岗位维护-岗位信息维护 数据同步到 基础服务-企业建模-人员管理-岗位
      */
     private void syncPosition() {
-        DynamicObject[] homsPositions = BusinessDataServiceHelper.load("homs_position", "id,number,name,enable,isleader,adminorg,parent,description", null);
+        QFilter filter = new QFilter("iscurrentversion", QCP.equals, "1")
+                .and("datastatus", QCP.not_in, "-1,0")
+                .and("initstatus", QCP.equals, "2")
+                .and("createmode", QCP.not_equals, "3");
+        DynamicObject[] homsPositions = BusinessDataServiceHelper.load("homs_position", "id,number,name,enable,isleader,adminorg,parent,description", filter.toArray());
         for (DynamicObject position : homsPositions) {
             QFilter qFilter = new QFilter("id", QCP.equals, position.getLong("id"));
             DynamicObject bosPosition = BusinessDataServiceHelper.loadSingle("bos_position", qFilter.toArray());
@@ -48,7 +52,7 @@ public class SyncPostTask extends AbstractTask {
                 bos_position.set("enable", position.get("enable"));//使用状态
                 bos_position.set("ismainposition", position.get("isleader"));//主负责岗
                 bos_position.set("dpt", position.get("adminorg"));//部门
-                bos_position.set("orgstructure", object.getDynamicObject("vieworg"));//组织结构
+                bos_position.set("orgstructure", object);//组织结构
                 bos_position.set("superiorposition", position.get("parent"));//上级岗位
                 bos_position.set("remarks", position.get("description"));//备注
                 SaveServiceHelper.save(new DynamicObject[]{bos_position});
@@ -59,7 +63,7 @@ public class SyncPostTask extends AbstractTask {
                 bosPosition.set("enable", position.get("enable"));//使用状态
                 bosPosition.set("ismainposition", position.get("isleader"));//主负责岗
                 bosPosition.set("dpt", position.get("adminorg"));//部门
-                bosPosition.set("orgstructure", object.getDynamicObject("vieworg"));//组织结构
+                bosPosition.set("orgstructure", object);//组织结构
                 bosPosition.set("superiorposition", position.get("parent"));//上级岗位
                 bosPosition.set("remarks", position.get("description"));//备注
                 SaveServiceHelper.update(bosPosition);
@@ -82,7 +86,10 @@ public class SyncPostTask extends AbstractTask {
      */
     private void syncPersonnelPosition() {
         // 人员档案任职信息
-        DynamicObject[] empposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,person,adminorgvid,postype,positionvid", null);
+        QFilter filter = new QFilter("initstatus", QCP.equals, "2")
+                .and("iscurrentversion", QCP.equals, "1")
+                .and("datastatus", QCP.not_equals, "-1");
+        DynamicObject[] empposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,person,adminorgvid,postype,positionvid", filter.toArray());
         for (DynamicObject empposorgrel : empposorgrels) {
             // 部门
             DynamicObject adminorgvid = empposorgrel.getDynamicObject("adminorgvid");
@@ -101,7 +108,7 @@ public class SyncPostTask extends AbstractTask {
                 DynamicObjectCollection entryentity = loadSingle.getDynamicObjectCollection("entryentity");
                 // 判断对应部门的记录是否存在，如果存在直接更新数据，不存在则插入一条记录
                 for (DynamicObject dynamicObject : entryentity) {
-                    if (adminorgvid.getString("number").equals(dynamicObject.getDynamicObject("dpt").getString("number"))) {
+                    if (dynamicObject.getDynamicObject("dpt") != null && adminorgvid.getString("number").equals(dynamicObject.getDynamicObject("dpt").getString("number"))) {
                         dynamicObject.set("position", positionvid.getString("name"));//职位
                         dynamicObject.set("isincharge", "1".equals(position.getString("isleader")) ? 1 : 0);//负责人
                         dynamicObject.set("ispartjob", "1020_S".equals(postype.getString("number")) ? 1 : 0);//兼职
@@ -115,13 +122,13 @@ public class SyncPostTask extends AbstractTask {
                 if (!exists) {
                     DynamicObject dynamicObject = entryentity.addNew();
 
-                    DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle(adminorgvid.getPkValue(), "bos_adminorg");
+                    DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle("bos_adminorg",new QFilter[]{new QFilter("number",QCP.equals,adminorgvid.getString("number"))});
                     DynamicObject object = bosAdminorg.getDynamicObjectCollection("structure").stream().filter(d ->
                             "01".equals(d.getDynamicObject("view").getString("number"))
                     ).findFirst().orElse(null);
 
                     dynamicObject.set("dpt", adminorgvid);//部门
-                    dynamicObject.set("orgstructure", object.getDynamicObject("vieworg"));//组织结构
+                    dynamicObject.set("orgstructure", object);//组织结构
                     dynamicObject.set("position", positionvid.getString("name"));//职位
                     dynamicObject.set("isincharge", "1".equals(position.getString("isleader")) ? 1 : 0);//负责人
                     dynamicObject.set("ispartjob", "1020_S".equals(postype.getString("number")) ? 1 : 0);//兼职
