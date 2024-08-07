@@ -140,7 +140,7 @@ public class MaterialreqouFormPlugin extends AbstractBillPlugIn {
                 DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("billentry");
                 for (DynamicObject dynamicObject : entryEntity) {
                     Integer evaluatePeriod = (Integer) dynamicObject.get("nckd_evaluate_period");
-                    if(evaluatePeriod != null){
+                    if(evaluatePeriod != null && evaluatePeriod != 0){
                         cal.setTime(biztime);
                         cal.add(Calendar.DATE, evaluatePeriod);
                         dynamicObject.set("nckd_evaluate_date",cal.getTime());

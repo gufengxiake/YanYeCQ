@@ -1,4 +1,4 @@
-package nckd.yanye.scm.common.utils;
+package nckd.yanye.scm.utils;
 
 import cn.hutool.http.HttpRequest;
 import cn.hutool.http.HttpResponse;
@@ -10,6 +10,7 @@ import kd.bos.exception.KDBizException;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.io.File;
+import java.util.HashMap;
 
 /**
  * 招采平台接口工具类
@@ -126,7 +127,7 @@ public class ZcPlatformApiUtil {
         JSONObject data = responseObj.getJSONObject("data");
         JSONArray record = data.getJSONArray("records");
         if (record.isEmpty()) {
-            throw new KDBizException("您未在招采平台注册!");
+            throw new KDBizException("您未在招采平台注册，请先注册");
         }
         return record.getJSONObject(0).getString("employeeId");
     }
@@ -271,24 +272,23 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static JSONObject cancelOrder(String orderId, String bizType) {
+    public static JSONObject cancelOrder(HashMap<String, String> cancelMap, String orderId, String bizType) {
         String accessToken = getZcAccessToken();
 
         String cancelOrderUrl = "";
         JSONObject cancelJson = new JSONObject();
-
         switch (bizType) {
             case "XB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
-                cancelJson = ZcPlatformJsonUtil.getXbCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getXbCancelJson(cancelMap);
                 break;
             case "TP":
                 cancelOrderUrl = URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
-                cancelJson = ZcPlatformJsonUtil.getTpCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getTpCancelJson(cancelMap);
                 break;
             case "ZB":
                 cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
-                cancelJson = ZcPlatformJsonUtil.getZbCancelJson();
+                cancelJson = ZcPlatformJsonUtil.getZbCancelJson(cancelMap);
                 break;
             default:
                 break;
@@ -313,7 +313,7 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static String viewNotice(String procurements, String orderId) {
+    public static String getViewNoticeUrl(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
         String page = null;
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
@@ -518,7 +518,7 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static String viewWinNotice(String procurements, String orderId) {
+    public static String getViewWinNoticeUrl(String procurements, String orderId) {
         String userAccessToken = getZcUserToken();
         String page = null;
         if ("2".equals(procurements)) {
@@ -674,7 +674,7 @@ public class ZcPlatformApiUtil {
      * @param reviewMode   评审模式
      * @return url
      */
-    public static String getOnlineReview(String procurements, Integer reviewId, String reviewMode) {
+    public static String getOnlineReviewUrl(String procurements, Integer reviewId, String reviewMode) {
 
         String userAccessToken = getZcUserToken();
         String page = null;

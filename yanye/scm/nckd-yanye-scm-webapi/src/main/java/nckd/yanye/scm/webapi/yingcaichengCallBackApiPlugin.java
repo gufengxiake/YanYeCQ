@@ -16,9 +16,9 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.InforeceivebillConst;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
-import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.dto.Content;
-import nckd.yanye.scm.common.utils.ZcEncryptUtil;
+import nckd.yanye.scm.utils.ZcEncryptUtil;
 
 import java.io.Serializable;
 import java.math.BigDecimal;

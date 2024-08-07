@@ -12,7 +12,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.*;
-import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.utils.ZcPlatformApiUtil;
 
 import java.util.Date;
 import java.util.EventObject;
@@ -60,14 +60,20 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 break;
             // 生成采购订单/合同
             case ADDORDERORCONT:
+                // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
+                // 其他：直接生成采购订单
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
-                // 1-单次采购-下推采购订单；2-协议采购-下推采购合同
-                if ("1".equals(purchaseType)) {
-                    addOrder();
-                } else if ("2".equals(purchaseType)) {
-                    addContract();
+                String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
+                if ("2".equals(procurements)) {
+                    if ("1".equals(purchaseType)) {
+                        addOrder();
+                    } else if ("2".equals(purchaseType)) {
+                        addContract();
+                    } else {
+                        throw new KDBizException("采购类型错误");
+                    }
                 } else {
-                    throw new KDBizException("采购类型不正确!");
+                    addOrder();
                 }
                 break;
             // 查看成交通知书
@@ -100,13 +106,13 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurorderbillConst.FORMBILLID,
                 PurorderbillConst.ALLPROPERTY,
-                new QFilter[]{new QFilter(PurorderbillConst.NCKD_UPINFORECEIVEBILL, QCP.equals, this.getModel().getValue("billno"))}
+                new QFilter[]{new QFilter(PurorderbillConst.NCKD_UPINFORECEIVEBILL, QCP.equals, this.getModel().getValue(InforeceivebillConst.BILLNO))}
         );
         if (billnos.length != 0) {
             throw new KDBizException("已生成过采购订单");
         }
-        //获取源单
-        String purapplybillno = (String) this.getModel().getValue("nckd_purapplybillno");
+        //获取源采购申请单
+        String purapplybillno = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURAPPLYBILLNO);
         DynamicObject srcObj = (BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.ALLPROPERTY,
@@ -116,22 +122,25 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         //创建采购订单
         DynamicObject tgtObj = BusinessDataServiceHelper.newDynamicObject(PurorderbillConst.FORMBILLID);
         /*
-        拼装赋值
+         * 拼装赋值
          */
-        //单据类型：物料类采购
+        // 单据类型：物料类采购
         tgtObj.set(PurorderbillConst.BILLTYPE, BusinessDataServiceHelper.loadSingle(
                         "539008795674673152",
                         "bos_billtype"
                 )
         );
-        //业务类型
+        // 业务类型
         tgtObj.set(PurorderbillConst.BIZTYPE, srcObj.get(PurapplybillConst.BIZTYPE));
-        //订单日期
+        // 订单日期
         tgtObj.set(PurorderbillConst.BIZTIME, srcObj.get(PurapplybillConst.BIZTIME));
         //todo 招采成交价税合计
         tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, this.getModel().getValue("nckd_totalprice"));
-        //上游信息接收单
+        // 上游信息接收单
         tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue("billno"));
+        // 上游采购申请单
+        tgtObj.set(PurorderbillConst.NCKD_UPAPPLYBILL, purapplybillno);
+
         //采购组织
         tgtObj.set(PurorderbillConst.ORG, srcObj.get(PurapplybillConst.ORG));
         //订货供应商
@@ -231,9 +240,9 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         if (result.isSuccess()) {
             this.getModel().setValue("nckd_generationstatus", true);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
-            this.getView().showSuccessNotification("成功");
+            this.getView().showSuccessNotification("生成采购订单成功");
         } else {
-            this.getView().showErrorNotification("失败");
+            this.getView().showErrorNotification("生成采购订单失败");
         }
     }
 
@@ -282,20 +291,23 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 "712021156571496448",
                 "conm_type"
         ));
-        //合同属性：合同
+        // 合同属性：合同
         tgtObj.set(PurcontractConst.CONMPROP, "B");
-        //适用组织范围
+        // 适用组织范围
         tgtObj.set(PurcontractConst.SUITSCOPE, "A");
-        //签订日期
+        // 签订日期
         tgtObj.set(PurcontractConst.BIZTIME, new Date());
-        //起始日期
+        // 起始日期
         tgtObj.set(PurcontractConst.BIZTIMEBEGIN, new Date());
-        //截止日期
+        // 截止日期
         tgtObj.set(PurcontractConst.BIZTIMEEND, new Date());
-        //todo 招采成交价税合计(将招采平台“成交通知书”的总金额记录至该字段)
+        // 招采成交价税合计(将招采平台“成交通知书”的总金额记录至该字段)
         tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, this.getModel().getValue(InforeceivebillConst.NCKD_TOTALPRICE));
-        //上游信息接收单
+        // 上游信息接收单
         tgtObj.set(PurcontractConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
+        // fixme 上游采购申请单
+        tgtObj.set(PurcontractConst.NCKD_UPAPPLYBILL, purapplybillno);
+
 
         //采购组织
         tgtObj.set(PurcontractConst.ORG, srcObj.get(PurapplybillConst.ORG));
@@ -386,9 +398,9 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
             this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
-            this.getView().showSuccessNotification("下推采购合同成功!");
+            this.getView().showSuccessNotification("生成采购合同成功!");
         } else {
-            this.getView().showErrorNotification("下推采购合同失败!");
+            this.getView().showErrorNotification("生成采购合同失败!");
         }
     }
 
@@ -400,7 +412,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
         // 采购单id
         String orderId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_ORDERID);
-        String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
+        String url = ZcPlatformApiUtil.getViewWinNoticeUrl(procurements, orderId);
         getView().openUrl(url);
     }
 

@@ -1,4 +1,4 @@
-package nckd.yanye.scm.common.utils;
+package nckd.yanye.scm.utils;
 
 import kd.bos.entity.AppInfo;
 import kd.bos.entity.AppMetadataCache;
