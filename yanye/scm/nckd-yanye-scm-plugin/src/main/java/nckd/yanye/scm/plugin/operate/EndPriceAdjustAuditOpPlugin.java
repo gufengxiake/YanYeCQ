@@ -94,6 +94,20 @@ public class EndPriceAdjustAuditOpPlugin extends AbstractOperationServicePlugIn 
                             object.set("e_pricetaxtotalbase", dynamicObject.getBigDecimal("nckd_newtotalprice"));
                             // 计成本金额
                             object.set("intercostamt", dynamicObject.getBigDecimal("nckd_newcostamount"));
+                            // 可抵扣税额
+                            object.set("curdeductibleamt", dynamicObject.getBigDecimal("nckd_newtax"));
+                            // 未冲回应付金额
+                            object.set("e_unwoffamt", dynamicObject.getBigDecimal("nckd_newtotalprice"));
+                            // 未冲回应付金额(本位币)
+                            object.set("e_unwofflocamt", dynamicObject.getBigDecimal("nckd_newtotalprice"));
+                            // 未冲回金额
+                            object.set("e_unwoffnotaxamt", dynamicObject.getBigDecimal("nckd_newamount"));
+                            // 未冲回金额(本位币)
+                            object.set("e_unwoffnotaxlocamt", dynamicObject.getBigDecimal("nckd_newamount"));
+                            // 未冲回税额
+                            object.set("e_unwofftax", dynamicObject.getBigDecimal("nckd_newtax"));
+                            // 未冲回税额(本位币)
+                            object.set("e_unwofftaxlocal", dynamicObject.getBigDecimal("nckd_newtax"));
 
                             list.add(object.getPkValue());
                         }
