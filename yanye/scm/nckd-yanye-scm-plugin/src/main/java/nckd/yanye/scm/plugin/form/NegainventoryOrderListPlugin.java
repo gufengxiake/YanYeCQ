@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.form;
 
+import com.alibaba.fastjson.JSONObject;
 import dm.jdbc.util.StringUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
@@ -11,6 +12,7 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.list.BillList;
 import kd.bos.list.plugin.AbstractListPlugin;
@@ -19,9 +21,11 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -42,7 +46,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         this.addItemClickListeners("nckd_completedreceipt");
     }
 
-
+    @Transactional(rollbackFor = Exception.class)
     @Override
     public void afterDoOperation(AfterDoOperationEventArgs afterDoOperationEventArgs) {
         super.afterDoOperation(afterDoOperationEventArgs);
@@ -62,6 +66,12 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             Map<Long,DynamicObject> dynamicObjectMap = new HashMap<>();
 
             Arrays.asList(bussProcessOrderArr).forEach(t->{
+                if ("1".equals(t.getString("nckd_isgenerate"))) {
+                    this.getView().showErrorNotification("负库存物料检查单编号："+t.getString("billno") + "已存在下游单据，不允许重复生成");
+                    return;
+                }
+                //是否生成下游单据状态（1：已生成）
+                t.set("nckd_isgenerate","1");
                 DynamicObjectCollection dynamicObjects = t.getDynamicObjectCollection("nckd_negainentries");
                 for (DynamicObject dynamicObject : dynamicObjects){
                     dynamicObjectMap.put(dynamicObject.getLong("id"),t);
@@ -128,6 +138,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                     pushDownProductionMaterialReceipt(dynamicObject,map);
                 }
             }
+            SaveServiceHelper.update(bussProcessOrderArr);
         }
     }
     //完工入库单（新增）
@@ -187,6 +198,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的完工入库单新增失败");
         }else {
+            //提交审批
+//            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            if(!submit.isSuccess()){
+//                this.getView().showSuccessNotification("发起提交失败：" + submit.getMessage());
+//            }
+//            if(!audit.isSuccess()){
+//                this.getView().showSuccessNotification("发起审核失败：" + audit.getMessage());
+//            }
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的完工入库单新增成功");
         }
     }
@@ -203,9 +223,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         PushArgs pushArgs = getPushArgs(warDynamicObject,"pom_mftorder","im_mdc_mftmanuinbill","921672118725403648");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
         if (!result.isSuccess()) {
-            this.getView().showErrorNotification("下推失败：" + result.getMessage());
+
+            this.getView().showErrorNotification("下推失败：" + JSONObject.toJSONString(result));
         }else {
-            this.getView().showSuccessNotification("下推成功：" + result.getMessage());
+            Set<Object> targetBillIds = result.getTargetBillIds();
+            String string = targetBillIds.toString();
+            String targetEntityNumber = result.getTargetEntityNumber();
+            this.getView().showConfirm(string+"#$"+targetEntityNumber, MessageBoxOptions.OK);
+//            this.getView().showSuccessNotification("下推成功：" + result.getMessage());
+            this.getView().showErrorNotification("下推成功：" + JSONObject.toJSONString(result));
         }
 
     }
@@ -236,6 +262,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的生产入库单新增失败");
         }else {
+            //提交审批
+//            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            if(!submit.isSuccess()){
+//                this.getView().showSuccessNotification("发起提交失败：" + submit.getMessage());
+//            }
+//            if(!audit.isSuccess()){
+//                this.getView().showSuccessNotification("发起审核失败：" + audit.getMessage());
+//            }
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的生产入库单新增成功");
         }
     }
@@ -274,6 +309,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的领料出库单新增失败");
         }else {
+            //提交审批
+//            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+//            if(!submit.isSuccess()){
+//                this.getView().showSuccessNotification("发起提交失败：" + submit.getMessage());
+//            }
+//            if(!audit.isSuccess()){
+//                this.getView().showSuccessNotification("发起审核失败：" + audit.getMessage());
+//            }
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的领料出库单新增成功");
         }
     }
