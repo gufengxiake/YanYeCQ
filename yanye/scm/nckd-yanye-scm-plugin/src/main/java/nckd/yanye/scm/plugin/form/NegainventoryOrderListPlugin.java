@@ -86,7 +86,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             //构造查询生产工单分录条件
             QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C");
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept", new QFilter[]{qFilter});
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{qFilter});
             //key,物料生产信息，value:生产工单
             Map<Object,DynamicObject> map = new HashMap<>();
             //key,物料生产信息，value:生产工单物料信息分录
