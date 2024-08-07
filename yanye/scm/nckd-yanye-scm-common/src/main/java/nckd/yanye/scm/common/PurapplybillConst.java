@@ -1110,4 +1110,5 @@ public class PurapplybillConst {
     public static final String NCKD_OPENTIME = "nckd_opentime";
     public static final String NCKD_SIGNUPENDTIME = "nckd_signupendtime";
     public static final String NCKD_SIGNUPSTARTTIME = "nckd_signupstarttime";
+    public static final String NCKD_CLOSED = "nckd_closed";
 }

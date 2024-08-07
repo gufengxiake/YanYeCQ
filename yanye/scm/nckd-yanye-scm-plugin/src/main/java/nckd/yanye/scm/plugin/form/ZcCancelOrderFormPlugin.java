@@ -43,6 +43,9 @@ public class ZcCancelOrderFormPlugin extends AbstractFormPlugin {
         hashMap.put("otherReason", String.valueOf(this.getModel().getValue("nckd_otherreason")));
         hashMap.put("title", String.valueOf(this.getModel().getValue("nckd_title")));
         hashMap.put("content", String.valueOf(this.getModel().getValue("nckd_content")));
+        // todo 附件
+
+
         //监听确定按钮
         if ("btnok".equals(sourceKey)) {
             this.getView().returnDataToParent(hashMap);
@@ -60,6 +63,7 @@ public class ZcCancelOrderFormPlugin extends AbstractFormPlugin {
             if (StringUtils.isEmpty((String) this.getModel().getValue("nckd_content"))) {
                 throw new KDBizException("请填写公告内容");
             }
+
             this.getView().close();
         }
     }

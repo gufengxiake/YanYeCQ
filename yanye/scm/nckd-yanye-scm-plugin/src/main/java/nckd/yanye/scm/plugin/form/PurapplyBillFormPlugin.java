@@ -16,8 +16,8 @@ import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.PurapplybillConst;
-import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
-import nckd.yanye.scm.common.utils.ZcPlatformJsonUtil;
+import nckd.yanye.scm.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
 
 import java.util.EventObject;
 import java.util.HashMap;
@@ -244,6 +244,9 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_CLOSED), true)) {
+            throw new KDBizException("该采购申请单已作废!");
+        }
         JSONObject cancelJsonObject;
         // 招采平台id
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
@@ -261,6 +264,8 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
         if (cancelJsonObject.getBooleanValue("success")) {
             this.getView().showSuccessNotification("作废成功!");
+            this.getModel().setValue(PurapplybillConst.NCKD_CLOSED, true);
+            SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
         } else {
             this.getView().showErrorNotification("作废失败!" + cancelJsonObject.getString("message"));
         }
@@ -277,7 +282,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         }
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
-        String url = ZcPlatformApiUtil.viewNotice(procurements, orderId);
+        String url = ZcPlatformApiUtil.getViewNoticeUrl(procurements, orderId);
         // 跳转页面
         getView().openUrl(url);
     }
@@ -289,7 +294,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     private void makeBidFile(IDataModel model) {
         // 采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
-
         if (StringUtils.isEmpty(procurements)) {
             throw new KDBizException("请选择采购方式!");
         }
@@ -299,7 +303,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             // 赋值线上评审id
             model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
             String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
-            String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
+            String url = ZcPlatformApiUtil.getOnlineReviewUrl(procurements, reviewId, reviewMode);
             // 跳转页面
             getView().openUrl(url);
         } else {
@@ -307,7 +311,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
             // 赋值线上评审id
             model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
-            String url = ZcPlatformApiUtil.getOnlineReview(procurements, reviewId, reviewMode);
+            String url = ZcPlatformApiUtil.getOnlineReviewUrl(procurements, reviewId, reviewMode);
             // 跳转页面
             getView().openUrl(url);
         }

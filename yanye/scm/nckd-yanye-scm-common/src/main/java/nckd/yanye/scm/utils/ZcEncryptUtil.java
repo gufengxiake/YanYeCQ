@@ -1,4 +1,4 @@
-package nckd.yanye.scm.common.utils;
+package nckd.yanye.scm.utils;
 
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.crypto.SecureUtil;
