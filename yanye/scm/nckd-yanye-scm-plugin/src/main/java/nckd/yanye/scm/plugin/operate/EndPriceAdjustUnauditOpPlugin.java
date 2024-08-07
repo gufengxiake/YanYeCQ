@@ -1,26 +1,29 @@
 package nckd.yanye.scm.plugin.operate;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
-import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
+import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.fi.cal.business.account.CloseAccountParamBuilder;
+import kd.fi.cal.common.helper.AccountingSysHelper;
 import org.apache.commons.lang.StringUtils;
 
 /**
@@ -41,6 +44,95 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
         fieldKeys.add("nckd_oldamount");
         fieldKeys.add("nckd_oldtotalprice");
         fieldKeys.add("nckd_oldcostamount");
+        fieldKeys.add("nckd_businessdate");
+        fieldKeys.add("nckd_adjustaccountsorg");
+    }
+
+    @Override
+    public void onAddValidators(AddValidatorsEventArgs e) {
+        super.onAddValidators(e);
+        e.addValidator(new AbstractValidator() {
+            @Override
+            public void validate() {
+                ExtendedDataEntity[] dataEntities = this.getDataEntities();
+                Arrays.stream(dataEntities).forEach(k -> {
+                    DynamicObject dataEntity = k.getDataEntity();
+                    Date bizdate = dataEntity.getDate("nckd_businessdate");
+
+                    // 获取对应组织的上次关账日期
+                    Date closedate = loadGrid(dataEntity.getDynamicObject("nckd_adjustaccountsorg").getLong("id"));
+
+                    try {
+                        if(closedate != null && getYearMonthDay(bizdate).compareTo(getYearMonthDay(closedate)) <= 0){
+                            this.addErrorMessage(k, "已关账，月末调价单不允许反审核");
+                        }
+                    } catch (ParseException parseException) {
+                        parseException.printStackTrace();
+                    }
+                });
+            }
+        });
+    }
+
+    private static Date getYearMonthDay(Date date) throws ParseException {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        return sdf.parse(sdf.format(date));
+    }
+
+    /**
+     * 获取对应组织的上次关账日期
+     * @param orgId
+     * @return
+     */
+    private Date loadGrid(Long orgId) {
+        Date closedate = null;
+        List<Long> orgList = new ArrayList<>();
+        orgList.add(orgId);
+
+        DynamicObjectCollection accSysColl = AccountingSysHelper.getAccountingSysColls(orgList, null);
+        if (accSysColl.size() != 0) {
+            Set<Long> ownerIdSet = new HashSet();
+            Set<Long> calorgSet = new HashSet();
+            Iterator var6 = accSysColl.iterator();
+
+            while (var6.hasNext()) {
+                DynamicObject accSysInfo = (DynamicObject) var6.next();
+                ownerIdSet.add(accSysInfo.getLong("ownerid"));
+                calorgSet.add(accSysInfo.getLong("calorgid"));
+            }
+
+            Long[] calOrgIds = AccountingSysHelper.getCalOrgIds(calorgSet);
+            calorgSet.retainAll(Arrays.asList(calOrgIds));
+            Map<Long, Date> calOrgIdCurPeriodMaxEndateMap = CloseAccountParamBuilder.getCalOrgCurPeriodMaxEndDateMap(calorgSet);
+            Map<Long, DynamicObject> ownerIdLastCloseAccountDycMap = CloseAccountParamBuilder.getOwnerIdLastCloseAcctDycMap(ownerIdSet);
+            List<DynamicObject> hasAccountAccSysDycs = new ArrayList(16);
+            Iterator lastInfo = accSysColl.iterator();
+
+            Long calorgid;
+            while (lastInfo.hasNext()) {
+                DynamicObject accSysDyc = (DynamicObject) lastInfo.next();
+                calorgid = accSysDyc.getLong("calorgid");
+                if (calorgSet.contains(calorgid)) {
+                    hasAccountAccSysDycs.add(accSysDyc);
+                }
+            }
+
+            accSysColl.clear();
+            accSysColl.addAll(hasAccountAccSysDycs);
+            if (!accSysColl.isEmpty()) {
+                calorgid = accSysColl.get(0).getLong("calorgid");
+                if (calorgSet.contains(calorgid)) {
+                    Long ownerId = accSysColl.get(0).getLong("ownerid");
+                    DynamicObject ownerIdLastClose = ownerIdLastCloseAccountDycMap.get(ownerId);
+
+                    if (ownerIdLastClose != null) {
+                        closedate = ownerIdLastClose.getDate("closedate");
+                    }
+                }
+            }
+        }
+
+        return closedate;
     }
 
     @Override
@@ -57,7 +149,6 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
 //            String oddnumber = entryentity.get(0).getString("nckd_oddnumber").split("_")[0];
             QFilter qFilter = new QFilter("billno", QCP.in, numberList);
             // 获取暂估应付单
-//            QueryServiceHelper.query()
             DynamicObject[] apBusbills = BusinessDataServiceHelper.load("ap_busbill", "", qFilter.toArray());
             for (DynamicObject apBusbill : apBusbills) {
                 apBusbill = BusinessDataServiceHelper.loadSingle(apBusbill.get("id"),"ap_busbill");
@@ -77,7 +168,7 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
                             // 单价
                             object.set("e_unitprice", dynamicObject.getBigDecimal("nckd_oldunitprice"));
                             // 实际单价
-                            object.set("e_actunitprice", dynamicObject.getBigDecimal("nckd_newunitprice"));
+                            object.set("e_actunitprice", dynamicObject.getBigDecimal("nckd_oldunitprice"));
                             // 税额
                             object.set("e_tax", dynamicObject.getBigDecimal("nckd_odltax"));
                             // 税额本位币
@@ -85,7 +176,7 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
                             // 含税单价
                             object.set("e_taxunitprice", dynamicObject.getBigDecimal("nckd_oldftaxunitprice"));
                             // 实际含税单价
-                            object.set("e_acttaxunitprice", dynamicObject.getBigDecimal("nckd_newftaxunitprice"));
+                            object.set("e_acttaxunitprice", dynamicObject.getBigDecimal("nckd_oldftaxunitprice"));
                             // 金额
                             object.set("e_amount", dynamicObject.getBigDecimal("nckd_oldamount"));
                             // 金额本位币
