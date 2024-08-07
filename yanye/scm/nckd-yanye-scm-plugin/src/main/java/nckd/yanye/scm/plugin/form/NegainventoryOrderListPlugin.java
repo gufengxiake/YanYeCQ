@@ -225,15 +225,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败");
         }else {
-            Set<Object> targetBillIds = result.getTargetBillIds();
-            List<Object> list = targetBillIds.stream().collect(Collectors.toList());
-            DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftmanuinbill");
-            DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
-            DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-            collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
-            collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-            collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-            SaveServiceHelper.update(dynamic);
+//            Set<Object> targetBillIds = result.getTargetBillIds();
+//            List<Object> list = targetBillIds.stream().collect(Collectors.toList());
+//            DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftmanuinbill");
+//            DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
+//            DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+//            collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
+//            collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+//            collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+//            SaveServiceHelper.update(dynamic);
             this.getView().showErrorNotification("下推成功：" + JSONObject.toJSONString(result));
         }
 
@@ -333,6 +333,10 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             this.getView().showErrorNotification("物料编码："+number + "对应的生产工单不存在");
             return;
         }
+        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+        //给生产工单中的仓库赋值
+        warDynamicObject.set("nckd_warehouse",nckdWarehouseDy);
+        SaveServiceHelper.update(warDynamicObject);
         //根据生产工单找到组件清单
         QFilter qFilter = new QFilter("forderid", QCP.in, warDynamicObject.getPkValue());
         DynamicObject pomMftstocks = BusinessDataServiceHelper.loadSingle("pom_mftstock", qFilter.toArray());
@@ -340,20 +344,22 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             this.getView().showErrorNotification("生产工单编码："+warDynamicObject.getString("billno") + "对应的组件清单不存在");
             return;
         }
-        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","932403241491308544");
+        pomMftstocks.set("nckd_warehouse",nckdWarehouseDy);
+        SaveServiceHelper.update(warDynamicObject);
+        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","2011715071826204672");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
+//        Set<Object> targetBillIds = result.getTargetBillIds();
+//        List<Object> list = targetBillIds.stream().collect(Collectors.toList());
+//        DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftproorder");
+//        DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
+//        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+//        collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
+//        collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+//        collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+//        SaveServiceHelper.update(dynamic);
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败：" + result.getMessage());
         }else {
-            Set<Object> targetBillIds = result.getTargetBillIds();
-            List<Object> list = targetBillIds.stream().collect(Collectors.toList());
-            DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftproorder");
-            DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
-            DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-            collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
-            collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-            collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-            SaveServiceHelper.update(dynamic);
             this.getView().showSuccessNotification("下推成功：" + result.getMessage());
         }
 
