@@ -14,7 +14,6 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.*;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
-import java.math.BigDecimal;
 import java.util.Date;
 import java.util.EventObject;
 
@@ -129,8 +128,8 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         tgtObj.set(PurorderbillConst.BIZTYPE, srcObj.get(PurapplybillConst.BIZTYPE));
         //订单日期
         tgtObj.set(PurorderbillConst.BIZTIME, srcObj.get(PurapplybillConst.BIZTIME));
-        //todo 招采成交价税合计(将招采平台“成交通知书”的总金额记录至该字段)
-        tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, new BigDecimal(456));
+        //todo 招采成交价税合计
+        tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, this.getModel().getValue("nckd_totalprice"));
         //上游信息接收单
         tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue("billno"));
         //采购组织
@@ -150,11 +149,10 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         );
         tgtObj.set(PurorderbillConst.CURRENCY, RMB);
         tgtObj.set(PurorderbillConst.SETTLECURRENCY, RMB);
-        tgtObj.set(PurorderbillConst.EXRATETABLE, BusinessDataServiceHelper.loadSingle(
-                "1890691225300776960",
-                "bd_exratetable"
-
-        ));
+//        tgtObj.set(PurorderbillConst.EXRATETABLE, BusinessDataServiceHelper.loadSingle(
+//                "1890691225300776960",
+//                "bd_exratetable"
+//        ));
         tgtObj.set(PurorderbillConst.EXRATEDATE, new Date());
         tgtObj.set(PurorderbillConst.EXCHANGERATE, 1);
 
@@ -295,9 +293,9 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         //截止日期
         tgtObj.set(PurcontractConst.BIZTIMEEND, new Date());
         //todo 招采成交价税合计(将招采平台“成交通知书”的总金额记录至该字段)
-        tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, new BigDecimal(456));
+        tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, this.getModel().getValue(InforeceivebillConst.NCKD_TOTALPRICE));
         //上游信息接收单
-        tgtObj.set(PurcontractConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue("billno"));
+        tgtObj.set(PurcontractConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
 
         //采购组织
         tgtObj.set(PurcontractConst.ORG, srcObj.get(PurapplybillConst.ORG));
@@ -309,11 +307,12 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         );
         tgtObj.set(PurcontractConst.CURRENCY, RMB);
         tgtObj.set(PurcontractConst.SETTLECURRENCY, RMB);
-        tgtObj.set(PurcontractConst.EXRATETABLE, BusinessDataServiceHelper.loadSingle(
-                "1890691225300776960",
-                "bd_exratetable"
-
-        ));
+        // 汇率表
+//        tgtObj.set(PurcontractConst.EXRATETABLE, BusinessDataServiceHelper.loadSingle(
+//                "1890691225300776960",
+//                "bd_exratetable"
+//
+//        ));
         tgtObj.set(PurcontractConst.EXRATEDATE, new Date());
         tgtObj.set(PurcontractConst.EXCHANGERATE, 1);
 
@@ -382,10 +381,10 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         //作废状态：未作废
         tgtObj.set(PurcontractConst.CANCELSTATUS, "A");
 
-
         OperationResult result = SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
         if (result.isSuccess()) {
-            this.getModel().setValue("nckd_generationstatus", true);
+            this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
+            this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("下推采购合同成功!");
         } else {
@@ -394,23 +393,20 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     }
 
     /**
-     * todo 查看成交通知书
+     * 查看成交通知书
      */
     private void viewNotice() {
         // 采购方式
         String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
         // 采购单id
         String orderId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_ORDERID);
-        // 成交id
-        String winId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_WINID);
-
         String url = ZcPlatformApiUtil.viewWinNotice(procurements, orderId);
         getView().openUrl(url);
     }
 
 
     /**
-     * fixme 新增供应商
+     * 新增供应商
      *
      * @param supplierId
      * @return

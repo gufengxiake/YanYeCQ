@@ -18,9 +18,11 @@ import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.dto.Content;
-import nckd.yanye.scm.utils.ZcEncryptUtil;
+import nckd.yanye.scm.common.utils.ZcEncryptUtil;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 
 /**
@@ -66,14 +68,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 采购单id
         String orderId = msgObj.getString("orderId");
-        // 苍穹对应申请单
+        // 是否有苍穹对应申请单
         DynamicObject[] purapplyBillObj = BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.BILLNO,
                 new QFilter[]{new QFilter(PurapplybillConst.NCKD_PURCHASEID, QCP.equals, orderId)}
         );
-
         if (purapplyBillObj.length == 0) {
+            return CustomApiResult.success("success");
+        }
+
+        // 是否有重复信息接收单
+        DynamicObject[] receiveBillObj = BusinessDataServiceHelper.load(
+                InforeceivebillConst.FORMBILLID,
+                InforeceivebillConst.BILLNO,
+                new QFilter[]{new QFilter(InforeceivebillConst.NCKD_PURAPPLYBILLNO, QCP.equals, msgObj.getString("winId"))}
+        );
+        if (receiveBillObj.length > 0) {
             return CustomApiResult.success("success");
         }
 
@@ -97,8 +108,15 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, orderData.getString("negotiatePurchaseType"));
         // 采购方式
         receiveObject.set(InforeceivebillConst.NCKD_PROCUREMENTS, msgObj.getString("purchaseType"));
+        // todo 币别
+        receiveObject.set(InforeceivebillConst.NCKD_CURRENCY, 1);
+        // 采购单id
+        receiveObject.set(InforeceivebillConst.NCKD_ORDERID, orderId);
+
+
         // 中标供应商分录
         JSONArray suppliers = winData.getJSONArray("suppliers");
+        BigDecimal totalPrice = new BigDecimal(0);
         for (int i = 0; i < suppliers.size(); i++) {
             JSONObject supplier = suppliers.getJSONObject(i);
             String supplierId = supplier.getString("supplierId");
@@ -113,8 +131,10 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_SUPPLIERNAME, supplierName);
             // 社会统一信用代码
             addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_USCC, supplier.getString("supplierScc"));
-            // 中标价
-            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_BIDPRICE, supplier.getString("bidPrice"));
+            // 中标价(分)
+            BigDecimal bidPrice = supplier.getBigDecimal("bidPrice").divide(new BigDecimal(100), RoundingMode.HALF_UP);
+            totalPrice = totalPrice.add(bidPrice);
+            addNew.set(InforeceivebillConst.NCKD_WINENTRYENTITY_NCKD_BIDPRICE, bidPrice);
         }
 
         // 物料明细分录
@@ -123,7 +143,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // fixme 查成交授标报错
 
         // 询比才有物料
-        if ("XB".equals(businessType)) {
+        if ("XBJ".equals(businessType)) {
             JSONObject awardData = ZcPlatformApiUtil.getAwardData(msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
             JSONArray items = awardData.getJSONArray("items");
 
@@ -157,17 +177,19 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 // 单位
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_UNIT, itemMap.get(itemId).get("unit"));
                 // 数量
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getInteger("awardNum"));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getBigDecimal("awardNum"));
                 // 含税单价
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, item.getInteger("offerPrice"));
+                BigDecimal offerPrice = item.getBigDecimal("offerPrice").divide(new BigDecimal(100), RoundingMode.HALF_UP);
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, offerPrice);
                 // 税率
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getInteger("offerTaxRate"));
                 // 价税合计
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, item.getInteger("offerPrice") * item.getInteger("awardNum"));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, offerPrice.multiply(item.getBigDecimal("awardNum")));
             }
         }
 
-
+        // 招采成交价税合计
+        receiveObject.set(InforeceivebillConst.NCKD_TOTALPRICE, totalPrice);
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
         // 供应商/订单生成失败原因

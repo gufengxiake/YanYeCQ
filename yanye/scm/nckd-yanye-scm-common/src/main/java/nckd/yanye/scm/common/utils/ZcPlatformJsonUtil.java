@@ -328,7 +328,6 @@ public class ZcPlatformJsonUtil {
             {
                 //公告标题
                 put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
-
                 //公告发布日期
                 String publishSet = (String) model.getValue(PurapplybillConst.NCKD_PUBLISHSET);
                 if ("timing".equals(publishSet)) {
@@ -443,6 +442,11 @@ public class ZcPlatformJsonUtil {
 
         // 公告标题
         zbJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
+        // 公告发布的时间
+        String publishSet = (String) model.getValue(PurapplybillConst.NCKD_PUBLISHSET);
+        if ("timing".equals(publishSet)) {
+            zbJson.put("noticeReleaseTime", model.getValue(PurapplybillConst.NCKD_TIMINGTIME));
+        }
         // 公告内容
         zbJson.put("content", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
         return zbJson;
@@ -467,7 +471,7 @@ public class ZcPlatformJsonUtil {
                 // 项目类型
                 put("biddingType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE2));
                 // 报价方式
-                put("priceType", model.getValue(PurapplybillConst.NCKD_QUOTATION2));
+                put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION2));
                 // todo 项目地点
                 // 招标地址-国家
                 put("country", "中国");
@@ -479,9 +483,16 @@ public class ZcPlatformJsonUtil {
                 put("area", "红谷滩区");
                 // 招标地址-详细地址
                 put("detailAddress", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR2));
+                // 报名开始时间
+                put("signUpStartTime", model.getValue(PurapplybillConst.NCKD_SIGNUPSTARTTIME));
+                // 报名结束时间
+                put("signUpEndTime", model.getValue(PurapplybillConst.NCKD_SIGNUPENDTIME));
+                // 开标时间
+                put("openTime", model.getValue(PurapplybillConst.NCKD_OPENTIME));
+                // 在线开评标。
+                put("isKpbProject", 0);
             }
         };
-
         // 邀请供应商列表-单一供应商
         dyJson.put("inviteSup", new JSONArray() {
             {
@@ -492,13 +503,10 @@ public class ZcPlatformJsonUtil {
                         put("supplierId", inviteObj.getString(SupplierConst.NCKD_PLATFORMSUPID));
                         // 供应商名称
                         put("supplierName", inviteObj.getString(SupplierConst.NAME));
-                        // 联合体公司
-
                     }
                 });
             }
         });
-
         // 采购范围-附件
         dyJson.put("biddingAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_PROCUREMENTSCOPEATT));
         // 内部文件-附件
@@ -508,6 +516,11 @@ public class ZcPlatformJsonUtil {
 
         // 公告标题
         dyJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
+        // 公告发布的时间
+        String publishSet = (String) model.getValue(PurapplybillConst.NCKD_PUBLISHSET);
+        if ("timing".equals(publishSet)) {
+            dyJson.put("noticeReleaseTime", model.getValue(PurapplybillConst.NCKD_TIMINGTIME));
+        }
         // 公告内容
         dyJson.put("content", model.getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT));
 

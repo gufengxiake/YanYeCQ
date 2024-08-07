@@ -3,7 +3,7 @@ package nckd.yanye.scm.common;
 /**
  * Module           : 供应链云--采购管理模块--采购订单单据
  * Description      : 单据常量类
- * @date            : 2024-07-08
+ * @date            : 2024-08-07
  * @author          : Generator
  * @version         : 1.0
  */
@@ -316,6 +316,11 @@ public class PurorderbillConst {
 	 * Type:DynamicObject,sourceEntityId:bd_linetype,Name:行类型
 	 */
 	public static final String BILLENTRY_LINETYPE = "linetype";
+
+	/**
+	 * Type:DynamicObject,sourceEntityId:bd_wbs,Name:WBS
+	 */
+	public static final String BILLENTRY_WBS = "wbs";
 
 	/**
 	 * Type:java.util.Date,Name:交货日期
@@ -873,7 +878,7 @@ public class PurorderbillConst {
 	public static final String LINKMAN = "linkman";
 
 	/**
-	 * Type:DynamicObject,sourceEntityId:bd_currency,Name:结算币别
+	 * Type:DynamicObject,sourceEntityId:bd_currency,Name:结算币
 	 */
 	public static final String SETTLECURRENCY = "settlecurrency";
 
@@ -1203,7 +1208,7 @@ public class PurorderbillConst {
 	public static final String PRICELIST = "pricelist";
 
 	/**
-	 * Type:boolean,Name:允许超额付款
+	 * Type:boolean,Name:按履约支付
 	 */
 	public static final String ISALLOWOVERPAY = "isallowoverpay";
 
@@ -1248,6 +1253,41 @@ public class PurorderbillConst {
 	public static final String NCKD_ATTACHMENTCOUNTFIELD = "nckd_attachmentcountfield";
 
 	/**
+	 * Type:String,Name:上游信息接收单
+	 */
+	public static final String NCKD_UPINFORECEIVEBILL = "nckd_upinforeceivebill";
+
+	/**
+	 * Type:DynamicObject,sourceEntityId:nckd_address,Name:物流路线
+	 */
+	public static final String NCKD_ADDRESS = "nckd_address";
+
+	/**
+	 * Type:String,Name:运费承担方
+	 */
+	public static final String NCKD_YUNFEI = "nckd_yunfei";
+
+	/**
+	 * Type:String,Name:承运方类型
+	 */
+	public static final String NCKD_YUNFEITY = "nckd_yunfeity";
+
+	/**
+	 * Type:DynamicObject,sourceEntityId:bos_org,Name:承运组织
+	 */
+	public static final String NCKD_ORGYF = "nckd_orgyf";
+
+	/**
+	 * Type:DynamicObject,sourceEntityId:bd_supplier,Name:承运商
+	 */
+	public static final String NCKD_CYS = "nckd_cys";
+
+	/**
+	 * Type:DynamicObject,sourceEntityId:conm_purcontractf7,Name:采购合同号
+	 */
+	public static final String NCKD_CGHTH = "nckd_cghth";
+
+	/**
 	 * 分录billhead_lk实体标识
 	 */
 	public static final String ENTRYENTITYID_BILLHEAD_LK = "billhead_lk";
@@ -1267,12 +1307,6 @@ public class PurorderbillConst {
 	 */
 	public static final String BILLHEAD_LK_BILLHEAD_LK_SID = "billhead_lk_sid";
 
-	/**
-	 * 上游信息接收单
-	 */
-	public static final String NCKD_UPINFORECEIVEBILL = "nckd_upinforeceivebill";
-
-
-	public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,closer,closedate,canceler,canceldate,billentry.id,billentry.entrypurorg,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.entrycomment,billentry.baseqty,billentry.baseunit,billentry.project,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.taxrate,billentry.discounttype,billentry.discountrate,billentry.amount,billentry.curamount,billentry.taxamount,billentry.curtaxamount,billentry.discountamount,billentry.amountandtax,billentry.curamountandtax,billentry.entrychangetype,billentry.materialmasterid,billentry.materialversion,billentry.auxqty,billentry.auxunit,billentry.srcbillentity,billentry.srcbillentryid,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryseq,billentry.mainbillentity,billentry.mainbillnumber,billentry.mainbillid,billentry.mainbillentryid,billentry.mainbillentryseq,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.deliverdate,billentry.entryrecorg,billentry.deliveraddress,billentry.warehouse,billentry.ispresent,billentry.entryrecdept,billentry.entryreqorg,billentry.entryreqdept,billentry.entrysettleorg,billentry.entrysettledept,billentry.receivebaseqty,billentry.invbaseqty,billentry.returnbaseqty,billentry.deliverlocation,billentry.receiveqty,billentry.invqty,billentry.returnqty,billentry.payablepriceqty,billentry.supplierlot,billentry.entrypayorg,billentry.joinqty,billentry.joinbaseqty,billentry.recretqty,billentry.invretqty,billentry.invretbaseqty,billentry.recretbaseqty,billentry.joinpayablepriceqty,billentry.salbillnumber,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.iscontrolqty,billentry.receiverateup,billentry.receiveratedown,billentry.receiveqtydown,billentry.receiveqtyup,billentry.receivebaseqtydown,billentry.receivebaseqtyup,billentry.ownertype,billentry.owner,billentry.expenseitem,billentry.payableamount,billentry.iscontrolday,billentry.receivedayup,billentry.receivedaydown,billentry.srcsysbillentryid,billentry.srcsystem,billentry.srcsysbillid,billentry.srcsysbillno,billentry.conbillentity,billentry.conbillnumber,billentry.conbillrownum,billentry.conbillentryseq,billentry.conbillid,billentry.conbillentryid,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.returnreceiptqty,billentry.configuredcode,billentry.tracknumber,billentry.promisedate,billentry.soubillnumber,billentry.soubillid,billentry.soubillentryid,billentry.soubillentity,billentry.soubillentryseq,billentry.payablebaseqty,billentry.returnreceiptbaseqty,billentry.joinpayablebaseqty,billentry.receiptnoticeqty,billentry.receiptnoticbaseqty,billentry.iscontrolamountup,billentry.amountup,billentry.joinamount,billentry.performamount,billentry.ecostcenter,billentry.nckd_nckd_sqbm,billentry.nckd_cpcx,billentry.nckd_rymc,billentry.nckd_pricefieldyf,billentry.nckd_amountfieldyf,billentry.nckd_topush,dept,operatorgroup,operator,supplier,receivesupplier,invoicesupplier,providersupplier,linkman,settlecurrency,settletype,exratetable,totalamount,totalallamount,totaltaxamount,currency,closestatus,cancelstatus,comment,istax,providerlinkman,provideraddress,changer,changedate,changestatus,version,exratedate,biztime,billcretype,paymode,inputamount,lastupdateuser,lastupdatetime,exchangerate,exchangetype,unitsrctype,invoicebiztype,purbillentry_pay.id,purbillentry_pay.paydate,purbillentry_pay.payrate,purbillentry_pay.payamount,purbillentry_pay.isprepay,purbillentry_pay.prepaybillno,purbillentry_pay.paidamount,purbillentry_pay.invoicedamount,purbillentry_pay.payname,purbillentry_pay.payentrychangetype,purbillentry_pay.joinpayamount,purbillentry_pay.payentrycreator,purbillentry_pay.payentrycreatetime,purbillentry_pay.payentrymodifier,purbillentry_pay.payentrymodifytime,purbillentry_pay.pretimepoint,purbillentry_pay.paysrcbillentity,address,ispayrate,paycondition,paidpreallamount,paidallamount,confirmstatus,logisticsstatus,paystatus,settleorg,provideraddressf7,addressf7,isvirtualbill,asyncstatus,transactepath,supplytrans,subversion,pricelist,isallowoverpay,nckd_totalprice,nckd_pricecompresult,nckd_priceinfo.id,nckd_priceinfo.nckd_modifierfield,nckd_priceinfo.nckd_modifydatefield,nckd_priceinfo.nckd_suppliername,nckd_priceinfo.nckd_quotation,nckd_attachmentcountfield,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid,nckd_upinforeceivebill";
+	public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,closer,closedate,canceler,canceldate,billentry.id,billentry.entrypurorg,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.entrycomment,billentry.baseqty,billentry.baseunit,billentry.project,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.price,billentry.priceandtax,billentry.taxrateid,billentry.taxrate,billentry.discounttype,billentry.discountrate,billentry.amount,billentry.curamount,billentry.taxamount,billentry.curtaxamount,billentry.discountamount,billentry.amountandtax,billentry.curamountandtax,billentry.entrychangetype,billentry.materialmasterid,billentry.materialversion,billentry.auxqty,billentry.auxunit,billentry.srcbillentity,billentry.srcbillentryid,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryseq,billentry.mainbillentity,billentry.mainbillnumber,billentry.mainbillid,billentry.mainbillentryid,billentry.mainbillentryseq,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.wbs,billentry.deliverdate,billentry.entryrecorg,billentry.deliveraddress,billentry.warehouse,billentry.ispresent,billentry.entryrecdept,billentry.entryreqorg,billentry.entryreqdept,billentry.entrysettleorg,billentry.entrysettledept,billentry.receivebaseqty,billentry.invbaseqty,billentry.returnbaseqty,billentry.deliverlocation,billentry.receiveqty,billentry.invqty,billentry.returnqty,billentry.payablepriceqty,billentry.supplierlot,billentry.entrypayorg,billentry.joinqty,billentry.joinbaseqty,billentry.recretqty,billentry.invretqty,billentry.invretbaseqty,billentry.recretbaseqty,billentry.joinpayablepriceqty,billentry.salbillnumber,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.iscontrolqty,billentry.receiverateup,billentry.receiveratedown,billentry.receiveqtydown,billentry.receiveqtyup,billentry.receivebaseqtydown,billentry.receivebaseqtyup,billentry.ownertype,billentry.owner,billentry.expenseitem,billentry.payableamount,billentry.iscontrolday,billentry.receivedayup,billentry.receivedaydown,billentry.srcsysbillentryid,billentry.srcsystem,billentry.srcsysbillid,billentry.srcsysbillno,billentry.conbillentity,billentry.conbillnumber,billentry.conbillrownum,billentry.conbillentryseq,billentry.conbillid,billentry.conbillentryid,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.returnreceiptqty,billentry.configuredcode,billentry.tracknumber,billentry.promisedate,billentry.soubillnumber,billentry.soubillid,billentry.soubillentryid,billentry.soubillentity,billentry.soubillentryseq,billentry.payablebaseqty,billentry.returnreceiptbaseqty,billentry.joinpayablebaseqty,billentry.receiptnoticeqty,billentry.receiptnoticbaseqty,billentry.iscontrolamountup,billentry.amountup,billentry.joinamount,billentry.performamount,billentry.ecostcenter,billentry.nckd_nckd_sqbm,billentry.nckd_cpcx,billentry.nckd_rymc,billentry.nckd_pricefieldyf,billentry.nckd_amountfieldyf,billentry.nckd_topush,dept,operatorgroup,operator,supplier,receivesupplier,invoicesupplier,providersupplier,linkman,settlecurrency,settletype,exratetable,totalamount,totalallamount,totaltaxamount,currency,closestatus,cancelstatus,comment,istax,providerlinkman,provideraddress,changer,changedate,changestatus,version,exratedate,biztime,billcretype,paymode,inputamount,lastupdateuser,lastupdatetime,exchangerate,exchangetype,unitsrctype,invoicebiztype,purbillentry_pay.id,purbillentry_pay.paydate,purbillentry_pay.payrate,purbillentry_pay.payamount,purbillentry_pay.isprepay,purbillentry_pay.prepaybillno,purbillentry_pay.paidamount,purbillentry_pay.invoicedamount,purbillentry_pay.payname,purbillentry_pay.payentrychangetype,purbillentry_pay.joinpayamount,purbillentry_pay.payentrycreator,purbillentry_pay.payentrycreatetime,purbillentry_pay.payentrymodifier,purbillentry_pay.payentrymodifytime,purbillentry_pay.pretimepoint,purbillentry_pay.paysrcbillentity,address,ispayrate,paycondition,paidpreallamount,paidallamount,confirmstatus,logisticsstatus,paystatus,settleorg,provideraddressf7,addressf7,isvirtualbill,asyncstatus,transactepath,supplytrans,subversion,pricelist,isallowoverpay,nckd_totalprice,nckd_pricecompresult,nckd_priceinfo.id,nckd_priceinfo.nckd_modifierfield,nckd_priceinfo.nckd_modifydatefield,nckd_priceinfo.nckd_suppliername,nckd_priceinfo.nckd_quotation,nckd_attachmentcountfield,nckd_upinforeceivebill,nckd_address,nckd_yunfei,nckd_yunfeity,nckd_orgyf,nckd_cys,nckd_cghth,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid";
 
 }
