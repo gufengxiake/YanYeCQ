@@ -5,7 +5,11 @@ import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.property.BasedataProp;
+import kd.bos.entity.property.DateProp;
 import kd.bos.form.IFormView;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.DateEdit;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -66,6 +70,14 @@ public class TransferBillPropChangedEditEx extends HRCoreBaseBillEdit  {
                     }
                 }
             }
+            // 选择人员后，对页面部分字段设置默认值
+            model.setItemValueByNumber("amanagescope","1"); // 调入信息 所属管理范围：中国区
+            // 设置必录符号,调入信息 岗位
+            BasedataEdit apiaddressProperty = (BasedataEdit)this.getControl("aposition");
+            apiaddressProperty.setMustInput(true);
+            BasedataProp prop = (BasedataProp)this.getModel().getDataEntityType().getProperty("aposition");
+            prop.setMustInput(true);
+
         }
 
         if(propertyName.equals("ermanfile")) {
