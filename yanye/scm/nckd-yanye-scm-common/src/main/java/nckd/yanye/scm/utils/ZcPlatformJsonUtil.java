@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.exception.KDBizException;
 import kd.bos.fileservice.extension.FileServiceExtFactory;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -145,7 +146,11 @@ public class ZcPlatformJsonUtil {
                 String isReview = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL);
                 put("isReview", isReview);
                 if ("1".equals(isReview)) {
-                    put("reviewId", model.getValue(PurapplybillConst.NCKD_REVIEWID));
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("reviewId", value);
                 }
 
                 // 备注说明
@@ -266,7 +271,15 @@ public class ZcPlatformJsonUtil {
                 // 评审办法
                 put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD1));
                 // 是否需要线上评审
-                put("isReview", model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1));
+                String WHETHERREVIEWOL1 = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1);
+                put("isReview", WHETHERREVIEWOL1);
+                if ("1".equals(WHETHERREVIEWOL1)) {
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("onlineReviewId", WHETHERREVIEWOL1);
+                }
 
                 // 谈判文件
                 put("negotiateFileIds", getAttIdList(model, PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS));
@@ -373,6 +386,13 @@ public class ZcPlatformJsonUtil {
                 // 在线开评标。
                 String isKpbProject = (String) model.getValue(PurapplybillConst.NCKD_BIDONLINE);
                 put("isKpbProject", isKpbProject);
+                if ("1".equals(isKpbProject)) {
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("biddingFileId", model.getValue(PurapplybillConst.NCKD_REVIEWID));
+                }
                 // 标书费
                 put("bookFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE1));
             }
