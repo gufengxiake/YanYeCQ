@@ -22,8 +22,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 public class SyncPostTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
-//        this.syncPosition();
-        this.syncPersonnelPosition();
+        this.syncPosition();
+//        this.syncPersonnelPosition();
     }
 
     /**
