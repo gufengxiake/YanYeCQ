@@ -6,11 +6,10 @@ import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.DecimalProp;
-import kd.bos.form.field.ComboEdit;
-import kd.bos.form.field.DecimalEdit;
-import kd.bos.form.field.FieldEdit;
+import kd.bos.form.field.*;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.text.SimpleDateFormat;
@@ -82,18 +81,26 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
         }
     }
 
+    // 新增时
     @Override
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
         DynamicObject workcalendar = (DynamicObject)this.getModel().getValue("workcalendar");
         if (workcalendar == null) {
-            Long workid= 1964567443623906304L;
-            this.getModel().setValue("workcalendar",workid);
+            // 工作日历
+            IDataModel model = this.getModel();
+            model.setItemValueByNumber("workcalendar","001");
         }
 
         // 获取当前登录人id
         long currentUserId = UserServiceHelper.getCurrentUserId();
         this.getModel().setValue("handler", currentUserId);
+
+        // 入职日期 effectdatebak,入职地点 onbrdtcitybak,增加必录标识。备份的字段 没有带表字段
+        DateEdit apiaddressProperty1 = (DateEdit)this.getControl("effectdatebak");
+        apiaddressProperty1.setMustInput(true);
+        BasedataEdit apiaddressProperty2 = (BasedataEdit)this.getControl("onbrdtcitybak");
+        apiaddressProperty2.setMustInput(true);
 
     }
 
