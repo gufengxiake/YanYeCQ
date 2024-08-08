@@ -18,6 +18,7 @@ import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -175,11 +176,12 @@ public class ZcPlatformJsonUtil {
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
                     realPath = UrlService.getAttachmentFullUrl(realPath);
-                    realPath = convertToFullPath(realPath);
+                    realPath = convertToFullPath(realPath, name);
 
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
+
                 //内部文件
                 put("internalAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS));
 
@@ -544,6 +546,8 @@ public class ZcPlatformJsonUtil {
                         put("noticeContent", cancelMap.get("content"));
                     }
                 });
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
         return xbCancelJson;
@@ -570,6 +574,8 @@ public class ZcPlatformJsonUtil {
                         put("content", cancelMap.get("content"));
                     }
                 });
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
         return tPCancelJson;
@@ -594,6 +600,8 @@ public class ZcPlatformJsonUtil {
                 put("title", cancelMap.get("title"));
                 // 公告内容
                 put("content", cancelMap.get("content"));
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
 
@@ -734,7 +742,7 @@ public class ZcPlatformJsonUtil {
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
             realPath = UrlService.getAttachmentFullUrl(realPath);
-            realPath = convertToFullPath(realPath);
+            realPath = convertToFullPath(realPath, name);
 
             Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
             attList.add(attachmentId);
@@ -749,12 +757,15 @@ public class ZcPlatformJsonUtil {
      * @param fileUrl
      * @return
      */
-    public static String convertToFullPath(String fileUrl) {
-        String saveDir = "/home/temp";
+    public static String convertToFullPath(String fileUrl, String fileName) {
+        String saveDir = "/home";
+
         try {
             URL url = new URL(fileUrl);
-            String fileName = Paths.get(url.getPath()).getFileName().toString();
             Path savePath = Paths.get(saveDir, fileName);
+
+            // 确保目录存在，如果不存在则创建
+            Files.createDirectories(savePath.getParent());
 
             try (BufferedInputStream in = new BufferedInputStream(url.openStream());
                  FileOutputStream fileOutputStream = new FileOutputStream(savePath.toString())) {
@@ -769,6 +780,5 @@ public class ZcPlatformJsonUtil {
             e.printStackTrace();
             return null;
         }
-
     }
 }
