@@ -7,6 +7,8 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.*;
+import kd.bos.form.control.Button;
+import kd.bos.form.control.Control;
 import kd.bos.form.control.RichTextEditor;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
@@ -44,11 +46,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
      */
     final static String CANCELORDER = "bar_cancelorder";
 
-    /**
-     * 按钮标识-制作标书/评审单
-     */
-    public static final String BAR_BARITEMAP = "bar_baritemap";
-
 
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
@@ -57,6 +54,19 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 显隐
         // 公告发布日期
         view.setVisible("timing".equals(model.getValue(PurapplybillConst.NCKD_PUBLISHSET)), PurapplybillConst.NCKD_TIMINGTIME);
+        // 按钮
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
+                , "nckd_bidonlinebar");
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
+                , "nckd_bidonlinebar1");
+        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
+                        || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
+                , "nckd_bidonlinebar2");
 
         /*
          * 询比价
@@ -132,6 +142,30 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         super.registerListener(e);
         // 侦听主菜单按钮点击事件
         this.addItemClickListeners("tbmain");
+        // 按钮点击
+        Button button = this.getView().getControl("nckd_bidonlinebar");
+        Button button1 = this.getView().getControl("nckd_bidonlinebar1");
+        Button button2 = this.getView().getControl("nckd_bidonlinebar2");
+        button.addClickListener(this);
+        button1.addClickListener(this);
+        button2.addClickListener(this);
+    }
+
+    @Override
+    public void click(EventObject evt) {
+        Control source = (Control) evt.getSource();
+        String key = source.getKey();
+
+        switch (key) {
+            // 作废
+            case "nckd_bidonlinebar":
+            case "nckd_bidonlinebar1":
+            case "nckd_bidonlinebar2":
+                makeBidFile(this.getModel());
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
@@ -148,10 +182,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             // 公告查看
             case ANNOUNCEMENT:
                 viewNotice(model);
-                break;
-            // 制作标书
-            case BAR_BARITEMAP:
-                makeBidFile(model);
                 break;
             // 作废
             case CANCELORDER:
@@ -231,7 +261,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
         if (resultJson.getBooleanValue("success")) {
             this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, resultJson.getJSONObject("data").getString("orderId"));
-            this.getModel().setValue(PurapplybillConst.NCKD_NOTICEID, resultJson.getJSONObject("data").getString("noticeId"));
             this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("公告发布成功!");
@@ -286,7 +315,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 跳转页面
         getView().openUrl(url);
     }
-
 
     /**
      * todo 制作标书

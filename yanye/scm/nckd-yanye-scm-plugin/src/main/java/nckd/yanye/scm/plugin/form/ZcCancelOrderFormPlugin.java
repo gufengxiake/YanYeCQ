@@ -7,7 +7,9 @@ import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.Control;
 import kd.bos.form.plugin.AbstractFormPlugin;
+import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
 
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.HashMap;
 
@@ -38,12 +40,14 @@ public class ZcCancelOrderFormPlugin extends AbstractFormPlugin {
         super.click(evt);
         Control source = (Control) evt.getSource();
         String sourceKey = source.getKey();
-        HashMap<String, String> hashMap = new HashMap<>();
+        HashMap<String, Object> hashMap = new HashMap<>();
         hashMap.put("closeReason", String.valueOf(this.getModel().getValue("nckd_closereason")));
         hashMap.put("otherReason", String.valueOf(this.getModel().getValue("nckd_otherreason")));
         hashMap.put("title", String.valueOf(this.getModel().getValue("nckd_title")));
         hashMap.put("content", String.valueOf(this.getModel().getValue("nckd_content")));
-        // todo 附件
+        // 附件
+        ArrayList<Integer> nckdCloseattachmentids = ZcPlatformJsonUtil.getAttIdList(this.getModel(), "nckd_closeattachmentids");
+        hashMap.put("closeAttachmentIds", nckdCloseattachmentids);
 
 
         //监听确定按钮

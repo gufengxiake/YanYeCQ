@@ -6,6 +6,7 @@ import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.exception.KDBizException;
 import kd.bos.fileservice.extension.FileServiceExtFactory;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -17,6 +18,7 @@ import java.io.BufferedInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -145,7 +147,11 @@ public class ZcPlatformJsonUtil {
                 String isReview = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL);
                 put("isReview", isReview);
                 if ("1".equals(isReview)) {
-                    put("reviewId", model.getValue(PurapplybillConst.NCKD_REVIEWID));
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("reviewId", value);
                 }
 
                 // 备注说明
@@ -170,11 +176,12 @@ public class ZcPlatformJsonUtil {
                     String url = fbasedataId.getString("url");
                     String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
                     realPath = UrlService.getAttachmentFullUrl(realPath);
-                    realPath = convertToFullPath(realPath);
+                    realPath = convertToFullPath(realPath, name);
 
                     ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
+
                 //内部文件
                 put("internalAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS));
 
@@ -266,7 +273,15 @@ public class ZcPlatformJsonUtil {
                 // 评审办法
                 put("reviewModel", model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD1));
                 // 是否需要线上评审
-                put("isReview", model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1));
+                String WHETHERREVIEWOL1 = (String) model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1);
+                put("isReview", WHETHERREVIEWOL1);
+                if ("1".equals(WHETHERREVIEWOL1)) {
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("onlineReviewId", WHETHERREVIEWOL1);
+                }
 
                 // 谈判文件
                 put("negotiateFileIds", getAttIdList(model, PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS));
@@ -373,6 +388,13 @@ public class ZcPlatformJsonUtil {
                 // 在线开评标。
                 String isKpbProject = (String) model.getValue(PurapplybillConst.NCKD_BIDONLINE);
                 put("isKpbProject", isKpbProject);
+                if ("1".equals(isKpbProject)) {
+                    Object value = model.getValue(PurapplybillConst.NCKD_REVIEWID);
+                    if (Objects.isNull(value)) {
+                        throw new KDBizException("请先制作标书/评审单!");
+                    }
+                    put("biddingFileId", model.getValue(PurapplybillConst.NCKD_REVIEWID));
+                }
                 // 标书费
                 put("bookFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE1));
             }
@@ -524,6 +546,8 @@ public class ZcPlatformJsonUtil {
                         put("noticeContent", cancelMap.get("content"));
                     }
                 });
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
         return xbCancelJson;
@@ -550,6 +574,8 @@ public class ZcPlatformJsonUtil {
                         put("content", cancelMap.get("content"));
                     }
                 });
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
         return tPCancelJson;
@@ -574,6 +600,8 @@ public class ZcPlatformJsonUtil {
                 put("title", cancelMap.get("title"));
                 // 公告内容
                 put("content", cancelMap.get("content"));
+                // 附件说明
+                put("closeAttachmentIds", cancelMap.get("closeAttachmentIds"));
             }
         };
 
@@ -714,7 +742,7 @@ public class ZcPlatformJsonUtil {
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
             realPath = UrlService.getAttachmentFullUrl(realPath);
-            realPath = convertToFullPath(realPath);
+            realPath = convertToFullPath(realPath, name);
 
             Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
             attList.add(attachmentId);
@@ -729,12 +757,15 @@ public class ZcPlatformJsonUtil {
      * @param fileUrl
      * @return
      */
-    public static String convertToFullPath(String fileUrl) {
-        String saveDir = "/home/temp";
+    public static String convertToFullPath(String fileUrl, String fileName) {
+        String saveDir = "/home";
+
         try {
             URL url = new URL(fileUrl);
-            String fileName = Paths.get(url.getPath()).getFileName().toString();
             Path savePath = Paths.get(saveDir, fileName);
+
+            // 确保目录存在，如果不存在则创建
+            Files.createDirectories(savePath.getParent());
 
             try (BufferedInputStream in = new BufferedInputStream(url.openStream());
                  FileOutputStream fileOutputStream = new FileOutputStream(savePath.toString())) {
@@ -749,6 +780,5 @@ public class ZcPlatformJsonUtil {
             e.printStackTrace();
             return null;
         }
-
     }
 }

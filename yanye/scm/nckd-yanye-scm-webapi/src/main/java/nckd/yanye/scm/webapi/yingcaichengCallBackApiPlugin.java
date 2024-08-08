@@ -9,6 +9,7 @@ import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
 import kd.bos.openapi.common.result.CustomApiResult;
+import kd.bos.openapi.service.context.ServiceApiContext;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -16,14 +17,15 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.InforeceivebillConst;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
-import nckd.yanye.scm.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.dto.Content;
 import nckd.yanye.scm.utils.ZcEncryptUtil;
+import nckd.yanye.scm.utils.ZcPlatformApiUtil;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 招采平台回调统一消息体
@@ -43,6 +45,10 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             @ApiParam(value = "业务节点编号", required = true) String businessNode,
             @ApiParam(value = "内容", required = true) Content content
     ) {
+        Map<String, String> repHeader = new HashMap<>(2);
+        repHeader.put("Accept", "text/plain");
+        ServiceApiContext.getResponse().setResponseHeaders(repHeader);
+
         // 随机数
         String nonce = content.getNonce();
         // 时间戳
@@ -82,7 +88,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         DynamicObject[] receiveBillObj = BusinessDataServiceHelper.load(
                 InforeceivebillConst.FORMBILLID,
                 InforeceivebillConst.BILLNO,
-                new QFilter[]{new QFilter(InforeceivebillConst.NCKD_PURAPPLYBILLNO, QCP.equals, msgObj.getString("winId"))}
+                new QFilter[]{new QFilter(InforeceivebillConst.BILLNO, QCP.equals, msgObj.getString("winId"))}
         );
         if (receiveBillObj.length > 0) {
             return CustomApiResult.success("success");
@@ -140,8 +146,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 物料明细分录
         // 先抓取采购申请单，然后赋值招采平台成交授标品目
         // 先查成交授标，获取成交品目信息。再根据itemId查品目列表，获取品目信息。对应起来。再根据品目编号，赋值分录
-        // fixme 查成交授标报错
-
         // 询比才有物料
         if ("XBJ".equals(businessType)) {
             JSONObject awardData = ZcPlatformApiUtil.getAwardData(msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
@@ -177,7 +181,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 // 单位
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_UNIT, itemMap.get(itemId).get("unit"));
                 // 数量
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getBigDecimal("awardNum"));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getBigDecimal("awardNum").divide(new BigDecimal(100), RoundingMode.HALF_UP));
                 // 含税单价
                 BigDecimal offerPrice = item.getBigDecimal("offerPrice").divide(new BigDecimal(100), RoundingMode.HALF_UP);
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, offerPrice);
