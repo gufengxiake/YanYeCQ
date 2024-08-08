@@ -12,7 +12,6 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.list.BillList;
 import kd.bos.list.plugin.AbstractListPlugin;
@@ -23,6 +22,7 @@ import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
+import kd.fi.bcm.common.util.CollectionUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,7 +86,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             //构造查询生产工单分录条件
             QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C");
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept", new QFilter[]{qFilter});
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{qFilter});
             //key,物料生产信息，value:生产工单
             Map<Object,DynamicObject> map = new HashMap<>();
             //key,物料生产信息，value:生产工单物料信息分录
@@ -116,7 +116,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                     generateCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
                 }else if ("1".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
                     //下推生成完工入库单（完工入库单+【入库单对应车间】）
-                    pushDownCompletedWarehouseReceipt(dynamicObject,map);
+                    pushDownCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
 
                 }else if ("2".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
                     /**
@@ -212,7 +212,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     }
 
     //完工入库单（下推）
-    private void pushDownCompletedWarehouseReceipt(DynamicObject dynamicObject,Map<Object,DynamicObject> map){
+    private void pushDownCompletedWarehouseReceipt(DynamicObject dynamicObject,DynamicObject inventoryDynamicObject,Map<Object,DynamicObject> map){
         String number = dynamicObject.getString("nckd_materielfield.masterid.number");
         //生产工单
         DynamicObject warDynamicObject = map.get(number);
@@ -225,16 +225,23 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败");
         }else {
-//            Set<Object> targetBillIds = result.getTargetBillIds();
-//            List<Object> list = targetBillIds.stream().collect(Collectors.toList());
-//            DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftmanuinbill");
-//            DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
-//            DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-//            collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
-//            collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-//            collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-//            SaveServiceHelper.update(dynamic);
-            this.getView().showErrorNotification("下推成功：" + JSONObject.toJSONString(result));
+            Set<Object> id = result.getTargetBillIds();
+            Object[] ids = id.stream().toArray();
+            //查询完工入库单
+            DynamicObject imMdcMftmanuinbillObject  = BusinessDataServiceHelper.loadSingle(ids[0], "im_mdc_mftmanuinbill");
+            imMdcMftmanuinbillObject.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
+            imMdcMftmanuinbillObject.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
+            //完工入库单分录
+            DynamicObjectCollection collections = imMdcMftmanuinbillObject.getDynamicObjectCollection("billentry");
+            if (CollectionUtils.isNotEmpty(collections)){
+                //查询仓库
+                DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+                collections.get(0).set("warehouse",nckdWarehouseDy);//仓库
+                collections.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+                collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
+            }
+            SaveServiceHelper.update(imMdcMftmanuinbillObject);
+            this.getView().showSuccessNotification("下推成功");
         }
 
     }
@@ -335,8 +342,8 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         }
         DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
         //给生产工单中的仓库赋值
-        warDynamicObject.set("nckd_warehouse",nckdWarehouseDy);
-        SaveServiceHelper.update(warDynamicObject);
+//        warDynamicObject.set("nckd_warehouse",nckdWarehouseDy);
+//        SaveServiceHelper.update(warDynamicObject);
         //根据生产工单找到组件清单
         QFilter qFilter = new QFilter("forderid", QCP.in, warDynamicObject.getPkValue());
         DynamicObject pomMftstocks = BusinessDataServiceHelper.loadSingle("pom_mftstock", qFilter.toArray());
@@ -345,22 +352,13 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             return;
         }
         pomMftstocks.set("nckd_warehouse",nckdWarehouseDy);
-        SaveServiceHelper.update(warDynamicObject);
-        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","2011715071826204672");
+        SaveServiceHelper.update(pomMftstocks);
+        PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","2011830481036776448");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
-//        Set<Object> targetBillIds = result.getTargetBillIds();
-//        List<Object> list = targetBillIds.stream().collect(Collectors.toList());
-//        DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(list.get(0), "im_mdc_mftproorder");
-//        DynamicObjectCollection collection = dynamic.getDynamicObjectCollection("billentry");
-//        DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-//        collection.get(0).set("warehouse",nckdWarehouseDy);//仓库
-//        collection.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-//        collection.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
-//        SaveServiceHelper.update(dynamic);
         if (!result.isSuccess()) {
-            this.getView().showErrorNotification("下推失败：" + result.getMessage());
+            this.getView().showErrorNotification("下推失败");
         }else {
-            this.getView().showSuccessNotification("下推成功：" + result.getMessage());
+            this.getView().showSuccessNotification("下推成功");
         }
 
     }
