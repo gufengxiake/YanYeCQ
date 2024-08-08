@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.form;
+package nckd.yanye.fi.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.bill.OperationStatus;
@@ -116,12 +116,12 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
             }
 
             QFilter[] filters = new QFilter[]{new QFilter("org", "=", org.getPkValue())};
-            DynamicObject leaseInit = QueryServiceHelper.queryOne("fa_lease_init", Fa.comma(new String[]{"basecurrency", "systemswitchday", "status"}), filters);
-//            if (leaseInit == null) {
-//                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
-//                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
-//                return;
-//            }
+            DynamicObject leaseInit = QueryServiceHelper.queryOne("gl_accountbook", Fa.comma(new String[]{"basecurrency", "status"}), filters);
+            if (leaseInit == null) {
+                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
+                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
+                return;
+            }
             if(leaseInit == null){
                 return;
             }
@@ -248,7 +248,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         DynamicObject org = (DynamicObject)this.getModel().getValue("org");
         if (org != null) {
             QFilter[] filters = new QFilter[]{new QFilter("org", "=", org.getPkValue())};
-            DynamicObject leaseInit = QueryServiceHelper.queryOne("fa_lease_init", Fa.comma(new String[]{"basecurrency", "systemswitchday", "status"}), filters);
+            DynamicObject leaseInit = QueryServiceHelper.queryOne("gl_accountbook", Fa.comma(new String[]{"basecurrency", "status"}), filters);
 //            if (leaseInit == null) {
 //                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
 //                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
@@ -269,13 +269,13 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     private void initLeaseContractCheck(DynamicObject leaseInit) {
         String entityName = this.getModel().getDataEntityType().getName();
         if ("fa_lease_contract_init".equals(entityName)) {
-            Date sysSwitchDate = leaseInit.getDate("systemswitchday");
-            if (sysSwitchDate == null) {
-                this.getView().showErrorNotification(ResManager.loadKDString("系统切换日未维护，请先维护租赁初始化中数据。", "LeaseContractEditPlugin_2", "fi-fa-formplugin", new Object[0]));
-                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
-            }
+//            Date sysSwitchDate = leaseInit.getDate("systemswitchday");
+//            if (sysSwitchDate == null) {
+//                this.getView().showErrorNotification(ResManager.loadKDString("系统切换日未维护，请先维护租赁初始化中数据。", "LeaseContractEditPlugin_2", "fi-fa-formplugin", new Object[0]));
+//                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
+//            }
 
-            this.getModel().setValue("sysswitchdate", sysSwitchDate);
+//            this.getModel().setValue("sysswitchdate", sysSwitchDate);
             String status = leaseInit.getString("status");
 //            if ("C".equals(status)) {
 //                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化已启用，不能新增初始化租赁合同。", "LeaseContractEditPlugin_3", "fi-fa-formplugin", new Object[0]));
