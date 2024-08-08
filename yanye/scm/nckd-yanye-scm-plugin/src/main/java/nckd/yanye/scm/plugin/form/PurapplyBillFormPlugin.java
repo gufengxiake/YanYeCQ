@@ -287,7 +287,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         getView().openUrl(url);
     }
 
-
     /**
      * todo 制作标书
      */
