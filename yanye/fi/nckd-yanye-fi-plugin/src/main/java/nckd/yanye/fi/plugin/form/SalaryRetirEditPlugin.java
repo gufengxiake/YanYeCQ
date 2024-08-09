@@ -141,7 +141,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                 this.setInitConfirmDate();
                 this.setTransitionPlan();
                 this.setDailyDiscountRate();
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setLeaseMonths();
                 this.setDepreMonths();
                 this.setFreeLeaseMonths();
@@ -164,7 +164,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                 this.setLeaseTermStartDate();
                 break;
             case "leaseenddate":
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setLeaseMonths();
                 this.setDepreMonths();
                 break;
@@ -174,7 +174,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                 this.setLeaseTermStartDate();
                 break;
             case "initconfirmdate":
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setDepreMonths();
                 this.setDiscountRate();
                 break;
