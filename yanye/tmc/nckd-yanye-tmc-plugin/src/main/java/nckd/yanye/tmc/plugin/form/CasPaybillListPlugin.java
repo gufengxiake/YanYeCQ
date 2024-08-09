@@ -107,7 +107,7 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             //设置弹出页面标题
             //listShowParameter.setCaption("人员同步选择界面");
             //设置弹出页面的打开方式
-            listShowParameter.getOpenStyle().setShowType(ShowType.Modal);
+            listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
             List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
             qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
             this.getView().showForm(listShowParameter);
