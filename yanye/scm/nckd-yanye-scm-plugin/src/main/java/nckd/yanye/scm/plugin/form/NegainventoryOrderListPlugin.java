@@ -1,6 +1,5 @@
 package nckd.yanye.scm.plugin.form;
 
-import com.alibaba.fastjson.JSONObject;
 import dm.jdbc.util.StringUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
@@ -22,10 +21,8 @@ import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
-import kd.fi.bcm.common.util.CollectionUtil;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
