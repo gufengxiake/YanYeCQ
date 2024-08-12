@@ -44,9 +44,12 @@ import java.util.EventObject;
 import java.util.Iterator;
 
 /**
+ *
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退休人员工资编辑插件
+ *
  * @author guozhiwei
  * @date  2024/8/2 11:01
- * @description  退休人员工资编辑插件
  *  标识:nckd_fa_salary_retir
  *
  */

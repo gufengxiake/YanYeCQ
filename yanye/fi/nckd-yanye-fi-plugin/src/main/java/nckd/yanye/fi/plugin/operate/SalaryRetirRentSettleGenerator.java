@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.algo.DataSet;
 import kd.bos.algo.Row;
@@ -27,10 +27,12 @@ import java.util.stream.Collectors;
 
 
 /**
+ *
+ * Module           :财务云-租赁管理-退养人员工资
  * @author guozhiwei
  * @date  2024/8/5 15:18
- * @description  退养人员生成摊销与计息
- *  标识:nckd_fa_salary_retir
+ * @description  退养人员生成摊销与计息表数据
+ *  标识:nckd_fa_lease_rent_settle
  *
  */
 

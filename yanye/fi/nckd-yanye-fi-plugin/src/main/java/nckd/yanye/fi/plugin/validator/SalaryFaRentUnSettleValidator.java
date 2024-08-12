@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.validator;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -16,6 +16,16 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
+
+
+/**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退养人员工资计息反计息操作校验
+ *
+ * @author : guozhiwei
+ * @date : 2024/8/8
+ */
+
 
 public class SalaryFaRentUnSettleValidator extends AbstractValidator {
     public SalaryFaRentUnSettleValidator() {

@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.validator;
 
 import kd.bos.algo.DataSet;
 import kd.bos.algo.Row;
@@ -28,6 +28,15 @@ import kd.fi.fa.common.util.Tuple;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+
+/**
+ * @author guozhiwei
+ * @date  2024/8/8 15:18
+ * @description  退养人员工资列表操作校验
+ *  标识:nckd_fa_salary_retir
+ *
+ */
+
 
 public class SalaryLeaseContractValidator {
     private static final int AMOUNT_MAX_VALID_NUMBER = 19;

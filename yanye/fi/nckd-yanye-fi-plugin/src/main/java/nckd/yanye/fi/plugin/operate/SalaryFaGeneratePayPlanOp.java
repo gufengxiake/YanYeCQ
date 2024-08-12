@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.EntityMetadataCache;
@@ -15,9 +15,10 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      : 退休人员工资生成付款计划组件
  * @author guozhiwei
  * @date  2024/8/7 11:01
- * @description  退休人员工资生成付款计划组件
  *  标识:nckd_fa_salary_retir
  *
  */

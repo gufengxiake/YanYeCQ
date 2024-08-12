@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.bill.BillOperationStatus;
 import kd.bos.bill.BillShowParameter;
@@ -14,10 +14,18 @@ import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
-import kd.fi.fa.business.validator.lease.LeaseContractValidator;
+import nckd.yanye.fi.plugin.validator.SalaryLeaseContractValidator;
 
 import java.util.ArrayList;
 import java.util.List;
+
+/**
+ * Module           :财务云-租赁管理-退养人员工资列表
+ * Description      :退养人员工资列表操作插件
+ *
+ * @author : guozhiwei
+ * @date : 2024/8/7
+ */
 
 public class SalaryLeaseContractOperPlugin extends AbstractFormPlugin {
     private static final String KEY_PUSH = "push";
