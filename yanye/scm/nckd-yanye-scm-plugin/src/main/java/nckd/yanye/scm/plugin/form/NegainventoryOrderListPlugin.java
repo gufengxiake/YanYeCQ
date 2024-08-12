@@ -351,13 +351,27 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             this.getView().showErrorNotification("生产工单编码："+warDynamicObject.getString("billno") + "对应的组件清单不存在");
             return;
         }
-        pomMftstocks.set("nckd_warehouse",nckdWarehouseDy);
+        pomMftstocks.set("nckd_warehouse",nckdWarehouseDy);//仓库
+        pomMftstocks.set("nckd_qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+        pomMftstocks.set("nckd_unit",dynamicObject.getDynamicObject("nckd_unitofmeasurement"));//计量单位
+
         SaveServiceHelper.update(pomMftstocks);
         PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","2011830481036776448");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败");
         }else {
+            Set<Object> id = result.getTargetBillIds();
+            Object[] ids = id.stream().toArray();
+            //查询生产领料单
+            DynamicObject imMdcMftproorderObject  = BusinessDataServiceHelper.loadSingle(ids[0], "im_mdc_mftproorder");
+            //完工入库单分录
+            DynamicObjectCollection collections = imMdcMftproorderObject.getDynamicObjectCollection("billentry");
+            if (CollectionUtils.isNotEmpty(collections)){
+                collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
+                collections.get(0).set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+            }
+            SaveServiceHelper.update(imMdcMftproorderObject);
             this.getView().showSuccessNotification("下推成功");
         }
 

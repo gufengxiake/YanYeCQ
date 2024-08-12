@@ -5,20 +5,20 @@ import kd.bos.dataentity.RefObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.EntityType;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
-import kd.bos.form.ConfirmCallBackListener;
-import kd.bos.form.ConfirmTypes;
-import kd.bos.form.MessageBoxOptions;
-import kd.bos.form.MessageBoxResult;
+import kd.bos.form.*;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.list.BillList;
+import kd.bos.list.ListShowParameter;
 import kd.bos.list.plugin.AbstractListPlugin;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -29,8 +29,17 @@ import java.util.stream.Collectors;
  * @date : 2024/8/7
  */
 public class CasPaybillListPlugin extends AbstractListPlugin {
-    private final static String KEY_BEFORESUBMIT = "beforesubmit";
-    private final static String OPPARAM_AFTERCONFIRM = "afterconfirm";
+    private static String KEY_BEFORESUBMIT = "beforesubmit";
+    private static String KEY_BATCHENDORSE = "batchendorse";
+    private static String OPPARAM_AFTERCONFIRM = "afterconfirm";
+    private static Map<String, String> unittypeMap;
+
+    static {
+        unittypeMap = new HashMap<>();
+        unittypeMap.put("B", "上级要求风险单位");
+        unittypeMap.put("C", "失信单位");
+        unittypeMap.put("D", "自定义黑名单单位");
+    }
 
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
@@ -59,12 +68,49 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
                     if (!formOperate.getOption().tryGetVariableValue(OPPARAM_AFTERCONFIRM, afterConfirm)) {
                         // 显示确认消息
                         ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(KEY_BEFORESUBMIT, this);
-                        this.getView().showConfirm("存在非正常单位的供应商，是否继续提交?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+                        this.getView().showConfirm("供应商为" + unittypeMap.get(unittype) + "的单位，是否继续提交?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
                         // 在没有确认之前，先取消本次操作
                         args.setCancel(true);
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs args) {
+        super.afterDoOperation(args);
+        FormOperate formOperate = (FormOperate) args.getSource();
+        //批量确认背书
+        if (StringUtils.equals(KEY_BATCHENDORSE, formOperate.getOperateKey())) {
+            //获取列表选中数据
+            BillList billlistap = this.getView().getControl("billlistap");
+            ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
+            EntityType entityType = billlistap.getEntityType();
+            //获取选中行pkid
+            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
+            //获取完整数据
+            DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            //获取结算号 settletnumber
+            Set<String> settletnumber = Arrays.stream(casPaybillArr).map(e -> {
+                DynamicObject draftbill = e.getDynamicObjectCollection("draftbill").get(0);
+                DynamicObject dy = (DynamicObject) draftbill.get(1);
+                return dy.getString("draftbillno");
+            }).collect(Collectors.toSet());
+            //cdm_drafttradebill
+            //创建弹出列表界面对象，ListShowParameter 表示弹出页面为列表界面
+            ListShowParameter listShowParameter = new ListShowParameter();
+            //设置F7列表表单模板 F7选择列表界面：bos_listf7 普通列表界面：bos_list
+            listShowParameter.setFormId("bos_list");
+            //设置BillFormId为基础资料的标识
+            listShowParameter.setBillFormId("cdm_drafttradebill");
+            //设置弹出页面标题
+            //listShowParameter.setCaption("人员同步选择界面");
+            //设置弹出页面的打开方式
+            listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
+            List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
+            qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
+            this.getView().showForm(listShowParameter);
         }
     }
 

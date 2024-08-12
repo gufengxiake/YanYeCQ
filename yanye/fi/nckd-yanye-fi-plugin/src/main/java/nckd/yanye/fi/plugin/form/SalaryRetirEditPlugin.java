@@ -66,7 +66,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         super.registerListener(e);
         BasedataEdit assetUnit = (BasedataEdit)this.getView().getControl("assetunit");
         assetUnit.addBeforeF7SelectListener((evt) -> {
-            FaFormPermissionUtil.beforeAssetUnitSelectV2(this.getView().getPageId(), evt, "fa_lease_contract");
+            FaFormPermissionUtil.beforeAssetUnitSelectV2(this.getView().getPageId(), evt, "nckd_fa_salary_retir");
         });
         OrgEdit org = (OrgEdit)this.getView().getControl("org");
         if (org != null) {
@@ -118,7 +118,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
             QFilter[] filters = new QFilter[]{new QFilter("org", "=", org.getPkValue())};
             DynamicObject leaseInit = QueryServiceHelper.queryOne("gl_accountbook", Fa.comma(new String[]{"basecurrency", "status"}), filters);
             if (leaseInit == null) {
-                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
+                this.getView().showErrorNotification(ResManager.loadKDString("会计账簿初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
                 this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
                 return;
             }
@@ -134,14 +134,14 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     public void propertyChanged(PropertyChangedArgs e) {
         String propName = e.getProperty().getName();
         int index = e.getChangeSet()[0].getRowIndex();
-        logger.info(String.format("租赁合同[%s]变化字段：%s，行号(从0开始)：%s，[%s] -> [%s]。", this.getModel().getValue("number"), propName, index, e.getChangeSet()[0].getOldValue(), e.getChangeSet()[0].getNewValue()));
+        logger.info(String.format("退养人员工资[%s]变化字段：%s，行号(从0开始)：%s，[%s] -> [%s]。", this.getModel().getValue("number"), propName, index, e.getChangeSet()[0].getOldValue(), e.getChangeSet()[0].getNewValue()));
         switch (propName) {
             case "org":
                 this.setCurrencyAndSysSwitchDate();
                 this.setInitConfirmDate();
                 this.setTransitionPlan();
                 this.setDailyDiscountRate();
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setLeaseMonths();
                 this.setDepreMonths();
                 this.setFreeLeaseMonths();
@@ -164,7 +164,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                 this.setLeaseTermStartDate();
                 break;
             case "leaseenddate":
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setLeaseMonths();
                 this.setDepreMonths();
                 break;
@@ -174,7 +174,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                 this.setLeaseTermStartDate();
                 break;
             case "initconfirmdate":
-                this.setIsExempt();
+//                this.setIsExempt();
                 this.setDepreMonths();
                 this.setDiscountRate();
                 break;
@@ -249,11 +249,11 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         if (org != null) {
             QFilter[] filters = new QFilter[]{new QFilter("org", "=", org.getPkValue())};
             DynamicObject leaseInit = QueryServiceHelper.queryOne("gl_accountbook", Fa.comma(new String[]{"basecurrency", "status"}), filters);
-//            if (leaseInit == null) {
-//                this.getView().showErrorNotification(ResManager.loadKDString("租赁初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
-//                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
-//                return;
-//            }
+            if (leaseInit == null) {
+                this.getView().showErrorNotification(ResManager.loadKDString("会计账簿初始化未设置，不允许新增合同。", "LeaseContractEditPlugin_0", "fi-fa-formplugin", new Object[0]));
+                this.getView().setEnable(Boolean.FALSE, new String[]{"conentpanel"});
+                return;
+            }
             if(leaseInit == null){
                 return;
             }
@@ -446,7 +446,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
 //                this.getModel().setValue("currency", dynamicObject.getInt("amtprecision"));
                 return dynamicObject.getInt("amtprecision");
             }
-            throw new KDBizException(ResManager.loadKDString("获取核算组织本位币失败，请检查核算组织是否为空，或设置“租赁初始化”。", "LeaseContractEditPlugin_4", "fi-fa-formplugin", new Object[0]));
+            throw new KDBizException(ResManager.loadKDString("获取核算组织本位币失败，请检查核算组织是否为空，或设置“会计账簿初始化”。", "LeaseContractEditPlugin_4", "fi-fa-formplugin", new Object[0]));
         } else {
             return currency.getInt("amtprecision");
         }
