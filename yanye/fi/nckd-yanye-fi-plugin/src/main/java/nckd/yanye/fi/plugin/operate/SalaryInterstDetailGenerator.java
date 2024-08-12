@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -30,9 +30,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ *
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :构建退养人员生成摊销与计息数据
  * @author guozhiwei
  * @date  2024/8/5 15:18
- * @description  构建退养人员生成摊销与计息数据
  *  标识:nckd_fa_salary_retir
  *
  */

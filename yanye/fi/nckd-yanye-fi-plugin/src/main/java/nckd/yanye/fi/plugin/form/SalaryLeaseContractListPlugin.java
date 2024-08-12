@@ -30,6 +30,7 @@ import kd.fi.fa.common.util.Fa;
 import kd.fi.fa.common.util.ThrowableHelper;
 import kd.fi.fa.utils.FaFormPermissionUtil;
 import kd.fi.fa.utils.FaFormUtils;
+import nckd.yanye.fi.plugin.validator.SalaryLeaseContractValidator;
 
 import java.io.IOException;
 import java.util.*;
@@ -37,9 +38,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退休人员工资 列表组件
+ *
+ *
  * @author guozhiwei
  * @date  2024/8/8 9:37
- * @description  退休人员工资 列表组件
  *
  *
  */

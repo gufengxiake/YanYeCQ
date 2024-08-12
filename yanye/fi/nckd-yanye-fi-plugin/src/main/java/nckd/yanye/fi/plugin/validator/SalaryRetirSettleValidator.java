@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.validator;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.resource.ResManager;
@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
+ *
+ * Module           :财务云-租赁管理-退养人员工资
  * @author guozhiwei
  * @date  2024/8/5 15:18
  * @description  退养人员生成摊销与计息校验

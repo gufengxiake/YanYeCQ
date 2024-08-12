@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
@@ -7,8 +7,19 @@ import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.fi.fa.business.enums.lease.LeaseContractRentSettleStatus;
 import kd.fi.fa.business.lease.utils.LeaseUtil;
+import nckd.yanye.fi.plugin.validator.SalaryFaLeaseContractSubmitValidator;
 
 import java.util.List;
+
+
+/**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退养人员工资 提交操作 生成付款计划
+ *
+ * @author : guozhiwei
+ * @date : 2024/8/7
+ *
+ */
 
 public class SalaryFaAbstractLeaseContractSubmitOp extends AbstractOperationServicePlugIn {
     public SalaryFaAbstractLeaseContractSubmitOp() {

@@ -33,9 +33,10 @@ import kd.fi.fa.utils.FaFormPermissionUtil;
 
 
 /**
+ * Module           :财务云-租赁管理-退休人员摊息与计
+ * Description      :退休人员摊息与计息 列表组件
  * @author guozhiwei
  * @date  2024/8/2 11:01
- * @description  退休人员摊息与计息 列表组件
  *  标识:nckd_fa_lease_rent_settle
  *
  */
