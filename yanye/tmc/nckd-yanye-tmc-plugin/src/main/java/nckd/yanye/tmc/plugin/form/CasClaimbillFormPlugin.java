@@ -42,9 +42,12 @@ public class CasClaimbillFormPlugin extends AbstractBillPlugIn {
                 DynamicObject recplanentry = recplanentryColl.get(eCorebillentryseq - 1);
                 BigDecimal rUnremainamount = recplanentry.getBigDecimal("r_unremainamount");
                 if (eReceivableamt.compareTo(rUnremainamount) > 0) {
+                    dataEntity.set("e_receivableamt",0);
+                    dataEntity.set("e_actamt",0);
                     this.getView().showErrorNotification("应收金额不能大于销售订单" + billNo + "收款计划第" + eCorebillentryseq + "行的未关联收款金额");
                 }
             }
+            this.getView().updateView();
         }
     }
 }
