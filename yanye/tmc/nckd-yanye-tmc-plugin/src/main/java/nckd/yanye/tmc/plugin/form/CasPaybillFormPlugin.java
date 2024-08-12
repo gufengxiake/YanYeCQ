@@ -4,19 +4,17 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.RefObject;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.form.*;
-import kd.bos.form.events.AfterDoOperationEventArgs;
+import kd.bos.form.ConfirmCallBackListener;
+import kd.bos.form.ConfirmTypes;
+import kd.bos.form.MessageBoxOptions;
+import kd.bos.form.MessageBoxResult;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.operate.FormOperate;
-import kd.bos.list.ListShowParameter;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,48 +44,22 @@ public class CasPaybillFormPlugin extends AbstractBillPlugIn {
         if (StringUtils.equals(KEY_BEFORESUBMIT, formOperate.getOperateKey())) {
             DynamicObject casPaybill = this.getModel().getDataEntity();
             long payee = casPaybill.getLong("payee");
-            DynamicObject supplier = BusinessDataServiceHelper.loadSingle(payee, "bd_supplier");
-            String unittype = supplier.getString("nckd_unittype");
-            //不为正常单位
-            if ("A" != unittype) {
-                RefObject<String> afterConfirm = new RefObject<>();
-                // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
-                if (!formOperate.getOption().tryGetVariableValue(OPPARAM_AFTERCONFIRM, afterConfirm)) {
-                    // 显示确认消息
-                    ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(KEY_BEFORESUBMIT, this);
-                    this.getView().showConfirm("供应商为" + unittypeMap.get(unittype) + "的单位，是否继续提交?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
-                    // 在没有确认之前，先取消本次操作
-                    args.setCancel(true);
+            if ("bd_supplier".equals(casPaybill.getString("payeetype"))) {
+                DynamicObject supplier = BusinessDataServiceHelper.loadSingle(payee, "bd_supplier");
+                String unittype = supplier.getString("nckd_unittype");
+                //不为正常单位
+                if ("A" != unittype) {
+                    RefObject<String> afterConfirm = new RefObject<>();
+                    // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
+                    if (!formOperate.getOption().tryGetVariableValue(OPPARAM_AFTERCONFIRM, afterConfirm)) {
+                        // 显示确认消息
+                        ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(KEY_BEFORESUBMIT, this);
+                        this.getView().showConfirm("供应商为" + unittypeMap.get(unittype) + "的单位，是否继续提交?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+                        // 在没有确认之前，先取消本次操作
+                        args.setCancel(true);
+                    }
                 }
             }
-        }
-    }
-
-    @Override
-    public void afterDoOperation(AfterDoOperationEventArgs args) {
-        super.afterDoOperation(args);
-        FormOperate formOperate = (FormOperate) args.getSource();
-        //批量确认背书
-        if (StringUtils.equals(KEY_BATCHENDORSE, formOperate.getOperateKey())) {
-            DynamicObject casPaybill = this.getModel().getDataEntity();
-            //获取结算号 settletnumber
-            DynamicObject draftbill = casPaybill.getDynamicObjectCollection("draftbill").get(0);
-            DynamicObject dy = (DynamicObject) draftbill.get(1);
-            String draftbillno = dy.getString("draftbillno");
-            //cdm_drafttradebill
-            //创建弹出列表界面对象，ListShowParameter 表示弹出页面为列表界面
-            ListShowParameter listShowParameter = new ListShowParameter();
-            //设置F7列表表单模板 F7选择列表界面：bos_listf7 普通列表界面：bos_list
-            listShowParameter.setFormId("bos_list");
-            //设置BillFormId为基础资料的标识
-            listShowParameter.setBillFormId("cdm_drafttradebill");
-            //设置弹出页面标题
-            //listShowParameter.setCaption("人员同步选择界面");
-            //设置弹出页面的打开方式
-            listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
-            List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
-            qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.equals, draftbillno));
-            this.getView().showForm(listShowParameter);
         }
     }
 
