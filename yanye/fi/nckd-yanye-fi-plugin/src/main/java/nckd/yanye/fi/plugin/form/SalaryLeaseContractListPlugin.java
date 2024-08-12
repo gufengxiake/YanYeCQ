@@ -56,7 +56,7 @@ public class SalaryLeaseContractListPlugin extends AbstractListPlugin {
     private static final String KEY_UNDO_TERMINATION = "undotermination";
     private static final int LEASE_TERMINATION_MAX_DEAL_NUM = 200;
     private static final String CALL_BACK_REFRESH = "call_back_refresh";
-    private static Log logger = LogFactory.getLog(kd.fi.fa.formplugin.lease.LeaseContractListPlugin.class);
+    private static Log logger = LogFactory.getLog(SalaryLeaseContractListPlugin.class);
 
     public SalaryLeaseContractListPlugin() {
     }
