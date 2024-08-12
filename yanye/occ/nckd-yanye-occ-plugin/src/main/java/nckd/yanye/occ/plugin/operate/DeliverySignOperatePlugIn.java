@@ -46,10 +46,19 @@ public class DeliverySignOperatePlugIn extends AbstractOperationServicePlugIn {
 
         Set<Object> billIds = new HashSet<>();
 
-        for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
-
-            billIds.add(dataEntity.getBillPkId());
-
+//        for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
+//
+//            billIds.add(dataEntity.getBillPkId());
+//
+//        }
+        DynamicObject[] deliverRecords = e.getDataEntities();
+        if(deliverRecords != null && deliverRecords.length > 0){
+            for(DynamicObject dataObject:deliverRecords){
+                boolean autoSign=dataObject.getBoolean("nckd_autosign");
+                if(!autoSign){
+                    billIds.add(dataObject.getPkValue());
+                }
+            }
         }
 
 
