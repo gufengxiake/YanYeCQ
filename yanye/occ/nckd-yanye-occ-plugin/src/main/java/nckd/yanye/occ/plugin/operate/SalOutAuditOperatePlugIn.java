@@ -11,6 +11,7 @@ import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.MainEntityType;
+import kd.bos.entity.botp.runtime.BFRow;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.botp.runtime.SourceBillReport;
@@ -128,9 +129,9 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                 // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
                 for (Object pk : botpbill1_Ids) {
 
+                    //Map<Long, List<BFRow>> targetBills=BFTrackerServiceHelper.findDirtTargetBills(sourceBill,new Long[]{(Long) pk});
                     //根据Id获取采购订单单实体
                     DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(pk, sourceBill);
-                    //执行销售出库下推财务应付
                     //获取单据体数据的集合
                     DynamicObjectCollection goodsEntities = saloutBill.getDynamicObjectCollection("billentry");
 
@@ -157,6 +158,8 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                     for (DynamicObject entryObj : goodsEntities) {
                         //获取某行数据的id
                         Object entryId = entryObj.getPkValue();
+                        BigDecimal qty=entryObj.getBigDecimal("joinqty");
+                        if(qty.compareTo(BigDecimal.ZERO)==0){
                         ListSelectedRow row = new ListSelectedRow();
                         //必填，设置源单单据id
                         row.setPrimaryKeyValue(pk);
@@ -165,102 +168,102 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                         //可选，设置源单分录id
                         row.setEntryPrimaryKeyValue(entryId);
                         selectedRows.add(row);
+                        }
                     }
+                    if(selectedRows.size()>0) {
 
-                    // 必选，设置需要下推的源单及分录内码
-                    pushArgs.setSelectedRows(selectedRows);
-                    // 调用下推引擎，下推目标单
-                    ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
-                    // 判断下推是否成功，如果失败，提取失败消息
-                    if (!pushResult.isSuccess()) {
-                        String errMessage = pushResult.getMessage();    // 错误信息
-                        for (SourceBillReport billReport : pushResult.getBillReports()) {
-                            // 提取各单错误报告
-                            if (!billReport.isSuccess()) {
-                                String billMessage = billReport.getFailMessage();
+                        // 必选，设置需要下推的源单及分录内码
+                        pushArgs.setSelectedRows(selectedRows);
+                        // 调用下推引擎，下推目标单
+                        ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
+                        // 判断下推是否成功，如果失败，提取失败消息
+                        if (!pushResult.isSuccess()) {
+                            String errMessage = pushResult.getMessage();    // 错误信息
+                            for (SourceBillReport billReport : pushResult.getBillReports()) {
+                                // 提取各单错误报告
+                                if (!billReport.isSuccess()) {
+                                    String billMessage = billReport.getFailMessage();
+                                }
                             }
+                            throw new KDBizException("下推失败:" + errMessage);
                         }
-                        throw new KDBizException("下推失败:" + errMessage);
+                        // 获取生成的目标单数据包
+                        MainEntityType targetMainType = EntityMetadataCache.getDataEntityType(targetBill);
+                        List<DynamicObject> targetBillObjs = pushResult.loadTargetDataObjects(new IRefrencedataProvider() {
+                            @Override
+                            public void fillReferenceData(Object[] objs, IDataEntityType dType) {
+                                BusinessDataReader.loadRefence(objs, dType);
+                            }
+                        }, targetMainType);
+                        DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
+                        //保存
+                        OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
+                        if (operationResult1.isSuccess()) {
+                            MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
+                            String appId = getAppId(targetBill, dt);
+                            // 设置单据显示参数
+                            BillShowParameter para = new BillShowParameter();
+                            para.setFormId(targetBill);
+                            para.setPkId(0);
+                            para.setAppId(appId);
+
+                            // 创建单据配置
+                            FormConfigFactory.createConfigInCurrentAppService(para);
+                            // 获取单据页面视图
+                            final SessionManager sm = SessionManager.getCurrent();
+                            final IFormView formView = sm.getView(para.getPageId());
+                            if (formView != null) {
+
+                                // 设置视图应用id和数据模型
+                                formView.getFormShowParameter().setAppId(appId);
+
+                                formView.getModel().createNewData();
+
+                                formView.updateView();
+
+                            }
+                            BillModel mode = (BillModel) formView.getModel();
+                            HashSet<Object> Ids = new HashSet<>();
+                            //修改数量
+                            for (DynamicObject obj : saveDynamicObject) {
+                                Object pkId = obj.getPkValue();
+
+                                mode.setPKValue(pkId);
+                                mode.load(pkId);
+                                DynamicObject dataObj = mode.getDataEntity();
+                                DynamicObjectCollection entry = dataObj.getDynamicObjectCollection("billentry");
+                                int row = 0;
+                                for (DynamicObject entryRow : entry) {
+                                    String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
+                                    BigDecimal qty = srcQty.get(mainbillentryid);
+                                    mode.setValue("qty", qty, row);
+                                    row++;
+                                }
+                                OperationResult saveOp = formView.invokeOperation("save");
+                                if (saveOp.isSuccess()) {
+                                    Ids.add(pkId);
+                                }
+
+                            }
+                            formView.close();
+                            if (Ids.size() > 0) {
+                                OperateOption auditOption = OperateOption.create();
+                                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                                //提交
+                                OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
+                                if (subResult.isSuccess()) {
+                                    //审核
+                                    OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
+                                }
+                            }
+
+                        }
                     }
-                    // 获取生成的目标单数据包
-                    MainEntityType targetMainType = EntityMetadataCache.getDataEntityType(targetBill);
-                    List<DynamicObject> targetBillObjs = pushResult.loadTargetDataObjects(new IRefrencedataProvider() {
-                        @Override
-                        public void fillReferenceData(Object[] objs, IDataEntityType dType) {
-                            BusinessDataReader.loadRefence(objs, dType);
-                        }
-                    }, targetMainType);
-                    DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
-                    //保存
-                    OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
-                    if (operationResult1.isSuccess()) {
-                        MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
-                        String appId = getAppId(targetBill, dt);
-                        // 设置单据显示参数
-                        BillShowParameter para = new BillShowParameter();
-                        para.setFormId(targetBill);
-                        para.setPkId(0);
-                        para.setAppId(appId);
-
-                        // 创建单据配置
-                        FormConfigFactory.createConfigInCurrentAppService(para);
-                        // 获取单据页面视图
-                        final SessionManager sm = SessionManager.getCurrent();
-                        final IFormView formView = sm.getView(para.getPageId());
-                        if (formView != null) {
-
-                            // 设置视图应用id和数据模型
-                            formView.getFormShowParameter().setAppId(appId);
-
-                            formView.getModel().createNewData();
-
-                            formView.updateView();
-
-                        }
-                        BillModel mode = (BillModel) formView.getModel();
-                        HashSet<Object>Ids=new HashSet<>();
-                        //修改数量
-                        for (DynamicObject obj : saveDynamicObject) {
-                            Object pkId=obj.getPkValue();
-
-                            mode.setPKValue(pkId);
-                            mode.load(pkId);
-                            DynamicObject dataObj=mode.getDataEntity();
-                            DynamicObjectCollection entry=dataObj.getDynamicObjectCollection("billentry");
-                            int row=0;
-                            for (DynamicObject entryRow : entry) {
-                                String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
-                                BigDecimal qty = srcQty.get(mainbillentryid);
-                                mode.setValue("qty",qty,row);
-                                row++;
-                            }
-                            OperationResult saveOp= formView.invokeOperation("save");
-                            if(saveOp.isSuccess()){
-                                Ids.add(pkId);
-                            }
-
-                        }
-                        formView.close();
-                        if(Ids.size()>0){
-                            OperateOption auditOption = OperateOption.create();
-                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-                            //提交
-                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
-                            if (subResult.isSuccess()) {
-                                //审核
-                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
-                            }
-                        }
-
-                    }
-
 
                 }
             }
         }
-        //e.cancel=true;
-
 
     }
 

@@ -16,7 +16,7 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.mmc.pdm.common.constants.BomBatchSearchConst;
+//import kd.mmc.pdm.common.constants.BomBatchSearchConst;
 
 import java.math.BigDecimal;
 import java.util.EventObject;
