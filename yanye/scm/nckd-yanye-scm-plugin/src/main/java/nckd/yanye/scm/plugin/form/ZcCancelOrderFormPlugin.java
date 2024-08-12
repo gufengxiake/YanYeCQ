@@ -1,6 +1,5 @@
 package nckd.yanye.scm.plugin.form;
 
-import com.kingdee.util.StringUtils;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
@@ -8,6 +7,7 @@ import kd.bos.form.IFormView;
 import kd.bos.form.control.Control;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
 import java.util.EventObject;

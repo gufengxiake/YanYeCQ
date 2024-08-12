@@ -1,6 +1,7 @@
 package nckd.yanye.scm.utils;
 
 
+import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -14,13 +15,7 @@ import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
 
-import java.io.BufferedInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Objects;
@@ -758,27 +753,9 @@ public class ZcPlatformJsonUtil {
      * @return
      */
     public static String convertToFullPath(String fileUrl, String fileName) {
-        String saveDir = "/home";
-
-        try {
-            URL url = new URL(fileUrl);
-            Path savePath = Paths.get(saveDir, fileName);
-
-            // 确保目录存在，如果不存在则创建
-            Files.createDirectories(savePath.getParent());
-
-            try (BufferedInputStream in = new BufferedInputStream(url.openStream());
-                 FileOutputStream fileOutputStream = new FileOutputStream(savePath.toString())) {
-                byte[] dataBuffer = new byte[1024];
-                int bytesRead;
-                while ((bytesRead = in.read(dataBuffer, 0, 1024)) != -1) {
-                    fileOutputStream.write(dataBuffer, 0, bytesRead);
-                }
-            }
-            return savePath.toAbsolutePath().toString();
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+        String saveDir = "/home" + "/" + fileName;
+        File file = new File(saveDir);
+        HttpUtil.downloadFile(fileUrl, file);
+        return saveDir;
     }
 }

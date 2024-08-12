@@ -55,15 +55,16 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 公告发布日期
         view.setVisible("timing".equals(model.getValue(PurapplybillConst.NCKD_PUBLISHSET)), PurapplybillConst.NCKD_TIMINGTIME);
         // 按钮
-        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+        view.setVisible("bidprocurement".equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS)) && "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
                 , "nckd_bidonlinebar");
-        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+
+        view.setVisible("pricecomparison".equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS)) && "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
                 , "nckd_bidonlinebar1");
-        view.setVisible("1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
+        view.setVisible("competitive".equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS)) && "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_WHETHERREVIEWOL1))
                         || "1".equals(model.getValue(PurapplybillConst.NCKD_BIDONLINE))
                 , "nckd_bidonlinebar2");
