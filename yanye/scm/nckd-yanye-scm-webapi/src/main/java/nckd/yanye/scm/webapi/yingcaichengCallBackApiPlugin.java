@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
@@ -201,7 +202,45 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
+
+
         // todo 生成 采购订单 或 采购合同
+        // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
+        // 其他：直接生成采购订单
+//        String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
+//        String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
+//        if ("2".equals(procurements)) {
+//            if ("1".equals(purchaseType)) {
+//                addOrder();
+//            } else if ("2".equals(purchaseType)) {
+//                addContract();
+//            } else {
+//                throw new KDBizException("采购类型错误");
+//            }
+//        } else {
+//            addOrder();
+//        }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
         return CustomApiResult.success("success");

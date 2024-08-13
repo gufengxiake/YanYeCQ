@@ -4,6 +4,7 @@ package nckd.yanye.scm.utils;
 import cn.hutool.http.HttpUtil;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
@@ -736,6 +737,7 @@ public class ZcPlatformJsonUtil {
             String name = fbasedataId.getString("name");
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
+
             realPath = UrlService.getAttachmentFullUrl(realPath);
             realPath = convertToFullPath(realPath, name);
 
@@ -753,9 +755,14 @@ public class ZcPlatformJsonUtil {
      * @return
      */
     public static String convertToFullPath(String fileUrl, String fileName) {
-        String saveDir = "/home" + "/" + fileName;
+        String homeUrl = "/home";
+        String saveDir = homeUrl + "/" + fileName;
         File file = new File(saveDir);
+        String accessToken = RequestContext.get().getGlobalSessionId();
+        fileUrl = fileUrl + "&access_token=" + accessToken;
+
         HttpUtil.downloadFile(fileUrl, file);
         return saveDir;
     }
 }
+

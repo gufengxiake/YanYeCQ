@@ -31,8 +31,8 @@ public class ZcEncryptUtil {
      * @return true-校验成功，false-校验失败
      */
     public static boolean checkSignature(String signature,
-                                  String timestamp,
-                                  String nonce) {
+                                         String timestamp,
+                                         String nonce) {
         String rawString = Stream.of(nonce, timestamp, SECRET)
                 .sorted(String::compareTo)
                 .collect(Collectors.joining());
