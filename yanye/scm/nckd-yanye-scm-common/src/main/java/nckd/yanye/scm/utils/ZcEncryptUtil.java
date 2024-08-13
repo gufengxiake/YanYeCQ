@@ -3,6 +3,7 @@ package nckd.yanye.scm.utils;
 import cn.hutool.core.date.DatePattern;
 import cn.hutool.crypto.SecureUtil;
 import cn.hutool.json.JSONUtil;
+import nckd.yanye.scm.common.ZcPlatformConst;
 
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -17,12 +18,6 @@ import java.util.stream.Stream;
 public class ZcEncryptUtil {
 
     /**
-     * 消息加密密钥
-     */
-    private static final String SECRET = "klJX6UYwi1CeyeZZ";
-
-
-    /**
      * 签名校验
      *
      * @param signature
@@ -33,7 +28,7 @@ public class ZcEncryptUtil {
     public static boolean checkSignature(String signature,
                                          String timestamp,
                                          String nonce) {
-        String rawString = Stream.of(nonce, timestamp, SECRET)
+        String rawString = Stream.of(nonce, timestamp, ZcPlatformConst.SECRET)
                 .sorted(String::compareTo)
                 .collect(Collectors.joining());
         return Objects.equals(signature, SecureUtil.sha1(rawString));
@@ -51,7 +46,7 @@ public class ZcEncryptUtil {
                 .toString();
 
         String encryptBody = SecureUtil.aes(
-                        SecureUtil.md5(SECRET).toLowerCase()
+                        SecureUtil.md5(ZcPlatformConst.SECRET).toLowerCase()
                                 .getBytes())
                 .encryptBase64(rawJson);
         return encryptBody;
@@ -65,7 +60,7 @@ public class ZcEncryptUtil {
      */
     public static String decryptBody(String encryptBody) {
         String decryptStr = SecureUtil.aes(
-                        SecureUtil.md5(SECRET).toLowerCase()
+                        SecureUtil.md5(ZcPlatformConst.SECRET).toLowerCase()
                                 .getBytes())
                 .decryptStr(encryptBody);
         return decryptStr;

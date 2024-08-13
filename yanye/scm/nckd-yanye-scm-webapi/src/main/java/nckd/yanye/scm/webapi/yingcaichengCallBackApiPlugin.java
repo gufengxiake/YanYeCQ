@@ -112,9 +112,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 采购申请单单号
         receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, purapplyBillObj[0].getString(PurapplybillConst.BILLNO));
         // 采购类型:单次采购 or 协议供货
-        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, orderData.getString("negotiatePurchaseType"));
+        String purchaseType = orderData.getString("negotiatePurchaseType");
+        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, purchaseType);
         // 采购方式
-        receiveObject.set(InforeceivebillConst.NCKD_PROCUREMENTS, msgObj.getString("purchaseType"));
+        String procurements = msgObj.getString("purchaseType");
+        receiveObject.set(InforeceivebillConst.NCKD_PROCUREMENTS, procurements);
         // todo 币别
         receiveObject.set(InforeceivebillConst.NCKD_CURRENCY, 1);
         // 采购单id
@@ -207,40 +209,17 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // todo 生成 采购订单 或 采购合同
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
         // 其他：直接生成采购订单
-//        String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
-//        String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
-//        if ("2".equals(procurements)) {
-//            if ("1".equals(purchaseType)) {
+        if ("2".equals(procurements)) {
+            if ("1".equals(purchaseType)) {
 //                addOrder();
-//            } else if ("2".equals(purchaseType)) {
+            } else if ("2".equals(purchaseType)) {
 //                addContract();
-//            } else {
+            } else {
 //                throw new KDBizException("采购类型错误");
-//            }
-//        } else {
+            }
+        } else {
 //            addOrder();
-//        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        }
 
 
         return CustomApiResult.success("success");

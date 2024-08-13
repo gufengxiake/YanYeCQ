@@ -8,6 +8,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
 import kd.bos.servicehelper.user.UserServiceHelper;
+import nckd.yanye.scm.common.ZcPlatformConst;
 
 import java.io.File;
 import java.util.HashMap;
@@ -19,43 +20,17 @@ import java.util.HashMap;
  */
 public class ZcPlatformApiUtil {
     /**
-     * 授权类型，固定值: client_credentials
-     */
-    private static final String GRANT_TYPE = "client_credentials";
-
-    /**
-     * 应用id
-     */
-    private static final String ZC_CLIENT_ID = "jczh_1981169731";
-
-    /**
-     * 密钥
-     */
-    private static final String ZC_CLIENT_SECRET = "09bZJdpjoy3CdaietioBr1bgJvHfw1w2RAn7XAqDduI";
-
-    /**
-     * 测试环境url
-     */
-    private static final String URL = "http://open-api.yingcaicheng.net";
-
-    /**
-     * 测试环境访问指定页面url
-     */
-    public static final String PASSPORTURL = "http://passport.yingcaicheng.net";
-
-
-    /**
      * 获取 Access token
      *
      * @return Access_token
      */
     public static String getZcAccessToken() {
-        HttpRequest httpRequest = HttpRequest.of(URL + "/oauth/token");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/oauth/token");
 
         httpRequest.setMethod(Method.GET);
-        httpRequest.form("client_id", ZC_CLIENT_ID);
-        httpRequest.form("client_secret", ZC_CLIENT_SECRET);
-        httpRequest.form("grant_type", GRANT_TYPE);
+        httpRequest.form("client_id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.form("client_secret", ZcPlatformConst.ZC_CLIENT_SECRET);
+        httpRequest.form("grant_type", ZcPlatformConst.GRANT_TYPE);
         HttpResponse execute = httpRequest.execute();
 
         String token = null;
@@ -82,13 +57,13 @@ public class ZcPlatformApiUtil {
 
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/users/access-token");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/users/access-token");
 
         httpRequest.setMethod(Method.GET);
         httpRequest.form("platform", "1");
         httpRequest.form("mobile", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         HttpResponse execute = httpRequest.execute();
 
         // 输出响应内容
@@ -113,14 +88,14 @@ public class ZcPlatformApiUtil {
 
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/employees/page");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/enterprise/employees/page");
 
         httpRequest.setMethod(Method.GET);
         httpRequest.form("page", "1");
         httpRequest.form("size", "1");
         httpRequest.form("keyword", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
@@ -144,14 +119,14 @@ public class ZcPlatformApiUtil {
         int page = 1;
         int size = 1000;
         while (true) {
-            HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
+            HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/enterprise/companies/page");
             httpRequest.setMethod(Method.GET);
             httpRequest.form("page", page);
             httpRequest.form("size", size);
             //是否为供应商 0: 否 1: 是
             httpRequest.form("isSupplier", 1);
             httpRequest.header("Authorization", "Bearer " + accessToken);
-            httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+            httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
             HttpResponse execute = httpRequest.execute();
 
             JSONObject responseObj = JSON.parseObject(execute.body());
@@ -181,14 +156,14 @@ public class ZcPlatformApiUtil {
     public static Integer getCompanyIdByParam(String companyName, String socialCreditCode) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/page");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/enterprise/companies/page");
         httpRequest.setMethod(Method.GET);
         httpRequest.form("page", 1);
         httpRequest.form("size", 10);
         httpRequest.form("companyName", companyName);
         httpRequest.form("socialCreditCode", socialCreditCode);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
@@ -211,10 +186,10 @@ public class ZcPlatformApiUtil {
     public static JSONObject getCompanyDataById(String companyID) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/enterprise/companies/" + companyID);
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/enterprise/companies/" + companyID);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
@@ -252,12 +227,12 @@ public class ZcPlatformApiUtil {
             default:
                 break;
         }
-        HttpRequest httpRequest = HttpRequest.of(URL + addorderUrl);
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + addorderUrl);
 
         httpRequest.setMethod(Method.POST);
         httpRequest.body(string);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.header("x-trade-employee-id", getZcUserId());
         httpRequest.header("identity", "purchaser");
         HttpResponse execute = httpRequest.execute();
@@ -279,15 +254,15 @@ public class ZcPlatformApiUtil {
         JSONObject cancelJson = new JSONObject();
         switch (bizType) {
             case "XB":
-                cancelOrderUrl = URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
+                cancelOrderUrl = ZcPlatformConst.URL + "/sourcing/purchaser/inquiry-orders/" + orderId + "/close/publish";
                 cancelJson = ZcPlatformJsonUtil.getXbCancelJson(cancelMap);
                 break;
             case "TP":
-                cancelOrderUrl = URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
+                cancelOrderUrl = ZcPlatformConst.URL + "/sourcing/purchaser/hosp-negotiate-orders/" + orderId + "/notice-close/v2/release";
                 cancelJson = ZcPlatformJsonUtil.getTpCancelJson(cancelMap);
                 break;
             case "ZB":
-                cancelOrderUrl = URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
+                cancelOrderUrl = ZcPlatformConst.URL + "/sourcing/purchaser/bidding-orders/" + orderId + "/notice-closes/release";
                 cancelJson = ZcPlatformJsonUtil.getZbCancelJson(cancelMap);
                 break;
             default:
@@ -297,7 +272,7 @@ public class ZcPlatformApiUtil {
         HttpRequest httpRequest = HttpRequest.of(cancelOrderUrl);
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.header("identity", "purchaser");
         httpRequest.header("x-trade-employee-id", getZcUserId());
         httpRequest.body(cancelJson.toString());
@@ -350,7 +325,7 @@ public class ZcPlatformApiUtil {
         };
 
         String config = configJson.toString();
-        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
+        return (ZcPlatformConst.PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
     }
 
     /**
@@ -364,11 +339,11 @@ public class ZcPlatformApiUtil {
     public static Integer uploadFile(String name, String url, Integer attGroupId) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachments/upload");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/file/attachments/upload");
 
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
 
         File file = new File(url);
 
@@ -402,10 +377,10 @@ public class ZcPlatformApiUtil {
     public static Integer addAttachmentGroup(String bizType, String attachmentType) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/file/attachment-groups");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/file/attachment-groups");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.body(new JSONObject() {
             {
                 put("bizType", bizType);
@@ -438,10 +413,10 @@ public class ZcPlatformApiUtil {
     public static JSONObject getWinData(Integer purchaseType, String orderId, String winId) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/wins/" + winId);
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchase-cloud/orders/" + orderId + "/wins/" + winId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.form("purchaseType", purchaseType);
 
         HttpResponse execute = httpRequest.execute();
@@ -466,10 +441,10 @@ public class ZcPlatformApiUtil {
     public static JSONObject getOrderData(String orderId, Integer purchaseType) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId);
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchase-cloud/orders/" + orderId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.form("purchaseType", purchaseType);
         HttpResponse execute = httpRequest.execute();
 
@@ -494,10 +469,10 @@ public class ZcPlatformApiUtil {
     public static JSONObject getAwardData(Integer purchaseType, String orderId, String awardId) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/win-awards/" + awardId);
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchase-cloud/orders/" + orderId + "/win-awards/" + awardId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.form("purchaseType", purchaseType);
         HttpResponse execute = httpRequest.execute();
 
@@ -555,7 +530,7 @@ public class ZcPlatformApiUtil {
         };
 
         String config = configJson.toString();
-        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
+        return (ZcPlatformConst.PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
     }
 
     /**
@@ -568,10 +543,10 @@ public class ZcPlatformApiUtil {
     public static JSONArray getOrderItemsData(Integer purchaseType, String orderId) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchase-cloud/orders/" + orderId + "/items");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchase-cloud/orders/" + orderId + "/items");
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.form("purchaseType", purchaseType);
         HttpResponse execute = httpRequest.execute();
 
@@ -592,10 +567,10 @@ public class ZcPlatformApiUtil {
     public static Integer getPurchaseReviews(String reviewModel) {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/purchase-reviews/advance");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchaser/purchase-reviews/advance");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.header("x-trade-employee-id", getZcUserId());
         httpRequest.header("identity", "purchaser");
 
@@ -633,10 +608,10 @@ public class ZcPlatformApiUtil {
     public static Integer getBiddingFiles() {
         String accessToken = getZcAccessToken();
 
-        HttpRequest httpRequest = HttpRequest.of(URL + "/sourcing/purchaser/kpb/bidding-files/advance");
+        HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.URL + "/sourcing/purchaser/kpb/bidding-files/advance");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
         httpRequest.header("x-trade-employee-id", getZcUserId());
         httpRequest.header("identity", "purchaser");
 
@@ -737,7 +712,7 @@ public class ZcPlatformApiUtil {
         }
 
         String config = configJson.toString();
-        return (PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
+        return (ZcPlatformConst.PASSPORTURL + "/third-access-v2?accessToken=" + userAccessToken + "&config=" + config);
     }
 
 }
