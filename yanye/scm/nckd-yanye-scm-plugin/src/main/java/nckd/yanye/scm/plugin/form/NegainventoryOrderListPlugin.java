@@ -74,6 +74,8 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 dynamicObjectCollection.addAll(dynamicObjects);
             });
 
+            //查询所有的库存组织
+            Set<Object> idSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_inventoryorg")).map(t->t.getDynamicObject("nckd_inventoryorg").getPkValue()).collect(Collectors.toSet());
             //查询所有的物料编码
             Set<Object> codeSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_mainproduce")).map(t->t.getString("nckd_mainproduce.masterid.number")).collect(Collectors.toSet());
             //找到对应的物料生产信息
@@ -81,14 +83,16 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             List<DynamicObject> objects = new ArrayList<>();
             //构造查询生产工单分录条件 未关闭，非完工
             QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
-                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C");
+                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C")
+                    .and("org.id",QCP.in,idSet);
             DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{qFilter});
             if (dynamicObjects != null && dynamicObjects.length > 0){
                 objects.addAll(Arrays.asList(dynamicObjects));
             }
             //构造查询生产工单分录条件 已完工，未关闭
             QFilter filter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
-                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C");
+                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C")
+                    .and("org.id",QCP.in,idSet);;
             DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{filter});
             if (dynamicObj != null && dynamicObj.length > 0){
                 objects.addAll(Arrays.asList(dynamicObj));
@@ -207,8 +211,8 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
             if(!submit.isSuccess()){
                 //提交失败删除生成的下游单据
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败");
+                OperationResult delete = OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                this.getView().showErrorNotification("发起提交失败"+submit.getMessage());
                 return;
             }
             OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
@@ -219,9 +223,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 this.getView().showErrorNotification("发起审核失败");
                 return;
             }
-            //是否生成下游单据状态（1：已生成）
-            inventoryDynamicObject.set("nckd_isgenerate","1");
-            SaveServiceHelper.update(inventoryDynamicObject);
+            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的完工入库单新增成功");
         }
     }
@@ -271,9 +273,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
             }
             SaveServiceHelper.update(imMdcMftmanuinbillObject);
-            //是否生成下游单据状态（1：已生成）
-            inventoryDynamicObject.set("nckd_isgenerate","1");
-            SaveServiceHelper.update(inventoryDynamicObject);
+            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification("下推成功");
         }
 
@@ -321,9 +321,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 this.getView().showErrorNotification("发起审核失败");
                 return;
             }
-            //是否生成下游单据状态（1：已生成）
-            inventoryDynamicObject.set("nckd_isgenerate","1");
-            SaveServiceHelper.update(inventoryDynamicObject);
+            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的生产入库单新增成功");
         }
     }
@@ -377,9 +375,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 this.getView().showErrorNotification("发起审核失败");
                 return;
             }
-            //是否生成下游单据状态（1：已生成）
-            inventoryDynamicObject.set("nckd_isgenerate","1");
-            SaveServiceHelper.update(inventoryDynamicObject);
+            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的领料出库单新增成功");
         }
     }
@@ -439,9 +435,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 collections.get(0).set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
             }
             SaveServiceHelper.update(imMdcMftproorderObject);
-            //是否生成下游单据状态（1：已生成）
-            inventoryDynamicObject.set("nckd_isgenerate","1");
-            SaveServiceHelper.update(inventoryDynamicObject);
+            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification("下推成功");
         }
 
@@ -509,5 +503,11 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         invcountscheme.set("asyncstatus","B");//异步状态
         invcountscheme.set("billstatus","A");//单据状态
         invcountscheme.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));//业务日期
+    }
+
+    private void updateInventory(DynamicObject inventoryDynamicObject){
+        //是否生成下游单据状态（1：已生成）
+        inventoryDynamicObject.set("nckd_isgenerate",true);
+        SaveServiceHelper.update(inventoryDynamicObject);
     }
 }
