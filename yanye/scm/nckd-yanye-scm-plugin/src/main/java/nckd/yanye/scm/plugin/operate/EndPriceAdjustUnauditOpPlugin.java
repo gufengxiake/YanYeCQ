@@ -80,6 +80,8 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
                     // 获取暂估应付单
                     DynamicObject[] apBusbills = BusinessDataServiceHelper.load("ap_busbill", "", qFilter.toArray());
                     Arrays.stream(apBusbills).forEach(dynamicObject -> {
+                        dynamicObject = BusinessDataServiceHelper.loadSingle(dynamicObject.get("id"),"ap_busbill");
+
                         boolean exists = QueryServiceHelper.exists("ap_finapbill", new QFilter[]{new QFilter("sourcebillid", QCP.equals, dynamicObject.getPkValue())});
                         if(exists){
                             this.addErrorMessage(k, "暂估应付单存在下游财务应付单，月末调价单不允许反审核");
