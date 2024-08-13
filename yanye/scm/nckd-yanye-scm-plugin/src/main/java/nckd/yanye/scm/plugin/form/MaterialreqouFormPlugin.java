@@ -44,7 +44,7 @@ public class MaterialreqouFormPlugin extends AbstractBillPlugIn {
 
                     DynamicObject org = (DynamicObject) this.getModel().getValue("org");
                     QFilter qFilter1 = new QFilter("nckd_material_class.id", QCP.equals, group.getPkValue());
-                    QFilter qFilter2 = new QFilter("useorg.id", QCP.equals, org.getPkValue());
+                    QFilter qFilter2 = new QFilter("nckd_org.id", QCP.equals, org.getPkValue());
                     QFilter qFilter3 = new QFilter("status", QCP.equals, "C");
                     DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_im_evaluate_material", "nckd_evaluate_period", new QFilter[]{qFilter1, qFilter2, qFilter3});
                     if(dynamicObject != null){
