@@ -20,6 +20,7 @@ import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.fi.cal.business.account.CloseAccountParamBuilder;
@@ -69,6 +70,30 @@ public class EndPriceAdjustUnauditOpPlugin extends AbstractOperationServicePlugI
                     } catch (ParseException parseException) {
                         parseException.printStackTrace();
                     }
+
+                    DynamicObjectCollection entryentity = dataEntity.getDynamicObjectCollection("entryentity");
+                    // 获取暂估应付单编号
+                    List<String> numberList = entryentity.stream().map(object -> object.getString("nckd_oddnumber").split("_")[0])
+                            .distinct().collect(Collectors.toList());
+
+                    QFilter qFilter = new QFilter("billno", QCP.in, numberList);
+                    // 获取暂估应付单
+                    DynamicObject[] apBusbills = BusinessDataServiceHelper.load("ap_busbill", "", qFilter.toArray());
+                    Arrays.stream(apBusbills).forEach(dynamicObject -> {
+                        dynamicObject = BusinessDataServiceHelper.loadSingle(dynamicObject.get("id"),"ap_busbill");
+
+                        boolean exists = QueryServiceHelper.exists("ap_finapbill", new QFilter[]{new QFilter("sourcebillid", QCP.equals, dynamicObject.getPkValue())});
+                        if(exists){
+                            this.addErrorMessage(k, "暂估应付单存在下游财务应付单，月末调价单不允许反审核");
+                        }
+
+                        long count = dynamicObject.getDynamicObjectCollection("entry").stream().filter(dynamic ->
+                            dynamic.getBigDecimal("e_invoicedqty").compareTo(new BigDecimal(0)) != 0
+                        ).count();
+                        if(count > 0){
+                            this.addErrorMessage(k, "暂估应付单存在确认应付的物料，月末调价单不允许反审核");
+                        }
+                    });
                 });
             }
         });
