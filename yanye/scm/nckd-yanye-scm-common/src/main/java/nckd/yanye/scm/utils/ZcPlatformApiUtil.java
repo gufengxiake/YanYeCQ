@@ -39,7 +39,7 @@ public class ZcPlatformApiUtil {
         if ((boolean) responseObj.get("success")) {
             token = (String) ((JSONObject) responseObj.get("data")).get("token");
         } else {
-            throw new KDBizException(String.valueOf(responseObj.get("message")));
+            throw new KDBizException("获取招采平台 Access_token失败!" + responseObj.getString("message"));
         }
 
         return token;
@@ -72,7 +72,7 @@ public class ZcPlatformApiUtil {
             JSONObject dataObject = responseObj.getJSONObject("data");
             token = dataObject.getString("accessToken");
         } else {
-            throw new KDBizException(String.valueOf(responseObj.get("message")));
+            throw new KDBizException("获取招采平台用户访问凭证失败!" + responseObj.getString("message"));
         }
         return token;
     }
@@ -101,6 +101,10 @@ public class ZcPlatformApiUtil {
         JSONObject responseObj = JSON.parseObject(execute.body());
         JSONObject data = responseObj.getJSONObject("data");
         JSONArray record = data.getJSONArray("records");
+        if (!(boolean) responseObj.get("success")) {
+            throw new KDBizException("获取您的招采平台信息失败!" + responseObj.getString("message"));
+        }
+
         if (record.isEmpty()) {
             throw new KDBizException("您未在招采平台注册，请先注册");
         }
@@ -347,7 +351,6 @@ public class ZcPlatformApiUtil {
 
         File file = new File(url);
 
-
         httpRequest.form("file", file);
         httpRequest.form("name", name);
         httpRequest.form("groupId", attGroupId);
@@ -360,8 +363,10 @@ public class ZcPlatformApiUtil {
             JSONObject dataObject = responseObj.getJSONObject("data");
             attachmentId = dataObject.getInteger("attachmentId");
         } else {
-            throw new KDBizException(String.valueOf(responseObj.get("message")));
+            throw new KDBizException(responseObj.getString("message"));
         }
+
+        file.delete();
         return attachmentId;
 
 
@@ -396,7 +401,7 @@ public class ZcPlatformApiUtil {
             JSONObject dataObject = responseObj.getJSONObject("data");
             groupId = dataObject.getInteger("groupId");
         } else {
-            throw new KDBizException(String.valueOf(responseObj.get("message")));
+            throw new KDBizException(responseObj.getString("message"));
         }
         return groupId;
     }
@@ -426,7 +431,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
-            throw new KDBizException("查询成交通知书失败!");
+            throw new KDBizException("查询成交通知书失败!" + responseObj.getString("message"));
         }
     }
 
@@ -453,7 +458,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
-            throw new KDBizException("查询采购单失败!");
+            throw new KDBizException("查询采购单失败!" + responseObj.getString("message"));
         }
     }
 
@@ -481,7 +486,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
-            throw new KDBizException("查询成交授标失败!" + responseObj.get("message"));
+            throw new KDBizException("查询成交授标失败!" + responseObj.getString("message"));
         }
     }
 
@@ -555,7 +560,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONArray("data");
         } else {
-            throw new KDBizException("查询品目列表失败!");
+            throw new KDBizException("查询品目列表失败!" + responseObj.getString("message"));
         }
     }
 
@@ -637,7 +642,7 @@ public class ZcPlatformApiUtil {
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getInteger("data");
         } else {
-            throw new KDBizException("预先生成标书失败!");
+            throw new KDBizException("预先生成标书失败!" + responseObj.getString("message"));
         }
     }
 
