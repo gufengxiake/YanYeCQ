@@ -5,7 +5,6 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.control.EntryGrid;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -43,7 +42,16 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
         if(NAME_LIST.contains(name)){
 
             ChangeData changeData = e.getChangeSet()[0];
-            DynamicObject newValue = (DynamicObject) changeData.getNewValue();
+            String payeraccountStr = "";
+            Object newValuetest = changeData.getNewValue();
+            DynamicObject newValue = new DynamicObject();
+
+            if (newValuetest instanceof DynamicObject) {
+                newValue = (DynamicObject) changeData.getNewValue();
+            }else{
+                payeraccountStr = newValuetest.toString();
+            }
+
             //获取改变的行号
             int rowIndex = changeData.getRowIndex();
 
@@ -65,11 +73,19 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
                         DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
                         // 把供应商承兑银行信息自动带出到往来银行字段
                         DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
+
+                        String eAssacct = name.equals("e_assacct") ? payeraccountStr:dynamicObject.getString("e_assacct");
+
                         if (ObjectUtils.isNotEmpty(entryBank)) {
-                            DynamicObject dynamicObject1 = entryBank.get(0);
-                            dynamicObject.set("e_bebank", dynamicObject1.getDynamicObject("nckd_acceptingbank"));
-                            // 刷新页面
-                            this.getView().updateView();
+                            for (DynamicObject object : entryBank) {
+                                if (eAssacct.equals(object.getString("bankaccount"))) {
+                                    dynamicObject.set("payerbank", object.getDynamicObject("nckd_acceptingbank"));
+                                    // 刷新页面
+                                    this.getView().updateView();
+                                    break; // 找到符合条件的记录后退出循环
+                                }
+                            }
+
                         }
                     }
                 }

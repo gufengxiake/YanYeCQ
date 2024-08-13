@@ -29,7 +29,7 @@ import java.util.List;
 
 public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
-    private final List<String> NAME_LIST = Arrays.asList(new String[]{"e_asstacttype", "e_settlementtype", "e_asstact"});
+    private final List<String> NAME_LIST = Arrays.asList(new String[]{"e_asstacttype", "e_settlementtype", "e_asstact" , "e_assacct"});
 
     private final String BANK_ACCEP = "JSFS06";
     private final String TRADE_ACCEP = "JSFS07";
@@ -56,7 +56,17 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
             if (StringUtils.isNotEmpty(billtypeNumber) && (billtypeNumber.equals(PURCHASE_PAYMENT_REQUEST) || billtypeNumber.equals(OTHER_PAYMENT_REQUEST))) {
                 // 更新单条分录
                 ChangeData changeData = e.getChangeSet()[0];
-                DynamicObject newValue = (DynamicObject) changeData.getNewValue();
+                Object newValuetest = changeData.getNewValue();
+                DynamicObject newValue = new DynamicObject();
+                String eAssacctStr = "";
+                if (newValuetest instanceof DynamicObject) {
+                    newValue = (DynamicObject) changeData.getNewValue();
+                    // 使用 DynamicObject 类的类型安全方法
+//                    dynamicValue.getSomeValueTypedMethod();
+                }else{
+                    eAssacctStr = newValuetest.toString();
+                }
+//                DynamicObject newValue = (DynamicObject) changeData.getNewValue();
                 //获取改变的行号
                 int rowIndex = changeData.getRowIndex();
 
@@ -77,16 +87,25 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                             if (ObjectUtils.isNotEmpty(eAsstact)) {
                                 // 根据供应商id 去查询供应商
                                 Object masterid = eAsstact.get("masterid");
+
+                                //银行账户
+                                String eAssacct = name.equals("e_assacct") ? eAssacctStr:dynamicObject.getString("e_assacct");
+
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
+
                                 // 把供应商承兑银行信息自动带出到往来银行字段
                                 DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
                                 if (ObjectUtils.isNotEmpty(entryBank)) {
-                                    DynamicObject dynamicObject1 = entryBank.get(0);
 
-                                    dynamicObject.set("e_bebank", dynamicObject1.getDynamicObject("nckd_acceptingbank"));
+                                    for (DynamicObject object : entryBank) {
+                                        if (eAssacct.equals(object.getString("bankaccount"))) {
+                                            dynamicObject.set("e_bebank", object.getDynamicObject("nckd_acceptingbank"));
+                                            // 刷新页面
+                                            this.getView().updateView();
+                                            break; // 找到符合条件的记录后退出循环
+                                        }
+                                    }
 
-                                    // 刷新页面
-                                    this.getView().updateView();
                                 }
                             }
                         }
