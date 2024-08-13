@@ -777,6 +777,9 @@ public class ZcPlatformJsonUtil {
     }
 
     /**
+     * 格式化地址信息至招采平台
+     *
+     * @param addressId
      * @return
      */
     public static HashMap<String, String> formatAddress(String addressId) {
@@ -785,6 +788,7 @@ public class ZcPlatformJsonUtil {
         String fullname = addressObj.getString("fullname");
 
         String[] areas = fullname.split("_");
+
 
         if (areas.length == 3) {
             map.put("国家", "中国");
@@ -798,9 +802,11 @@ public class ZcPlatformJsonUtil {
                 map.put("省", newAreas[0]);
                 map.put("市", newAreas[1]);
                 map.put("县区", newAreas[2]);
-            } else {
-                throw new KDBizException("请检查地址信息!");
             }
+        }
+
+        if (map.size() != 4) {
+            throw new KDBizException("请检查地址信息!");
         }
 
         return map;
