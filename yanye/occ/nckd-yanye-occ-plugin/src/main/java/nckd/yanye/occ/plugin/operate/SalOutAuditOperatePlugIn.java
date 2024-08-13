@@ -38,7 +38,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * 销售出库单审核自动执行采购订单下推收料通知
+ * 销售出库单审核自动执行采购订单下推采购收货单
  * 服务插件
  * author:吴国强 2024-07-12
  */
@@ -124,8 +124,8 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             }
             if (!botpbill1_Ids.isEmpty()) {
                 String sourceBill = "pm_purorderbill";//采购订单
-                String targetBill = "pm_receiptnotice";//收货通知单
-                String ruleId = "1946321539372681216";//单据转换Id
+                String targetBill = "im_purreceivebill";//采购收货单
+                String ruleId = "1984882450534238208";//单据转换Id
                 // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
                 for (Object pk : botpbill1_Ids) {
 
