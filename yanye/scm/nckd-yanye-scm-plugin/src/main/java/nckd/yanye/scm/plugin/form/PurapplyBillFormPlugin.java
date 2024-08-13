@@ -240,7 +240,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         }
 
         // 初始化结果json
-        JSONObject resultJson;
+        JSONObject resultJson = null;
 
         // 获取采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
@@ -318,7 +318,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     }
 
     /**
-     * todo 制作标书
+     * 制作标书
      */
     private void makeBidFile(IDataModel model) {
         // 采购方式

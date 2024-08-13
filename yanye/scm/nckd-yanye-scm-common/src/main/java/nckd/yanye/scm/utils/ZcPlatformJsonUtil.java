@@ -12,6 +12,8 @@ import kd.bos.exception.KDBizException;
 import kd.bos.fileservice.extension.FileServiceExtFactory;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.orm.ORM;
+import kd.bos.orm.query.QFilter;
 import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
@@ -19,6 +21,7 @@ import nckd.yanye.scm.common.SupplierConst;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -54,17 +57,19 @@ public class ZcPlatformJsonUtil {
                 }
                 //报价方式
                 put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION));
-                //fixme 收货地址
+                String addressId = (String) model.getValue(PurapplybillConst.NCKD_ADDRESS);
+                HashMap<String, String> map = formatAddress(addressId);
+                // 收货地址
                 put("address", new JSONObject() {
                     {
                         //国家
-                        put("receivingCountry", "中国");
+                        put("receivingCountry", map.get("国家"));
                         //省
-                        put("receivingProvince", "江西省");
+                        put("receivingProvince", map.get("省"));
                         //市
-                        put("receivingCity", "南昌市");
+                        put("receivingCity", map.get("市"));
                         //县
-                        put("receivingArea", "红谷滩区");
+                        put("receivingArea", map.get("县区"));
                         //详细地址
                         put("address", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR));
                     }
@@ -244,15 +249,17 @@ public class ZcPlatformJsonUtil {
                 put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION1));
                 // 谈判方式
                 put("negotiateMethod", model.getValue(PurapplybillConst.NCKD_NEGOTIATIONMODE));
-                //fixme 谈判地点
+                // 谈判地点
+                String addressId = (String) model.getValue(PurapplybillConst.NCKD_NEGOTIATIONADDR);
+                HashMap<String, String> map = formatAddress(addressId);
                 // 谈判地址-国家
-                put("country", "中国");
+                put("country", map.get("国家"));
                 // 谈判地址-所属省
-                put("province", "江西省");
+                put("province", map.get("省"));
                 // 谈判地址-所属市
-                put("city", "南昌市");
+                put("city", map.get("市"));
                 // 谈判地址-所属区县
-                put("area", "红谷滩区");
+                put("area", map.get("县区"));
                 // 谈判地址-详细地址
                 put("address", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR1));
                 // 竞争方式
@@ -358,15 +365,17 @@ public class ZcPlatformJsonUtil {
                 put("openTime", model.getValue(PurapplybillConst.NCKD_BIDOPENTIME));
                 // 项目类型
                 put("biddingType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE3));
-                //fixme 地址信息
+                //地址信息
                 // 招标地址-国家
-                put("country", "中国");
+                String addressId = (String) model.getValue("nckd_tenderaddr");
+                HashMap<String, String> map = formatAddress(addressId);
+                put("country", map.get("国家"));
                 // 招标地址-所属省
-                put("province", "江西省");
+                put("province", map.get("省"));
                 // 招标地址-所属市
-                put("city", "南昌市");
+                put("city", map.get("市"));
                 // 招标地址-所属区县
-                put("area", "红谷滩区");
+                put("area", map.get("县区"));
                 // 招标地址-详细地址
                 put("detailAddress", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR3));
                 // 招标方式
@@ -466,15 +475,17 @@ public class ZcPlatformJsonUtil {
                 put("biddingType", model.getValue(PurapplybillConst.NCKD_PROJECTTYPE2));
                 // 报价方式
                 put("offerType", model.getValue(PurapplybillConst.NCKD_QUOTATION2));
-                // todo 项目地点
+                // 项目地点
+                String addressId = (String) model.getValue(PurapplybillConst.NCKD_PROJECTADDR);
+                HashMap<String, String> map = formatAddress(addressId);
                 // 招标地址-国家
-                put("country", "中国");
+                put("country", map.get("国家"));
                 // 招标地址-所属省
-                put("province", "江西省");
+                put("province", map.get("省"));
                 // 招标地址-所属市
-                put("city", "南昌市");
+                put("city", map.get("市"));
                 // 招标地址-所属区县
-                put("area", "红谷滩区");
+                put("area", map.get("区县"));
                 // 招标地址-详细地址
                 put("detailAddress", model.getValue(PurapplybillConst.NCKD_DETAILEDADDR2));
                 // 报名开始时间
@@ -764,5 +775,68 @@ public class ZcPlatformJsonUtil {
         HttpUtil.downloadFile(fileUrl, file);
         return saveDir;
     }
+
+    /**
+     * @return
+     */
+    public static HashMap<String, String> formatAddress(String addressId) {
+        HashMap<String, String> map = new HashMap<>();
+        DynamicObject addressObj = getAdminDivision(addressId);
+        String fullname = addressObj.getString("fullname");
+
+        String[] areas = fullname.split("_");
+
+        if (areas.length == 3) {
+            map.put("国家", "中国");
+            map.put("省", areas[0]);
+            map.put("市", areas[1]);
+            map.put("县区", areas[2]);
+        } else if (areas.length == 2) {
+            if (isMunicipality(areas[0])) {
+                String[] newAreas = {areas[0], "市辖区", areas[1]};
+                map.put("国家", "中国");
+                map.put("省", newAreas[0]);
+                map.put("市", newAreas[1]);
+                map.put("县区", newAreas[2]);
+            } else {
+                throw new KDBizException("请检查地址信息!");
+            }
+        }
+
+        return map;
+    }
+
+    /**
+     * 获取行政区划id查询行政区划
+     */
+    private static DynamicObject getAdminDivision(String adminId) {
+        DynamicObject dynamicObject = new DynamicObject();
+        // 条件
+        ORM orm = ORM.create();
+        QFilter filter = new QFilter("id", "=", Long.parseLong(adminId));
+        QFilter[] filters = new QFilter[]{filter};
+
+        // 查询
+        List<DynamicObject> dynamicObjects = orm.query("bd_admindivision", "id,name,fullname,country.id,country.name", filters, "id asc");
+
+        if (!dynamicObjects.isEmpty()) {
+            dynamicObject = dynamicObjects.get(0);
+            return dynamicObject;
+        }
+        return dynamicObject;
+
+    }
+
+    /**
+     * 行政区划过滤
+     *
+     * @param area
+     * @return
+     */
+    private static boolean isMunicipality(String area) {
+        return area.equals("北京市") || area.equals("天津市") || area.equals("上海市") || area.equals("重庆市");
+    }
+
+
 }
 
