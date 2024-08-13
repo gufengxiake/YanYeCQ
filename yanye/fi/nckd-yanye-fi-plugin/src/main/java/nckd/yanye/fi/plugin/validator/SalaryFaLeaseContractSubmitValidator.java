@@ -1,12 +1,21 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.validator;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.validate.AbstractValidator;
+import nckd.yanye.fi.plugin.validator.SalaryLeaseContractValidator;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+/**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退养人员工资校验
+ *
+ * @author : guozhiwei
+ * @date : 2024/8/7
+ */
 
 public class SalaryFaLeaseContractSubmitValidator extends AbstractValidator {
     public SalaryFaLeaseContractSubmitValidator() {

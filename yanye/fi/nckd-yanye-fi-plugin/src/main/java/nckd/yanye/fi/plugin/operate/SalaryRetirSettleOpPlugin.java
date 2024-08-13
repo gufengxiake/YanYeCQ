@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -15,14 +15,17 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.fi.fa.business.enums.lease.LeaseContractRentSettleStatus;
 import kd.fi.fa.business.utils.FaMutexRequireUtil;
 import kd.fi.fa.po.GenInterestDetailParamPo;
+import nckd.yanye.fi.plugin.operate.SalaryRetirRentSettleGenerator;
+import nckd.yanye.fi.plugin.validator.SalaryRetirSettleValidator;
+
 
 /**
- * created by Administrator on 2021/1/15.
- *   功能描述： 退休人员工资计息
  *
+ * @author guozhiwei
+ * @date 2024-08-09 10:18
+ * @description 退休人员工资计息
  */
 
-// 退休人员工资计息
 
 public class SalaryRetirSettleOpPlugin extends AbstractOperationServicePlugIn {
 

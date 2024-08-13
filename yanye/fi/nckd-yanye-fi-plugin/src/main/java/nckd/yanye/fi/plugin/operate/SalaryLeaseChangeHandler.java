@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.fi.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -31,6 +31,18 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+
+/**
+ * Module           :财务云-租赁管理-退养人员工资
+ * Description      :退休人员工资 列表操作组件
+ *
+ *
+ * @author guozhiwei
+ * @date  2024/8/8 9:37
+ *
+ *
+ */
+
 
 public class SalaryLeaseChangeHandler {
     private static final Log logger = LogFactory.getLog(SalaryLeaseChangeHandler.class);
