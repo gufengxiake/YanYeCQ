@@ -1,7 +1,6 @@
 package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONObject;
-import com.kingdee.util.StringUtils;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
@@ -17,6 +16,7 @@ import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.util.StringUtils;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
