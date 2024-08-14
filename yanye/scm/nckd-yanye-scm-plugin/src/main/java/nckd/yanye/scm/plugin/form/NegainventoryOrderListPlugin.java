@@ -24,6 +24,7 @@ import kd.bos.util.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -85,15 +86,15 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C")
                     .and("org.id",QCP.in,idSet);
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{qFilter});
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate", new QFilter[]{qFilter});
             if (dynamicObjects != null && dynamicObjects.length > 0){
                 objects.addAll(Arrays.asList(dynamicObjects));
             }
             //构造查询生产工单分录条件 已完工，未关闭
             QFilter filter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C")
-                    .and("org.id",QCP.in,idSet);;
-            DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse", new QFilter[]{filter});
+                    .and("org.id",QCP.in,idSet);
+            DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate", new QFilter[]{filter});
             if (dynamicObj != null && dynamicObj.length > 0){
                 objects.addAll(Arrays.asList(dynamicObj));
             }
@@ -104,7 +105,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             for (DynamicObject dynamicObject :objects){
                 DynamicObjectCollection dynamics = dynamicObject.getDynamicObjectCollection("treeentryentity");
                 for (DynamicObject dynami : dynamics){
-                    map.put(dynami.getString("material.masterid.number"),dynamicObject);
+                    map.put(dynami.getString("material.masterid.number")+dateFormat(dynami.getDate("beginbookdate")),dynamicObject);
 //                    masterMap.put(dynami.getDynamicObject("material").getPkValue(),dynami);
                 }
             }
@@ -155,7 +156,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
 
         //负库存物料检查单分录物料
         String number = dynamicObject.getString("nckd_mainproduce.masterid.number");
-        DynamicObject warDynamicObject = map.get(number);
+        DynamicObject warDynamicObject = map.get(number+dateFormat(inventoryDynamicObject.getDate("nckd_inventoryclosedate")));
         //新增完工入库单
         DynamicObject invcountscheme = BusinessDataServiceHelper.newDynamicObject("im_mdc_mftmanuinbill");
         if (Objects.isNull(warDynamicObject)){
@@ -232,7 +233,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     private void pushDownCompletedWarehouseReceipt(DynamicObject dynamicObject,DynamicObject inventoryDynamicObject,Map<Object,DynamicObject> map){
         String number = dynamicObject.getString("nckd_materielfield.masterid.number");
         //生产工单
-        DynamicObject warDynamicObject = map.get(number);
+        DynamicObject warDynamicObject = map.get(number+dateFormat(inventoryDynamicObject.getDate("nckd_inventoryclosedate")));
         if (Objects.isNull(warDynamicObject)){
             this.getView().showErrorNotification("物料编码："+number + "对应的生产工单不存在");
             return;
@@ -246,6 +247,18 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             Object[] ids = id.stream().toArray();
             //查询完工入库单
             DynamicObject imMdcMftmanuinbillObject  = BusinessDataServiceHelper.loadSingle(ids[0], "im_mdc_mftmanuinbill");
+            imMdcMftmanuinbillObject.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
+            imMdcMftmanuinbillObject.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
+            //完工入库单分录
+            DynamicObjectCollection collections = imMdcMftmanuinbillObject.getDynamicObjectCollection("billentry");
+            if (CollectionUtils.isNotEmpty(collections)){
+                //查询仓库
+                DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
+                collections.get(0).set("warehouse",nckdWarehouseDy);//仓库
+                collections.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
+                collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
+            }
+            SaveServiceHelper.update(imMdcMftmanuinbillObject);
             //提交审批
             OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
             if(!submit.isSuccess()){
@@ -261,18 +274,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 this.getView().showErrorNotification("发起审核失败");
                 return;
             }
-            imMdcMftmanuinbillObject.set("bookdate",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
-            imMdcMftmanuinbillObject.set("biztime",inventoryDynamicObject.getDate("nckd_inventoryclosedate"));
-            //完工入库单分录
-            DynamicObjectCollection collections = imMdcMftmanuinbillObject.getDynamicObjectCollection("billentry");
-            if (CollectionUtils.isNotEmpty(collections)){
-                //查询仓库
-                DynamicObject nckdWarehouseDy = BusinessDataServiceHelper.loadSingle(dynamicObject.getLong("nckd_warehouse.id"), "bd_warehouse");
-                collections.get(0).set("warehouse",nckdWarehouseDy);//仓库
-                collections.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
-                collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
-            }
-            SaveServiceHelper.update(imMdcMftmanuinbillObject);
+//            SaveServiceHelper.update(imMdcMftmanuinbillObject);
             updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification("下推成功");
         }
@@ -383,7 +385,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     private void pushDownProductionMaterialReceipt(DynamicObject dynamicObject,Map<Object,DynamicObject> map,DynamicObject inventoryDynamicObject){
         String number = dynamicObject.getString("nckd_mainproduce.masterid.number");
         //生产工单
-        DynamicObject warDynamicObject = map.get(number);
+        DynamicObject warDynamicObject = map.get(number+dateFormat(inventoryDynamicObject.getDate("nckd_inventoryclosedate")));
         if (Objects.isNull(warDynamicObject)){
             this.getView().showErrorNotification("物料编码："+number + "对应的生产工单不存在");
             return;
@@ -509,5 +511,10 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         //是否生成下游单据状态（1：已生成）
         inventoryDynamicObject.set("nckd_isgenerate",true);
         SaveServiceHelper.update(inventoryDynamicObject);
+    }
+
+    private String dateFormat(Date date){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+        return sdf.format(date);
     }
 }
