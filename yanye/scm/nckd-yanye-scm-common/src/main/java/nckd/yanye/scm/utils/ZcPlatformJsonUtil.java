@@ -199,6 +199,8 @@ public class ZcPlatformJsonUtil {
                                     put("materielCode", materiel.getDynamicObject("material").getString("masterid.number"));
                                     // 品目名称
                                     put("materielName", materiel.get(PurapplybillConst.BILLENTRY_MATERIALNAME));
+                                    // 品目型号
+                                    put("materielModel", materiel.getDynamicObject("material").getString("masterid.modelnum"));
                                     // 计量单位
                                     put("unitType", ((DynamicObject) ((DynamicObject) materiel.get(PurapplybillConst.BILLENTRY_MATERIAL)).get("purchaseunit")).getString("name"));
                                     // 采购量
