@@ -256,7 +256,7 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
     void chongxinjisuandk2 () {
         IDataModel model = this.getModel();
         // '合同约定试用期时长' 和 ‘实习期抵扣后试用期时长’ 的值和单位一致
-        model.setValue("probationtime",(int)model.getValue("nckd_hetongshiyong"));
+        model.setValue("probationtime",model.getValue("nckd_hetongshiyong"));  // 实习期抵扣后试用期时长
         model.setValue("perprobationtime",model.getValue("nckd_perprobationtime")); // 实习期抵扣后试用期时长，单位
     }
 
