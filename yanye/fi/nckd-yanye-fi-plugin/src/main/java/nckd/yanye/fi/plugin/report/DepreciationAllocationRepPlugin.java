@@ -103,7 +103,7 @@ public class DepreciationAllocationRepPlugin extends FaAssignListQuery {
                     }
                     filters.add(qFilter);
 
-                }else if ("nckd_resdevduration".equals(filterItemInfo.getPropName())){
+                }else if ("nckd_resdevduration".equals(filterItemInfo.getPropName()) && filterItemInfo.getValue() instanceof BigDecimal){
                     QFilter qFilter = new QFilter("nckd_decimalfield",QCP.like,filterItemInfo.getValue());
 //                    if ("LIKE".equals(filterItemInfo.getCompareType()) && entry.getValue().indexOf(filterItemInfo.getValue().toString()) != -1){
 //                        resdevdeviceList.add(entry.getKey());
