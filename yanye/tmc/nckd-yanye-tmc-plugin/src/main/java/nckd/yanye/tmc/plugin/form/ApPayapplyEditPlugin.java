@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.tmc.plugin.form;
 
 
 import kd.bos.bill.AbstractBillPlugIn;
@@ -61,8 +61,6 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                 String eAssacctStr = "";
                 if (newValuetest instanceof DynamicObject) {
                     newValue = (DynamicObject) changeData.getNewValue();
-                    // 使用 DynamicObject 类的类型安全方法
-//                    dynamicValue.getSomeValueTypedMethod();
                 }else{
                     eAssacctStr = newValuetest.toString();
                 }
