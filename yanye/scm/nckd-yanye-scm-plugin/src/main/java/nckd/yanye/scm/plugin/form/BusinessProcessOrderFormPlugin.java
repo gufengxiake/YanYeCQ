@@ -43,15 +43,17 @@ public class BusinessProcessOrderFormPlugin extends AbstractFormPlugin implement
     @Override
     public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
         String name = beforeF7SelectEvent.getProperty().getName();
+        DynamicObject orgObject = (DynamicObject)this.getModel().getValue("org");
         List<QFilter> qFilters = new ArrayList<>();
         if (name.equals("nckd_materielfield")){
             //构造物料库存信息查询条件（"1" 表示物料允许负库存）
-            QFilter qFilter = new QFilter("isallowneginv", QCP.equals, "1");
+            QFilter qFilter = new QFilter("isallowneginv", QCP.equals, true)
+                    .and("createorg.id",QCP.equals,orgObject.getPkValue());
             DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("bd_materialinventoryinfo", "id,masterid", new QFilter[]{qFilter});
             Set<Long> mates = new HashSet<>();
             Arrays.stream(dynamicObjects).forEach(t->{
                 DynamicObject dynamicObject = t.getDynamicObject("masterid");
-                mates.add(dynamicObject.getLong("masterid"));
+                mates.add(dynamicObject.getLong("id"));
             });
             //构造物料信息查询条件
             QFilter MetesqFilter = new QFilter("masterid", QCP.in, mates);
