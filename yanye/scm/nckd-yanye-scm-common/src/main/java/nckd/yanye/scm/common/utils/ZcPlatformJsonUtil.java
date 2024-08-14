@@ -1,4 +1,4 @@
-package nckd.yanye.scm.utils;
+package nckd.yanye.scm.common.utils;
 
 
 import cn.hutool.http.HttpUtil;
@@ -199,6 +199,8 @@ public class ZcPlatformJsonUtil {
                                     put("materielCode", materiel.getDynamicObject("material").getString("masterid.number"));
                                     // 品目名称
                                     put("materielName", materiel.get(PurapplybillConst.BILLENTRY_MATERIALNAME));
+                                    // 品目型号
+                                    put("materielModel", materiel.getDynamicObject("material").getString("masterid.modelnum"));
                                     // 计量单位
                                     put("unitType", ((DynamicObject) ((DynamicObject) materiel.get(PurapplybillConst.BILLENTRY_MATERIAL)).get("purchaseunit")).getString("name"));
                                     // 采购量
@@ -748,11 +750,11 @@ public class ZcPlatformJsonUtil {
             String name = fbasedataId.getString("name");
             String url = (String) fbasedataId.get("url");
             String realPath = FileServiceExtFactory.getAttachFileServiceExt().getRealPath(url);
-
             realPath = UrlService.getAttachmentFullUrl(realPath);
             realPath = convertToFullPath(realPath, name);
 
             Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
+
             attList.add(attachmentId);
         }
         return attList;
@@ -767,8 +769,9 @@ public class ZcPlatformJsonUtil {
      */
     public static String convertToFullPath(String fileUrl, String fileName) {
         String homeUrl = "/home";
-        String saveDir = homeUrl + "/" + fileName;
+        String saveDir = homeUrl + "/" + System.currentTimeMillis() + fileName;
         File file = new File(saveDir);
+
         String accessToken = RequestContext.get().getGlobalSessionId();
         fileUrl = fileUrl + "&access_token=" + accessToken;
 
@@ -785,10 +788,9 @@ public class ZcPlatformJsonUtil {
     public static HashMap<String, String> formatAddress(String addressId) {
         HashMap<String, String> map = new HashMap<>();
         DynamicObject addressObj = getAdminDivision(addressId);
-        String fullname = addressObj.getString("fullname");
+        String fullName = addressObj.getString("fullname");
 
-        String[] areas = fullname.split("_");
-
+        String[] areas = fullName.split("_");
 
         if (areas.length == 3) {
             map.put("国家", "中国");

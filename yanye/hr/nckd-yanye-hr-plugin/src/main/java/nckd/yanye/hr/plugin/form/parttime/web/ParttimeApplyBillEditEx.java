@@ -55,6 +55,8 @@ public class ParttimeApplyBillEditEx extends HRCoreBaseBillEdit {
         DynamicObject empposrel = BusinessDataServiceHelper.loadSingle(empposorgrelId, "hrpi_empposorgrel");
         model.setValue("nckd_oldzhiji", empposrel.get("nckd_zhiji_id"));
         model.setValue("nckd_oldganbutype", empposrel.get("nckd_ganbutype_id"));
+        // 兼职任岗模式设置默认值-cch-20240813
+        model.setValue("apositiontype",'1');
     }
 
     private Map<String, Object> getErManFile() {

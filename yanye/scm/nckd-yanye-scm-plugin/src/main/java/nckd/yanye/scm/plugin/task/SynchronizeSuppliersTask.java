@@ -12,7 +12,7 @@ import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.SupplierConst;
-import nckd.yanye.scm.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.util.HashMap;
 import java.util.HashSet;
