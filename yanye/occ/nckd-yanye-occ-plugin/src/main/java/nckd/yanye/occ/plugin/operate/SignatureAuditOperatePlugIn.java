@@ -30,6 +30,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+签收单审核
+ */
+
 public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn {
 
     @Override

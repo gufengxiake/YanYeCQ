@@ -60,7 +60,6 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
         // 从所有源单中寻找需要的demo_botpbill1
 
         HashSet<Long> botpbill1_Ids = new HashSet<>();
-
         String botpbill1_EntityNumber = "ocbsoc_saleorder";//要货订单
 
         if (sourceBillIds.containsKey(botpbill1_EntityNumber)) {
@@ -166,6 +165,7 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
                 DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
                 //修改仓库信息
                 for (DynamicObject obj : saveDynamicObject) {
+                    obj.set("nckd_unsign",true);
                     DynamicObjectCollection entry = obj.getDynamicObjectCollection("itementry");
                     for (DynamicObject entryRow : entry) {
                         String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
@@ -192,13 +192,23 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
                 saloutBill.set("billstatus", "G");
                 //签收状态 拒签
                 saloutBill.set("signstatus", "E");
-                SaveServiceHelper.saveOperate(botpbill1_EntityNumber, new DynamicObject[]{saloutBill}, OperateOption.create());
+                SaveServiceHelper.save(new DynamicObject[]{saloutBill});
             }
 
         }
         for (DynamicObject dataEntity : e.getDataEntities()) {
             dataEntity.set("billstatus", "E");
+            SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
+        if (!saloutBillIds.isEmpty()) {
+            for (Object salOutPk : saloutBillIds) {
+                DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "im_saloutbill");
+                saloutBill.set("nckd_unsign",true);
+                SaveServiceHelper.save(new DynamicObject[]{saloutBill});
+            }
+        }
+
+
     }
 
 }
