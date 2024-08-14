@@ -269,15 +269,32 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
         if (model.getValue("nckd_perprobationtime").equals(model.getValue("nckd_perprobationtimedk"))) {
             // 单位一致，时长直相减
             // 实习期抵扣后试用期时长 = 合同约定试用期时长 - 实习期时长（可抵扣试用期）
-            int jisuan = (int)model.getValue("nckd_hetongshiyong") - (int)model.getValue("nckd_shixidikou");
+            int temp1 = 0;
+            if (model.getValue("nckd_hetongshiyong") != null) {
+                temp1 = (int)model.getValue("nckd_hetongshiyong");
+            }
+
+            int temp2 = 0;
+            if (model.getValue("nckd_shixidikou") != null) {
+                temp2 =  (int)model.getValue("nckd_shixidikou");
+            }
+            int jisuan = temp1 - temp2;
             model.setValue("probationtime",jisuan);
             model.setValue("perprobationtime",model.getValue("nckd_perprobationtime")); // 实习期抵扣后试用期时长，单位
         } else {
             // 合同约定试用期时长 和 实习期时长（可抵扣试用期） 单位不一致，统一按天来计算
             // 1）入职日期 + 合同约定试用期时长 得到一个新日期A
-            LocalDate localDateA = newDateAdd(effectdate, (String) model.getValue("nckd_perprobationtime"), (int) model.getValue("nckd_hetongshiyong"));
+            int temp1 = 0;
+            if (model.getValue("nckd_hetongshiyong") != null) {
+                temp1 = (int)model.getValue("nckd_hetongshiyong");
+            }
+            LocalDate localDateA = newDateAdd(effectdate, (String) model.getValue("nckd_perprobationtime"), temp1);
             // 2)新日期A - 实习期时长（可抵扣试用期）,得到一个新日期B
-            LocalDate localDateB = newDateJian(localDateA, (String) model.getValue("nckd_perprobationtimedk"), (int) model.getValue("nckd_shixidikou"));
+            int temp2 = 0;
+            if (model.getValue("nckd_shixidikou") != null) {
+                temp2 = (int)model.getValue("nckd_shixidikou");
+            }
+            LocalDate localDateB = newDateJian(localDateA, (String) model.getValue("nckd_perprobationtimedk"), temp2);
             // 3) 新日期B - 入职日期 = 相差天数
             long daysBetween = ChronoUnit.DAYS.between(dateToLocalDate(effectdate), localDateB);
             // 4) 给‘实习期抵扣后试用期时长’赋值
