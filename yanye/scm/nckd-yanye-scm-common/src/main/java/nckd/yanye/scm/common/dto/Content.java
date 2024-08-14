@@ -1,4 +1,4 @@
-package nckd.yanye.scm.dto;
+package nckd.yanye.scm.common.dto;
 
 
 import kd.bos.openapi.common.custom.annotation.ApiModel;

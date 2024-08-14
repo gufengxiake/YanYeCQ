@@ -18,8 +18,8 @@ import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.StringUtils;
 import nckd.yanye.scm.common.PurapplybillConst;
-import nckd.yanye.scm.utils.ZcPlatformApiUtil;
-import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
+import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.common.utils.ZcPlatformJsonUtil;
 
 import java.util.EventObject;
 import java.util.HashMap;

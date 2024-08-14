@@ -19,7 +19,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.*;
-import nckd.yanye.scm.utils.ZcPlatformApiUtil;
+import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.util.ArrayList;
 import java.util.EventObject;

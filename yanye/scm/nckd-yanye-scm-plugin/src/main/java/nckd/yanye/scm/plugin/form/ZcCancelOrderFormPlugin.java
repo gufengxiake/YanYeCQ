@@ -6,7 +6,7 @@ import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.Control;
 import kd.bos.form.plugin.AbstractFormPlugin;
-import nckd.yanye.scm.utils.ZcPlatformJsonUtil;
+import nckd.yanye.scm.common.utils.ZcPlatformJsonUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
