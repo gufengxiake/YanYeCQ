@@ -1,5 +1,6 @@
 package nckd.yanye.hr.plugin.form.reg.web.applybill;
 
+import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.field.BasedataEdit;
@@ -7,6 +8,7 @@ import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.hr.hbp.formplugin.web.HRCoreBaseBillEdit;
 import kd.hr.hdm.business.reg.domain.service.bill.IPersonAboutService;
+import kd.hr.hdm.common.reg.enums.RegDateUnitEnum;
 import kd.hr.hdm.common.transfer.util.ObjectUtils;
 import kd.hr.hdm.formplugin.reg.web.applybill.RegPageUtils;
 
@@ -88,10 +90,30 @@ public class RegBaseBillPluginEx extends HRCoreBaseBillEdit {
                 this.getModel().setValue("nckd_perprobationtime", regReturnMap.get("nckd_perprobationtime"));
                 this.getModel().setValue("nckd_shixidikou", regReturnMap.get("nckd_shixidikou"));
                 this.getModel().setValue("nckd_perprobationtimedk", regReturnMap.get("nckd_perprobationtimedk"));
+                this.getModel().setValue("nckd_shixidikou_a", buildProbationText(regReturnMap.get("nckd_hetongshiyong"),regReturnMap.get("nckd_perprobationtime")));
+                this.getModel().setValue("nckd_probationtime_a", buildProbationText(regReturnMap.get("nckd_shixidikou"), regReturnMap.get("nckd_perprobationtimedk")));
             }
 
         }
 
     }
+
+    /**
+     * 合并试用期字段和单位字段
+     * @param value 值
+     * @param unit 单位
+     */
+    private String buildProbationText(Object value, Object unit) {
+        String returnStr ;
+        if (ObjectUtils.isEmpty(unit)) {
+            returnStr = null;
+        } else {
+            String name = RegDateUnitEnum.getName((String)unit);
+            returnStr = value.toString() + name;
+        }
+        return returnStr;
+
+    }
+
 
 }
