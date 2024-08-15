@@ -29,8 +29,11 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
+        // 所有人员昨天到今天的打卡流水
         JSONArray yunZhiJiaClockInList = ClockInApiUtil.getYunZhiJiaClockInList();
+        // 新增原始卡记录集合
         ArrayList<DynamicObject> signCardList = new ArrayList<>();
+        // 新增失败的员工
         HashMap<String, String> failedUserMap = new HashMap<>();
 
         for (Object o : yunZhiJiaClockInList) {
@@ -96,6 +99,11 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
                     "id,name,number",
                     new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
             )[0]);
+
+
+            // 状态-有效
+//            signCard.set("status", "1");
+
             signCardList.add(signCard);
         }
         Object[] save = SaveServiceHelper.save(signCardList.toArray(new DynamicObject[0]));
