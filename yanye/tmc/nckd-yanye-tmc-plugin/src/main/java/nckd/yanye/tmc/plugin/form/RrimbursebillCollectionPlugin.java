@@ -1,4 +1,4 @@
-package nckd.yanye.fi.plugin.form;
+package nckd.yanye.tmc.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -26,7 +26,7 @@ import java.util.List;
 
 public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
 
-    private final List<String> NAME_LIST = Arrays.asList(new String[]{"paymode", "payertype", "supplier"});
+    private final List<String> NAME_LIST = Arrays.asList(new String[]{"paymode", "payertype", "supplier","payeraccount"});
 
     private final String BANK_ACCEP = "JSFS06"; // 银行承兑汇票
 
@@ -49,7 +49,7 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
             if (newValuetest instanceof DynamicObject) {
                 newValue = (DynamicObject) changeData.getNewValue();
             }else{
-                payeraccountStr = newValuetest.toString();
+                payeraccountStr = ObjectUtils.isNotEmpty(newValuetest)?newValuetest.toString():"";
             }
 
             //获取改变的行号
@@ -59,13 +59,13 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
 
             DynamicObject dynamicObject = collection.get(rowIndex);
             // 定义出支付方式，收款人类型，收款人
-            String paymode = name.equals("paymode")?newValue.toString(): dynamicObject.getString("paymode");
+            String paymode = name.equals("paymode")?newValue.getString("number"): ObjectUtils.isNotEmpty(dynamicObject.getDynamicObject("paymode")) ? dynamicObject.getDynamicObject("paymode").getString("number"): null;
 
             String payertype = name.equals("payertype")?newValue.toString(): dynamicObject.getString("payertype");
 
             DynamicObject supplier = name.equals("supplier")?newValue: dynamicObject.getDynamicObject("supplier");
 
-            if(paymode!= null && (paymode.equals(BANK_ACCEP) || paymode.equals(TRADE_ACCEP))){
+            if(StringUtils.isNotEmpty(paymode)  && (paymode.equals(BANK_ACCEP) || paymode.equals(TRADE_ACCEP))){
 
                 if(StringUtils.isNotEmpty(payertype) && (payertype.equals("bd_supplier"))){
                     if(ObjectUtils.isNotEmpty(supplier)){
@@ -74,19 +74,19 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
                         // 把供应商承兑银行信息自动带出到往来银行字段
                         DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
 
-                        String eAssacct = name.equals("e_assacct") ? payeraccountStr:dynamicObject.getString("e_assacct");
+                        String eAssacct = name.equals("payeraccount") ? payeraccountStr:dynamicObject.getString("payeraccount");
 
                         if (ObjectUtils.isNotEmpty(entryBank)) {
                             for (DynamicObject object : entryBank) {
                                 if (eAssacct.equals(object.getString("bankaccount"))) {
                                     dynamicObject.set("payerbank", object.getDynamicObject("nckd_acceptingbank"));
                                     // 刷新页面
-                                    this.getView().updateView();
                                     break; // 找到符合条件的记录后退出循环
                                 }
                             }
 
                         }
+                        this.getView().updateView();
                     }
                 }
             }

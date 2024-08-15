@@ -72,6 +72,8 @@ public class TransferBillPropChangedEditEx extends HRCoreBaseBillEdit  {
             }
             // 选择人员后，对页面部分字段设置默认值
             model.setItemValueByNumber("amanagescope","1"); // 调入信息 所属管理范围：中国区
+            model.setItemValueByNumber("nckd_zhiji","1080_S"); // 职级
+            model.setItemValueByNumber("nckd_ganbutype","1040_S"); // 人员类型
             // 设置必录符号,调入信息 岗位
             BasedataEdit apiaddressProperty = (BasedataEdit)this.getControl("aposition");
             apiaddressProperty.setMustInput(true);
