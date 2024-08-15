@@ -8,11 +8,13 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 
+import java.util.EventObject;
+
 /*
 要货订单表单插件
  */
 public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn {
-//    @Override
+    //    @Override
 //    public void propertyChanged(PropertyChangedArgs e) {
 //
 //        String propName = e.getProperty().getName();
@@ -88,6 +90,15 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn {
 //                }
 //            }
 //        }
+//    }
+//    @Override
+//    public void afterCreateNewData(EventObject e) {
+//        super.afterCreateNewData(e);
+//        DynamicObject orderchannelid = (DynamicObject) this.getModel().getValue("orderchannelid");
+//        if (orderchannelid != null) {
+//            this.getView().invokeOperation("orderchannelid");
+//        }
+//
 //    }
 
 

@@ -2,7 +2,6 @@ package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.datamodel.RowDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
@@ -12,20 +11,18 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 
 /*
-直接调拨单保存服务 设置仓库批号
+调拨单申请单保存服务  设置仓库
  */
-public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
+public class TransApplyOperatePlugIn extends AbstractOperationServicePlugIn {
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
-        e.getFieldKeys().add("lotnumber");//调出批号
-        e.getFieldKeys().add("inlotnumber");//调入批号
         e.getFieldKeys().add("org");//组织
         e.getFieldKeys().add("billtype");//单据类型
-        e.getFieldKeys().add("outdept");//调出部门
-        e.getFieldKeys().add("warehouse");//调入仓库
-        e.getFieldKeys().add("outwarehouse");//调出仓库
+        e.getFieldKeys().add("applydept");//申请部门
+        e.getFieldKeys().add("inwarehouse");//调入仓库
+        e.getFieldKeys().add("warehouse");//调出仓库
     }
 
     @Override
@@ -54,8 +51,8 @@ public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
 
             //部门对应仓库
             DynamicObject depStock = null;
-            //调出部门
-            DynamicObject dept = dataEntity.getDynamicObject("outdept");
+            //申请部门
+            DynamicObject dept = dataEntity.getDynamicObject("applydept");
             if (dept != null) {
                 Object deptId = dept.getPkValue();
                 //从部门 仓库设置基础资料中获取对应仓库
@@ -73,35 +70,28 @@ public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
                     depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
                 }
             }
-
-
             DynamicObjectCollection entryentity = dataEntity.getDynamicObjectCollection("billentry");
             if (!entryentity.isEmpty()) {
                 for (DynamicObject entryRow : entryentity) {
-                    String inlotnumber = entryRow.getString("inlotnumber");
-                    if (inlotnumber.trim().equalsIgnoreCase("")) {
-                        String lotnumber = entryRow.getString("lotnumber");
-                        entryRow.set("inlotnumber", lotnumber);
-                    }
-                    if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
-                        DynamicObject outwarehouse=entryRow.getDynamicObject("outwarehouse");
-                        if(outwarehouse==null){
-                            //调出仓库
-                            entryRow.set("outwarehouse", stockDyObj);
-                        }
-
-                    } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-                        DynamicObject warehouse=entryRow.getDynamicObject("warehouse");
+                    if (id.equals("1994937462568258560") || nameq.equalsIgnoreCase("借货归还申请")) {
+                        DynamicObject warehouse =entryRow.getDynamicObject("warehouse");
                         if(warehouse==null){
                             //调出仓库
                             entryRow.set("warehouse", stockDyObj);
                         }
-                    }
-                    if (!id.equals("1980435141796826112") || !nameq.equalsIgnoreCase("借货归还单")) {
-                        DynamicObject outwarehouse=entryRow.getDynamicObject("outwarehouse");
-                        if(outwarehouse==null){
+
+                    } else if (id.equals("1994937113375673344") || nameq.equalsIgnoreCase("借货申请")) {
+                        DynamicObject inwarehouse =entryRow.getDynamicObject("inwarehouse");
+                        if(inwarehouse==null){
                             //调出仓库
-                            entryRow.set("outwarehouse", depStock);
+                            entryRow.set("inwarehouse", stockDyObj);
+                        }
+                    }
+                    if (!id.equals("1994937462568258560") || !nameq.equalsIgnoreCase("借货归还申请")) {
+                        DynamicObject warehouse =entryRow.getDynamicObject("warehouse");
+                        if(warehouse==null){
+                            //调出仓库
+                            entryRow.set("warehouse", depStock);
                         }
                     }
                 }

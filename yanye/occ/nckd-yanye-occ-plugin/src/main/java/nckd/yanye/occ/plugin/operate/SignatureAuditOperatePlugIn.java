@@ -18,6 +18,10 @@ import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.exception.KDBizException;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
@@ -312,7 +316,57 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     // 调用下推引擎，下推目标单
                     ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
                     // 判断下推是否成功，如果失败，提取失败消息
-                    if (!pushResult.isSuccess()) {
+                    if (pushResult.isSuccess()) {
+                        // 获取生成的目标单数据包
+                        MainEntityType targetMainType = EntityMetadataCache.getDataEntityType(targetBill);
+                        List<DynamicObject> targetBillObjs = pushResult.loadTargetDataObjects(new IRefrencedataProvider() {
+                            @Override
+                            public void fillReferenceData(Object[] objs, IDataEntityType dType) {
+                                BusinessDataReader.loadRefence(objs, dType);
+                            }
+                        }, targetMainType);
+                        DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
+                        //将承运商转成客户赋值到出库单的收货客户
+                        for (DynamicObject data : saveDynamicObject) {
+                            //承运商
+                            DynamicObject supplier = data.getDynamicObject("nckd_carcustomer");
+                            if (supplier != null) {
+                                //商务伙伴
+                                DynamicObject bizpartner = supplier.getDynamicObject("bizpartner");
+                                if (bizpartner != null) {
+                                    Object bizpartnerId = bizpartner.getPkValue();
+                                    //根据商务伙伴查找对应的客户
+                                    // 构造QFilter
+                                    QFilter qFilter = new QFilter("bizpartner.id", QCP.equals, bizpartnerId).and("status", QCP.equals, "C");
+                                    // 将选中的id对应的数据从数据库加载出来
+                                    DynamicObjectCollection collections = QueryServiceHelper.query("bd_customer",
+                                            "id", qFilter.toArray(), "");
+                                    if (!collections.isEmpty()) {
+                                        DynamicObject customer = collections.get(0);
+                                        String customerId = customer.getString(("id"));
+                                        DynamicObject customerDyna = BusinessDataServiceHelper.loadSingle(customerId, "bd_customer");
+                                        data.set("customer", customerDyna);
+                                    }
+                                }
+                            }
+                        }
+                        //保存
+                        OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
+                        if (operationResult1.isSuccess()) {
+
+                            OperateOption auditOption = OperateOption.create();
+                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                            //提交
+                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
+                            if (subResult.isSuccess()) {
+                                //审核
+                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
+                            } else {
+                                errMessage.append("提交销售出库(承运商)出错：" + subResult.getMessage());
+                            }
+                        }
+                    } else {
                         errMessage.append("下推销售出库单（承运商）出错:" + pushResult.getMessage());    // 错误信息
 //                        for (SourceBillReport billReport : pushResult.getBillReports()) {
 //                            // 提取各单错误报告
@@ -321,31 +375,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
 //                            }
 //                        }
                     }
-                    // 获取生成的目标单数据包
-                    MainEntityType targetMainType = EntityMetadataCache.getDataEntityType(targetBill);
-                    List<DynamicObject> targetBillObjs = pushResult.loadTargetDataObjects(new IRefrencedataProvider() {
-                        @Override
-                        public void fillReferenceData(Object[] objs, IDataEntityType dType) {
-                            BusinessDataReader.loadRefence(objs, dType);
-                        }
-                    }, targetMainType);
-                    DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
-                    //保存
-                    OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
-                    if (operationResult1.isSuccess()) {
-                        OperateOption auditOption = OperateOption.create();
-                        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-                        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-                        //提交
-                        OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
-                        if (subResult.isSuccess()) {
-                            //审核
-                            OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
-                        }
-                        else {
-                            errMessage.append("提交销售出库(承运商)出错："+subResult.getMessage());
-                        }
-                    }
+
                 }
                 if (errMessage.length() > 0) {
                     throw new KDBizException(errMessage.toString());

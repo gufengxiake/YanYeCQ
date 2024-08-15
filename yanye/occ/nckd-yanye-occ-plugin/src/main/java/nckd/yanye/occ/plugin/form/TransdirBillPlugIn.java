@@ -82,70 +82,70 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
 
     }
 
-    @Override
-    public void propertyChanged(PropertyChangedArgs e) {
-        String propName = e.getProperty().getName();
-        if ("billtype".equals(propName)) {
-            DynamicObject billtype = (DynamicObject) e.getChangeSet()[0].getNewValue();
-            String nameq = billtype.getString("name");
-            Object id = billtype.getPkValue();
-            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
-            Object orgId = org.getPkValue();
-            // 构造QFilter
-            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
-            // 将选中的id对应的数据从数据库加载出来
-            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
-                    "id", qFilter.toArray(), "");
-            if(collections.isEmpty()){return;}
-            DynamicObject stock = collections.get(0);
-            String stockId = stock.getString(("id"));
-            int row = this.getModel().getEntryRowCount("billentry");
-            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
+//    @Override
+//    public void propertyChanged(PropertyChangedArgs e) {
+//        String propName = e.getProperty().getName();
+//        if ("billtype".equals(propName)) {
+//            DynamicObject billtype = (DynamicObject) e.getChangeSet()[0].getNewValue();
+//            String nameq = billtype.getString("name");
+//            Object id = billtype.getPkValue();
+//            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+//            Object orgId = org.getPkValue();
+//            // 构造QFilter
+//            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
+//            // 将选中的id对应的数据从数据库加载出来
+//            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+//                    "id", qFilter.toArray(), "");
+//            if(collections.isEmpty()){return;}
+//            DynamicObject stock = collections.get(0);
+//            String stockId = stock.getString(("id"));
+//            int row = this.getModel().getEntryRowCount("billentry");
+//            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
+//
+//                for (int i = 0; i < row; i++) {
+//
+//                    this.getModel().setItemValueByID("outwarehouse", stockId, i);
+//                }
+//            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+//                for (int i = 0; i < row; i++) {
+//
+//                    this.getModel().setItemValueByID("warehouse", stockId, i);
+//                }
+//            }
+//        }
+//    }
 
-                for (int i = 0; i < row; i++) {
-
-                    this.getModel().setItemValueByID("outwarehouse", stockId, i);
-                }
-            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-                for (int i = 0; i < row; i++) {
-
-                    this.getModel().setItemValueByID("warehouse", stockId, i);
-                }
-            }
-        }
-    }
-
-    @Override
-    public void afterAddRow(AfterAddRowEventArgs e) {
-        super.afterAddRow(e);
-        if ("billentry".equals(e.getEntryProp().getName())) {
-            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
-            Object orgId = org.getPkValue();
-            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-            String nameq = billtype.getString("name");
-            Object id = billtype.getPkValue();
-            // 构造QFilter
-            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
-            // 将选中的id对应的数据从数据库加载出来
-            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
-                    "id", qFilter.toArray(), "");
-            DynamicObject stock = collections.get(0);
-            String stockId = stock.getString(("id"));
-            RowDataEntity[] rowdata = e.getRowDataEntities();
-            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
-
-                for (RowDataEntity rowDataEntity : rowdata) {
-                    int currentindex = rowDataEntity.getRowIndex();
-                    this.getModel().setItemValueByID("outwarehouse", stockId, currentindex);
-                }
-            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-                for (RowDataEntity rowDataEntity : rowdata) {
-                    int currentindex = rowDataEntity.getRowIndex();
-                    this.getModel().setItemValueByID("warehouse", stockId, currentindex);
-                }
-            }
-        }
-    }
+//    @Override
+//    public void afterAddRow(AfterAddRowEventArgs e) {
+//        super.afterAddRow(e);
+//        if ("billentry".equals(e.getEntryProp().getName())) {
+//            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
+//            Object orgId = org.getPkValue();
+//            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
+//            String nameq = billtype.getString("name");
+//            Object id = billtype.getPkValue();
+//            // 构造QFilter
+//            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
+//            // 将选中的id对应的数据从数据库加载出来
+//            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
+//                    "id", qFilter.toArray(), "");
+//            DynamicObject stock = collections.get(0);
+//            String stockId = stock.getString(("id"));
+//            RowDataEntity[] rowdata = e.getRowDataEntities();
+//            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
+//
+//                for (RowDataEntity rowDataEntity : rowdata) {
+//                    int currentindex = rowDataEntity.getRowIndex();
+//                    this.getModel().setItemValueByID("outwarehouse", stockId, currentindex);
+//                }
+//            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
+//                for (RowDataEntity rowDataEntity : rowdata) {
+//                    int currentindex = rowDataEntity.getRowIndex();
+//                    this.getModel().setItemValueByID("warehouse", stockId, currentindex);
+//                }
+//            }
+//        }
+//    }
 
     @Override
     public void itemClick(ItemClickEvent e) {

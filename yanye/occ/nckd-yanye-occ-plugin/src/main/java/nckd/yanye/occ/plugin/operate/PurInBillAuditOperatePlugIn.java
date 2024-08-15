@@ -29,6 +29,7 @@ import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.*;
 
 /*
@@ -65,11 +66,11 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
             //逐单处理
             for (DynamicObject dataObject : deliverRecords) {
                 //分录Id集合
-                HashSet<String> soEntryIdList = new HashSet<>();
-                Map<String, DynamicObject> lotMap = new HashMap<>();
-                Map<String, String> lotNumberMap = new HashMap<>();
-                Map<String, Object> producedateMap = new HashMap<>();
-                Map<String, Object> expirydateMap = new HashMap<>();
+                HashSet<Object> soEntryIdList = new HashSet<>();
+                Map<Object, DynamicObject> lotMap = new HashMap<>();
+                Map<Object, String> lotNumberMap = new HashMap<>();
+                Map<Object, Object> producedateMap = new HashMap<>();
+                Map<Object, Object> expirydateMap = new HashMap<>();
                 //物料明细单据体
                 DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
                 for (DynamicObject entryRow : billentry) {
@@ -81,8 +82,8 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     Object producedate = entryRow.getDate("producedate");
                     //到期日期
                     Object expirydate = entryRow.getDate("expirydate");
-                    String soEntryId = entryRow.getString("nckd_soentryid");
-                    if (soEntryId != null && !soEntryId.equalsIgnoreCase("")) {
+                    Object soEntryId = entryRow.get("nckd_soentryid");
+                    if (soEntryId != null && !soEntryId.toString().equalsIgnoreCase("0")) {
                         soEntryIdList.add(soEntryId);
                         lotMap.put(soEntryId, lot);
                         lotNumberMap.put(soEntryId, lotNumber);
@@ -95,7 +96,7 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                 String number = "im_saloutbill";
                 //查询字段
                 String fieldkey = "id";
-                QFilter qFilter = new QFilter("mainbillentryid", QCP.in, soEntryIdList);
+                QFilter qFilter = new QFilter("billentry.mainbillentryid", QCP.in, soEntryIdList);
                 QFilter[] filters = new QFilter[]{qFilter};
                 DynamicObjectCollection saloutDycollec = QueryServiceHelper.query(number, fieldkey, filters);
                 if (saloutDycollec.size() > 0) {
@@ -106,13 +107,13 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                         DynamicObjectCollection saloutbillentry = saloutDyna.getDynamicObjectCollection("billentry");
                         HashSet<DynamicObject> datalist = new HashSet<>();
                         for (DynamicObject salentryRow : saloutbillentry) {
-                            String mainbillentryid = salentryRow.getString("mainbillentryid");
+                            Object mainbillentryid = salentryRow.get("mainbillentryid");
                             if (soEntryIdList.contains(mainbillentryid)) {
                                 salentryRow.set("lot", lotMap.get(mainbillentryid));
                                 salentryRow.set("lotnumber", lotNumberMap.get(mainbillentryid));
                                 salentryRow.set("producedate", producedateMap.get(mainbillentryid));
                                 salentryRow.set("expirydate", expirydateMap.get(mainbillentryid));
-                                datalist.add(salentryRow);
+                                datalist.add(saloutDyna);
                             }
 
                         }
