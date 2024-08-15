@@ -5,6 +5,10 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.botp.runtime.ConvertOperationResult;
+import kd.bos.entity.botp.runtime.PushArgs;
+import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
@@ -13,10 +17,9 @@ import kd.bos.openapi.service.context.ServiceApiContext;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-import nckd.yanye.scm.common.InforeceivebillConst;
-import nckd.yanye.scm.common.PurapplybillConst;
-import nckd.yanye.scm.common.SupplierConst;
+import nckd.yanye.scm.common.*;
 import nckd.yanye.scm.common.dto.Content;
 import nckd.yanye.scm.common.utils.ZcEncryptUtil;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
@@ -24,8 +27,7 @@ import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * 招采平台回调统一消息体
@@ -107,9 +109,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
 
         // 单据编号
-        receiveObject.set(InforeceivebillConst.BILLNO, winData.getString("winId"));
+        String billNo = winData.getString("winId");
+        receiveObject.set(InforeceivebillConst.BILLNO, billNo);
         // 采购申请单单号
-        receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, purapplyBillObj[0].getString(PurapplybillConst.BILLNO));
+        String purapplyBillNo = purapplyBillObj[0].getString(PurapplybillConst.BILLNO);
+        receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, purapplyBillNo);
         // 采购类型:单次采购 or 协议供货
         String purchaseType = orderData.getString("negotiatePurchaseType");
         receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, purchaseType);
@@ -199,29 +203,150 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
         // 供应商/订单生成失败原因
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "测试。不生成");
+        receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "自动生成失败!请手动生成");
 
+
+        // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
+        // 其他：直接生成采购订单
+        if ("2".equals(procurements)) {
+            // 生成采购订单
+            if ("1".equals(purchaseType)) {
+                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+            } else if ("2".equals(purchaseType)) {
+                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
+            } else {
+                throw new KDBizException("采购类型错误");
+            }
+        } else {
+            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+        }
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
 
 
-        // todo 生成 采购订单 或 采购合同
-        // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
-        // 其他：直接生成采购订单
-        if ("2".equals(procurements)) {
-            if ("1".equals(purchaseType)) {
-//                addOrder();
-            } else if ("2".equals(purchaseType)) {
-//                addContract();
-            } else {
-//                throw new KDBizException("采购类型错误");
-            }
-        } else {
-//            addOrder();
+        return CustomApiResult.success("success");
+    }
+
+    /**
+     * 生成采购合同
+     */
+    private void addContract(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject) {
+        //如果下游有单据，打断操作
+        DynamicObject[] billnos = BusinessDataServiceHelper.load(
+                PurcontractConst.FORMBILLID,
+                PurcontractConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(PurcontractConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
+        );
+        if (billnos.length != 0) {
+            throw new KDBizException("已生成过采购合同");
         }
 
+        //获取源单
+        DynamicObject srcObj = (BusinessDataServiceHelper.load(
+                PurapplybillConst.FORMBILLID,
+                PurapplybillConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
+        ))[0];
 
-        return CustomApiResult.success("success");
+        // 单据pkid
+        Long pkid = (long) srcObj.getPkValue();
+
+        List<ListSelectedRow> selectedRows = new ArrayList<>();
+        ListSelectedRow selectedRow = new ListSelectedRow(pkid);
+        selectedRows.add(selectedRow);
+
+        // 生成下推参数PushArgs
+        PushArgs pushArgs = new PushArgs();
+        // 必选，源单标识
+        pushArgs.setSourceEntityNumber(PurapplybillConst.FORMBILLID);
+        // 必选，目标单标识
+        pushArgs.setTargetEntityNumber(PurcontractConst.FORMBILLID);
+        // 可选，自动保存
+        pushArgs.setAutoSave(true);
+        // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
+//        pushArgs.setRuleId("1134727974310918144");
+        // 是否输出详细错误报告
+        pushArgs.setBuildConvReport(false);
+        // 必选，设置需要下推的源单及分录内码
+        pushArgs.setSelectedRows(selectedRows);
+        // 调用下推引擎，下推目标单并保存
+        ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+        if (pushResult.isSuccess()) {
+            Set<Object> targetBillIds = pushResult.getTargetBillIds();
+            DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
+                    targetBillIds,
+                    PurcontractConst.FORMBILLID
+            );
+            // 招采平台价税合计
+            tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, totalPrice);
+            // 保存采购合同
+            SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
+
+            receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
+            receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
+        }
+    }
+
+    /**
+     * 生成采购订单
+     */
+    private void addOrder(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject) {
+        //如果下游有单据，打断操作
+        DynamicObject[] billnos = BusinessDataServiceHelper.load(
+                PurorderbillConst.FORMBILLID,
+                PurorderbillConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(PurorderbillConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
+        );
+        if (billnos.length != 0) {
+            throw new KDBizException("已生成过采购订单");
+        }
+
+        //获取源单
+        DynamicObject srcObj = (BusinessDataServiceHelper.load(
+                PurapplybillConst.FORMBILLID,
+                PurapplybillConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
+        ))[0];
+
+        // 单据pkid
+        Long pkid = (long) srcObj.getPkValue();
+
+        List<ListSelectedRow> selectedRows = new ArrayList<>();
+        ListSelectedRow selectedRow = new ListSelectedRow(pkid);
+        selectedRows.add(selectedRow);
+
+        // 生成下推参数PushArgs
+        PushArgs pushArgs = new PushArgs();
+        // 必选，源单标识
+        pushArgs.setSourceEntityNumber(PurapplybillConst.FORMBILLID);
+        // 必选，目标单标识
+        pushArgs.setTargetEntityNumber(PurorderbillConst.FORMBILLID);
+        // 可选，自动保存
+        pushArgs.setAutoSave(true);
+        // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
+//        pushArgs.setRuleId("1134727974310918144");
+        // 是否输出详细错误报告
+        pushArgs.setBuildConvReport(false);
+        // 必选，设置需要下推的源单及分录内码
+        pushArgs.setSelectedRows(selectedRows);
+        // 调用下推引擎，下推目标单并保存
+        ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+        if (pushResult.isSuccess()) {
+            Set<Object> targetBillIds = pushResult.getTargetBillIds();
+            DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
+                    targetBillIds,
+                    PurorderbillConst.FORMBILLID
+            );
+            // 招采平台价税合计
+            tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, totalPrice);
+
+            // 保存采购订单
+            SaveServiceHelper.saveOperate(PurorderbillConst.FORMBILLID, new DynamicObject[]{tgtObj});
+
+            receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
+            receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
+        }
     }
 
 
