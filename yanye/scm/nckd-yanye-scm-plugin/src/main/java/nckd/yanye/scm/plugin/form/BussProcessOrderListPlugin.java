@@ -312,6 +312,21 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             if (!saveOperationResult.isSuccess()) {
                 this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增失败");
             } else {
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
+                    this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单提交失败");
+                    return;
+                }
+                OperationResult audit = OperationServiceHelper.executeOperate("audit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
+                if(!audit.isSuccess()){
+                    //已提交的数据需要先撤销提交再执行删除操作
+                    OperationServiceHelper.executeOperate("unsubmit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
+                    this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单发起审核失败");
+                    return;
+                }
                 this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增成功");
                 this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
             }
