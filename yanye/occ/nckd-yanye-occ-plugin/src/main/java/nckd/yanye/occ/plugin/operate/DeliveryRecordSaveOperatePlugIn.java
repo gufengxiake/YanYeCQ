@@ -17,7 +17,7 @@ public class DeliveryRecordSaveOperatePlugIn extends DeliveryRecordSavePlugin {
     public void endOperationTransaction(EndOperationTransactionArgs e) {
         super.endOperationTransaction(e);
         DynamicObject[] deliverRecords = e.getDataEntities();
-        if(deliverRecords != null && deliverRecords.length > 0){
+        if(deliverRecords != null){
             for(DynamicObject dataObject:deliverRecords){
                 boolean autoSign=dataObject.getBoolean("nckd_autosign");
                 if(autoSign){

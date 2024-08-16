@@ -2,6 +2,7 @@ package nckd.yanye.occ.plugin.form;
 
 import com.alibaba.druid.util.StringUtils;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
@@ -21,6 +22,7 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -81,7 +83,14 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
 
 
     }
-
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
+        if(user!=null){
+            String number=user.getString("number");
+            this.getModel().setItemValueByNumber("nckd_ywy",number);
+        }
+    }
 //    @Override
 //    public void propertyChanged(PropertyChangedArgs e) {
 //        String propName = e.getProperty().getName();
