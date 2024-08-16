@@ -33,8 +33,6 @@ import java.util.List;
  */
 public class BankAccountTask  implements IEventServicePlugin {
 
-    private static final String YzjPublicAccount = "XT-dc321391-1d58-40b8-aee8-1bb20f69d92f";
-
     private static Log logger = LogFactory.getLog(BankAccountTask.class);
 
 
@@ -82,10 +80,8 @@ public class BankAccountTask  implements IEventServicePlugin {
         logger.info("开始发送通知:-------------------");
         // 云之家通知 金蝶云苍穹消息助手 标识：systempubacc
         MessageInfo messageInfo = new MessageInfo();
-        ILocaleString title =  new LocaleString();
-        title.setLocaleValue_zh_CN("您好，您有一条银行流水信息，请注意查收。");
-        ILocaleString content = new LocaleString();
-        content.setLocaleValue_zh_CN( "收到银行推送流水通知，请尽快查看和处理。");
+        messageInfo.setTitle("您好，您有一条银行流水信息，请注意查收。");
+        messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。");
 
         List<Long> userids = new ArrayList<Long>();
         userids.add(salerid.getLong("id"));
@@ -95,7 +91,7 @@ public class BankAccountTask  implements IEventServicePlugin {
 //        messageInfo.setToUser(salerid.getString("id"));
         messageInfo.setType(MessageInfo.TYPE_MESSAGE);
         messageInfo.setNotifyType("yunzhijia");
-
+        messageInfo.setTag("银行流水");
         logger.info("发送信息体messageInfo:{}",messageInfo);
         MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
         messageServiceConfig.setServiceKey("yunzhijia");
