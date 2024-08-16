@@ -29,7 +29,7 @@ public class CasClaimbillFormPlugin extends AbstractBillPlugIn {
             ChangeData changeData = e.getChangeSet()[0]; //修改值所在行
             DynamicObject dataEntity = changeData.getDataEntity(); //修改值所在行数据
             Object newValue = changeData.getNewValue();//新值
-            //int rowIndex = changeData.getRowIndex(); //修改行所在行行号
+            int rowIndex = changeData.getRowIndex(); //修改行所在行行号
             String billType = dataEntity.getString("e_corebilltype");
             String billNo = dataEntity.getString("e_corebillno");
             int eCorebillentryseq = dataEntity.getInt("e_corebillentryseq");
@@ -42,12 +42,11 @@ public class CasClaimbillFormPlugin extends AbstractBillPlugIn {
                 DynamicObject recplanentry = recplanentryColl.get(eCorebillentryseq - 1);
                 BigDecimal rUnremainamount = recplanentry.getBigDecimal("r_unremainamount");
                 if (eReceivableamt.compareTo(rUnremainamount) > 0) {
-                    dataEntity.set("e_receivableamt",0);
-                    dataEntity.set("e_actamt",0);
                     this.getView().showErrorNotification("应收金额不能大于销售订单" + billNo + "收款计划第" + eCorebillentryseq + "行的未关联收款金额");
+                    this.getModel().setValue("e_actamt", 0, rowIndex);
+                    this.getModel().setValue("e_receivableamt", 0, rowIndex);
                 }
             }
-            this.getView().updateView();
         }
     }
 }
