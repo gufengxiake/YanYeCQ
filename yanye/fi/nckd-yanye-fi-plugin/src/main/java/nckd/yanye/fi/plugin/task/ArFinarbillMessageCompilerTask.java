@@ -23,7 +23,7 @@ public class ArFinarbillMessageCompilerTask implements IEarlyWarnMessageCompiler
         for (DynamicObject dynamic : dynamicObjectCollection){
             if (dateFormat(dynamic.getDate("planduedate")).equals(dateFormat(new Date()))){
                 total = total.add(dynamic.getBigDecimal("unplansettleamt"));
-                detailStr += dateFormatByDate(dynamic.getDate("planduedate"))+"未结算金额："+dynamic.getBigDecimal("unplansettleamt").setScale(2, RoundingMode.HALF_UP)+"。";
+                detailStr += dateFormatByDate(dynamic.getDate("planduedate"))+"待收款金额："+dynamic.getBigDecimal("unplansettleamt").setScale(2, RoundingMode.HALF_UP)+"。";
             }
         }
         Map<String, String> map = new HashMap<>();
