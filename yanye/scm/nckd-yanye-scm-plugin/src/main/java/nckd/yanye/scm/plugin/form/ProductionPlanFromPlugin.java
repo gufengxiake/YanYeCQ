@@ -6,6 +6,8 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.DB;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Toolbar;
@@ -14,6 +16,8 @@ import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.control.events.RowClickEvent;
 import kd.bos.form.control.events.RowClickEventListener;
 import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.events.AfterF7SelectEvent;
+import kd.bos.form.field.events.AfterF7SelectListener;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
@@ -28,7 +32,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 
-public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowClickEventListener, BeforeF7SelectListener {
+public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowClickEventListener, BeforeF7SelectListener, AfterF7SelectListener {
 
     @Override
     public void registerListener(EventObject e) {
@@ -41,7 +45,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         grid.addRowClickListener(this);
         //监听Before7
         BasedataEdit fieldEdit = this.getView().getControl("material");
-        fieldEdit.addBeforeF7SelectListener(this);
+        fieldEdit.addAfterF7SelectListener(this);
     }
 
     @Override
@@ -111,7 +115,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 break;
             }
 
-            if (entry.getString("nckd_pom").contains("/")){
+            if (entry.getString("nckd_pom").contains("/")) {
                 DynamicObjectCollection treeentryentity = d.getDynamicObjectCollection("treeentryentity");
                 DynamicObject nckdBomid = entry.getDynamicObject("nckd_bomid");
                 nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
@@ -228,7 +232,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         }
                     }
                 }
-                if (count > 0){
+                if (count > 0) {
                     setFinishToMft(entity);
                     return;
                 }
@@ -314,7 +318,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             entrymaterial = BusinessDataServiceHelper.loadSingle(entrymaterial.getPkValue(), "bd_materialmftinfo");
             DynamicObject pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,copentry,copentry.copentrytype,copentry.copentrymaterial,copentry.copentryqty",
                     new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
-            if (pdm == null){
+            if (pdm == null) {
                 continue;
             }
             DynamicObject pomMftorder_a = BusinessDataServiceHelper.newDynamicObject("pom_mftorder");
@@ -369,6 +373,19 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             SaveServiceHelper.save(new DynamicObject[]{pomMftorder_a});
             this.getModel().setValue("nckd_pom", "工单1：" + number + ",工单2：" + number_a, i);
         }
+        //判断是否需要合并
+        List<String> deptIdList = new ArrayList<>();
+        for (DynamicObject d : entity) {
+            if (!d.get("nckd_producttype").equals("C")){
+                continue;
+            }
+            deptIdList.add(d.getDynamicObject("nckd_producedept").getPkValue().toString()+d.getDynamicObject("material").getPkValue().toString());
+        }
+        long count = deptIdList.stream().distinct().count();
+        if (deptIdList.size() == count){
+            return;
+        }
+
         DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.material,treeentryentity.qty",
                 new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
         List<DynamicObject> list = new ArrayList<>();
@@ -376,45 +393,45 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             DynamicObjectCollection treeentryentity = p.getDynamicObjectCollection("treeentryentity");
             Object pkValue_a = treeentryentity.get(0).getDynamicObject("material").getPkValue();
             for (DynamicObject e : entity) {
-                if (!"C".equals(e.get("nckd_producttype"))){
+                if (!"C".equals(e.get("nckd_producttype"))) {
                     continue;
                 }
                 DynamicObject nckdBomid = e.getDynamicObject("nckd_bomid");
                 nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
-                if (nckdBomid.getDynamicObjectCollection("entry").get(0).getDynamicObject("entrymaterial").getPkValue().equals(pkValue_a)){
+                if (nckdBomid.getDynamicObjectCollection("entry").get(0).getDynamicObject("entrymaterial").getPkValue().equals(pkValue_a)) {
                     list.add(p);
                     break;
                 }
             }
         }
-        if (list.size() > 1){
+        if (list.size() > 1) {
             BigDecimal qty = BigDecimal.ZERO;
             for (DynamicObject d : list) {
                 qty = qty.add(d.getDynamicObjectCollection("treeentryentity").get(0).getBigDecimal("qty"));
             }
-            List<Object> idList =  new ArrayList<>();
-            for (int i = list.size()-1; i > -1; i--) {
+            List<Object> idList = new ArrayList<>();
+            for (int i = list.size() - 1; i > -1; i--) {
                 DynamicObject dynamicObject = list.get(i);
-                if (i == 0){
+                if (i == 0) {
                     DynamicObject treeentry = dynamicObject.getDynamicObjectCollection("treeentryentity").get(0);
-                    treeentry.set("qty",qty);
+                    treeentry.set("qty", qty);
                     SaveServiceHelper.update(new DynamicObject[]{dynamicObject});
-                }else {
+                } else {
                     idList.add(dynamicObject.getPkValue());
                 }
             }
-            DeleteServiceHelper.delete("pom_mftorder",new QFilter[]{new QFilter("id",QCP.in,idList)});
+            DeleteServiceHelper.delete("pom_mftorder", new QFilter[]{new QFilter("id", QCP.in, idList)});
             pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.material,treeentryentity.qty",
                     new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
             for (DynamicObject d : entity) {
-                if (!"C".equals(d.get("nckd_producttype"))){
+                if (!"C".equals(d.get("nckd_producttype"))) {
                     continue;
                 }
                 String mbillno = "";
                 for (DynamicObject p : pom) {
-                    mbillno = mbillno +"/"+ p.getString("billno");
+                    mbillno = mbillno + "/" + p.getString("billno");
                 }
-                d.set("nckd_pom",mbillno);
+                d.set("nckd_pom", mbillno);
             }
             SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
@@ -722,7 +739,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     new QFilter[]{new QFilter("material.id", QCP.equals, material.getPkValue()).or("entry.entrymaterial", QCP.equals, material.getPkValue())});
             if (mftbom == null) {
                 if (entrys.size() > 1) {
-                    for (int i = 0; i < entrys.size(); i++) {
+                    for (int i = entrys.size()-1; i > -1; i--) {
                         if (entry.getPkValue().equals(entrys.get(i).get("pid"))) {
                             this.getModel().deleteEntryRow("pom_planning_entry", i);
                         }
@@ -784,7 +801,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
 
     @Override
     public void afterCreateNewData(EventObject e) {
-        super.afterCreateNewData(e);
+;        super.afterCreateNewData(e);
 
     }
 
@@ -803,5 +820,72 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
     @Override
     public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
         Object originalValue = beforeF7SelectEvent.getOriginalValue();
+    }
+
+    @Override
+    public void afterF7Select(AfterF7SelectEvent afterF7SelectEvent) {
+        ListSelectedRowCollection list = afterF7SelectEvent.getListSelectedRowCollection();
+        if (list.size() <= 1) {
+            return;
+        }
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("pom_planning_entry");
+        int count = 1;
+        for (int i = 0; i < list.size(); i++) {
+            if (i == 0) {
+                DynamicObject material = BusinessDataServiceHelper.loadSingle(list.get(i).getPrimaryKeyValue(), "bd_materialmftinfo");
+                DynamicObject bom = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,copentry",
+                        new QFilter[]{new QFilter("material", QCP.equals, material.getPkValue())});
+                if (bom != null) {
+                    DynamicObjectCollection copentry = bom.getDynamicObjectCollection("copentry");
+                    count = count + copentry.size();
+                }
+                continue;
+            }
+            DynamicObject material = BusinessDataServiceHelper.loadSingle(list.get(i).getPrimaryKeyValue(), "bd_materialmftinfo");
+            DynamicObject bom = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,copentry,copentry.copentrytype,copentry.copentrymaterial",
+                    new QFilter[]{new QFilter("material", QCP.equals, material.getPkValue())});
+            //DynamicObject pomPlanningEntry = this.getModel().getEntryRowEntity("pom_planning_entry", count);
+            //int rowCount = this.getModel().insertEntryRow("pom_planning_entry",count);
+            this.getModel().setValue("nckd_producttype", "C", count);
+            this.getModel().setValue("nckd_bomid", bom, count);
+            this.getModel().setValue("nckd_producedept", material.getDynamicObject("createorg"), count);
+            this.getModel().setValue("nckd_unit", material.getDynamicObject("mftunit"), count);
+            this.getModel().setValue("material", material, count);
+            count++;
+        }
+        for (int i = 0; i < entity.size(); i++) {
+            DynamicObject dynamicObject = entity.get(i);
+            if (i == 0){
+                continue;
+            }
+            if (!dynamicObject.get("nckd_producttype").equals("C")){
+                continue;
+            }
+            DynamicObject nckdBomid = dynamicObject.getDynamicObject("nckd_bomid");
+            if (nckdBomid == null){
+                continue;
+            }
+            nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
+            DynamicObjectCollection copentry = nckdBomid.getDynamicObjectCollection("copentry");
+            if (copentry.size() < 1){
+                continue;
+            }
+            for (DynamicObject object : copentry) {
+                int index = this.getModel().insertEntryRow("pom_planning_entry", i);
+                DynamicObject pomPlanningEntry = this.getModel().getEntryRowEntity("pom_planning_entry", index);
+                if ("10720".equals(object.getString("copentrytype"))) {
+                    pomPlanningEntry.set("nckd_producttype", "A");
+                } else {
+                    pomPlanningEntry.set("nckd_producttype", "B");
+                }
+                DynamicObject copentrymaterial = object.getDynamicObject("copentrymaterial");
+                copentrymaterial = BusinessDataServiceHelper.loadSingle(copentrymaterial.getPkValue(), "bd_materialmftinfo");
+                pomPlanningEntry.set("nckd_producedept", copentrymaterial.getDynamicObject("createorg"));
+                pomPlanningEntry.set("nckd_bomid", nckdBomid);
+                pomPlanningEntry.set("material", copentrymaterial);
+                pomPlanningEntry.set("nckd_unit", copentrymaterial.getDynamicObject("mftunit"));
+                this.getView().updateView();
+            }
+        }
     }
 }

@@ -24,7 +24,10 @@ import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.metadata.dao.MetadataDao;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
@@ -48,7 +51,9 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         super.onPreparePropertys(e);
         e.getFieldKeys().add("mainbillentryid");//核心单据行Id
         e.getFieldKeys().add("qty");//数量
-
+        e.getFieldKeys().add("lotnumber");//批号
+        e.getFieldKeys().add("producedate");//生成日期
+        e.getFieldKeys().add("expirydate");//到期日期
     }
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
         if (e.getValidExtDataEntities().isEmpty()) {
@@ -69,19 +74,28 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             billIds.add(dataEntity.getBillPkId());
 
         }
+        //记录销售出库单核心单据行Id 对应的数量，批号，生产日期，到期日期
         Map<String, BigDecimal> outQty = new HashMap<>();
+        Map<String, String> outLot= new HashMap<>();
+        Map<String, Date> outProduceDate = new HashMap<>();
+        Map<String, Date> outExpiryDate = new HashMap<>();
         for (DynamicObject dataObject : e.getDataEntities()) {
             //获取单据体数据的集合
             DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
             for (DynamicObject entryObj : billentry) {
                 String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
-                BigDecimal qty = entryObj.getBigDecimal("qty");//核心单据行Id
+                BigDecimal qty = entryObj.getBigDecimal("qty");//出库数量
+                String lot = entryObj.getString("lotnumber");//批号
+                Date produceDate = entryObj.getDate("producedate");//生产日期
+                Date expirydate = entryObj.getDate("expirydate");//到期日期
                 if (!outQty.containsKey(mainbillentryid)) {
                     outQty.put(mainbillentryid, qty);
                 } else {
-
                     outQty.put(mainbillentryid, outQty.get(mainbillentryid).add(qty));
                 }
+                outLot.put(mainbillentryid,lot);
+                outProduceDate.put(mainbillentryid,produceDate);
+                outExpiryDate.put(mainbillentryid,expirydate);
             }
         }
 
@@ -109,6 +123,9 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         }
         if (!saloutBillIds.isEmpty()) {
             Map<String, BigDecimal> srcQty = new HashMap<>();
+            Map<String, String> srcLot= new HashMap<>();
+            Map<String, Date> srcProduceDate = new HashMap<>();
+            Map<String, Date> srcExpiryDate = new HashMap<>();
             for (Object salOutPk : saloutBillIds) {
                 DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "sm_salorder");
                 //获取单据体数据的集合
@@ -119,6 +136,15 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                     String srcbillentryid = entryObj.getString("srcbillentryid");//来源单据行Id
                     if (outQty.containsKey(entryId.toString())) {
                         srcQty.put(srcbillentryid, outQty.get(entryId.toString()));
+                    }
+                    if(outLot.containsKey(entryId.toString())){
+                        srcLot.put(srcbillentryid,outLot.get(entryId.toString()));
+                    }
+                    if(outProduceDate.containsKey(entryId.toString())){
+                        srcProduceDate.put(srcbillentryid,outProduceDate.get(entryId.toString()));
+                    }
+                    if(outExpiryDate.containsKey(entryId.toString())){
+                        srcExpiryDate.put(srcbillentryid,outExpiryDate.get(entryId.toString()));
                     }
                 }
             }
@@ -231,12 +257,40 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                 mode.setPKValue(pkId);
                                 mode.load(pkId);
                                 DynamicObject dataObj = mode.getDataEntity();
+
+                                //部门对应仓库
+                                DynamicObject depStock = null;
+                                //申请部门
+                                DynamicObject dept=dataObj.getDynamicObject("bizdept");
+                                if (dept != null) {
+                                    Object deptId = dept.getPkValue();
+                                    //从部门 仓库设置基础资料中获取对应仓库
+                                    // 构造QFilter
+                                    QFilter depqFilter = new QFilter("status", QCP.equals, "C")
+                                            .and("nckd_bm", QCP.equals, deptId);
+
+                                    //查找部门对应仓库
+                                    DynamicObjectCollection depcollections = QueryServiceHelper.query("nckd_bmcksz",
+                                            "id,nckd_ck.id stockId", depqFilter.toArray(), "modifytime");
+                                    if (!depcollections.isEmpty()) {
+                                        DynamicObject stockItem = depcollections.get(0);
+                                        String stockId = stockItem.getString("stockId");
+                                        depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+                                    }
+                                }
                                 DynamicObjectCollection entry = dataObj.getDynamicObjectCollection("billentry");
                                 int row = 0;
                                 for (DynamicObject entryRow : entry) {
                                     String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
                                     BigDecimal qty = srcQty.get(mainbillentryid);
+                                    String lot=srcLot.get(mainbillentryid);
+                                    Date producedate=srcProduceDate.get(mainbillentryid);
+                                    Date expirydate=srcExpiryDate.get(mainbillentryid);
                                     mode.setValue("qty", qty, row);
+                                    mode.setValue("lotnumber", lot, row);
+                                    mode.setValue("producedate", producedate, row);
+                                    mode.setValue("expirydate", expirydate, row);
+                                    mode.setValue("warehouse", depStock, row);
                                     row++;
                                 }
                                 OperationResult saveOp = formView.invokeOperation("save");

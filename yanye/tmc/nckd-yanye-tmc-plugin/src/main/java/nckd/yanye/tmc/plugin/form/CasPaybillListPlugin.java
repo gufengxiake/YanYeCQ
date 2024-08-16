@@ -68,7 +68,7 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
                     if (!formOperate.getOption().tryGetVariableValue(OPPARAM_AFTERCONFIRM, afterConfirm)) {
                         // 显示确认消息
                         ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(KEY_BEFORESUBMIT, this);
-                        this.getView().showConfirm("供应商为" + unittypeMap.get(unittype) + "的单位，是否继续提交?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+                        this.getView().showConfirm("收款单位为" + unittypeMap.get(unittype) + "，是否继续付款?", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
                         // 在没有确认之前，先取消本次操作
                         args.setCancel(true);
                     }

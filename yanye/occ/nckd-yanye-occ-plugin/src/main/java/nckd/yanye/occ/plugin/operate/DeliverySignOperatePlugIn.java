@@ -32,6 +32,7 @@ import java.util.*;
  * author:吴国强 2024-07-12
  */
 public class DeliverySignOperatePlugIn extends AbstractOperationServicePlugIn {
+    @Override
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
         if (e.getValidExtDataEntities().isEmpty()) {
 

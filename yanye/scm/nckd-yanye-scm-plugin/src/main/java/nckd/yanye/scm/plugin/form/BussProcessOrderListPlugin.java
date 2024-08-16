@@ -300,11 +300,12 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                     }
                     if (invcountbillEntry.getDynamicObject("material").getDynamicObject("masterid").getPkValue().equals(nckdMaterielfield.getDynamicObject("masterid").getPkValue())
                             && !invcountbillEntry.getDynamicObject("warehouse").getPkValue().equals(nckdWarehouse.getPkValue())) {
-                        String name = nckdMaterielfield.getDynamicObject("masterid").getString("name");
-                        msg.append("物料(").append(name).append(")存在其他仓库的的库存").append("\r\n");
+                        String number = nckdMaterielfield.getDynamicObject("masterid").getString("number");
+                        //String name = nckdMaterielfield.getDynamicObject("masterid").getString("name");
+                        msg.append("物料编码(").append(number).append(")在其他仓库的存在库存").append("\r\n");
                     }
                 }
-                msg.append("物料(").append("name").append(")存在其他仓库的的库存").append("\r\n");
+                //msg.append("物料(").append("name").append(")存在其他仓库的的库存").append("\r\n");
                 //negainventoryOrderEntryColl.add(negainventoryOrderEntry);
             });
             //调用保存操作
