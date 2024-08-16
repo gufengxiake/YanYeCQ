@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
  * Description      :折旧分摊表报表筛选插件
  *
  * @author : yaosijie
- * @date : 2024/78/12
+ * @date : 2024/8/12
  */
 public class DepreciationAllocationRepPlugin extends FaAssignListQuery {
 

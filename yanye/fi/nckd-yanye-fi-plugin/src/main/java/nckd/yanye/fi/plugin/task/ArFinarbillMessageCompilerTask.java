@@ -12,7 +12,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.*;
-
+/**
+ * Module           :开发服务云-元数据模型-首页
+ * Description      :业务预警对象消息解析插件插件
+ *
+ * @author : yaosijie
+ * @date : 2024/8/12
+ */
 public class ArFinarbillMessageCompilerTask implements IEarlyWarnMessageCompiler {
     @Override
     public String getSingleMessage(String s, List<String> list, DynamicObject dynamicObject, EarlyWarnContext earlyWarnContext) {
