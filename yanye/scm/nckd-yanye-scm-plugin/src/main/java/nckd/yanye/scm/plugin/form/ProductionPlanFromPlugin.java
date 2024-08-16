@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.coderule.api.CodeRuleInfo;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.DB;
@@ -9,6 +10,7 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Toolbar;
 import kd.bos.form.control.TreeEntryGrid;
@@ -25,6 +27,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.DeleteServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -262,7 +265,8 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder.set("billdate", new Date());
             pomMftorder.set("billstatus", "C");
             pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));
-            pomMftorder.set("billtype", pmf.getPkValue());//单据类型
+            pomMftorder.set("billtype", pmf);//单据类型
+            pomMftorder.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
             DynamicObject oldEntity = entity.get(i);
             DynamicObject nckdBomid = oldEntity.getDynamicObject("nckd_bomid");
             if (nckdBomid == null) {
@@ -285,6 +289,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             newOne.set("bomid", nckdBomid);
             newOne.set("planbegintime", oldEntity.get("nckd_planstarttime"));
             newOne.set("planendtime", oldEntity.get("nckd_planendtime"));
+            newOne.set("planstatus", "B");
+            newOne.set("baseunit", material.getDynamicObject("mftunit"));
+            newOne.set("expendbomtime", oldEntity.get("nckd_planendtime"));
+            newOne.set("inwardept", oldEntity.getDynamicObject("nckd_producedept"));
             pomMftorder.set("remark", pomMftorder.get("remark") == null ? oldEntity.getString("nckd_remark") : oldEntity.getString("nckd_remark") + pomMftorder.getString("remark"));
             DynamicObjectCollection copent = nckdBomid.getDynamicObjectCollection("copentry");
             if (copent.size() > 0) {
@@ -299,28 +307,38 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newTwo.set("producttype", "B");
                     }
                     //newTwo.set("producttype", cop.getString("copentrytype"));
-                    newTwo.set("materielmasterid", cop.getDynamicObject("copentrymaterial") == null ? null : cop.getDynamicObject("copentrymaterial").get("masterid"));//物料
+                    newTwo.set("materielmasterid", cop.getDynamicObject("copentrymaterial") == null ? null : cop.getDynamicObject("copentrymaterial"));//物料
                     newTwo.set("material", cop.getDynamicObject("copentrymaterial"));
                     newTwo.set("producedept", oldEntity.getDynamicObject("nckd_producedept"));
                     newTwo.set("qty", oldEntity.getBigDecimal("nckd_yield").multiply(cop.getBigDecimal("copentryqty")));
                     newTwo.set("unit", cop.getDynamicObject("copentryunit"));
                     newTwo.set("bomid", nckdBomid);
                     newTwo.set("planbegintime", oldEntity.get("nckd_planstarttime"));
-                    newOne.set("planendtime", oldEntity.get("nckd_planendtime"));
+                    newTwo.set("planendtime", oldEntity.get("nckd_planendtime"));
+                    newTwo.set("planstatus", "B");
+                    newTwo.set("baseunit", cop.getDynamicObject("copentryunit"));
+                    newTwo.set("inwardept", oldEntity.getDynamicObject("nckd_producedept"));
+                    newTwo.set("expendbomtime", oldEntity.get("nckd_planendtime"));
                     pomMftorder.set("remark", pomMftorder.get("remark") == null ? oldEntity.getString("nckd_remark")
                             : oldEntity.getString("nckd_remark") + pomMftorder.getString("remark"));
                 }
             }
-            SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
+            OperationResult result1 = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+            if (!result1.isSuccess()){
+                this.getView().showMessage(result1.getMessage());
+                return;
+            }
+            //SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
 
             //关联查找到BOM对应的半成品并生成工单
             DynamicObject entrymaterial = bomEntry.getDynamicObject("entrymaterial");
             entrymaterial = BusinessDataServiceHelper.loadSingle(entrymaterial.getPkValue(), "bd_materialmftinfo");
-            DynamicObject pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,copentry,copentry.copentrytype,copentry.copentrymaterial,copentry.copentryqty",
+            DynamicObject pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material",
                     new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
             if (pdm == null) {
                 continue;
             }
+            pdm = BusinessDataServiceHelper.loadSingle(pdm.getPkValue(),"pdm_mftbom");
             DynamicObject pomMftorder_a = BusinessDataServiceHelper.newDynamicObject("pom_mftorder");
             DynamicObjectCollection treeentryentity_a = pomMftorder_a.getDynamicObjectCollection("treeentryentity");
             CodeRuleInfo codeRule_a = CodeRuleServiceHelper.getCodeRule(pomMftorder_a.getDataEntityType().getName(), pomMftorder_a, null);
@@ -332,7 +350,8 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder_a.set("billdate", new Date());
             pomMftorder_a.set("billstatus", "C");
             pomMftorder_a.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
-            pomMftorder_a.set("billtype", pmf.getPkValue());//单据类型
+            pomMftorder_a.set("billtype", pmf);//单据类型
+            pomMftorder_a.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
             long id_a = DB.genLongId("t_pom_mftorderentry");
             DynamicObject newOne_a = treeentryentity_a.addNew();
             newOne_a.set("id", id_a);//随机生成一个long类型的id
@@ -345,6 +364,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             newOne_a.set("bomid", pdm);
             newOne_a.set("planbegintime", oldEntity.get("nckd_planstarttime"));
             newOne_a.set("planendtime", oldEntity.get("nckd_planendtime"));
+            newOne_a.set("planstatus", "B");
+            newOne_a.set("baseunit", entrymaterial.getDynamicObject("mftunit"));
+            newOne_a.set("inwardept", oldEntity.getDynamicObject("nckd_producedept"));
+            newOne_a.set("expendbomtime", oldEntity.get("nckd_planendtime"));
             pomMftorder_a.set("remark", pomMftorder_a.get("remark") == null ? oldEntity.getString("nckd_remark") : oldEntity.getString("nckd_remark") + pomMftorder.getString("remark"));
             DynamicObjectCollection copent_a = pdm.getDynamicObjectCollection("copentry");
             if (copent_a.size() > 0) {
@@ -365,12 +388,21 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     newTwo.set("unit", cop.getDynamicObject("copentryunit"));
                     newTwo.set("bomid", pdm);
                     newTwo.set("planbegintime", oldEntity.get("nckd_planstarttime"));
-                    newOne.set("planendtime", oldEntity.get("nckd_planendtime"));
+                    newTwo.set("planendtime", oldEntity.get("nckd_planendtime"));
+                    newTwo.set("planstatus", "B");
+                    newTwo.set("baseunit", cop.getDynamicObject("copentryunit"));
+                    newTwo.set("inwardept", oldEntity.getDynamicObject("nckd_producedept"));
+                    newTwo.set("expendbomtime", oldEntity.get("nckd_planendtime"));
                     pomMftorder_a.set("remark", pomMftorder_a.get("remark") == null ? oldEntity.getString("nckd_remark")
                             : oldEntity.getString("nckd_remark") + pomMftorder_a.getString("remark"));
                 }
             }
-            SaveServiceHelper.save(new DynamicObject[]{pomMftorder_a});
+            OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{pomMftorder_a}, OperateOption.create());
+            if (!result.isSuccess()){
+                this.getView().showMessage(result1.getMessage());
+                return;
+            }
+            //SaveServiceHelper.save(new DynamicObject[]{pomMftorder_a});
             this.getModel().setValue("nckd_pom", "工单1：" + number + ",工单2：" + number_a, i);
         }
         //判断是否需要合并
@@ -433,7 +465,11 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 }
                 d.set("nckd_pom", mbillno);
             }
-            SaveServiceHelper.save(new DynamicObject[]{dataEntity});
+            OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{dataEntity}, OperateOption.create());
+            if (!result.isSuccess()){
+                this.getView().showMessage(result.getMessage());
+            }
+            //SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
     }
 
@@ -482,7 +518,8 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder.set("billdate", new Date());
             pomMftorder.set("billstatus", "C");
             pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
-            pomMftorder.set("billtype", pmf.getPkValue());//单据类型
+            pomMftorder.set("billtype", pmf);//单据类型
+            pomMftorder.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
             //根据单据体父子关系分组
             List<List<DynamicObject>> lists = new ArrayList<>();
             for (DynamicObject dynamicObject : pomPlanningEntryColl) {
@@ -516,6 +553,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newOne.set("bomid", pomPlanningEntry.getDynamicObject("nckd_bomid"));
                         newOne.set("planbegintime", pomPlanningEntry.get("nckd_planstarttime"));
                         newOne.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newOne.set("planstatus", "B");
+                        newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
+                        newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newOne.set("inwardept", pomPlanningEntry.getDynamicObject("nckd_producedept"));
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark") : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                     }
                     if (i > 0) {
@@ -532,11 +573,21 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newOne.set("bomid", pomPlanningEntry.getDynamicObject("nckd_bomid"));
                         newOne.set("planbegintime", pomPlanningEntry.get("nckd_planstarttime"));
                         newOne.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newOne.set("planstatus", "B");
+                        newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
+                        newOne.set("inwardept", pomPlanningEntry.getDynamicObject("nckd_producedept"));
+
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark")
                                 : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                     }
                 }
-                SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
+                OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (!result.isSuccess()){
+                    this.getView().showMessage(result.getMessage());
+                    return;
+                }
+                //SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
                 this.getModel().setValue("nckd_pom", number, 0);
             }
             //根据物料＋生产部门进行拆单
@@ -561,6 +612,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             newOne.set("bomid", pomPlanningEntry.getDynamicObject("nckd_bomid"));
                             newOne.set("planbegintime", pomPlanningEntry.get("nckd_planstarttime"));
                             newOne.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                            newOne.set("planstatus", "B");
+                            newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                            newOne.set("inwardept", pomPlanningEntry.getDynamicObject("nckd_producedept"));
+                            newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                             pomMftorder.set("remark", pomMftorder.get("remark") == null ?
                                     pomPlanningEntry.getString("nckd_remark") : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                         }
@@ -577,12 +632,21 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             newTwo.set("bomid", pomPlanningEntry.getDynamicObject("nckd_bomid"));
                             newTwo.set("planbegintime", pomPlanningEntry.get("nckd_planstarttime"));
                             newTwo.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                            newTwo.set("planstatus", "B");
+                            newTwo.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                            newTwo.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
+                            newTwo.set("inwardept", pomPlanningEntry.getDynamicObject("nckd_producedept"));
                             pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark") :
                                     pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                         }
                     }
                 }
-                SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
+                OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (!result.isSuccess()){
+                    this.getView().showMessage(result.getMessage());
+                    return;
+                }
+                //SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
                 this.getModel().setValue("nckd_pom", number, 0);
             }
 
@@ -601,7 +665,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 pomMftorder.set("billdate", new Date());
                 pomMftorder.set("billstatus", "C");
                 pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
-                pomMftorder.set("billtype", pmf.getPkValue());//单据类型
+                pomMftorder.set("billtype", pmf);//单据类型
                 DynamicObject pomPlanningEntry = aList.get(i);
                 id = DB.genLongId("t_pom_mftorderentry");
                 DynamicObject newOne = treeentryentity.addNew();
@@ -615,6 +679,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 newOne.set("bomid", pomPlanningEntry.getDynamicObject("nckd_bomid"));
                 newOne.set("planbegintime", pomPlanningEntry.get("nckd_planstarttime"));
                 newOne.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                newOne.set("planstatus", "B");
+                newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
+                newOne.set("inwardept", pomPlanningEntry.getDynamicObject("nckd_producedept"));
                 pomMftorder.set("remark", pomMftorder.get("remark") == null ?
                         pomPlanningEntry.getString("nckd_remark") : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                 for (DynamicObject d : pomPlanningEntryColl) {
@@ -631,11 +699,19 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newTwo.set("bomid", d.getDynamicObject("nckd_bomid"));
                         newTwo.set("planbegintime", d.get("nckd_planstarttime"));
                         newTwo.set("planendtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newTwo.set("planstatus", "B");
+                        newTwo.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
+                        newTwo.set("baseunit", d.getDynamicObject("nckd_unit"));
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? d.getString("nckd_remark") :
                                 d.getString("nckd_remark") + pomMftorder.getString("remark"));
                     }
                 }
-                SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
+                OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (!result.isSuccess()){
+                    this.getView().showMessage(result.getMessage());
+                    return;
+                }
+                //SaveServiceHelper.save(new DynamicObject[]{pomMftorder});
                 this.getModel().setValue("nckd_pom", number, i);
                 this.getView().updateView();
             }
