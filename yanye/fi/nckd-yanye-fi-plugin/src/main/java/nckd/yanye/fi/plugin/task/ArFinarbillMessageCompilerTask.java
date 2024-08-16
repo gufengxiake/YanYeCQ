@@ -18,16 +18,21 @@ public class ArFinarbillMessageCompilerTask implements IEarlyWarnMessageCompiler
     public String getSingleMessage(String s, List<String> list, DynamicObject dynamicObject, EarlyWarnContext earlyWarnContext) {
         dynamicObject = BusinessDataServiceHelper.loadSingle(dynamicObject.getPkValue(),"ar_finarbill");
         DynamicObjectCollection dynamicObjectCollection = dynamicObject.getDynamicObjectCollection("planentity");
-
-        BigDecimal total = dynamicObjectCollection.stream()
-                .filter(dynamic->dateFormat(dynamic.getDate("planduedate")).equals(dateFormat(new Date())))
-                .map(t->t.getBigDecimal("unplansettleamt")).reduce(BigDecimal.ZERO,BigDecimal::add)
-                .setScale(2,RoundingMode.HALF_UP);
+        String detailStr = "";
+        BigDecimal total = BigDecimal.ZERO;
+        for (DynamicObject dynamic : dynamicObjectCollection){
+            if (dateFormat(dynamic.getDate("planduedate")).equals(dateFormat(new Date()))){
+                total = total.add(dynamic.getBigDecimal("unplansettleamt"));
+                detailStr += dateFormatByDate(dynamic.getDate("planduedate"))+"未结算金额："+dynamic.getBigDecimal("unplansettleamt").setScale(2, RoundingMode.HALF_UP)+"。";
+            }
+        }
         Map<String, String> map = new HashMap<>();
         for (String field : list) {
             String value = "";
             if ("totalunsettleamount".equals(field)){
-                value = total.toString();
+                value = total.setScale(2, RoundingMode.HALF_UP).toString();
+            }else if ("detail".equals(field)){
+                value = detailStr;
             }else {
                 String[] arr = StringUtil.split(field, ".");
                 Object objValue = getValue(dynamicObject, arr);
@@ -56,6 +61,10 @@ public class ArFinarbillMessageCompilerTask implements IEarlyWarnMessageCompiler
 
     private String dateFormat(Date date){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
+        return sdf.format(date);
+    }
+    private String dateFormatByDate(Date date){
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日");
         return sdf.format(date);
     }
 }
