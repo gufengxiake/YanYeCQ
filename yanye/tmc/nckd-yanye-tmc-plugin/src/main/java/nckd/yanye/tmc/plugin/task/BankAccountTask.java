@@ -58,15 +58,15 @@ public class BankAccountTask  implements IEventServicePlugin {
                     // 对方户名查询出客户信息
                     logger.info("对方户名：{}", oppunit);
                     QFilter qFilter = new QFilter("name", QCP.equals, oppunit);
-                    DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer", "name,salerid,creator,billno",new QFilter[]{qFilter});
+                    DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer", "name,salerid",new QFilter[]{qFilter});
                     if(ObjectUtils.isNotEmpty(customer)){
-                        logger.info("交易明细信息：{}", customer);
+                        logger.info("交易明细信息：{}", transdetail);
                         // 查询需要发送通知的业务人员
                         DynamicObject salerid = customer.getDynamicObject("salerid");
                         logger.info("业务人员信息：{}", salerid);
                         if(ObjectUtils.isNotEmpty(salerid)){
                             // 发送通知
-                            sendMessageChannel(salerid,customer);
+                            sendMessageChannel(salerid,transdetail);
                         }
                     }
                 }
@@ -85,7 +85,7 @@ public class BankAccountTask  implements IEventServicePlugin {
         ILocaleString title =  new LocaleString();
         title.setLocaleValue_zh_CN("您好，您有一条银行流水信息，请注意查收。");
         ILocaleString content = new LocaleString();
-        content.setLocaleValue_zh_CN( "收到银行推送流水通知，请尽快查看和处理。"+"交易明细编号："+customer.getString("billno"));
+        content.setLocaleValue_zh_CN( "收到银行推送流水通知，请尽快查看和处理。");
 
         List<Long> userids = new ArrayList<Long>();
         userids.add(salerid.getLong("id"));
