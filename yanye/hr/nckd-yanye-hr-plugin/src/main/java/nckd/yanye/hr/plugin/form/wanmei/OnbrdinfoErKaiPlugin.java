@@ -6,11 +6,16 @@ import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.DecimalProp;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.*;
+import kd.bos.form.operate.AbstractOperate;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.user.UserServiceHelper;
+import kd.hr.hbp.common.util.HRStringUtils;
+import kd.hr.hom.common.constant.OnbrdPersonFieldConstants;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -27,6 +32,8 @@ import java.util.EventObject;
  * author:chengchaohua
  */
 public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
+
+    private static final Log LOGGER = LogFactory.getLog(OnbrdinfoErKaiPlugin.class);
 
     @Override
     public void beforeBindData(EventObject e) {
@@ -79,6 +86,16 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
             // 锁定
             this.getView().setEnable(false, "nckd_perprobationtimedk");
         }
+
+        // 是否有试用期 isprobation
+        Boolean isprobation = (Boolean)model.getValue("isprobation");
+        if (!isprobation) {
+            // 无试用期，锁定
+            this.getView().setEnable(false, "nckd_hetongshiyong"); // 合同约定试用期时长
+            this.getView().setEnable(false, "nckd_perprobationtime"); // 合同约定试用期时长 单位
+            this.getModel().setValue("nckd_hetongshiyong", OnbrdPersonFieldConstants.PROBATIONTIME_VALUE_ZERO); // 合同约定试用期时长
+            this.getModel().setValue("nckd_perprobationtime", OnbrdPersonFieldConstants.PERPROBATIONTIME_VALUE_FORE); // 合同约定试用期时长 单位：-
+        }
     }
 
     // 新增时
@@ -102,6 +119,18 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
         BasedataEdit apiaddressProperty2 = (BasedataEdit)this.getControl("onbrdtcitybak");
         apiaddressProperty2.setMustInput(true);
 
+    }
+
+    // 点击按钮操作前
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        AbstractOperate operate = (AbstractOperate)args.getSource();
+        String opKey = operate.getOperateKey();
+        LOGGER.info("onbrdinfo opkey=={}", opKey);
+        if (HRStringUtils.equals("save", opKey)) {
+
+        }
     }
 
     @Override
@@ -132,7 +161,7 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
                 DecimalProp prop = (DecimalProp)this.getModel().getDataEntityType().getProperty("nckd_shixidikou");
                 prop.setMustInput(true);
                 // 解锁
-                this.getView().setEnable(true, "nckd_shixidikou");
+                this.getView().setEnable(true, "nckd_shixidikou"); // 实习期时长（可抵扣试用期）
 
                 // 前端属性设置
                 ComboEdit nckd_perprobationtimedkProperty = (ComboEdit) this.getControl("nckd_perprobationtimedk");
@@ -141,10 +170,10 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
                 ComboProp prop2 = (ComboProp)this.getModel().getDataEntityType().getProperty("nckd_perprobationtimedk");
                 prop2.setMustInput(true);
                 // 解锁
-                this.getView().setEnable(true, "nckd_perprobationtimedk");
+                this.getView().setEnable(true, "nckd_perprobationtimedk"); // 实习期时长（可抵扣试用期)单位
 
             } else {
-                // 1.2）如果无实习期，实习期时长（可抵扣试用期）nckd_shixidikou 和单位 nckd_perprobationtimedk 设置为必录和可编辑
+                // 1.2）如果无实习期，实习期时长（可抵扣试用期）nckd_shixidikou 和单位 nckd_perprobationtimedk 设置为非必录和不可编辑
                 // 前端属性设置
                 DecimalEdit nckd_shixidikouProperty = (DecimalEdit) this.getControl("nckd_shixidikou");
                 nckd_shixidikouProperty.setMustInput(false);
@@ -152,7 +181,7 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
                 DecimalProp prop = (DecimalProp)this.getModel().getDataEntityType().getProperty("nckd_shixidikou");
                 prop.setMustInput(false);
                 // 锁定
-                this.getView().setEnable(false, "nckd_shixidikou");
+                this.getView().setEnable(false, "nckd_shixidikou"); // 实习期时长（可抵扣试用期）
 
                 // 前端属性设置
                 ComboEdit nckd_perprobationtimedkProperty = (ComboEdit) this.getControl("nckd_perprobationtimedk");
@@ -161,7 +190,7 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
                 ComboProp prop2 = (ComboProp)this.getModel().getDataEntityType().getProperty("nckd_perprobationtimedk");
                 prop2.setMustInput(false);
                 // 锁定
-                this.getView().setEnable(false, "nckd_perprobationtimedk");
+                this.getView().setEnable(false, "nckd_perprobationtimedk"); // 实习期时长（可抵扣试用期)单位
 
                 // 1.3)关闭了‘实习期’，对“实习期时长（可抵扣试用期）”nckd_shixidikou值设置为值为0
                 model.setValue("nckd_shixidikou",0);
@@ -250,6 +279,26 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
             }
         }
 
+        // 5) 是否有试用期 isprobation 值有变化时，开关类型
+        if(StringUtils.equals("isprobation", fieldKey)) {
+            Boolean isprobation = (Boolean)model.getValue("isprobation");
+            if (!isprobation) {
+                // 无试用期
+                // 1）锁定
+                this.getView().setEnable(false, "nckd_hetongshiyong"); // 合同约定试用期时长
+                this.getView().setEnable(false, "nckd_perprobationtime"); // 合同约定试用期时长 单位
+                this.getModel().setValue("nckd_hetongshiyong", OnbrdPersonFieldConstants.PROBATIONTIME_VALUE_ZERO); // 合同约定试用期时长
+                this.getModel().setValue("nckd_perprobationtime", OnbrdPersonFieldConstants.PERPROBATIONTIME_VALUE_FORE); // 合同约定试用期时长 单位：-
+            } else {
+                // 1）解锁
+                this.getView().setEnable(true, "nckd_hetongshiyong"); // 合同约定试用期时长
+                this.getView().setEnable(true, "nckd_perprobationtime"); // 合同约定试用期时长 单位
+                this.getModel().setValue("nckd_perprobationtime", OnbrdPersonFieldConstants.PERPROBATIONTIME_VALUE_ONE); // 合同约定试用期时长 单位:月
+
+            }
+
+        }
+
     }
 
     // 重新计算‘实习期抵扣后试用期时长’值和单位（选择：没有实习期）
@@ -282,24 +331,30 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
             model.setValue("probationtime",jisuan);
             model.setValue("perprobationtime",model.getValue("nckd_perprobationtime")); // 实习期抵扣后试用期时长，单位
         } else {
-            // 合同约定试用期时长 和 实习期时长（可抵扣试用期） 单位不一致，统一按天来计算
-            // 1）入职日期 + 合同约定试用期时长 得到一个新日期A
-            int temp1 = 0;
-            if (model.getValue("nckd_hetongshiyong") != null) {
-                temp1 = (int)model.getValue("nckd_hetongshiyong");
+            String nckd_perprobationtimedk = (String) model.getValue("nckd_perprobationtime");
+            if ("4".equals(nckd_perprobationtimedk)) {
+                // 合同约定试用期时长,无单位,其它值不做处理
+
+            } else {
+                // 合同约定试用期时长 和 实习期时长（可抵扣试用期） 单位不一致，统一按天来计算(重要)
+                // 1）入职日期 + 合同约定试用期时长 得到一个新日期A
+                int temp1 = 0;
+                if (model.getValue("nckd_hetongshiyong") != null) {
+                    temp1 = (int) model.getValue("nckd_hetongshiyong");
+                }
+                LocalDate localDateA = newDateAdd(effectdate, (String) model.getValue("nckd_perprobationtime"), temp1); // nckd_perprobationtime 合同约定试用期时长单位
+                // 2)新日期A - 实习期时长（可抵扣试用期）,得到一个新日期B
+                int temp2 = 0;
+                if (model.getValue("nckd_shixidikou") != null) {
+                    temp2 = (int) model.getValue("nckd_shixidikou");
+                }
+                LocalDate localDateB = newDateJian(localDateA, nckd_perprobationtimedk, temp2);
+                // 3) 新日期B - 入职日期 = 相差天数
+                long daysBetween = ChronoUnit.DAYS.between(dateToLocalDate(effectdate), localDateB);
+                // 4) 给‘实习期抵扣后试用期时长’赋值
+                model.setValue("probationtime", (int) daysBetween); // 实习期抵扣后试用期时长
+                model.setValue("perprobationtime", "3"); // 实习期抵扣后试用期时长，单位设置为：天
             }
-            LocalDate localDateA = newDateAdd(effectdate, (String) model.getValue("nckd_perprobationtime"), temp1);
-            // 2)新日期A - 实习期时长（可抵扣试用期）,得到一个新日期B
-            int temp2 = 0;
-            if (model.getValue("nckd_shixidikou") != null) {
-                temp2 = (int)model.getValue("nckd_shixidikou");
-            }
-            LocalDate localDateB = newDateJian(localDateA, (String) model.getValue("nckd_perprobationtimedk"), temp2);
-            // 3) 新日期B - 入职日期 = 相差天数
-            long daysBetween = ChronoUnit.DAYS.between(dateToLocalDate(effectdate), localDateB);
-            // 4) 给‘实习期抵扣后试用期时长’赋值
-            model.setValue("probationtime",(int)daysBetween); // 实习期抵扣后试用期时长
-            model.setValue("perprobationtime","3"); // 实习期抵扣后试用期时长，单位设置为：天
         }
     }
 
