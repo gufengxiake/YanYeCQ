@@ -8,14 +8,14 @@ import java.util.EventObject;
 import java.util.Map;
 
 /**
- * HR员工自助移动端-奖励信息-弹框
- * 移动动态表单标识：nckd_hspm_perrprecord_mdg
+ * HR员工自助移动端-年度考核-弹框
+ * 移动动态表单标识：nckd_hspm_yearkaohe_mdg
  * author:chengchaohua
  * date:2024-08-17
  */
-public class PerrprecordMobEditPlugin extends AbstractMobileFormDrawEdit {
+public class YearkaoheMobEditPlugin extends AbstractMobileFormDrawEdit {
 
-    public PerrprecordMobEditPlugin() {}
+    public YearkaoheMobEditPlugin() {}
 
     public void beforeBindData(EventObject eventObject) {
         super.beforeBindData(eventObject);
@@ -31,7 +31,7 @@ public class PerrprecordMobEditPlugin extends AbstractMobileFormDrawEdit {
             this.getView().setStatus(OperationStatus.VIEW);
         }
 
-        this.setValueFromDb(this.getView().getFormShowParameter(), "hrpi_perrprecord", (String)null);
+        this.setValueFromDb(this.getView().getFormShowParameter(), "nckd_hrpi_yearkaohe", (String)null);
         this.getModel().setDataChanged(false);
     }
 
@@ -47,9 +47,9 @@ public class PerrprecordMobEditPlugin extends AbstractMobileFormDrawEdit {
             Long pkid = Long.parseLong(customParam == null ? "0" : customParam);
             Map<String, Object> resultMap = null;
             if (pkid != null && pkid != 0L) {
-                resultMap = this.updateAttachData("hrpi_perrprecord", this.getView(), false, (String)null);
+                resultMap = this.updateAttachData("nckd_hrpi_yearkaohe", this.getView(), false, (String)null);
             } else {
-                resultMap = this.addAttachData("0", "hrpi_perrprecord", this.getView(), this.getModel().getDataEntity(), false);
+                resultMap = this.addAttachData("0", "nckd_hrpi_yearkaohe", this.getView(), this.getModel().getDataEntity(), false);
             }
 
             this.closeView(this.getView(), resultMap, this.getView().getParentView());

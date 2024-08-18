@@ -5,6 +5,7 @@ import kd.sdk.hr.hspm.formplugin.mobile.file.base.AbstractMobCardEdit;
 
 /**
  * HR员工自助移动端-奖励信息-列表
+ * 移动动态表单标识：nckd_hspm_perrprecord_mdv
  * author:chengchaohua
  * date:2024-08-17
  */
