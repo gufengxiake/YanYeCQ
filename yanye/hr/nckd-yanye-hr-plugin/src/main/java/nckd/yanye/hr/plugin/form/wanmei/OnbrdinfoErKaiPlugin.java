@@ -129,7 +129,7 @@ public class OnbrdinfoErKaiPlugin  extends AbstractBillPlugIn {
         String opKey = operate.getOperateKey();
         LOGGER.info("onbrdinfo opkey=={}", opKey);
         if (HRStringUtils.equals("save", opKey)) {
-
+            // 暂无业务处理，保留框架
         }
     }
 
