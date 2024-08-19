@@ -256,7 +256,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             DynamicObjectCollection treeentryentity = pomMftorder.getDynamicObjectCollection("treeentryentity");//拿到生产工单树形单据体
 
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(pomMftorder.getDataEntityType().getName(), pomMftorder, null);
-            String number = CodeRuleServiceHelper.getNumber(codeRule, pomMftorder);
+            String number = CodeRuleServiceHelper.readNumber(codeRule, pomMftorder);
 
             DynamicObject pmf = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("number", QCP.equals, "pom_mftorder_BT_S")});
             pomMftorder.set("billno", number);
@@ -342,7 +342,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             DynamicObject pomMftorder_a = BusinessDataServiceHelper.newDynamicObject("pom_mftorder");
             DynamicObjectCollection treeentryentity_a = pomMftorder_a.getDynamicObjectCollection("treeentryentity");
             CodeRuleInfo codeRule_a = CodeRuleServiceHelper.getCodeRule(pomMftorder_a.getDataEntityType().getName(), pomMftorder_a, null);
-            String number_a = CodeRuleServiceHelper.getNumber(codeRule_a, pomMftorder_a);
+            String number_a = CodeRuleServiceHelper.readNumber(codeRule_a, pomMftorder_a);
 
             pomMftorder_a.set("billno", number_a);
             pomMftorder_a.set("org", dataEntity.getDynamicObject("org"));
@@ -411,7 +411,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             if (!d.get("nckd_producttype").equals("C")){
                 continue;
             }
-            deptIdList.add(d.getDynamicObject("nckd_producedept").getPkValue().toString()+d.getDynamicObject("material").getPkValue().toString());
+            DynamicObject nckdBomid = d.getDynamicObject("nckd_bomid");
+            nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
+            DynamicObjectCollection entry = nckdBomid.getDynamicObjectCollection("entry");
+            deptIdList.add(d.getDynamicObject("nckd_producedept").getPkValue().toString()+entry.get(0).getDynamicObject("entrymaterial").getPkValue().toString());
         }
         long count = deptIdList.stream().distinct().count();
         if (deptIdList.size() == count){
@@ -510,7 +513,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             DynamicObjectCollection treeentryentity = pomMftorder.getDynamicObjectCollection("treeentryentity");//拿到生产工单树形单据体
 
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(pomMftorder.getDataEntityType().getName(), pomMftorder, null);
-            String number = CodeRuleServiceHelper.getNumber(codeRule, pomMftorder);
+            String number = CodeRuleServiceHelper.readNumber(codeRule, pomMftorder);
             DynamicObject pmf = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("number", QCP.equals, "pom_mftorder_BT_S")});
             pomMftorder.set("billno", number);
             pomMftorder.set("org", dataEntity.getDynamicObject("org"));
@@ -657,7 +660,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 DynamicObject pomMftorder = BusinessDataServiceHelper.newDynamicObject("pom_mftorder");
                 DynamicObjectCollection treeentryentity = pomMftorder.getDynamicObjectCollection("treeentryentity");//拿到生产工单树形单据体
                 CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(pomMftorder.getDataEntityType().getName(), pomMftorder, null);
-                String number = CodeRuleServiceHelper.getNumber(codeRule, pomMftorder);
+                String number = CodeRuleServiceHelper.readNumber(codeRule, pomMftorder);
                 DynamicObject pmf = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("number", QCP.equals, "pom_mftorder_BT_S")});
                 pomMftorder.set("billno", number);
                 pomMftorder.set("org", dataEntity.getDynamicObject("org"));
@@ -832,7 +835,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 DynamicObjectCollection copentrys = mftbom.getDynamicObjectCollection("copentry");
                 if (copentrys.size() <= 0) {
                     if (entrys.size() > 1) {
-                        for (int i = 0; i < entrys.size(); i++) {
+                        for (int i = entrys.size()-1; i > -1; i--) {
                             if (entry.getPkValue().equals(entrys.get(i).get("pid"))) {
                                 this.getModel().deleteEntryRow("pom_planning_entry", i);
                             }
