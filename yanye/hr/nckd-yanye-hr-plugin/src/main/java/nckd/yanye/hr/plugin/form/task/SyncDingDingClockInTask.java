@@ -21,8 +21,10 @@ import java.util.Map;
 
 /**
  * 钉钉打卡同步任务
+ * 调度计划编码：SyncDingDingClockInTask
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class SyncDingDingClockInTask extends AbstractTask {
     private static final Log log = LogFactory.getLog(SyncDingDingClockInTask.class);

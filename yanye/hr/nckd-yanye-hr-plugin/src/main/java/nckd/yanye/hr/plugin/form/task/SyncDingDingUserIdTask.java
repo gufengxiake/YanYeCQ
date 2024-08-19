@@ -16,8 +16,10 @@ import java.util.Map;
 
 /**
  * 同步钉钉人员id信息
+ * 调度计划编码：SyncDingDingUserIdTask
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class SyncDingDingUserIdTask extends AbstractTask {
     @Override

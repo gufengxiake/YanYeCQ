@@ -20,9 +20,11 @@ import java.util.Map;
 
 
 /**
- * 同步招采平台供应商id-定时任务
+ * 供应商同步招采平台供应商id-定时任务
+ * 调度计划编码：SynchronizeSuppliersTask
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class SynchronizeSuppliersTask extends AbstractTask {
     @Override

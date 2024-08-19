@@ -13,6 +13,14 @@ import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.HashMap;
 
+
+/**
+ * 招采公告作废弹窗-表单插件
+ * 单据标识：nckd_zccancelorder
+ *
+ * @author liuxiao
+ * @since 2024-08-19
+ */
 public class ZcCancelOrderFormPlugin extends AbstractFormPlugin {
 
     @Override

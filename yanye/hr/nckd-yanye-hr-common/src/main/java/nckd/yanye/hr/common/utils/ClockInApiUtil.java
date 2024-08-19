@@ -65,7 +65,7 @@ public class ClockInApiUtil {
                 + "?accessToken=" + getYunZhiJiaAccessToken();
 
         // 查询时间
-        LocalDate yesterday = LocalDate.now().minusDays(1);
+        LocalDate yesterday = LocalDate.now().minusDays(2);
         LocalDate today = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String yesterdayStr = yesterday.format(formatter);
