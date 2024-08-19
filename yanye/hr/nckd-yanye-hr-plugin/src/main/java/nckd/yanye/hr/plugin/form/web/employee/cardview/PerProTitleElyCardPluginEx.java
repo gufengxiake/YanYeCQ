@@ -9,7 +9,7 @@ import kd.sdk.hr.hspm.common.dto.FieldDTO;
 import kd.sdk.hr.hspm.formplugin.web.file.employee.base.BigElyCardEdit;
 
 /**
- * HR员工自助移动端-职称及技能信息-列表
+ * HR员工自助PC端-职称及技能信息-列表
  * 移动动态表单标识：nckd_hspm_perprotitl_ext5
  * author:chengchaohua
  * date:2024-08-19
