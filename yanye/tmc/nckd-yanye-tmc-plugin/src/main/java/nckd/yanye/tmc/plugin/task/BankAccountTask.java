@@ -61,10 +61,23 @@ public class BankAccountTask  implements IEventServicePlugin {
                         logger.info("交易明细信息：{}", transdetail);
                         // 查询需要发送通知的业务人员
                         DynamicObject salerid = customer.getDynamicObject("salerid");
+
+
                         logger.info("业务人员信息：{}", salerid);
                         if(ObjectUtils.isNotEmpty(salerid)){
                             // 发送通知
-                            sendMessageChannel(salerid,transdetail);
+                            DynamicObject user = loadSingle(salerid.get("id"));
+                            if(ObjectUtils.isNotEmpty(user)){
+                                // 获取用户云之家id
+                                Long useropenid = user.getLong("useropenid");
+                                logger.info("用户云之家id：{}", useropenid);
+                                if(useropenid!=null){
+                                    sendMessageChannel(user,transdetail);
+                                }else{
+                                    logger.info("用户云之家id为空，不发送通知");
+                                }
+                            }
+
                         }
                     }
                 }
@@ -84,10 +97,13 @@ public class BankAccountTask  implements IEventServicePlugin {
         messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。");
 
         List<Long> userids = new ArrayList<Long>();
-        userids.add(salerid.getLong("id"));
+        userids.add(salerid.getLong("useropenid"));
         logger.info("设置接收人成功：{}",userids);
-        messageInfo.setSenderId( (Long) customer.getDynamicObject("creator").getPkValue());
-        logger.info("设置发送人成功：{}",(Long) customer.getDynamicObject("creator").getPkValue());
+        // 发送人信息
+        DynamicObject creator = loadSingle(customer.getDynamicObject("creator").getPkValue());
+        messageInfo.setSenderId(creator.getLong("useropenid"));
+//        messageInfo.setSenderId( (Long) customer.getDynamicObject("creator").getPkValue());
+        logger.info("设置发送人成功：{}",creator.getLong("useropenid"));
 //        messageInfo.setToUser(salerid.getString("id"));
         messageInfo.setType(MessageInfo.TYPE_MESSAGE);
         messageInfo.setNotifyType("yunzhijia");
@@ -104,6 +120,12 @@ public class BankAccountTask  implements IEventServicePlugin {
         logger.info("发送通知成功：{}",l);
 
 
+    }
+
+    // 获取用户信息
+    static DynamicObject loadSingle(Object userId) {
+        DynamicObject useInfo = BusinessDataServiceHelper.loadSingle(userId, "bos_user");
+        return useInfo;
     }
 
 
