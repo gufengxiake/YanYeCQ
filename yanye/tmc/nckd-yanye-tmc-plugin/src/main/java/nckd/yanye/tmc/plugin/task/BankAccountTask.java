@@ -93,16 +93,15 @@ public class BankAccountTask  implements IEventServicePlugin {
         messageInfo.setNotifyType("yunzhijia");
         messageInfo.setTag("银行流水");
         logger.info("发送信息体messageInfo:{}",messageInfo);
-        MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
-        messageServiceConfig.setServiceKey("yunzhijia");
+//        MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
+//        messageServiceConfig.setServiceKey("yunzhijia");
 
+//        MessageServiceUtil.updateToDoMsgContent(messageServiceConfig,messageInfo);
+//        String contentToReplace = messageInfo.getContent();
+//        messageInfo.setContent(contentToReplace);
 
-
-        MessageServiceUtil.updateToDoMsgContent(messageServiceConfig,messageInfo);
-        String contentToReplace = messageInfo.getContent();
-        messageInfo.setContent(contentToReplace);
-
-        MessageCenterServiceHelper.sendMessage(messageInfo);
+        long l = MessageCenterServiceHelper.sendMessage(messageInfo);
+        logger.info("发送通知成功：{}",l);
 
 
     }
