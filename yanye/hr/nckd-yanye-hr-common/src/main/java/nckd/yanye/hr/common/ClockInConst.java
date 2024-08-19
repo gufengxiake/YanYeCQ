@@ -17,9 +17,9 @@ public class ClockInConst {
     /**
      * 钉钉应用的唯一标识key
      */
-    public static final String DD_APPKEY = "123";
+    public static final String DD_APPKEY = "dingrmfpvm18a2p3cdqv";
     /**
      * 钉钉应用的密钥
      */
-    public static final String DD_APPSECRET = "123";
+    public static final String DD_APPSECRET = "DsLmClLqPsQIqnUA71Ues99u60F6BbHvqg1y7nG6Iyq9pDCRN8ctxJcFRh9Kp5V2";
 }

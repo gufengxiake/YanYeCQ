@@ -29,6 +29,10 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
+        addYunZhiJiaClockIn();
+    }
+
+    public static void addYunZhiJiaClockIn() {
         // 所有人员昨天到今天的打卡流水
         JSONArray yunZhiJiaClockInList = ClockInApiUtil.getYunZhiJiaClockInList();
         // 新增原始卡记录集合
@@ -64,7 +68,7 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             );
             if (load.length == 0) {
                 failedUserMap.put(obj.getString("workNum"), obj.getString("userName"));
-                log.error("未找到该员工工号的考勤档案:" + obj.getString("workNum"));
+                log.error("[云之家打卡记录同步]未找到该员工工号的考勤档案:" + obj.getString("workNum"));
                 continue;
             }
             DynamicObject attfile = load[0];
@@ -108,7 +112,7 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
         }
         Object[] save = SaveServiceHelper.save(signCardList.toArray(new DynamicObject[0]));
         int length = save.length;
-        log.info("新增云之家打卡记录完成，本次新增数量：{}" +
+        log.info("[云之家打卡记录同步]同步完成，本次新增数量：{}" +
                         ";本次新增失败的员工有：{}",
                 length, failedUserMap);
     }
