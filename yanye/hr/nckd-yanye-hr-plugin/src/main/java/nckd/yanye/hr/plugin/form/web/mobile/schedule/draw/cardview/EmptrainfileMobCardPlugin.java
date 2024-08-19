@@ -24,7 +24,7 @@ public class EmptrainfileMobCardPlugin extends AbstractMobCardEdit {
     public void setContentField(FieldDTO contentFields) {
         contentFields.addField("hrpi_emptrainfile.startdate"); // 开始日期
         contentFields.addField("hrpi_emptrainfile.enddate"); // 结束日期
-        contentFields.addField("hrpi_emptrainfile.traintype.name"); // 培训类别
+        contentFields.addField("hrpi_emptrainfile.traintype"); // 培训类别
     }
 
     // 有删除按钮
