@@ -97,6 +97,7 @@ public class SyncDingDingClockInTask extends AbstractTask {
         // 打卡数据新增
         for (Object o : yunZhiJiaClockInList) {
             JSONObject clockInfo = (JSONObject) o;
+            // 此条打卡数据的对应用户id
             String userId = clockInfo.getString("userId");
             DynamicObject user = userMap.get(userId);
 
@@ -105,6 +106,7 @@ public class SyncDingDingClockInTask extends AbstractTask {
                 continue;
             }
 
+            // 该员工是否有对应考勤档案
             DynamicObject attFile = attFileMap.get(user.getString("number"));
             if (attFile == null) {
                 failedUserMap.put(user.getString("number"), user.getString("name"));

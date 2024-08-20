@@ -287,8 +287,10 @@ public class ClockInApiUtil {
         String url = "https://oapi.dingtalk.com/attendance/list?access_token=" + ClockInApiUtil.getDingDingAccessToken();
 
         // 查询时间
-        LocalDate yesterday = LocalDate.now().minusDays(2);
         LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(2);
+//        LocalDate today = LocalDate.now();
+
         // 使用LocalDateTime代替LocalDate
         LocalDateTime yesterdayDateTime = yesterday.atStartOfDay();
         LocalDateTime todayDateTime = today.atStartOfDay();
