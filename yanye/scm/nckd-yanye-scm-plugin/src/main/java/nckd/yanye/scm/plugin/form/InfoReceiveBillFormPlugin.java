@@ -28,8 +28,10 @@ import java.util.Set;
 
 /**
  * 信息接收单-表单插件
+ * 单据标识：nckd_pm_inforeceivebill
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**

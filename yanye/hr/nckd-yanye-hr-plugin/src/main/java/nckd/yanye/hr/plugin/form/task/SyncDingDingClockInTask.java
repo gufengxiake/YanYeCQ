@@ -16,18 +16,25 @@ import nckd.yanye.hr.common.utils.ClockInApiUtil;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 
 /**
  * 钉钉打卡同步任务
+ * 调度计划编码：SyncDingDingClockInTask
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class SyncDingDingClockInTask extends AbstractTask {
     private static final Log log = LogFactory.getLog(SyncDingDingClockInTask.class);
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
+        addDingDingClockIn();
+    }
+
+    public static void addDingDingClockIn() {
         // 所有人员昨天到今天的打卡流水
         JSONArray yunZhiJiaClockInList = ClockInApiUtil.getDingDingClockInList();
         // 新增原始卡记录集合
@@ -35,17 +42,79 @@ public class SyncDingDingClockInTask extends AbstractTask {
         // 新增失败的员工
         HashMap<String, String> failedUserMap = new HashMap<>();
 
+        // 打卡设备
+        DynamicObject device = BusinessDataServiceHelper.load(
+                "wtpm_punchcardequip",
+                "id,name",
+                new QFilter[]{new QFilter("name", QCP.equals, "默认钉钉打卡")}
+        )[0];
+        // 打卡来源
+        DynamicObject source = BusinessDataServiceHelper.load(
+                "wtbd_signsource",
+                "id,name",
+                new QFilter[]{new QFilter("name", QCP.equals, "钉钉")}
+        )[0];
+        // 时区
+        DynamicObject timezone = BusinessDataServiceHelper.load(
+                "inte_timezone",
+                "id,name,number",
+                new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
+        )[0];
+        // 预先加载所有钉钉用户信息
+        DynamicObject[] allUsers = BusinessDataServiceHelper.load(
+                "bos_user",
+                "id,number,nckd_dingdingid",
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
+        );
+        HashMap<String, DynamicObject> userMap = new HashMap<>();
+        for (DynamicObject user : allUsers) {
+            userMap.put(user.getString("nckd_dingdingid"), user);
+        }
+
+        // 预先加载所有考勤档案信息
+        DynamicObject[] allAttFiles = BusinessDataServiceHelper.load(
+                "wtp_attfilebase",
+                "id,personnum,org",
+                null
+        );
+        HashMap<String, DynamicObject> attFileMap = new HashMap<>();
+        for (DynamicObject attFile : allAttFiles) {
+            attFileMap.put(attFile.getString("personnum"), attFile);
+        }
+
+        // 预先加载所有原始卡记录信息
+        DynamicObject[] signcards = BusinessDataServiceHelper.load(
+                "wtpd_signcard",
+                "attcard",
+                null
+        );
+        HashSet<String> signCardSet = new HashSet<>();
+        for (DynamicObject signcard : signcards) {
+            signCardSet.add(signcard.getString("attcard"));
+        }
+
+        // 打卡数据新增
         for (Object o : yunZhiJiaClockInList) {
             JSONObject clockInfo = (JSONObject) o;
+            // 此条打卡数据的对应用户id
+            String userId = clockInfo.getString("userId");
+            DynamicObject user = userMap.get(userId);
+
+            if (user == null) {
+                log.error("未找到对应的用户信息: " + userId);
+                continue;
+            }
+
+            // 该员工是否有对应考勤档案
+            DynamicObject attFile = attFileMap.get(user.getString("number"));
+            if (attFile == null) {
+                failedUserMap.put(user.getString("number"), user.getString("name"));
+                log.error("未找到该员工工号的考勤档案: " + user.getString("name"));
+                continue;
+            }
 
             // 查原始卡记录，该条打卡记录是否存在
-            DynamicObject[] users = BusinessDataServiceHelper.load(
-                    "wtpd_signcard",
-                    "attcard",
-                    new QFilter[]{new QFilter("attcard", QCP.equals, "DD" + clockInfo.getString("id"))}
-            );
-
-            if (users.length != 0) {
+            if (signCardSet.contains("DD" + clockInfo.getString("id"))) {
                 continue;
             }
 
@@ -55,59 +124,26 @@ public class SyncDingDingClockInTask extends AbstractTask {
             // 考勤卡号
             signCard.set("attcard", "DD" + clockInfo.getString("id"));
 
-            // 根据钉钉id查询工号
-            DynamicObject user = BusinessDataServiceHelper.load(
-                    "bos_org",
-                    "id,number",
-                    new QFilter[]{new QFilter("nckd_dingdingid", QCP.equals, clockInfo.getString("userId"))}
-            )[0];
-
-
             // 考勤档案
-            DynamicObject[] load = BusinessDataServiceHelper.load(
-                    "wtp_attfilebase",
-                    "id,personnum,org,affiliateadminorg,adminorg",
-                    new QFilter[]{new QFilter("personnum", QCP.equals, user.getString("number"))}
-            );
-
-            if (load.length == 0) {
-                failedUserMap.put(user.getString("number"), user.getString("name"));
-                log.error("未找到该员工工号的考勤档案:" + user.getString("name"));
-                continue;
-            }
-            DynamicObject attfile = load[0];
-            signCard.set("attfilebo", attfile);
+            signCard.set("attfilebo", attFileMap.get(user.getString("number")));
 
             // 考勤档案版本
-            signCard.set("attfile", attfile);
+            signCard.set("attfile", attFileMap.get(user.getString("number")));
 
             // 考勤管理组织
-            signCard.set("org", attfile.get("org"));
+            signCard.set("org", attFileMap.get(user.getString("number")).get("org"));
 
             // 打卡时间
             signCard.set("signpoint", clockInfo.getString("userCheckTime"));
 
             // 打卡来源
-            signCard.set("source", BusinessDataServiceHelper.load(
-                    "wtbd_signsource",
-                    "id,name",
-                    new QFilter[]{new QFilter("name", QCP.equals, "钉钉")}
-            )[0]);
+            signCard.set("source", source);
 
             // 打卡设备
-            signCard.set("device", BusinessDataServiceHelper.load(
-                    "wtpm_punchcardequip",
-                    "id,name",
-                    new QFilter[]{new QFilter("name", QCP.equals, "默认钉钉打卡")}
-            )[0]);
+            signCard.set("device", device);
 
             // 时区
-            signCard.set("timezone", BusinessDataServiceHelper.load(
-                    "inte_timezone",
-                    "id,name,number",
-                    new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
-            )[0]);
-
+            signCard.set("timezone", timezone);
 
             // 状态-有效
 //            signCard.set("status", "1");
@@ -116,7 +152,7 @@ public class SyncDingDingClockInTask extends AbstractTask {
         }
         Object[] save = SaveServiceHelper.save(signCardList.toArray(new DynamicObject[0]));
         int length = save.length;
-        log.info("新增钉钉打卡记录完成，本次新增数量：{}" +
+        log.info("[钉钉打卡记录同步]同步完成，本次新增数量：{}" +
                         ";本次新增失败的员工有：{}",
                 length, failedUserMap);
     }

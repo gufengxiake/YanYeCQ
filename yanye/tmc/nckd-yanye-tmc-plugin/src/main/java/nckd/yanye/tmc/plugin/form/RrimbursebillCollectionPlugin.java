@@ -5,6 +5,7 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -65,16 +66,26 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
 
             DynamicObject supplier = name.equals("supplier")?newValue: dynamicObject.getDynamicObject("supplier");
 
-            if(StringUtils.isNotEmpty(paymode)  && (paymode.equals(BANK_ACCEP) || paymode.equals(TRADE_ACCEP))){
+            if(StringUtils.isNotEmpty(payertype) && (payertype.equals("bd_supplier")) ){
 
-                if(StringUtils.isNotEmpty(payertype) && (payertype.equals("bd_supplier"))){
-                    if(ObjectUtils.isNotEmpty(supplier)){
-                        Object masterid = supplier.get("masterid");
+                String eAssacct = name.equals("payeraccount") ? payeraccountStr:dynamicObject.getString("payeraccount");
+
+                if(ObjectUtils.isNotEmpty(supplier)){
+                    Object masterid = supplier.get("masterid");
+                    // 内部供应商获取
+                    DynamicObject innerSupplier = isInnerSupplier(masterid);
+                    if(innerSupplier != null){
+                        dynamicObject.set("payeraccount", innerSupplier.getDynamicObject("account").getString("number"));
+//                        dynamicObject.set("nckd_e_assacct", innerSupplier.getDynamicObject("account").getString("number"));
+                        dynamicObject.set("payerbank", innerSupplier.getDynamicObject("bank"));
+                        this.getView().updateView();
+                        return;
+                    }
+                    if(StringUtils.isNotEmpty(paymode)  && (paymode.equals(BANK_ACCEP) || paymode.equals(TRADE_ACCEP))){
+
                         DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
                         // 把供应商承兑银行信息自动带出到往来银行字段
                         DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
-
-                        String eAssacct = name.equals("payeraccount") ? payeraccountStr:dynamicObject.getString("payeraccount");
 
                         if (ObjectUtils.isNotEmpty(entryBank)) {
                             for (DynamicObject object : entryBank) {
@@ -91,6 +102,24 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
                 }
             }
         }
+    }
+
+    // 获取内部供应商信息
+    public DynamicObject isInnerSupplier(Object supplierid) {
+        if (ObjectUtils.isNotEmpty(supplierid)) {
+            // 查询是否存在内部公司
+            DynamicObject internalCompany = BusinessDataServiceHelper.loadSingle(supplierid, "bd_supplier").getDynamicObject("internal_company");
+            if (ObjectUtils.isNotEmpty(internalCompany)) {
+                // 获取票据账号开户行维护信息
+                QFilter qFilter = new QFilter("company.masterid", "=", internalCompany.getPkValue());
+                DynamicObject load = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","bank,openorg,account,billbank,bankname", new QFilter[]{qFilter} );
+                if (ObjectUtils.isNotEmpty(load)) {
+                    // 存在票据账号开户行维护信息
+                    return load;
+                }
+            }
+        }
+        return null;
     }
 
 

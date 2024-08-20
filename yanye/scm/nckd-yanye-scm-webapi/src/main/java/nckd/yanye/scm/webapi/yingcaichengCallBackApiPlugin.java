@@ -30,9 +30,11 @@ import java.math.RoundingMode;
 import java.util.*;
 
 /**
- * 招采平台回调统一消息体
+ * 招采平台回调api
+ * api编码：back/post
  *
  * @author liuxiao
+ * @since 2024/08/19
  */
 @ApiController(value = "yingcaicheng", desc = "招采平台回调")
 @ApiMapping("/back")
@@ -411,26 +413,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         }
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

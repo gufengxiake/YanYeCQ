@@ -16,6 +16,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.hr.common.ClockInConst;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -64,17 +65,17 @@ public class ClockInApiUtil {
                 + "?accessToken=" + getYunZhiJiaAccessToken();
 
         // 查询时间
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime yesterday = today.minusDays(2);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String yesterdayStr = yesterday.format(formatter);
         String todayStr = today.format(formatter);
+        String yesterdayStr = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "useropenid",
-                new QFilter[]{new QFilter("useropenid", QCP.is_notnull, null)}
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
         );
 
         JSONArray usersClockInList = new JSONArray();
@@ -142,7 +143,7 @@ public class ClockInApiUtil {
     /**
      * 钉钉-获取企业下所有员工信息
      *
-     * @return 所有员工id和userid的映射
+     * @return 所有手机号和userid的映射
      */
     public static HashMap<String, String> getDingDingUserList() {
         HashMap<String, String> uerIdMap = new HashMap<>();
@@ -151,7 +152,7 @@ public class ClockInApiUtil {
         for (Integer deptId : deptList) {
             List<JSONObject> departmentUserDetails = getDepartmentUserDetails(deptId, accessToken);
             for (JSONObject departmentUserDetail : departmentUserDetails) {
-                String jobNumber = departmentUserDetail.getString("job_number");
+                String jobNumber = departmentUserDetail.getString("mobile");
                 uerIdMap.put(jobNumber, departmentUserDetail.getString("userid"));
             }
         }
@@ -196,10 +197,10 @@ public class ClockInApiUtil {
      */
     private static JSONObject fetchDepartmentUsers(Integer deptId, String accessToken, int cursor, int size) {
         String url = "https://oapi.dingtalk.com/topapi/v2/user/list";
+        url = url + "?access_token=" + accessToken;
 
         HttpRequest httpRequest = HttpRequest.of(url)
-                .setMethod(Method.POST)
-                .form("access_token", accessToken);
+                .setMethod(Method.POST);
         JSONObject body = new JSONObject()
                 // 分页查询的游标，最开始传0，后续传返回参数中的next_cursor值。
                 .fluentPut("cursor", cursor)
@@ -246,9 +247,8 @@ public class ClockInApiUtil {
     private static void fetchDepartments(Integer deptId, String accessToken, List<Integer> allDepartments) {
         JSONArray subDeptList = getDingDingSubDeptList(deptId, accessToken);
         if (subDeptList != null) {
-            for (int i = 0; i < subDeptList.size(); i++) {
-                JSONObject dept = subDeptList.getJSONObject(i);
-                Integer childDeptId = dept.getInteger("dept_id");
+            for (Object o : subDeptList) {
+                Integer childDeptId = (Integer) o;
                 allDepartments.add(childDeptId);
                 fetchDepartments(childDeptId, accessToken, allDepartments);
             }
@@ -263,18 +263,18 @@ public class ClockInApiUtil {
      * @return
      */
     public static JSONArray getDingDingSubDeptList(Integer deptId, String accessToken) {
-        String url = "https://oapi.dingtalk.com/topapi/v2/department/listsub";
+        String url = "https://oapi.dingtalk.com/topapi/v2/department/listsubid";
+        url = url + "?access_token=" + accessToken;
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.POST);
-        httpRequest.form("access_token", accessToken);
         JSONObject body = new JSONObject()
                 .fluentPut("dept_id", deptId);
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         if ("ok".equals(responseObj.getString("errmsg"))) {
-            return responseObj.getJSONArray("result");
+            return responseObj.getJSONObject("result").getJSONArray("dept_id_list");
         } else {
             throw new KDBizException("获取钉钉子部门ID列表失败!" + responseObj.getString("errmsg"));
         }
@@ -284,41 +284,59 @@ public class ClockInApiUtil {
      * 钉钉-获取打卡结果
      */
     public static JSONArray getDingDingClockInList() {
-        String url = "https://oapi.dingtalk.com/attendance/list";
+        String url = "https://oapi.dingtalk.com/attendance/list?access_token=" + ClockInApiUtil.getDingDingAccessToken();
 
         // 查询时间
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime yesterday = today.minusDays(2);
+
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String yesterdayStr = yesterday.format(formatter);
         String todayStr = today.format(formatter);
+        String yesterdayStr = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "id,name,nckd_dingdingid",
-                new QFilter[]{new QFilter("nckd_dingdingid", QCP.is_notnull, null)}
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
         );
 
         JSONArray usersClockInList = new JSONArray();
 
-        List<String> userIds = new ArrayList<>(50);
+        ArrayList<String> userIds = new ArrayList<>(50);
         for (DynamicObject user : users) {
             userIds.add(user.getString("nckd_dingdingid"));
             if (userIds.size() == 50) {
-                getDingDingClockInlist(url, yesterdayStr, todayStr, usersClockInList);
+                int offset = 0;
+                boolean hasMore = true;
+
+                while (hasMore) {
+                    JSONObject responseObj = getDingDingClockInlist(userIds, offset, url, yesterdayStr, todayStr);
+                    usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
+                    offset = offset + 50;
+                    hasMore = responseObj.getBoolean("hasMore");
+                }
                 userIds.clear();
             }
         }
 
         if (!userIds.isEmpty()) {
-            getDingDingClockInlist(url, yesterdayStr, todayStr, usersClockInList);
+            int offset = 0;
+            boolean hasMore = true;
+
+            while (hasMore) {
+                JSONObject responseObj = getDingDingClockInlist(userIds, offset, url, yesterdayStr, todayStr);
+                usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
+                offset = offset + 50;
+                hasMore = responseObj.getBoolean("hasMore");
+            }
+            userIds.clear();
         }
 
         return usersClockInList;
     }
 
-    private static void getDingDingClockInlist(String url, String yesterdayStr, String todayStr, JSONArray usersClockInList) {
+    private static JSONObject getDingDingClockInlist(ArrayList<String> userIds, Integer offset, String url, String yesterdayStr, String todayStr) {
         JSONObject body = new JSONObject()
                 // 查询考勤打卡记录的起始工作日。
                 // 格式为yyyy-MM-dd HH:mm:ss，HH:mm:ss可以使用00:00:00，将返回此日期从0点到24点的结果。
@@ -327,23 +345,20 @@ public class ClockInApiUtil {
                 // 格式为“yyyy-MM-dd HH:mm:ss”，HH:mm:ss可以使用00:00:00，将返回此日期从0点到24点的结果。
                 .fluentPut("workDateTo", todayStr)
                 // 员工在企业内的userId列表，最大值50。
-                .fluentPut("userIdList", 0)
+                .fluentPut("userIdList", userIds)
                 // 表示获取考勤数据的起始点。
                 // 第一次传0，如果还有多余数据，下次获取传的offset值为之前的offset+limit，0、1、2...依次递增。
-                .fluentPut("offset", 50);
+                .fluentPut("offset", offset)
+                .fluentPut("limit", 50);
 
         HttpRequest httpRequest = HttpRequest.of(url);
-        httpRequest.form("access_token", getDingDingAccessToken());
         httpRequest.setMethod(Method.POST);
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
-            JSONArray result = responseObj.getJSONArray("recordresult");
-            if (result != null) {
-                usersClockInList.addAll(result);
-            }
+            return responseObj;
         } else {
             throw new KDBizException("获取钉钉打卡列表失败!" + responseObj.getString("errmsg"));
         }

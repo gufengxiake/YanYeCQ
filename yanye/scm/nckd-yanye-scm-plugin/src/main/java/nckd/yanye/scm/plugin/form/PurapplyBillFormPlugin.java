@@ -27,8 +27,10 @@ import java.util.Objects;
 
 /**
  * 采购申请单-表单插件
+ * 单据标识：nckd_pm_purapplybill_ext
  *
  * @author liuxiao
+ * @since 2024-08-19
  */
 public class PurapplyBillFormPlugin extends AbstractFormPlugin {
     /**

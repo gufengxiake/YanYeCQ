@@ -91,8 +91,15 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
             DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            DynamicObject[] casPaybillArr1 = filterDraftBill(casPaybillArr, true);
+            // 获取结算号不存在的数据，构建提示数据
+            DynamicObject[] casPaybillArr2 = filterDraftBill(casPaybillArr, false);
+            StringBuffer msg = new StringBuffer();
+            for (DynamicObject dynamicObject : casPaybillArr2) {
+                msg.append("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你所选单据《").append(dynamicObject.getString("billno")).append("》不支持背书").append("\r\n");
+            }
             //获取结算号 settletnumber
-            Set<String> settletnumber = Arrays.stream(casPaybillArr).map(e -> {
+            Set<String> settletnumber = Arrays.stream(casPaybillArr1).map(e -> {
                 DynamicObject draftbill = e.getDynamicObjectCollection("draftbill").get(0);
                 DynamicObject dy = (DynamicObject) draftbill.get(1);
                 return dy.getString("draftbillno");
@@ -110,6 +117,7 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
             List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
             qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
+            this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
             this.getView().showForm(listShowParameter);
         }
     }
@@ -130,5 +138,22 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             }
         }
 
+    }
+
+    // 根据结算单过滤数据
+    private static DynamicObject[] filterDraftBill(DynamicObject[] array,boolean isFilter) {
+        List<DynamicObject> resultList = new ArrayList<>();
+        for (DynamicObject obj : array) {
+            String draftBillNo = obj.getString("settletnumber"); // 根据实际方法调整
+            // 返回不为null
+            if (StringUtils.isNotEmpty(draftBillNo) && isFilter) {
+                resultList.add(obj);
+            }
+            // 返回为null
+            if(StringUtils.isEmpty(draftBillNo) && !isFilter){
+                resultList.add(obj);
+            }
+        }
+        return resultList.toArray(new DynamicObject[]{});
     }
 }

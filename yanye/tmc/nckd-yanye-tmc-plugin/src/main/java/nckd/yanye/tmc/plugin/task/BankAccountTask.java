@@ -64,7 +64,17 @@ public class BankAccountTask  implements IEventServicePlugin {
                         logger.info("业务人员信息：{}", salerid);
                         if(ObjectUtils.isNotEmpty(salerid)){
                             // 发送通知
-                            sendMessageChannel(salerid,transdetail);
+                            DynamicObject user = loadSingle(salerid.getPkValue());
+                            if(ObjectUtils.isNotEmpty(user)){
+                                // 获取用户云之家id
+                                String useropenid = user.getString("useropenid");
+                                logger.info("用户云之家id：{}", useropenid);
+                                if(useropenid!=null){
+                                    sendMessageChannel(user,transdetail);
+                                }else{
+                                    logger.info("用户云之家id为空，不发送通知");
+                                }
+                            }
                         }
                     }
                 }
@@ -84,27 +94,34 @@ public class BankAccountTask  implements IEventServicePlugin {
         messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。");
 
         List<Long> userids = new ArrayList<Long>();
-        userids.add(salerid.getLong("id"));
+        userids.add((Long) salerid.getPkValue());
         logger.info("设置接收人成功：{}",userids);
-        messageInfo.setSenderId( (Long) customer.getDynamicObject("creator").getPkValue());
+        messageInfo.setUserIds(userids);
+        // 发送人信息
+        messageInfo.setSenderId((Long) customer.getDynamicObject("creator").getPkValue());
+//        messageInfo.setSenderId(creator.getLong("useropenid"));
         logger.info("设置发送人成功：{}",(Long) customer.getDynamicObject("creator").getPkValue());
-//        messageInfo.setToUser(salerid.getString("id"));
         messageInfo.setType(MessageInfo.TYPE_MESSAGE);
         messageInfo.setNotifyType("yunzhijia");
         messageInfo.setTag("银行流水");
         logger.info("发送信息体messageInfo:{}",messageInfo);
-        MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
-        messageServiceConfig.setServiceKey("yunzhijia");
+//        MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
+//        messageServiceConfig.setServiceKey("yunzhijia");
+
+//        MessageServiceUtil.updateToDoMsgContent(messageServiceConfig,messageInfo);
+//        String contentToReplace = messageInfo.getContent();
+//        messageInfo.setContent(contentToReplace);
+
+        long l = MessageCenterServiceHelper.sendMessage(messageInfo);
+        logger.info("发送通知成功：{}",l);
 
 
+    }
 
-        MessageServiceUtil.updateToDoMsgContent(messageServiceConfig,messageInfo);
-        String contentToReplace = messageInfo.getContent();
-        messageInfo.setContent(contentToReplace);
-
-        MessageCenterServiceHelper.sendMessage(messageInfo);
-
-
+    // 获取用户信息
+    static DynamicObject loadSingle(Object userId) {
+        DynamicObject useInfo = BusinessDataServiceHelper.loadSingle(userId, "bos_user");
+        return useInfo;
     }
 
 
