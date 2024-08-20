@@ -130,8 +130,8 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormPlugin implements Plugin 
         // 3)
         if(StringUtils.equals("nckd_ispinren", fieldKey)) {
             // 是否公司聘任 值切换
-            Boolean nckd_iszuigao = (Boolean)model.getValue("nckd_ispinren");
-            if(nckd_iszuigao) {
+            Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
+            if(nckd_ispinren) {
                 // 显示：聘任单位
                 this.getView().setVisible(true , "nckd_pinrenorg");
                 BasedataEdit apiaddressPropertyp1 = (BasedataEdit)this.getControl("nckd_pinrenorg");
