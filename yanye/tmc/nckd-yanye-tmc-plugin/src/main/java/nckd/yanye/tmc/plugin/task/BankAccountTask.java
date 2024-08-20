@@ -97,14 +97,13 @@ public class BankAccountTask  implements IEventServicePlugin {
         messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。");
 
         List<Long> userids = new ArrayList<Long>();
-        userids.add(salerid.getLong("useropenid"));
+        userids.add((Long) salerid.getPkValue());
         logger.info("设置接收人成功：{}",userids);
+        messageInfo.setUserIds(userids);
         // 发送人信息
-        DynamicObject creator = loadSingle(customer.getDynamicObject("creator").getPkValue());
-        messageInfo.setSenderId(creator.getLong("useropenid"));
-//        messageInfo.setSenderId( (Long) customer.getDynamicObject("creator").getPkValue());
-        logger.info("设置发送人成功：{}",creator.getLong("useropenid"));
-//        messageInfo.setToUser(salerid.getString("id"));
+        messageInfo.setSenderId((Long) customer.getDynamicObject("creator").getPkValue());
+//        messageInfo.setSenderId(creator.getLong("useropenid"));
+        logger.info("设置发送人成功：{}",(Long) customer.getDynamicObject("creator").getPkValue());
         messageInfo.setType(MessageInfo.TYPE_MESSAGE);
         messageInfo.setNotifyType("yunzhijia");
         messageInfo.setTag("银行流水");
