@@ -35,7 +35,8 @@ public class SyncDingDingUserIdTask extends AbstractTask {
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "id,number,nckd_dingdingid,phone",
-                new QFilter[]{new QFilter("nckd_dingdingid", QCP.equals, "")}
+                new QFilter[]{new QFilter("useropenid", QCP.equals, "").or(new QFilter("useropenid", QCP.equals, null))}
+
         );
 
         // 赋值钉钉id

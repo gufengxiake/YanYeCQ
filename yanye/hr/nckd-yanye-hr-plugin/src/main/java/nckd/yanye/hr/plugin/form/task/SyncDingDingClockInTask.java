@@ -65,7 +65,7 @@ public class SyncDingDingClockInTask extends AbstractTask {
         DynamicObject[] allUsers = BusinessDataServiceHelper.load(
                 "bos_user",
                 "id,number,nckd_dingdingid",
-                null
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
         );
         HashMap<String, DynamicObject> userMap = new HashMap<>();
         for (DynamicObject user : allUsers) {

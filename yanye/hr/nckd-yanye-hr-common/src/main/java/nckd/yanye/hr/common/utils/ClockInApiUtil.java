@@ -75,7 +75,7 @@ public class ClockInApiUtil {
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "useropenid",
-                new QFilter[]{new QFilter("useropenid", QCP.is_notnull, null)}
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
         );
 
         JSONArray usersClockInList = new JSONArray();
@@ -301,7 +301,7 @@ public class ClockInApiUtil {
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "id,name,nckd_dingdingid",
-                new QFilter[]{new QFilter("nckd_dingdingid", QCP.not_equals, "")}
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
         );
 
         JSONArray usersClockInList = new JSONArray();
