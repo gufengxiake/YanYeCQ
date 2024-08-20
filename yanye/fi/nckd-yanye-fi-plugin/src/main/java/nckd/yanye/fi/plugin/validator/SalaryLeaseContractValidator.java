@@ -301,10 +301,10 @@ public class SalaryLeaseContractValidator {
             errorInfoList.add(ResManager.loadKDString("“合同号”不能为空。", "LeaseContractValidator_7", "fi-fa-business", new Object[0]));
         }
 
-        String name = leaseContract.getString("name");
-        if (StringUtils.isEmpty(name)) {
-            errorInfoList.add(ResManager.loadKDString("“合同名称”不能为空。", "LeaseContractValidator_10", "fi-fa-business", new Object[0]));
-        }
+//        String name = leaseContract.getString("name");
+//        if (StringUtils.isEmpty(name)) {
+//            errorInfoList.add(ResManager.loadKDString("“合同名称”不能为空。", "LeaseContractValidator_10", "fi-fa-business", new Object[0]));
+//        }
 
         DynamicObject leaser = leaseContract.getDynamicObject("leaser");
         if (leaser == null) {
