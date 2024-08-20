@@ -8,10 +8,11 @@ import kd.sdk.hr.hspm.formplugin.web.file.ermanfile.base.AbstractCardDrawEdit;
 
 import java.util.EventObject;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 核心人力云->人员信息->附表卡片
- * 奖惩记录 nckd_hspm_perrprecor_ext3 动态表单
+ * 奖惩记录 nckd_hspm_perrprecor_ext3 动态表单（源：hspm_perrprecord_dv）
  * 2024-07-26
  * chengchaohua
  */
@@ -33,10 +34,22 @@ public class EmpJiangLiCardPlugin  extends AbstractCardDrawEdit {
             List<String> extFields = this.setChildFieldVo(new FieldTransVo(preBindDataVo.getDataMap(), compareVo));
             queryDbVo.setFields(extFields);
             this.queryAndAssDataFromDb(queryDbVo);
-            this.defineSpecial(new DefineSpecialVo(false, (String)null, (String)null, "shamedit_", "shamdel_"));
+            this.defineSpecial(new DefineSpecialVo(false, null, null, "shamedit_", "shamdel_"));
             return preBindDataVo;
         } else {
             return preBindDataVo;
         }
+    }
+
+    protected Map<String, Object> defineSpecial(DefineSpecialVo defineSpecialVo) {
+        Map<String, Object> timeMap = super.defineSpecial(defineSpecialVo);
+        timeMap.put("card", "1");
+        timeMap.put("cardwidth", "340px");
+        timeMap.put("margincontent", "96%");
+        timeMap.put("attach", Boolean.TRUE);
+        timeMap.put("dyfield", "dyfield");
+        timeMap.put("resetap", Boolean.TRUE);
+        timeMap.put("viewshowdialog", "1");
+        return timeMap;
     }
 }

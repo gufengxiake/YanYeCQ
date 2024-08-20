@@ -1,5 +1,6 @@
 package nckd.yanye.hr.plugin.form.zhicheng;
 
+import kd.bos.dataentity.resource.ResManager;
 import kd.bos.orm.query.QFilter;
 import kd.hr.hbp.common.util.HRJSONUtils;
 import kd.sdk.hr.hspm.common.ext.file.CardBindDataDTO;
@@ -45,7 +46,37 @@ public class EmpZhichengCardPlugin extends AbstractCardDrawEdit {
         }
     }
 
-    @Override
+    protected boolean createLabel(BeforeCreatVo beforeCreatVo) {
+        if (!"text".equals(beforeCreatVo.getLabType())) {
+            return super.createLabel(beforeCreatVo);
+        } else {
+            Map<String, Object> labMap = beforeCreatVo.getLabMap();
+            Map<String, Object> dataMap = beforeCreatVo.getDataMap();
+            String key = (String)labMap.get("number");
+            if ("ishigh".equals(key)) {
+                return !(Boolean)dataMap.get(key);
+            } else {
+                return super.createLabel(beforeCreatVo);
+            }
+        }
+    }
+
+    protected boolean customChangeLabelValue(BeforeCreatVo beforeCreatVo) {
+        if (!"text".equals(beforeCreatVo.getLabType())) {
+            return false;
+        } else {
+            Map<String, Object> dataMap = beforeCreatVo.getDataMap();
+            Map<String, Object> labMap = beforeCreatVo.getLabMap();
+            Map<String, String> relMap = beforeCreatVo.getRelMap();
+            String key = (String)labMap.get("number");
+            if ("ishigh".equals(key) && Boolean.parseBoolean(dataMap.get(key).toString())) {
+                relMap.put(key, ResManager.loadKDString("最高职称", "PerProTitleCardPlugin_0", "hr-hspm-formplugin", new Object[0]));
+            }
+
+            return false;
+        }
+    }
+
     protected Map<String, Object> defineSpecial(DefineSpecialVo defineSpecialVo) {
         Map<String, Object> timeMap = super.defineSpecial(defineSpecialVo);
         timeMap.put("attach", Boolean.TRUE);
