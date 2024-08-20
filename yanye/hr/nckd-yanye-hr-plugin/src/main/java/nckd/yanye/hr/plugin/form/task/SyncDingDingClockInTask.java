@@ -60,7 +60,6 @@ public class SyncDingDingClockInTask extends AbstractTask {
                 "id,name,number",
                 new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
         )[0];
-
         // 预先加载所有钉钉用户信息
         DynamicObject[] allUsers = BusinessDataServiceHelper.load(
                 "bos_user",

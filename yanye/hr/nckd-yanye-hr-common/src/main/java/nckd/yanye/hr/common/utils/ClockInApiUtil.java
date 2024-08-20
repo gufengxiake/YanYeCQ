@@ -65,11 +65,11 @@ public class ClockInApiUtil {
                 + "?accessToken=" + getYunZhiJiaAccessToken();
 
         // 查询时间
-        LocalDate yesterday = LocalDate.now().minusDays(2);
-        LocalDate today = LocalDate.now();
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime yesterday = today.minusDays(2);
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String yesterdayStr = yesterday.format(formatter);
         String todayStr = today.format(formatter);
+        String yesterdayStr = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         DynamicObject[] users = BusinessDataServiceHelper.load(
@@ -287,17 +287,12 @@ public class ClockInApiUtil {
         String url = "https://oapi.dingtalk.com/attendance/list?access_token=" + ClockInApiUtil.getDingDingAccessToken();
 
         // 查询时间
-        LocalDate today = LocalDate.now();
-        LocalDate yesterday = today.minusDays(2);
-//        LocalDate today = LocalDate.now();
-
-        // 使用LocalDateTime代替LocalDate
-        LocalDateTime yesterdayDateTime = yesterday.atStartOfDay();
-        LocalDateTime todayDateTime = today.atStartOfDay();
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime yesterday = today.minusDays(2);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String yesterdayStr = yesterdayDateTime.format(formatter);
-        String todayStr = todayDateTime.format(formatter);
+        String todayStr = today.format(formatter);
+        String yesterdayStr = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         DynamicObject[] users = BusinessDataServiceHelper.load(
