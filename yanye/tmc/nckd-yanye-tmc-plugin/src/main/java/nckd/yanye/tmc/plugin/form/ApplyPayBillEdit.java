@@ -92,11 +92,11 @@ public class ApplyPayBillEdit extends ApBaseEdit {
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners(new String[]{"e_assacct"});
-        this.addClickListeners(new String[]{"nckd_e_assacct"});
-        this.addClickListeners(new String[]{"e_corebillno"});
-        this.addClickListeners(new String[]{"sameinfo_view", "sameinfo_ignore", "refund_view", "refund_ignore"});
-        this.addItemClickListeners(new String[]{"tbmain"});
-        this.addItemClickListeners(new String[]{"advcontoolbarap2"});
+//        this.addClickListeners(new String[]{"nckd_e_assacct"});
+//        this.addClickListeners(new String[]{"e_corebillno"});
+//        this.addClickListeners(new String[]{"sameinfo_view", "sameinfo_ignore", "refund_view", "refund_ignore"});
+//        this.addItemClickListeners(new String[]{"tbmain"});
+//        this.addItemClickListeners(new String[]{"advcontoolbarap2"});
         this.filterMaterialVersion();
     }
 
@@ -260,67 +260,10 @@ public class ApplyPayBillEdit extends ApBaseEdit {
 
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
-        IBillModel model = (IBillModel)this.getModel();
-        if (!model.isFromImport()) {
-            DynamicObject applyorg = (DynamicObject)this.getModel().getValue("applyorg");
-            if (ObjectUtils.isEmpty(applyorg)) {
-                applyorg = OrgHelper.getAuthorizedBankOrg("ap", "ap_payapply", "47156aff000000ac");
-                if (!ObjectUtils.isEmpty(applyorg)) {
-                    this.getModel().setValue("applyorg", applyorg.getLong("id"));
-                }
-            }
-
-            if (ObjectUtils.isEmpty(applyorg)) {
-                this.getView().showErrorNotification(ResManager.loadKDString("没有有权限的申请组织。", "ApplyPayBillEdit_2", "fi-ap-formplugin", new Object[0]));
-            } else {
-                this.setOrgByUser(applyorg);
-                this.setCurrencyByApplyOrg();
-                this.getModel().setValue("e_settlementtype", BaseDataHelper.getDefaultSettleType(), 0);
-                if (!"true".equals(this.getPageCache().get("isWebApi"))) {
-                    this.getModel().setValue("billsrctype", BillSrcTypeEnum.MANUAL.getValue());
-                }
-
-            }
-        }
     }
 
     public void afterDoOperation(AfterDoOperationEventArgs args) {
         super.afterDoOperation(args);
-        OperationResult operationResult = args.getOperationResult();
-        String key = args.getOperateKey();
-        this.fillToolBar();
-        OperationUtils.setButtonUnvisibleByAppId(this.getModel().getDataEntityType().getName(), this.getView());
-        if ("unclosepay".equals(args.getOperateKey()) && !operationResult.isSuccess()) {
-            this.getView().invokeOperation("refresh");
-        }
-
-        this.getView().setVisible(Boolean.FALSE, new String[]{"sameinfoflex"});
-        if ("submit".equals(args.getOperateKey()) || "save".equals(args.getOperateKey())) {
-            Map<Object, List<DynamicObject>> entryFroupMap = this.getRefundWarnMap();
-            if (entryFroupMap.size() == 0) {
-                this.getView().setVisible(Boolean.FALSE, new String[]{"refundflex"});
-            } else {
-                this.getView().setVisible(Boolean.TRUE, new String[]{"refundflex"});
-            }
-        }
-
-        Object billStatus = this.getModel().getValue("billstatus");
-        if (("submit".equals(key) || "save".equals(key) || "refresh".equals(key) || "collectinvoice".equals(key)) && ("A".equals(billStatus) || "B".equals(billStatus))) {
-            Map<String, List<String>> sameBillInfo = (Map)ExecCtrlHelper.execCustomizeCtrlService("SZJK-PRE-0024", new HashMap(2), new Object[]{this.getModel().getDataEntity(true)});
-            this.sameBillWarn(sameBillInfo);
-        }
-
-        if ("updatevalidator".equals(key) && args.getOperationResult().isSuccess()) {
-            this.getView().invokeOperation("pushupdate");
-        }
-
-        if (("closepay".equals(key) || "unclosePay".equalsIgnoreCase(key)) && args.getOperationResult().isSuccess()) {
-            this.getView().invokeOperation("refresh");
-        }
-
-        if (Objects.equals(key, "unaudit") && args.getOperationResult().isSuccess()) {
-            this.getView().invokeOperation("refresh");
-        }
 
     }
 
@@ -361,65 +304,6 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             case "nckd_e_assacct":
                 this.assacctShowF7();
                 break;
-        }
-
-    }
-
-    public void itemClick(ItemClickEvent evt) {
-        super.itemClick(evt);
-        String key = evt.getItemKey();
-        if ("bar_submit".equals(key) || "bar_audit".equals(key) || "bar_submitandnew".equals(key)) {
-            List<String> result = (List)ExecCtrlHelper.execCustomizeCtrlService("SZJK-PRE-0080", (Object)null, new DynamicObject[]{this.getModel().getDataEntity(true)});
-            if (result != null && result.size() > 0) {
-                String submitTitle = ResManager.loadKDString("提交此单据，会导致超过供应商余额付款，请检查并确认是否继续操作？", "ApplyPayBillEdit_15", "fi-ap-formplugin", new Object[0]);
-                String auditTitle = ResManager.loadKDString("审核此单据，会导致超过供应商余额付款，请检查并确认是否继续操作？", "ApplyPayBillEdit_16", "fi-ap-formplugin", new Object[0]);
-                String title = "bar_audit".equals(key) ? auditTitle : submitTitle;
-                String url = "https://vip.kingdee.com/article/542281522032911872?productLineId=2&isKnowledge=2";
-                OperationConfirmHelper operationConfirmHelper = new OperationConfirmHelper(this.getView(), this);
-                operationConfirmHelper.openOperateConfirmByActionId(title, "", result, false, key, url);
-            } else if ("bar_submit".equals(key)) {
-                this.getView().invokeOperation("submit");
-            } else if ("bar_audit".equals(key)) {
-                this.getView().invokeOperation("audit");
-            } else {
-                this.getView().invokeOperation("submitandnew");
-            }
-        }
-
-        if ("bar_m_closepay".equals(key)) {
-            EntryGrid grid = (EntryGrid)this.getControl("entry");
-            int[] rows = grid.getSelectRows();
-            if (rows.length == 0) {
-                this.getView().showTipNotification(ResManager.loadKDString("请选择一条明细行数据。", "ApplyPayBillEdit_21", "fi-ap-formplugin", new Object[0]));
-            }
-
-            List<Long> selectRows = new ArrayList(rows.length);
-            List<Integer> closetRows = new ArrayList(rows.length);
-            int[] var17 = rows;
-            int var18 = rows.length;
-
-            for(int var9 = 0; var9 < var18; ++var9) {
-                int row = var17[var9];
-                String closestatus = (String)this.getModel().getValue("e_closestatus", row);
-                if ("A".equals(closestatus)) {
-                    Long entryId = (Long)this.getModel().getValue("entry.id", row);
-                    selectRows.add(entryId);
-                } else {
-                    closetRows.add(row + 1);
-                }
-            }
-
-            if (closetRows.size() > 0) {
-                this.getView().showTipNotification(ResManager.loadKDString("分录第%s行关闭状态为已关闭，无需重复关闭，请重新选择数据。", "ApplyPayBillEdit_22", "fi-ap-formplugin", new Object[]{closetRows.toString()}));
-            }
-
-            if (selectRows.size() > 0) {
-                this.showCloseConfirm(SerializationUtils.toJsonString(selectRows));
-            }
-        }
-
-        if ("closepay".equals(key)) {
-            this.showCloseConfirm("");
         }
 
     }
@@ -636,22 +520,6 @@ public class ApplyPayBillEdit extends ApBaseEdit {
 
     public void afterBindData(EventObject e) {
         super.afterBindData(e);
-        DynamicObject applyOrg = (DynamicObject)this.getModel().getValue("applyorg");
-        OperationUtils.setButtonUnvisibleByAppId(this.getModel().getDataEntityType().getName(), this.getView());
-        this.setAsstactCaption();
-        Label label = (Label)this.getView().getControl("refund_labelap");
-        String message = ResManager.loadKDString("本单的部分往来账户在半年内曾发生过银行退票业务，存在再次退票风险，请仔细核对。", "ApplyPayBillEdit_19", "fi-ap-formplugin", new Object[0]);
-        label.setText(message);
-        Map<Object, List<DynamicObject>> entryFroupMap = this.getRefundWarnMap();
-        if (entryFroupMap.size() == 0) {
-            this.getView().setVisible(Boolean.FALSE, new String[]{"refundflex"});
-        } else {
-            this.getView().setVisible(Boolean.TRUE, new String[]{"refundflex"});
-            this.getView().setVisible(Boolean.TRUE, new String[]{"refund_view"});
-            this.getView().setVisible(Boolean.FALSE, new String[]{"refund_ignore"});
-        }
-
-        this.fillToolBar();
     }
 
     private void setAsstactCaption() {
