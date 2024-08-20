@@ -126,6 +126,9 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 if (!treeentryentity.get(0).getDynamicObject("material").getPkValue().equals(entrymaterial.getPkValue())) {
                     continue;
                 }
+                if (!entry.getString("nckd_pom").contains(d.getString("billno"))){
+                    continue;
+                }
                 DynamicObject entity = subentryentity.addNew();
                 entity.set("nckd_material", entrymaterial);
                 entity.set("producedept", treeentryentity.get(0).getDynamicObject("producedept"));
@@ -351,6 +354,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder_a.set("billstatus", "C");
             pomMftorder_a.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
             pomMftorder_a.set("billtype", pmf);//单据类型
+            pomMftorder_a.set("nckd_builds", true);
             pomMftorder_a.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
             long id_a = DB.genLongId("t_pom_mftorderentry");
             DynamicObject newOne_a = treeentryentity_a.addNew();
@@ -421,13 +425,34 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             return;
         }
 
-        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.material,treeentryentity.qty",
-                new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
-        List<DynamicObject> list = new ArrayList<>();
+        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,nckd_builds,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty",
+                new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno")).and("nckd_builds",QCP.equals,true)});
+        Map<String,List<DynamicObject>> map = new HashMap<>();
         for (DynamicObject p : pom) {
+            List<DynamicObject> list = new ArrayList<>();
             DynamicObjectCollection treeentryentity = p.getDynamicObjectCollection("treeentryentity");
-            Object pkValue_a = treeentryentity.get(0).getDynamicObject("material").getPkValue();
-            for (DynamicObject e : entity) {
+            Object materialId = treeentryentity.get(0).getDynamicObject("material").getPkValue();
+            Object deptId = treeentryentity.get(0).getDynamicObject("producedept").getPkValue();
+            String key = deptId.toString()+materialId.toString();
+            if (map.containsKey(key)){
+                continue;
+            }
+            list.add(p);
+            for (DynamicObject y : pom) {
+                if (p.getPkValue().equals(y.getPkValue())){
+                    continue;
+                }
+                DynamicObjectCollection treeentryentity_y = y.getDynamicObjectCollection("treeentryentity");
+                Object materialId_y = treeentryentity_y.get(0).getDynamicObject("material").getPkValue();
+                Object deptId_y = treeentryentity_y.get(0).getDynamicObject("producedept").getPkValue();
+                String key_y = deptId_y.toString()+materialId_y.toString();
+                //判断物料+部门是否相同
+                if (key.equals(key_y)){
+                    list.add(y);
+                }
+            }
+            map.put(key, list);
+            /*for (DynamicObject e : entity) {
                 if (!"C".equals(e.get("nckd_producttype"))) {
                     continue;
                 }
@@ -437,42 +462,47 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     list.add(p);
                     break;
                 }
-            }
+            }*/
         }
-        if (list.size() > 1) {
-            BigDecimal qty = BigDecimal.ZERO;
-            for (DynamicObject d : list) {
-                qty = qty.add(d.getDynamicObjectCollection("treeentryentity").get(0).getBigDecimal("qty"));
-            }
-            List<Object> idList = new ArrayList<>();
-            for (int i = list.size() - 1; i > -1; i--) {
-                DynamicObject dynamicObject = list.get(i);
-                if (i == 0) {
-                    DynamicObject treeentry = dynamicObject.getDynamicObjectCollection("treeentryentity").get(0);
-                    treeentry.set("qty", qty);
-                    SaveServiceHelper.update(new DynamicObject[]{dynamicObject});
-                } else {
-                    idList.add(dynamicObject.getPkValue());
+        for (List<DynamicObject> list : map.values()) {
+            if (list.size() > 1) {
+                BigDecimal qty = BigDecimal.ZERO;
+                for (DynamicObject d : list) {
+                    qty = qty.add(d.getDynamicObjectCollection("treeentryentity").get(0).getBigDecimal("qty"));
                 }
-            }
-            DeleteServiceHelper.delete("pom_mftorder", new QFilter[]{new QFilter("id", QCP.in, idList)});
-            pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.material,treeentryentity.qty",
-                    new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
-            for (DynamicObject d : entity) {
-                if (!"C".equals(d.get("nckd_producttype"))) {
-                    continue;
+                List<Object> idList = new ArrayList<>();
+                for (int i = list.size() - 1; i > -1; i--) {
+                    DynamicObject dynamicObject = list.get(i);
+                    if (i == 0) {
+                        DynamicObject treeentry = dynamicObject.getDynamicObjectCollection("treeentryentity").get(0);
+                        treeentry.set("qty", qty);
+                        SaveServiceHelper.update(new DynamicObject[]{dynamicObject});
+                    } else {
+                        idList.add(dynamicObject.getPkValue());
+                    }
                 }
-                String mbillno = "";
-                for (DynamicObject p : pom) {
-                    mbillno = mbillno + "/" + p.getString("billno");
+                DeleteServiceHelper.delete("pom_mftorder", new QFilter[]{new QFilter("id", QCP.in, idList)});
+                pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty",
+                        new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
+                for (DynamicObject d : entity) {
+                    if (!"C".equals(d.get("nckd_producttype"))) {
+                        continue;
+                    }
+                    String mbillno = "";
+                    for (DynamicObject p : pom) {
+                        Object deptId_p = p.getDynamicObjectCollection("treeentryentity").get(0).getDynamicObject("producedept").getPkValue();
+                        if ((d.getDynamicObject("nckd_producedept").getPkValue()).equals(deptId_p)){
+                            mbillno = mbillno + "/" + p.getString("billno");
+                        }
+                    }
+                    d.set("nckd_pom", mbillno);
                 }
-                d.set("nckd_pom", mbillno);
+                OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{dataEntity}, OperateOption.create());
+                if (!result.isSuccess()){
+                    this.getView().showMessage(result.getMessage());
+                }
+                //SaveServiceHelper.save(new DynamicObject[]{dataEntity});
             }
-            OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftorder", new DynamicObject[]{dataEntity}, OperateOption.create());
-            if (!result.isSuccess()){
-                this.getView().showMessage(result.getMessage());
-            }
-            //SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
     }
 
