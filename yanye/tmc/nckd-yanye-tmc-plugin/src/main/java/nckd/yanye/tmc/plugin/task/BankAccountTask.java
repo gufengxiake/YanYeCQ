@@ -61,15 +61,13 @@ public class BankAccountTask  implements IEventServicePlugin {
                         logger.info("交易明细信息：{}", transdetail);
                         // 查询需要发送通知的业务人员
                         DynamicObject salerid = customer.getDynamicObject("salerid");
-
-
                         logger.info("业务人员信息：{}", salerid);
                         if(ObjectUtils.isNotEmpty(salerid)){
                             // 发送通知
-                            DynamicObject user = loadSingle(salerid.get("id"));
+                            DynamicObject user = loadSingle(salerid.getPkValue());
                             if(ObjectUtils.isNotEmpty(user)){
                                 // 获取用户云之家id
-                                Long useropenid = user.getLong("useropenid");
+                                String useropenid = user.getString("useropenid");
                                 logger.info("用户云之家id：{}", useropenid);
                                 if(useropenid!=null){
                                     sendMessageChannel(user,transdetail);
@@ -77,7 +75,6 @@ public class BankAccountTask  implements IEventServicePlugin {
                                     logger.info("用户云之家id为空，不发送通知");
                                 }
                             }
-
                         }
                     }
                 }
