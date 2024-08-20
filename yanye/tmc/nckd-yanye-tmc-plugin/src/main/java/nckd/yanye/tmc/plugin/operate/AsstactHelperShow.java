@@ -68,15 +68,14 @@ public class AsstactHelperShow {
                         DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(basedata.getPkValue(), "bd_supplier").get("internal_company");
                         if (ObjectUtils.isNotEmpty(o)) {
                             // 获取票据账号开户行维护信息
-                            lsp = getSupplierBankInfoShowParameter(o);
-
-//                            QFilter qFilter = new QFilter("company.masterid", "=", o.getPkValue());
-//                            DynamicObject[] load = BusinessDataServiceHelper.load("am_accountmaintenance", "bank",new QFilter[]{qFilter},null );
-
-//                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
-                            if(ObjectUtils.isNotEmpty(lsp)){
+                            QFilter qFilter = new QFilter("company.masterid", "=", o.getPkValue());
+                            DynamicObject[] load = BusinessDataServiceHelper.load("am_accountmaintenance", "bank",new QFilter[]{qFilter},null );
+                            if (ObjectUtils.isNotEmpty(load)) {
+                                // 存在票据账号开户行维护信息
+                                lsp= getSupplierBankInfoShowParameter(o);
                                 flag = false;
                             }
+//                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
                         }
                         if(flag){
                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(basedata.getPkValue());
