@@ -13,6 +13,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.fi.arapcommon.helper.BizExtendHelper;
 import kd.fi.arapcommon.helper.DynamicListHelper;
+import kd.fi.arapcommon.helper.LspWapper;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.ArrayList;
@@ -66,7 +67,13 @@ public class AsstactHelperShow {
                         // 查询是否存在内部公司
                         DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(basedata.getPkValue(), "bd_supplier").get("internal_company");
                         if (ObjectUtils.isNotEmpty(o)) {
-                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
+                            // 获取票据账号开户行维护信息
+                            lsp = getSupplierBankInfoShowParameter(o);
+
+//                            QFilter qFilter = new QFilter("company.masterid", "=", o.getPkValue());
+//                            DynamicObject[] load = BusinessDataServiceHelper.load("am_accountmaintenance", "bank",new QFilter[]{qFilter},null );
+
+//                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
                             if(ObjectUtils.isNotEmpty(lsp)){
                                 flag = false;
                             }
@@ -97,4 +104,34 @@ public class AsstactHelperShow {
 
         }
     }
+
+    public static ListShowParameter getSupplierBankInfoShowParameter(DynamicObject pk) {
+        List<String> showFields = new ArrayList();
+        showFields.add("bank.name");
+        showFields.add("account.number");
+        showFields.add("bankname");
+        showFields.add("currency.name");
+        showFields.add("isdefault_bank");
+        ListShowParameter lsp = createDynamicListShowParameter("am_accountmaintenance", null, showFields);
+        ListFilterParameter lfp = new ListFilterParameter();
+        lfp.setFilter(new QFilter("company.masterid", "=", pk.getPkValue()));
+        lsp.setListFilterParameter(lfp);
+        lsp.setCaption(ResManager.loadKDString("供应商-银行信息", "DynamicListHelper_0", "fi-arapcommon", new Object[0]));
+        return lsp;
+    }
+
+    public static ListShowParameter createDynamicListShowParameter(String entity, String entry, List<String> showFields) {
+        ListShowParameter lsp = ShowFormHelper.createShowListForm(entity, true, 2);
+        lsp.setCustomParam("entity", entity);
+        lsp.setCustomParam("entry", entry);
+        lsp.setCustomParam("isEntryMain", Boolean.TRUE);
+        lsp.setCustomParam("showFields", showFields);
+        LspWapper lspWapper = new LspWapper(lsp);
+        lspWapper.clearPlugins();
+        lspWapper.registerScript("kingdee.fi.ap.mainpage.arapdynamiclistscriptplugin");
+        lspWapper.setMergeRow(false);
+        lsp.setAppId("ap");
+        return lsp;
+    }
+
 }
