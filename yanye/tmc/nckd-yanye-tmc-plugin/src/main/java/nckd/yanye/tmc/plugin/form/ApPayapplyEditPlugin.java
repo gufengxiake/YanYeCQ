@@ -61,8 +61,10 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                 String eAssacctStr = "";
                 if (newValuetest instanceof DynamicObject) {
                     newValue = (DynamicObject) changeData.getNewValue();
-                }else{
+                }else if(newValuetest != null){
                     eAssacctStr = newValuetest.toString();
+                }else{
+                    return;
                 }
 //                DynamicObject newValue = (DynamicObject) changeData.getNewValue();
                 //获取改变的行号
