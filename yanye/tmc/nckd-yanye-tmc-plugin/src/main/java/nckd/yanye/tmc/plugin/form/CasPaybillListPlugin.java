@@ -16,6 +16,7 @@ import kd.bos.list.plugin.AbstractListPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -75,6 +76,72 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
                 }
             }
         }
+        if(StringUtils.equals(KEY_BATCHENDORSE, formOperate.getOperateKey())){
+            //获取列表选中数据
+            BillList billlistap = this.getView().getControl("billlistap");
+            ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
+            EntityType entityType = billlistap.getEntityType();
+
+            //获取选中行pkid
+            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
+            //获取完整数据
+            DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            ////获取收款人类型 和 供应商
+            List<DynamicObject> casPaybillList = Arrays.stream(casPaybillArr).filter(e -> "bd_supplier".equals(e.getString("payeetype"))).collect(Collectors.toList());
+
+            if (casPaybillList.size() == 1) {
+                DynamicObject casPaybill = casPaybillList.get(0);
+                long payee = casPaybill.getLong("payee");
+                DynamicObject supplier = BusinessDataServiceHelper.loadSingle(payee, "bd_supplier");
+
+                String state = supplier.getString("billstatus");
+                Object draftbill = supplier.get("draftbill");
+                if("C".equals(state)){
+                    // 未通过校验
+                    this.getView().showConfirm("单据《"+ casPaybill.getString("billno")+"》未审核，不允许背书", MessageBoxOptions.OK);
+                    args.setCancel(true);
+                }
+                if(ObjectUtils.isNotEmpty(draftbill)){
+                    this.getView().showConfirm("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你所选单据《"+ casPaybill.getString("billno")+"》不支持背书", MessageBoxOptions.OK);
+                    args.setCancel(true);
+                }
+
+            }else{
+                StringBuffer msg = new StringBuffer();
+                List<Integer> indexList = new ArrayList<>();
+                for (int i = 0; i < casPaybillList.size(); i++) {
+                    DynamicObject dynamicObject = casPaybillList.get(i);
+                    boolean falg = false;
+                    if("C".equals(dynamicObject.getString("billstatus"))){
+                        msg.append("单据《").append(dynamicObject.getString("billno")).append("》未审核，不允许背书").append("\r\n");
+                    }else if(ObjectUtils.isNotEmpty(dynamicObject.getDynamicObject("draftbill"))){
+                        msg.append("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你PaymentBillEndorseConvertPlugin所选单据《").append(dynamicObject.getString("billno")).append("》不支持背书").append("\r\n");
+                    }else{
+                        falg = true;
+                    }
+                    if(!falg){
+                        indexList.add(i);
+                    }
+
+                }
+                if(indexList.size() > 0){
+                    ListSelectedRowCollection listSelectedData = args.getListSelectedData();
+                    for (int i = indexList.size() - 1; i >= 0; i--) {
+                        listSelectedData.remove(indexList.get(i));
+                    }
+                    args.setListSelectedData(listSelectedData);
+                }
+                if(ObjectUtils.isEmpty(args.getListSelectedData())){
+                    args.setCancel(true);
+                }
+
+                if(ObjectUtils.isNotEmpty(msg)){
+                    this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                }
+
+                }
+
+        }
     }
 
     @Override
@@ -93,11 +160,11 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
             DynamicObject[] casPaybillArr1 = filterDraftBill(casPaybillArr, true);
             // 获取结算号不存在的数据，构建提示数据
-            DynamicObject[] casPaybillArr2 = filterDraftBill(casPaybillArr, false);
-            StringBuffer msg = new StringBuffer();
-            for (DynamicObject dynamicObject : casPaybillArr2) {
-                msg.append("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你所选单据《").append(dynamicObject.getString("billno")).append("》不支持背书").append("\r\n");
-            }
+//            DynamicObject[] casPaybillArr2 = filterDraftBill(casPaybillArr, false);
+//            StringBuffer msg = new StringBuffer();
+//            for (DynamicObject dynamicObject : casPaybillArr2) {
+//                msg.append("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你所选单据《").append(dynamicObject.getString("billno")).append("》不支持背书").append("\r\n");
+//            }
             //获取结算号 settletnumber
             Set<String> settletnumber = Arrays.stream(casPaybillArr1).map(e -> {
                 DynamicObject draftbill = e.getDynamicObjectCollection("draftbill").get(0);
@@ -117,7 +184,7 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
             List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
             qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
-            this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+//            this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
             this.getView().showForm(listShowParameter);
         }
     }
@@ -144,13 +211,13 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
     private static DynamicObject[] filterDraftBill(DynamicObject[] array,boolean isFilter) {
         List<DynamicObject> resultList = new ArrayList<>();
         for (DynamicObject obj : array) {
-            String draftBillNo = obj.getString("settletnumber"); // 根据实际方法调整
+            Object draftBillNo = obj.get("draftbill"); // 根据实际方法调整
             // 返回不为null
-            if (StringUtils.isNotEmpty(draftBillNo) && isFilter) {
+            if (ObjectUtils.isNotEmpty(draftBillNo) && isFilter) {
                 resultList.add(obj);
             }
             // 返回为null
-            if(StringUtils.isEmpty(draftBillNo) && !isFilter){
+            if(ObjectUtils.isEmpty(draftBillNo) && !isFilter){
                 resultList.add(obj);
             }
         }
