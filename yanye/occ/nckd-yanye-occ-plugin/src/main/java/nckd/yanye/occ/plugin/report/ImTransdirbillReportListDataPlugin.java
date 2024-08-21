@@ -24,6 +24,7 @@ import java.util.*;
  */
 public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
+
     String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
     DBRoute faRoute = DBRoute.of("scm");
 
