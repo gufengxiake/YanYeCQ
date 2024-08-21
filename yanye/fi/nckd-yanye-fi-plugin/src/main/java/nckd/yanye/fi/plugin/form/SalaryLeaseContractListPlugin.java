@@ -224,7 +224,7 @@ public class SalaryLeaseContractListPlugin extends AbstractListPlugin {
         param.setBillStatus(BillOperationStatus.VIEW);
         ListSelectedRowCollection selectedRows = ((IListView)this.getView()).getSelectedRows();
         QFilter filter = new QFilter("leasecontract", "=", selectedRows.get(0).getPrimaryKeyValue());
-        DynamicObject interestDetail = QueryServiceHelper.queryOne("nckd_fa_salary_retir", "id", new QFilter[]{filter});
+        DynamicObject interestDetail = QueryServiceHelper.queryOne("fa_interest_detail", "id", new QFilter[]{filter});
         param.setPkId(interestDetail.getLong("id"));
         param.setHasRight(Boolean.TRUE);
         this.getView().showForm(param);
