@@ -1,12 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EventObject;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
@@ -14,6 +9,11 @@ import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author husheng
@@ -30,6 +30,16 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         purchaseorgEdit.addBeforeF7SelectListener(this);
         BasedataEdit buyerEdit = this.getControl("nckd_buyer");
         buyerEdit.addBeforeF7SelectListener(this);
+    }
+
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        QFilter qFilter = new QFilter("number", QCP.equals,"1");
+        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bos_adminorg",new QFilter[]{qFilter});
+        //创建组织默认江盐集团
+        this.getModel().setValue("nckd_createorganiza",dynamicObject);
+        this.getModel().setValue("nckd_initiatingdepart", RequestContext.get().getOrgId());
+        super.afterCreateNewData(e);
     }
 
     @Override
