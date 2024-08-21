@@ -6,6 +6,7 @@ import kd.occ.ocdma.formplugin.order.SaleOrderBillPlugin;
 import java.util.EventObject;
 
 public class MobileSalOrderBillPlugIn extends SaleOrderBillPlugin {
+
     @Override
     public void afterCreateNewData(EventObject e) {
         //super.afterCreateNewData(e);

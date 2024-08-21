@@ -9,7 +9,9 @@ import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
-
+/*
+销售订单提交更新表头预收金额
+ */
 public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

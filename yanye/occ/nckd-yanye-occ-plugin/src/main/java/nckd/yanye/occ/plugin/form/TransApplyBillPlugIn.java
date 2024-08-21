@@ -222,6 +222,7 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                         .and("nckd_fapplyuserid.id", QCP.equals, ywyId)
                         .and("nckd_orgfield.id", QCP.equals, orgId));
                 listPara.setListFilterParameter(listFilterParameter);
+
                 // 设置回调
                 listPara.setCloseCallBack(new CloseCallBack(this, "return"));
                 this.getView().showForm(listPara);
