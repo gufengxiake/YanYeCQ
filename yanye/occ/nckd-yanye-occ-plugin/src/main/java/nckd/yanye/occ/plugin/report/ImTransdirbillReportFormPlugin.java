@@ -16,8 +16,6 @@ import java.util.*;
  * 报表界面插件
  */
 public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
-
-
     private static String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
             "nckd_materialmodelnum","nckd_unit","nckd_jhqty",
             "nckd_xsqty","nckd_jchhqty","nckd_jhyeqty"};

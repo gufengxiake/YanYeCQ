@@ -23,8 +23,6 @@ import java.util.*;
  * 报表取数插件
  */
 public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
-
-
     String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
     DBRoute faRoute = DBRoute.of("scm");
 
