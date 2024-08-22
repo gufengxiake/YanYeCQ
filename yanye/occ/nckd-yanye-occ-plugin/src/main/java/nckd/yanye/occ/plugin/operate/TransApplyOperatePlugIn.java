@@ -10,9 +10,12 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 
-/*
-调拨单申请单保存服务  设置仓库
+/**
+ * 调拨单申请单保存服务  设置仓库
+ * 表单标识：nckd_im_transapply_ext
+ * author:吴国强 2024-07-12
  */
+
 public class TransApplyOperatePlugIn extends AbstractOperationServicePlugIn {
 
     @Override

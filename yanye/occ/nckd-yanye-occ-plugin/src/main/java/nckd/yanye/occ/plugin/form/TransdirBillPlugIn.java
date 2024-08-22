@@ -29,6 +29,11 @@ import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
 
+/*
+ * 直接调拨单表单插件
+ * 表单标识：nckd_im_transdirbill_ext
+ * author:吴国强 2024-07-22
+ */
 public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7SelectListener {
     @Override
     public void registerListener(EventObject e) {

@@ -13,7 +13,9 @@ import java.util.Map;
 
 
 /*
-匹配预收款表单插件
+ * 匹配预收款表单插件，获取收款处理单的摘要信息
+ * 表单标识：nckd_sm_recmatch_ext
+ * author:吴国强 2024-07-22
  */
 public class RecmatchBillPlugIn extends AbstractBillPlugIn {
     @Override

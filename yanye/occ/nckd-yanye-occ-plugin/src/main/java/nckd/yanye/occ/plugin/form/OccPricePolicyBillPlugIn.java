@@ -14,7 +14,7 @@ import java.util.Date;
 
 /**
  * 价格政策表单取价
- * 表单插件
+ * 表单标识：nckd_ocdbd_pricepolic_ext
  * author:吴国强 2024-07-12
  */
 public class OccPricePolicyBillPlugIn extends AbstractBillPlugIn {

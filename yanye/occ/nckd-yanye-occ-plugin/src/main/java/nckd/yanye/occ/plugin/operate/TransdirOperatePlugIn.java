@@ -11,8 +11,10 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 
-/*
-直接调拨单保存服务 设置仓库批号
+/**
+ * 直接调拨单单保存服务  设置仓库
+ * 表单标识：nckd_im_transdirbill_ext
+ * author:吴国强 2024-08-12
  */
 public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
 

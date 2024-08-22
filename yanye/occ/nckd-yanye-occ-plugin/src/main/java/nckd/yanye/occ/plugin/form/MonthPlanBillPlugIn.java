@@ -25,6 +25,12 @@ import java.math.BigInteger;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
+/*
+月度计划统计表表单插件
+表单标识：nckd_pm_monthplantable
+author:wgq
+date:2024/07/22
+ */
 
 public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
     @Override
@@ -79,7 +85,7 @@ public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
             int row = 0;
             for (String groupNum : groupNums) {
                 //查找当前物料分组的所有下级分组
-                QFilter gFilter = new QFilter("longnumber", QCP.like, "%"+groupNum+"%");
+                QFilter gFilter = new QFilter("longnumber", QCP.like, "%" + groupNum + "%");
                 DynamicObjectCollection groupColle = QueryServiceHelper.query("bd_materialgroup", "id", gFilter.toArray(), "");
                 HashSet<Object> groupIds = new HashSet<>();
                 if (!groupColle.isEmpty()) {
@@ -121,10 +127,10 @@ public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
                             .and("billentry.material.masterid.group.id", QCP.in, groupIds)
                             .and("biztime", QCP.large_equals, startdate)
                             .and("biztime", QCP.less_equals, enddate)
-                            .and("closestatus",QCP.equals,"A")//整单关闭
-                            .and("billentry.rowclosestatus",QCP.equals,"A")//行关闭
+                            .and("closestatus", QCP.equals, "A")//整单关闭
+                            .and("billentry.rowclosestatus", QCP.equals, "A")//行关闭
                             //行中止
-                            .and("billentry.rowterminatestatus",QCP.equals,"A");
+                            .and("billentry.rowterminatestatus", QCP.equals, "A");
                     //查询统计数据
                     DataSet billDBSet = QueryServiceHelper.queryDataSet("getPurOrderQty", billNumber, billfieldkey, new QFilter[]{billQFilter}, "auditdate desc");
                     //设置group by
@@ -133,29 +139,29 @@ public class MonthPlanBillPlugIn extends AbstractBillPlugIn {
                     DataSet billgroupDb = billgroupby.finish();
                     BigDecimal purQty = BigDecimal.valueOf(0);
                     if (billgroupDb.hasNext()) {
-                        Row billItem=billgroupDb.next();
-                        purQty=purQty.add(billItem.getBigDecimal("qty")) ;
+                        Row billItem = billgroupDb.next();
+                        purQty = purQty.add(billItem.getBigDecimal("qty"));
                     }
 
                     //采购订单已关闭或已终止  取采购订单的已入库数量
-                    String closeFieldkey="org.id orgid,billentry.invqty qty";
-                    QFilter closeFilter=new QFilter("org.id", QCP.equals, orgId)
+                    String closeFieldkey = "org.id orgid,billentry.invqty qty";
+                    QFilter closeFilter = new QFilter("org.id", QCP.equals, orgId)
                             .and("billstatus", QCP.equals, "C")
                             .and("billentry.material.masterid.group.id", QCP.in, groupIds)
                             .and("biztime", QCP.large_equals, startdate)
                             .and("biztime", QCP.less_equals, enddate);
-                    QFilter orFilter=new QFilter("closestatus",QCP.equals,"B")
-                            .or("billentry.rowclosestatus",QCP.equals,"B")
-                            .or("billentry.rowterminatestatus",QCP.equals,"B");
-                    closeFilter=closeFilter.and(orFilter);
+                    QFilter orFilter = new QFilter("closestatus", QCP.equals, "B")
+                            .or("billentry.rowclosestatus", QCP.equals, "B")
+                            .or("billentry.rowterminatestatus", QCP.equals, "B");
+                    closeFilter = closeFilter.and(orFilter);
                     DataSet closeBillDBSet = QueryServiceHelper.queryDataSet("getPurOrderQty1", billNumber, closeFieldkey, new QFilter[]{closeFilter}, "auditdate desc");
                     //设置group by
                     GroupbyDataSet closebillgroupby = closeBillDBSet.groupBy(new String[]{"orgid"});
                     closebillgroupby = closebillgroupby.sum("qty");
                     DataSet closeBillgroupDb = closebillgroupby.finish();
-                    if(closeBillgroupDb.hasNext()){
-                        Row billItem=closeBillgroupDb.next();
-                        purQty=purQty.add(billItem.getBigDecimal("qty"));
+                    if (closeBillgroupDb.hasNext()) {
+                        Row billItem = closeBillgroupDb.next();
+                        purQty = purQty.add(billItem.getBigDecimal("qty"));
                     }
 
                     this.getModel().createNewEntryRow("nckd_entryentity");

@@ -6,6 +6,12 @@ import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.occ.ocbsoc.opplugin.delivery.DeliveryRecordSavePlugin;
 
+/*
+ * 发货记录保存服务插件，自动签收
+ * 表单标识：nckd_ocbsoc_delivery_ext
+ * author:吴国强 2024-07-20
+ */
+
 public class DeliveryRecordSaveOperatePlugIn extends DeliveryRecordSavePlugin {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
