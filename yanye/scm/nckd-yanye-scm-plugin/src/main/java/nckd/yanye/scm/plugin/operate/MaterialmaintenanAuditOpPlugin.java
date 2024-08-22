@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.operate;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
 import kd.bos.coderule.api.CodeRuleInfo;
@@ -63,7 +64,11 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
              * 采购类型 5
              */
             String documenttype = data.getString("nckd_documenttype");
-
+            //单据维护类型 add：修改物料基本信息
+            if ("add".equals(data.getString("nckd_materialmaintunit"))){
+                baseInfo(data);
+            }
+            baseInfo(data);
             switch (documenttype) {
                 case "1":
                     // 生产基本信息
@@ -527,4 +532,22 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
 
         SaveServiceHelper.saveOperate("bd_inspect_cfg", new DynamicObject[]{newDynamicObject}, OperateOption.create());
     }
-}
+
+    private void baseInfo(DynamicObject dynamicObject) {
+        //查询物料
+        DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue(),"bd_material");
+        dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));//物料名称
+        dynamic.set("modelnum",dynamicObject.get("nckd_alterspecificat"));//规格
+        dynamic.set("modelnum",dynamicObject.get("nckd_altermodel"));//型号
+        dynamic.set("modifier",RequestContext.get().getCurrUserId());//修改人
+        dynamic.set("modifytime", new Date());//修改时间
+        dynamic.set("group",dynamicObject.get("nckd_altermaterialclass"));//物料分组
+        dynamic.set("helpcode",dynamicObject.get("nckd_altermnemoniccode"));//助记码
+        dynamic.set("oldnumber",dynamicObject.get("nckd_alteroldnumber"));//旧物料编码
+        dynamic.set("description",dynamicObject.get("nckd_alterremark"));//描述
+        dynamic.set("hazardous",dynamicObject.get("nckd_altermaterialrisk"));//物料危险性
+        dynamic.set("enableoutsource",dynamicObject.get("nckd_alteroutsourcing"));//可委外
+        SaveServiceHelper.update(dynamic);
+    }
+
+    }
