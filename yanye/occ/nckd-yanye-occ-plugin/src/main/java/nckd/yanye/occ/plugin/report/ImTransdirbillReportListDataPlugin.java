@@ -20,11 +20,12 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * 报表取数插件
+ * 业务员借货汇总表表取数插件
  */
 public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
-    String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
-    DBRoute faRoute = DBRoute.of("scm");
+
+//    String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
+//    DBRoute faRoute = DBRoute.of("scm");
 
     private static String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
             "nckd_materialmodelnum","nckd_unit","nckd_jhqty",
@@ -98,8 +99,8 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
 
         im = im.groupBy(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_unit"})
                 .sum("CASE WHEN fbilltypeid = 1980435041267748864L THEN fqty ELSE 0 END ","nckd_jhqty")
-                .sum("CASE WHEN fbilltypeid = 1980435141796826112L THEN fqty ELSE 0 END ","nckd_xsqty")
-                .sum("CASE WHEN fbilltypeid = 1980511903113284608L THEN fqty ELSE 0 END ","nckd_jchhqty")
+                .sum("CASE WHEN fbilltypeid = 1980511903113284608L THEN fqty ELSE 0 END ","nckd_xsqty")
+                .sum("CASE WHEN fbilltypeid = 1980435141796826112L THEN fqty ELSE 0 END ","nckd_jchhqty")
                 .finish();
 
         im.select(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_unit","nckd_jhqty","nckd_xsqty","nckd_jchhqty"});
