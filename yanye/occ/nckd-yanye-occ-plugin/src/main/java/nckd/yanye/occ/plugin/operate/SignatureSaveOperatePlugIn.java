@@ -15,8 +15,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-/*
-签收单保存反写签收日期到销售出库单
+/**
+ * 签收单保存反写签收日期到销售出库单
+ * 表单标识：nckd_signaturebill
+ * author:吴国强 2024-07-12
  */
 public class SignatureSaveOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override

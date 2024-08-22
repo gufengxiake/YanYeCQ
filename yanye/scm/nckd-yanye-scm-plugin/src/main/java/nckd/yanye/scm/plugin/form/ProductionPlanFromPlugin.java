@@ -134,7 +134,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 entity.set("producedept", treeentryentity.get(0).getDynamicObject("producedept"));
                 entity.set("yiel", treeentryentity.get(0).get("qty"));
                 entity.set("unit", treeentryentity.get(0).getDynamicObject("unit"));
-                DynamicObject entity_a = subentryentity.addNew();
+                /*DynamicObject entity_a = subentryentity.addNew();
                 DynamicObject bomid = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material.id", QCP.equals, entrymaterial.getPkValue())});
                 if (bomid != null) {
                     bomid = BusinessDataServiceHelper.loadSingle(bomid.getPkValue(), "pdm_mftbom");
@@ -144,7 +144,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     entity_a.set("producedept", treeentryentity.get(0).getDynamicObject("producedept"));
                     entity_a.set("yiel", qty);
                     entity_a.set("unit", entry_a.getDynamicObject("entryunit"));
-                }
+                }*/
                 break;
             }
 
@@ -169,7 +169,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         entity.set("producedept", dyt.getDynamicObject("producedept"));
                         entity.set("yiel", dyt.get("qty"));
                         entity.set("unit", dyt.getDynamicObject("unit"));
-                        DynamicObject entity_a = subentryentity.addNew();
+                        /*DynamicObject entity_a = subentryentity.addNew();
                         if (bomid != null) {
                             bomid = BusinessDataServiceHelper.loadSingle(bomid.getPkValue(), "pdm_mftbom");
                             DynamicObject entry_a = bomid.getDynamicObjectCollection("entry").get(0);
@@ -178,7 +178,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             entity_a.set("producedept", dyt.getDynamicObject("producedept"));
                             entity_a.set("yiel", qty);
                             entity_a.set("unit", entry_a.getDynamicObject("entryunit"));
-                        }
+                        }*/
                     }
                 }
             }

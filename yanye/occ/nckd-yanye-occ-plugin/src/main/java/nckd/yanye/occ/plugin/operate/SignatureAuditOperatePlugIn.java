@@ -34,10 +34,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/*
-签收单审核
+/**
+ * 签收单审核审核服务插件
+ * 表单标识：nckd_signaturebill
+ * author:吴国强 2024-07-12
  */
-
 public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn {
 
     @Override

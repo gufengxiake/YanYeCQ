@@ -12,8 +12,11 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import java.util.HashSet;
 import java.util.Map;
 
-/*
-签收单删除清空销售出库单签收日期
+
+/**
+ * 签收单删除清空销售出库单签收日期
+ * 表单标识：nckd_signaturebill
+ * author:吴国强 2024-07-12
  */
 public class SignatureDeleteOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override

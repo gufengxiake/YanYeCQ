@@ -27,8 +27,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import java.util.*;
 
 /**
- * 发货记录拒收
- * 服务插件
+ * 发货记录 拒收 服务插件，执行要货订单下推退货申请
+ * 表单标识：nckd_ocbsoc_delivery_ext
  * author:吴国强 2024-07-12
  */
 public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn {

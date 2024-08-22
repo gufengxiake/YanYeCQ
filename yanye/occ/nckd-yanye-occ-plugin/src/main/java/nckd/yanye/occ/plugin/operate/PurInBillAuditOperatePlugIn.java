@@ -33,7 +33,10 @@ import java.math.BigInteger;
 import java.util.*;
 
 /*
-采购入库单审核服务插件
+采购入库单审核服务插件 审核时携带批号数据到销售出库单
+表单标识：nckd_im_purinbill_ext
+author:wgq
+date:2024/08/22
  */
 public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
@@ -51,16 +54,9 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
     public void endOperationTransaction(EndOperationTransactionArgs e) {
         super.endOperationTransaction(e);
         // 获取当前单据（下游单据）的主实体编码、单据内码
-
         String targetEntityNumber = this.billEntityType.getName();
-
         Set<Object> billIds = new HashSet<>();
 
-//        for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
-//
-//            billIds.add(dataEntity.getBillPkId());
-//
-//        }
         DynamicObject[] deliverRecords = e.getDataEntities();
         if (deliverRecords != null) {
             //逐单处理
@@ -104,42 +100,46 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     for (DynamicObject saloutData : saloutDycollec) {
                         Object id = saloutData.get("id");
                         DynamicObject saloutDyna = BusinessDataServiceHelper.loadSingle(id, number);
-                        DynamicObjectCollection saloutbillentry = saloutDyna.getDynamicObjectCollection("billentry");
+                        String billStutas=saloutDyna.getString("billstatus");
                         HashSet<DynamicObject> datalist = new HashSet<>();
-                        for (DynamicObject salentryRow : saloutbillentry) {
-                            Object mainbillentryid = salentryRow.get("mainbillentryid");
-                            if (soEntryIdList.contains(mainbillentryid)) {
-                                salentryRow.set("lot", lotMap.get(mainbillentryid));
-                                salentryRow.set("lotnumber", lotNumberMap.get(mainbillentryid));
-                                salentryRow.set("producedate", producedateMap.get(mainbillentryid));
-                                salentryRow.set("expirydate", expirydateMap.get(mainbillentryid));
-                                datalist.add(saloutDyna);
-                            }
+                        //单据状态为暂存
+                        if(billStutas=="A"){
+                            DynamicObjectCollection saloutbillentry = saloutDyna.getDynamicObjectCollection("billentry");
 
+                            for (DynamicObject salentryRow : saloutbillentry) {
+                                //批号为空
+                                if(salentryRow.getString("lotnumber")==null||salentryRow.getString("lotnumber")==""){
+                                    Object mainbillentryid = salentryRow.get("mainbillentryid");
+                                    if (soEntryIdList.contains(mainbillentryid)) {
+                                        salentryRow.set("lot", lotMap.get(mainbillentryid));
+                                        salentryRow.set("lotnumber", lotNumberMap.get(mainbillentryid));
+                                        salentryRow.set("producedate", producedateMap.get(mainbillentryid));
+                                        salentryRow.set("expirydate", expirydateMap.get(mainbillentryid));
+                                        datalist.add(saloutDyna);
+                                    }
+                                }
+                            }
                         }
+
                         if (datalist.size() == 0) {
                             return;
                         }
                         DynamicObject[] saveDynamicObject = datalist.toArray(new DynamicObject[datalist.size()]);
                         //保存
                         OperationResult operationResult1 = SaveServiceHelper.saveOperate(number, saveDynamicObject, OperateOption.create());
-                        if (operationResult1.isSuccess()) {
-                            OperateOption auditOption = OperateOption.create();
-                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-                            //提交
-                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", number, saveDynamicObject, auditOption);
-                            if (subResult.isSuccess()) {
-                                //审核
-                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", number, saveDynamicObject, auditOption);
-                            }
-                        }
-                        //Ids.add(id);
-                    }
-//                        for(Object pk:Ids){
-//                            DynamicObject saloutDyna= BusinessDataServiceHelper.loadSingle(pk,number);
+//                        if (operationResult1.isSuccess()) {
+//                            OperateOption auditOption = OperateOption.create();
+//                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+//                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+//                            //提交
+//                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", number, saveDynamicObject, auditOption);
+//                            if (subResult.isSuccess()) {
+//                                //审核
+//                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", number, saveDynamicObject, auditOption);
+//                            }
 //                        }
 
+                    }
                 }
 
             }

@@ -19,7 +19,7 @@ import java.util.HashSet;
 
 /**
  * 采购订单表单插件
- * 表单插件
+ * 表单标识：nckd_pm_purorderbill_ext
  * author:吴国强 2024-07-12
  */
 public class PurOrderBillPlugIn extends AbstractBillPlugIn {
