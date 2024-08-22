@@ -18,6 +18,11 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashSet;
 
+/**
+ * 采购订单提交时,计算月度采购数据
+ * 表单标识：nckd_pm_purorderbill_ext
+ * author:吴国强 2024-07-16
+ */
 public class PurOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn {
 
 

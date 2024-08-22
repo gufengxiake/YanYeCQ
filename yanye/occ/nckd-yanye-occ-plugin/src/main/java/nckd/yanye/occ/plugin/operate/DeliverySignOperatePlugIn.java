@@ -27,8 +27,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import java.util.*;
 
 /**
- * 发货记录签收
- * 服务插件
+ * 发货记录签收服务插件，执行销售出库下推财务应收
+ * 表单标识：nckd_ocbsoc_delivery_ext
  * author:吴国强 2024-07-12
  */
 public class DeliverySignOperatePlugIn extends AbstractOperationServicePlugIn {

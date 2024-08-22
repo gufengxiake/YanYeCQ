@@ -33,9 +33,10 @@ import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
 
-
 /*
-调拨申请单表单插件
+ * 调拨申请单表单插件
+ * 表单标识：nckd_im_transapply_ext
+ * author:吴国强 2024-07-22
  */
 public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7SelectListener {
 

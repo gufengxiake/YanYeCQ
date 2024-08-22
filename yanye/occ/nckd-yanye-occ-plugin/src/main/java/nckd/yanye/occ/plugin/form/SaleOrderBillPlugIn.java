@@ -21,6 +21,12 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import java.math.BigDecimal;
 import java.util.EventObject;
 
+/*
+ *销售订单表单插件，获取销售合同和运输合同
+ * 表单标识：nckd_sm_salorder_ext
+ * author:吴国强 2024-07-22
+ */
+
 public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
 
     @Override

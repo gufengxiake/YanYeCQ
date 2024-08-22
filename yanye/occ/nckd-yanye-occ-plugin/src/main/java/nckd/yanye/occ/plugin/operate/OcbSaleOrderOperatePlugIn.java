@@ -13,10 +13,10 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import java.math.BigDecimal;
 import java.util.*;
 
-
 /**
- * 单据操作插件
  * 要货订单提交时,计算分摊金额
+ * 表单标识：nckd_ocbsoc_saleorder_ext
+ * author:吴国强 2024-07-16
  */
 public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
 

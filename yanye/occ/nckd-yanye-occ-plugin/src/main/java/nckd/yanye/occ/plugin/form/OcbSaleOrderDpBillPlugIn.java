@@ -7,12 +7,16 @@ import kd.occ.ocbsoc.formplugin.nb2b.SaleOrderB2BEdit;
 import java.util.EventObject;
 
 /*
-经销商门户要货订单表单插件
+经销商门户要货订单表单插件，新增时携带订货渠道的开票信息
+表单标识：nckd_ocbsoc_saleorde_ext1
+author:wgq
+date:2024/08/20
  */
 public class OcbSaleOrderDpBillPlugIn extends SaleOrderB2BEdit {
       @Override
       public void afterCreateNewData(EventObject e) {
           //super.afterCreateNewData(e);
+          //订货渠道
           DynamicObject orderchannelid= (DynamicObject) this.getModel().getValue("orderchannelid");
           if(orderchannelid!=null){
               //纳税人类型
