@@ -13,10 +13,10 @@ import kd.bos.list.plugin.AbstractListPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
+import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -100,21 +100,23 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 
                     // 申请组织
                     DynamicObject org = t.getDynamicObject("org");
+                    // 物料
+                    DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("number", QCP.equals, dynamicObject.getString("nckd_materialnumber"))});
 
                     // 生成物料属性信息
                     if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
                             && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))
                             && "113".equals(org.getString("number"))) {
                         //【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
-                        this.purchaseInfo(dynamicObject, org,errorMsg);// 采购基本信息
+                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org,material);// 采购基本信息
                     } else if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
                             && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
                         //【物料属性】为‘自制’+【自制物料类型】“半成品”
-                        this.purchaseInfo(dynamicObject, org,errorMsg);// 采购基本信息
-                        this.marketInfo(dynamicObject, org,errorMsg);// 销售基本信息
+                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org,material);// 采购基本信息
+                        MaterialAttributeInformationUtils.defaultMarketInfo(org,material);// 销售基本信息
                     } else if ("2".equals(dynamicObject.getString("nckd_materialattribute"))) {
                         //【物料属性】为‘外购’
-                        this.marketInfo(dynamicObject, org,errorMsg);// 销售基本信息
+                        MaterialAttributeInformationUtils.defaultMarketInfo(org,material);// 销售基本信息
                     }
                 }
                 if (CollectionUtils.isNotEmpty(errorMsg)){
@@ -125,103 +127,6 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 this.getView().showSuccessNotification("物料维护单创建成功成功");
             });
         }
-    }
-
-    /**
-     * 销售基本信息
-     */
-    private void marketInfo(DynamicObject dynamicObject, DynamicObject org,List<String> errorMsg) {
-        if (CollectionUtils.isNotEmpty(errorMsg)){
-            return;
-        }
-        DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialsalinfo");
-
-        DynamicObject material = this.getMaterial(dynamicObject);
-
-        // 物料
-        newDynamicObject.set("masterid", material);
-        // 物料
-        newDynamicObject.set("material", material);
-        // 销售信息创建组织
-        newDynamicObject.set("createorg", org);
-        // 销售单位
-        newDynamicObject.set("salesunit", material.getDynamicObject("baseunit"));
-        // 销售信息数据状态
-        newDynamicObject.set("status", "A");
-        // 销售信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(org));
-        // 销售信息使用状态
-        newDynamicObject.set("enable", "1");
-        // 创建人
-        newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
-
-        OperationResult operationResult = SaveServiceHelper.saveOperate("bd_materialsalinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
-        if (!operationResult.isSuccess()){
-            errorMsg.add("物料名称："+dynamicObject.getString("nckd_materialname")+"后台默认新增生成采购基本信息失败");
-        }
-    }
-
-    /**
-     * 采购基本信息
-     */
-    private void purchaseInfo(DynamicObject dynamicObject, DynamicObject org,List<String> errorMsg) {
-        if (CollectionUtils.isNotEmpty(errorMsg)){
-            return;
-        }
-        DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialpurchaseinfo");
-
-        DynamicObject material = this.getMaterial(dynamicObject);
-
-        // 物料
-        newDynamicObject.set("masterid", material);
-        // 物料
-        newDynamicObject.set("material", material);
-        // 采购信息创建组织
-        newDynamicObject.set("createorg", org);
-        // 采购单位
-        newDynamicObject.set("purchaseunit", material.getDynamicObject("baseunit"));
-        // 采购信息数据状态
-        newDynamicObject.set("status", "A");
-        // 采购信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(org));
-        // 采购信息使用状态
-        newDynamicObject.set("enable", "1");
-        // 创建人
-        newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
-
-        OperationResult operationResult = SaveServiceHelper.saveOperate("bd_materialpurchaseinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
-        if (!operationResult.isSuccess()){
-            errorMsg.add("物料名称："+dynamicObject.getString("nckd_materialname")+"后台默认新增生成采购基本信息失败");
-        }
-    }
-
-
-    // 获取物料
-    private DynamicObject getMaterial(DynamicObject dynamicObject) {
-        String nckdMaterialnumber = dynamicObject.getString("nckd_materialnumber");
-        DynamicObject bd_material = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("number", QCP.equals, nckdMaterialnumber)});
-        return bd_material;
-    }
-
-    // 获取控制策略
-    private String getCtrlStrgy(DynamicObject org) {
-        String ctrlStrgy = BaseDataServiceHelper.getBdCtrlStrgy("bd_materialmftinfo", String.valueOf(org.getPkValue()));
-        if (ctrlStrgy != null && ctrlStrgy.length() > 0) {
-            String[] ctrlStrgys = ctrlStrgy.split(",");
-            if (ctrlStrgys.length > 1) {
-                String[] var3 = ctrlStrgys;
-                int var4 = ctrlStrgys.length;
-
-                for (int var5 = 0; var5 < var4; ++var5) {
-                    String ctr = var3[var5];
-                    if (kd.bos.dataentity.utils.StringUtils.isNotEmpty(ctr)) {
-                        return ctr;
-                    }
-                }
-            }
-        }
-
-        return ctrlStrgy;
     }
 
     /**
