@@ -109,7 +109,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialmftinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 编码
         newDynamicObject.set("number", dynamicObject.getString("nckd_materialnumber"));
         // 生产信息创建组织
@@ -195,9 +195,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("mpdm_materialplan");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 编码
         newDynamicObject.set("number", dynamicObject.getString("nckd_materialnumber"));
         // 计划信息创建组织
@@ -275,9 +275,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialinventoryinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 库存信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 库存单位
@@ -359,9 +359,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialcalinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 核算信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 存货类别
@@ -385,9 +385,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialsalinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 销售信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 销售单位
@@ -417,9 +417,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialpurchaseinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 采购信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 采购单位
@@ -476,7 +476,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 采购员
         DynamicObject operator = BusinessDataServiceHelper.loadSingle("bd_operator", new QFilter[]{new QFilter("operatornumber", QCP.equals, dynamicObject.getDynamicObject("nckd_buyer").getString("number"))});
         // 获取物料
-        DynamicObject material = this.getMaterial(dynamicObject);
+        DynamicObject material = dynamicObject.getDynamicObject("nckd_materialnumber");
         // 物料采购信息
         DynamicObject single = BusinessDataServiceHelper.loadSingle("bd_materialpurchaseinfo", new QFilter[]{new QFilter("masterid", QCP.equals, material.getPkValue())});
 
@@ -500,9 +500,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_inspect_cfg");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 质检信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 质检信息数据状态
