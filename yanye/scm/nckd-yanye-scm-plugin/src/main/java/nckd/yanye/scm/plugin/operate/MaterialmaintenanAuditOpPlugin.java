@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
+import cn.hutool.core.util.ObjectUtil;
 import kd.bos.coderule.api.CodeRuleInfo;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -16,6 +17,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 
 /**
@@ -62,10 +64,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
              */
             String documenttype = data.getString("nckd_documenttype");
             //单据维护类型 add：修改物料基本信息
-            if ("add".equals(data.getString("nckd_materialmaintunit"))){
+            if ("updateinfo".equals(data.getString("nckd_materialmaintunit"))){
                 baseInfo(data);
             }
-            baseInfo(data);
             switch (documenttype) {
                 case "1":
                     // 生产基本信息
@@ -109,60 +110,76 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
      */
     private void productionInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialmftinfo");
+        //单据维护类型：update:修改物料属性
+        if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            QFilter qFilter = new QFilter("createorg",QCP.equals,dynamicObject.get("org"))
+                    .and("masterid",QCP.equals,dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo",new QFilter[]{qFilter});
+            if (ObjectUtil.isNull(newDynamicObject)){
+                return;
+            }
+        }else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            // 物料
+            newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
+            // 编码
+            newDynamicObject.set("number", dynamicObject.getDynamicObject("nckd_materialnumber").getString("number"));
+            // 生产信息创建组织
+            newDynamicObject.set("createorg", dynamicObject.get("org"));
+            // 数据状态
+            newDynamicObject.set("status", "A");
+            // 生产信息控制策略
+            newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+            // 使用状态
+            newDynamicObject.set("enable", "1");
+            // 可主产品
+            newDynamicObject.set("ismainproduct", 1);
+            // 入库上限允差（%）
+            newDynamicObject.set("rcvinhighlimit", new BigDecimal(0));
+            // 入库下限允差（%）
+            newDynamicObject.set("rcvinlowlimit", new BigDecimal(0));
+            // 汇报上限允差（%）
+            newDynamicObject.set("rpthighlimit", new BigDecimal(0));
+            // 汇报下限允差（%）
+            newDynamicObject.set("rptlowlimit", new BigDecimal(0));
 
-        // 物料
-        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
-        // 编码
-        newDynamicObject.set("number", dynamicObject.getDynamicObject("nckd_materialnumber").getString("number"));
-        // 生产信息创建组织
-        newDynamicObject.set("createorg", dynamicObject.get("org"));
+            // 领料上限允差（%）
+            newDynamicObject.set("issinhighlimit", new BigDecimal(0));
+            // 领料下限允差（%）
+            newDynamicObject.set("issinlowlimit", new BigDecimal(0));
+            // 组件发料信息来源
+            newDynamicObject.set("invinfosrc", "D");
+            // 最小发料批量
+            newDynamicObject.set("minbatchnum", new BigDecimal(1));
+            // 最小发料批量单位
+            newDynamicObject.set("minbatchunit", dynamicObject.get("nckd_mftunit"));
+            // 创建人
+            newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
+        }
+        commonnproductionInfo(newDynamicObject,dynamicObject);
+        if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            // 数据处理
+            MaterialAttributeInformationUtils.reverseprocessData(newDynamicObject);
+        }
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
+    }
+    private void commonnproductionInfo(DynamicObject newDynamicObject,DynamicObject dynamicObject) {
         // 生产计量单位
         newDynamicObject.set("mftunit", dynamicObject.get("nckd_mftunit"));
-        // 数据状态
-        newDynamicObject.set("status", "A");
-        // 生产信息控制策略
-        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
-        // 使用状态
-        newDynamicObject.set("enable", "1");
         // 物料属性
         newDynamicObject.set("materialattr", dynamicObject.get("nckd_materialattri"));
         // 生产部门
         newDynamicObject.set("departmentorgid", dynamicObject.get("nckd_departmentorgid"));
         // BOM版本规则
         newDynamicObject.set("bomversionrule", dynamicObject.get("nckd_bomversionrule"));
-        // 可主产品
-        newDynamicObject.set("ismainproduct", 1);
         // 可联副产品
         newDynamicObject.set("isjointproduct", dynamicObject.get("nckd_isjointproduct"));
         // 供货库存组织
         newDynamicObject.set("supplyorgunitid", dynamicObject.get("nckd_supplyorgunitid"));
-        // 入库上限允差（%）
-        newDynamicObject.set("rcvinhighlimit", new BigDecimal(0));
-        // 入库下限允差（%）
-        newDynamicObject.set("rcvinlowlimit", new BigDecimal(0));
-        // 汇报上限允差（%）
-        newDynamicObject.set("rpthighlimit", new BigDecimal(0));
-        // 汇报下限允差（%）
-        newDynamicObject.set("rptlowlimit", new BigDecimal(0));
         // 领送料方式
         newDynamicObject.set("issuemode", dynamicObject.get("nckd_issuemode"));
         // 倒冲
         newDynamicObject.set("isbackflush", dynamicObject.get("nckd_isbackflush"));
-        // 领料上限允差（%）
-        newDynamicObject.set("issinhighlimit", new BigDecimal(0));
-        // 领料下限允差（%）
-        newDynamicObject.set("issinlowlimit", new BigDecimal(0));
-        // 组件发料信息来源
-        newDynamicObject.set("invinfosrc", "D");
-        // 最小发料批量
-        newDynamicObject.set("minbatchnum", new BigDecimal(1));
-        // 最小发料批量单位
-        newDynamicObject.set("minbatchunit", dynamicObject.get("nckd_mftunit"));
-        // 创建人
-        newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
-
-        // 数据处理
-        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
