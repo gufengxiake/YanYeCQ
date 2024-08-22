@@ -307,4 +307,14 @@ public class MaterialAttributeInformationUtils {
         DynamicObject rule = BusinessDataServiceHelper.loadSingleFromCache("bd_bomversionrule_new", "id", qFilter.toArray());
         return rule;
     }
+    /**
+     * 数据处理(反审核)
+     * @param dynamicObject  单据数据
+     */
+    public static void reverseprocessData(DynamicObject dynamicObject){
+        // 单据标识
+        String entityNumber = dynamicObject.getDataEntityType().getName();
+        //反审核
+         OperationServiceHelper.executeOperate("unaudit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+    }
 }
