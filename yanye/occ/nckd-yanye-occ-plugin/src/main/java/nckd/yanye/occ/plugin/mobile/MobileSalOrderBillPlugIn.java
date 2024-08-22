@@ -5,6 +5,11 @@ import kd.occ.ocdma.formplugin.order.SaleOrderBillPlugin;
 
 import java.util.EventObject;
 
+/*
+ * 要货订单移动表单插件
+ * 表单标识：nckd_ocdma_saleorder_add
+ * author:吴国强 2024-07-22
+ */
 public class MobileSalOrderBillPlugIn extends SaleOrderBillPlugin {
     @Override
     public void afterCreateNewData(EventObject e) {

@@ -10,6 +10,11 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
 
+/**
+ * 销售订单提交服务插件 更新表头预收金额
+ * 表单标识：nckd_sm_salorder_ext
+ * author:吴国强 2024-07-16
+ */
 public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

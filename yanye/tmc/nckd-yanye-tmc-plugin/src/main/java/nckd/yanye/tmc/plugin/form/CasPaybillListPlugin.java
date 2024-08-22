@@ -75,6 +75,47 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
                 }
             }
         }
+        /*if (StringUtils.equals(KEY_BATCHENDORSE, formOperate.getOperateKey())) {
+            //获取列表选中数据
+            BillList billlistap = this.getView().getControl("billlistap");
+            ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
+            EntityType entityType = billlistap.getEntityType();
+
+            //获取选中行pkid
+            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
+            //获取完整数据
+            DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            String[] numberStr = {"JSFS06", "JSFS07", "JSFS02", "JSFS03"};
+            QFilter qFilter = new QFilter("number", QCP.in, numberStr);
+            DynamicObject[] settlementtype = BusinessDataServiceHelper.load("bd_settlementtype", "id", qFilter.toArray());
+            List<Object> settlementtypeId = Arrays.stream(settlementtype).map(e -> e.getPkValue()).collect(Collectors.toList());
+            //背书仅适应结算方式类型是承兑汇票、支票或本票且结算号选择了库存票据的付款单，你所选单据不支持背书。
+            List<DynamicObject> casPaybillList1 = Arrays.stream(casPaybillArr).filter(e -> !settlementtypeId.contains(e.getDynamicObject("settletype").getPkValue())).collect(Collectors.toList());
+            //只有已审核状态的单据允许背书。
+            List<DynamicObject> casPaybillList2 = Arrays.stream(casPaybillArr).filter(e -> !"C".equals(e.getString("billstatus"))).collect(Collectors.toList());
+            StringBuffer msg = new StringBuffer();
+            ListSelectedRowCollection listSelectedData = args.getListSelectedData();
+            if (casPaybillList1.size() > 0) {
+                for (DynamicObject dynamicObject : casPaybillList1) {
+                    msg.append("单据").append(dynamicObject.getString("billno")).append("未审核不允许背书").append("\r\n");
+                    listSelectedData.remove(dynamicObject.getPkValue());
+                    for (ListSelectedRow row : listSelectedData) {
+
+                    }
+                }
+            }
+            if (casPaybillList2.size() > 0) {
+                for (DynamicObject dynamicObject : casPaybillList2) {
+                    msg.append("背书仅适应结算方式类型是承兑汇票、支票或本票且结算号选择了库存票据的付款单，你所选单据").append(dynamicObject.getString("billno")).append("不支持背书。").append("\r\n");
+                    listSelectedData.remove(dynamicObject.getPkValue());
+                }
+            }
+            args.setListSelectedData(listSelectedData);
+            if (ObjectUtils.isNotEmpty(msg)) {
+                this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                args.setCancel(true);
+            }
+        }*/
     }
 
     @Override
@@ -91,34 +132,39 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
             DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
-            DynamicObject[] casPaybillArr1 = filterDraftBill(casPaybillArr, true);
-            // 获取结算号不存在的数据，构建提示数据
-            DynamicObject[] casPaybillArr2 = filterDraftBill(casPaybillArr, false);
-            StringBuffer msg = new StringBuffer();
-            for (DynamicObject dynamicObject : casPaybillArr2) {
-                msg.append("背书仅适用结算方式类型是承兑汇票且结算号选择了库存票据的付款单，你所选单据《").append(dynamicObject.getString("billno")).append("》不支持背书").append("\r\n");
-            }
+            String[] numberStr = {"JSFS06", "JSFS07", "JSFS02", "JSFS03"};
+            QFilter qFilter = new QFilter("number", QCP.in, numberStr);
+            DynamicObject[] settlementtype = BusinessDataServiceHelper.load("bd_settlementtype", "id", qFilter.toArray());
+            List<Object> settlementtypeId = Arrays.stream(settlementtype).map(e -> e.getPkValue()).collect(Collectors.toList());
+            //背书仅适应结算方式类型是承兑汇票、支票或本票且结算号选择了库存票据的付款单，你所选单据不支持背书。
+            List<DynamicObject> casPaybillList1 = Arrays.stream(casPaybillArr)
+                    //afterDoOperation后，能下推背书的已经下推了，单据状态已经变为J 票据处理中 ，所以跳过去的时候筛选出这部分数据进行列表展示
+                    .filter(e -> "J".equals(e.getString("billstatus")))
+                    .filter(e -> settlementtypeId.contains(e.getDynamicObject("settletype").getPkValue())).collect(Collectors.toList());
+
             //获取结算号 settletnumber
-            Set<String> settletnumber = Arrays.stream(casPaybillArr1).map(e -> {
-                DynamicObject draftbill = e.getDynamicObjectCollection("draftbill").get(0);
-                DynamicObject dy = (DynamicObject) draftbill.get(1);
-                return dy.getString("draftbillno");
-            }).collect(Collectors.toSet());
-            //cdm_drafttradebill
-            //创建弹出列表界面对象，ListShowParameter 表示弹出页面为列表界面
-            ListShowParameter listShowParameter = new ListShowParameter();
-            //设置F7列表表单模板 F7选择列表界面：bos_listf7 普通列表界面：bos_list
-            listShowParameter.setFormId("bos_list");
-            //设置BillFormId为基础资料的标识
-            listShowParameter.setBillFormId("cdm_drafttradebill");
-            //设置弹出页面标题
-            //listShowParameter.setCaption("人员同步选择界面");
-            //设置弹出页面的打开方式
-            listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
-            List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
-            qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
-            this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
-            this.getView().showForm(listShowParameter);
+            if (casPaybillList1.size() > 0) {
+                Set<String> settletnumber = casPaybillList1.stream().map(e -> {
+                    DynamicObject draftbill = e.getDynamicObjectCollection("draftbill").get(0);
+                    DynamicObject dy = (DynamicObject) draftbill.get(1);
+                    return dy.getString("draftbillno");
+                }).collect(Collectors.toSet());
+                //cdm_drafttradebill
+                //创建弹出列表界面对象，ListShowParameter 表示弹出页面为列表界面
+                ListShowParameter listShowParameter = new ListShowParameter();
+                //设置F7列表表单模板 F7选择列表界面：bos_listf7 普通列表界面：bos_list
+                listShowParameter.setFormId("bos_list");
+                //设置BillFormId为基础资料的标识
+                listShowParameter.setBillFormId("cdm_drafttradebill");
+                //设置弹出页面标题
+                //listShowParameter.setCaption("人员同步选择界面");
+                //设置弹出页面的打开方式
+                listShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
+                List<QFilter> qFilters = listShowParameter.getListFilterParameter().getQFilters();
+                qFilters.add(new QFilter("entrys.draftbill.draftbillno", QCP.in, settletnumber));
+//            this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                this.getView().showForm(listShowParameter);
+            }
         }
     }
 
@@ -138,22 +184,5 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             }
         }
 
-    }
-
-    // 根据结算单过滤数据
-    private static DynamicObject[] filterDraftBill(DynamicObject[] array,boolean isFilter) {
-        List<DynamicObject> resultList = new ArrayList<>();
-        for (DynamicObject obj : array) {
-            String draftBillNo = obj.getString("settletnumber"); // 根据实际方法调整
-            // 返回不为null
-            if (StringUtils.isNotEmpty(draftBillNo) && isFilter) {
-                resultList.add(obj);
-            }
-            // 返回为null
-            if(StringUtils.isEmpty(draftBillNo) && !isFilter){
-                resultList.add(obj);
-            }
-        }
-        return resultList.toArray(new DynamicObject[]{});
     }
 }

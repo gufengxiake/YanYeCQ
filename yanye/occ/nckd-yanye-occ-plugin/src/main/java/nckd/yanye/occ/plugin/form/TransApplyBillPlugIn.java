@@ -33,9 +33,10 @@ import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.List;
 
-
 /*
-调拨申请单表单插件
+ * 调拨申请单表单插件
+ * 表单标识：nckd_im_transapply_ext
+ * author:吴国强 2024-07-22
  */
 public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7SelectListener {
 
@@ -222,6 +223,7 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                         .and("nckd_fapplyuserid.id", QCP.equals, ywyId)
                         .and("nckd_orgfield.id", QCP.equals, orgId));
                 listPara.setListFilterParameter(listFilterParameter);
+
                 // 设置回调
                 listPara.setCloseCallBack(new CloseCallBack(this, "return"));
                 this.getView().showForm(listPara);

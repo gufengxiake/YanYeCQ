@@ -2,23 +2,23 @@ package nckd.yanye.scm.plugin.operate;
 
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 
+import cn.hutool.core.util.ObjectUtil;
+import kd.bos.coderule.api.CodeRuleInfo;
 import kd.bos.context.RequestContext;
-import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.dataentity.utils.StringUtils;
-import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
-import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 
 /**
  * @author husheng
@@ -32,7 +32,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         super.onPreparePropertys(e);
 
         List<String> fieldKeys = e.getFieldKeys();
-//        fieldKeys.add("");
+        fieldKeys.addAll(this.billEntityType.getAllFields().keySet());
     }
 
     @Override
@@ -63,7 +63,10 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
              * 采购类型 5
              */
             String documenttype = data.getString("nckd_documenttype");
-
+            //单据维护类型 add：修改物料基本信息
+            if ("updateinfo".equals(data.getString("nckd_materialmaintunit"))){
+                baseInfo(data);
+            }
             switch (documenttype) {
                 case "1":
                     // 生产基本信息
@@ -72,7 +75,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                     this.planInfo(data);
 
                     // 【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
-                    if("1".equals(materialattribute) && "1".equals(selfmaterialtype) && "113".equals(org.getString("number"))){
+                    if ("1".equals(materialattribute) && "1".equals(selfmaterialtype) && "113".equals(org.getString("number"))) {
                         // 质检基本信息
                         this.inspectInfo(data);
                     }
@@ -107,85 +110,76 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
      */
     private void productionInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialmftinfo");
+        //单据维护类型：update:修改物料属性
+        if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            QFilter qFilter = new QFilter("createorg",QCP.equals,dynamicObject.get("org"))
+                    .and("masterid",QCP.equals,dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo",new QFilter[]{qFilter});
+            if (ObjectUtil.isNull(newDynamicObject)){
+                return;
+            }
+        }else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            // 物料
+            newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
+            // 编码
+            newDynamicObject.set("number", dynamicObject.getDynamicObject("nckd_materialnumber").getString("number"));
+            // 生产信息创建组织
+            newDynamicObject.set("createorg", dynamicObject.get("org"));
+            // 数据状态
+            newDynamicObject.set("status", "A");
+            // 生产信息控制策略
+            newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+            // 使用状态
+            newDynamicObject.set("enable", "1");
+            // 可主产品
+            newDynamicObject.set("ismainproduct", 1);
+            // 入库上限允差（%）
+            newDynamicObject.set("rcvinhighlimit", new BigDecimal(0));
+            // 入库下限允差（%）
+            newDynamicObject.set("rcvinlowlimit", new BigDecimal(0));
+            // 汇报上限允差（%）
+            newDynamicObject.set("rpthighlimit", new BigDecimal(0));
+            // 汇报下限允差（%）
+            newDynamicObject.set("rptlowlimit", new BigDecimal(0));
 
-        // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
-        // 编码
-        newDynamicObject.set("number", dynamicObject.getString("nckd_materialnumber"));
-        // 生产信息创建组织
-        newDynamicObject.set("createorg", dynamicObject.get("org"));
+            // 领料上限允差（%）
+            newDynamicObject.set("issinhighlimit", new BigDecimal(0));
+            // 领料下限允差（%）
+            newDynamicObject.set("issinlowlimit", new BigDecimal(0));
+            // 组件发料信息来源
+            newDynamicObject.set("invinfosrc", "D");
+            // 最小发料批量
+            newDynamicObject.set("minbatchnum", new BigDecimal(1));
+            // 最小发料批量单位
+            newDynamicObject.set("minbatchunit", dynamicObject.get("nckd_mftunit"));
+            // 创建人
+            newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
+        }
+        commonnproductionInfo(newDynamicObject,dynamicObject);
+        if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))){
+            // 数据处理
+            MaterialAttributeInformationUtils.reverseprocessData(newDynamicObject);
+        }
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
+    }
+    private void commonnproductionInfo(DynamicObject newDynamicObject,DynamicObject dynamicObject) {
         // 生产计量单位
         newDynamicObject.set("mftunit", dynamicObject.get("nckd_mftunit"));
-        // 数据状态
-        newDynamicObject.set("status", "A");
-        // 生产信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
-        // 使用状态
-        newDynamicObject.set("enable", "1");
         // 物料属性
-        newDynamicObject.set("materialattr", dynamicObject.get("nckd_combofield3"));
+        newDynamicObject.set("materialattr", dynamicObject.get("nckd_materialattri"));
         // 生产部门
         newDynamicObject.set("departmentorgid", dynamicObject.get("nckd_departmentorgid"));
         // BOM版本规则
         newDynamicObject.set("bomversionrule", dynamicObject.get("nckd_bomversionrule"));
-        // 可主产品
-        newDynamicObject.set("ismainproduct", 1);
         // 可联副产品
         newDynamicObject.set("isjointproduct", dynamicObject.get("nckd_isjointproduct"));
         // 供货库存组织
         newDynamicObject.set("supplyorgunitid", dynamicObject.get("nckd_supplyorgunitid"));
-        // 入库上限允差（%）
-        newDynamicObject.set("rcvinhighlimit", new BigDecimal(0));
-        // 入库下限允差（%）
-        newDynamicObject.set("rcvinlowlimit", new BigDecimal(0));
-        // 汇报上限允差（%）
-        newDynamicObject.set("rpthighlimit", new BigDecimal(0));
-        // 汇报下限允差（%）
-        newDynamicObject.set("rptlowlimit", new BigDecimal(0));
         // 领送料方式
         newDynamicObject.set("issuemode", dynamicObject.get("nckd_issuemode"));
         // 倒冲
         newDynamicObject.set("isbackflush", dynamicObject.get("nckd_isbackflush"));
-        // 领料上限允差（%）
-        newDynamicObject.set("issinhighlimit", new BigDecimal(0));
-        // 领料下限允差（%）
-        newDynamicObject.set("issinlowlimit", new BigDecimal(0));
-        // 组件发料信息来源
-        newDynamicObject.set("invinfosrc", "D");
-        // 最小发料批量
-        newDynamicObject.set("minbatchnum", new BigDecimal(1));
-        // 创建人
-        newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
-
-        SaveServiceHelper.saveOperate("bd_materialmftinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
-    }
-
-    // 获取物料
-    private DynamicObject getMaterial(DynamicObject dynamicObject) {
-        String nckdMaterialnumber = dynamicObject.getString("nckd_materialnumber");
-        DynamicObject bd_material = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("number", QCP.equals, nckdMaterialnumber)});
-        return bd_material;
-    }
-
-    // 获取控制策略
-    private String getCtrlStrgy(DynamicObject org) {
-        String ctrlStrgy = BaseDataServiceHelper.getBdCtrlStrgy("bd_materialmftinfo", String.valueOf(org.getPkValue()));
-        if (ctrlStrgy != null && ctrlStrgy.length() > 0) {
-            String[] ctrlStrgys = ctrlStrgy.split(",");
-            if (ctrlStrgys.length > 1) {
-                String[] var3 = ctrlStrgys;
-                int var4 = ctrlStrgys.length;
-
-                for (int var5 = 0; var5 < var4; ++var5) {
-                    String ctr = var3[var5];
-                    if (StringUtils.isNotEmpty(ctr)) {
-                        return ctr;
-                    }
-                }
-            }
-        }
-
-        return ctrlStrgy;
     }
 
     /**
@@ -195,11 +189,11 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("mpdm_materialplan");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 编码
-        newDynamicObject.set("number", dynamicObject.getString("nckd_materialnumber"));
+        newDynamicObject.set("number", dynamicObject.getDynamicObject("nckd_materialnumber").getString("number"));
         // 计划信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("nckd_createorg"));
         // 物料属性
@@ -207,7 +201,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 数据状态
         newDynamicObject.set("status", "A");
         // 控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("nckd_createorg")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("nckd_createorg")));
         // 使用状态
         newDynamicObject.set("enable", "1");
         // 计划方式
@@ -265,7 +259,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("mpdm_materialplan", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
@@ -275,9 +270,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialinventoryinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 库存信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 库存单位
@@ -285,9 +280,11 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 库存信息数据状态
         newDynamicObject.set("status", "A");
         // 库存信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
         // 库存信息使用状态
         newDynamicObject.set("enable", "1");
+        // 基本单位
+        newDynamicObject.set("baseunit", dynamicObject.get("nckd_inventoryunit"));
         // 最小包装量
         newDynamicObject.set("minpackqty", dynamicObject.get("nckd_minpackqty"));
         // 来料检验
@@ -317,27 +314,34 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         }
 
         // 序列号生成时点
-        newDynamicObject.set("enablelot", "4");
-        // 保质期管理
-        newDynamicObject.set("enableshelflifemgr", dynamicObject.get("nckd_enableshelflifemgr"));
-        // 保质期单位
-        newDynamicObject.set("shelflifeunit", dynamicObject.get("nckd_shelflifeunit"));
-        // 保质期
-        newDynamicObject.set("shelflife", dynamicObject.get("nckd_shelflife"));
-        // 计算方向
-        newDynamicObject.set("caldirection", "3");
-        // 到期日计算方式
-        newDynamicObject.set("calculationforenddate", dynamicObject.get("nckd_calculationforenddat"));
-        // 提前期单位
-        newDynamicObject.set("leadtimeunit", dynamicObject.get("nckd_leadtimeunit"));
-        // 入库失效提前期
-        newDynamicObject.set("dateofoverdueforin", dynamicObject.get("nckd_dateofoverdueforin"));
-        // 出库失效提前期
-        newDynamicObject.set("dateofoverdueforout", dynamicObject.get("nckd_dateofoverdueforout"));
-        // 启用预警
-        newDynamicObject.set("enablewarnlead", dynamicObject.get("nckd_enablewarnlead"));
-        // 预警提前期
-        newDynamicObject.set("warnleadtime", dynamicObject.get("nckd_warnleadtime"));
+        newDynamicObject.set("sngentimepoint", "4");
+
+        if (dynamicObject.getBoolean("nckd_enableshelflifemgr")) {
+            // 保质期管理
+            newDynamicObject.set("enableshelflifemgr", dynamicObject.get("nckd_enableshelflifemgr"));
+            // 保质期单位
+            newDynamicObject.set("shelflifeunit", dynamicObject.get("nckd_shelflifeunit"));
+            // 保质期
+            newDynamicObject.set("shelflife", dynamicObject.get("nckd_shelflife"));
+            // 计算方向
+            newDynamicObject.set("caldirection", "3");
+            // 到期日计算方式
+            newDynamicObject.set("calculationforenddate", dynamicObject.get("nckd_calculationforenddat"));
+            // 提前期单位
+            newDynamicObject.set("leadtimeunit", dynamicObject.get("nckd_leadtimeunit"));
+            // 入库失效提前期
+            newDynamicObject.set("dateofoverdueforin", dynamicObject.get("nckd_dateofoverdueforin"));
+            // 出库失效提前期
+            newDynamicObject.set("dateofoverdueforout", dynamicObject.get("nckd_dateofoverdueforout"));
+        }
+
+        if (dynamicObject.getBoolean("nckd_enablewarnlead")) {
+            // 启用预警
+            newDynamicObject.set("enablewarnlead", dynamicObject.get("nckd_enablewarnlead"));
+            // 预警提前期
+            newDynamicObject.set("warnleadtime", dynamicObject.get("nckd_warnleadtime"));
+        }
+
         // 制造策略
         newDynamicObject.set("manustrategy", dynamicObject.get("nckd_manustrategy"));
         // 出库规则
@@ -345,7 +349,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("bd_materialinventoryinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
@@ -355,9 +360,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialcalinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 核算信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 存货类别
@@ -365,13 +370,14 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 核算信息数据状态
         newDynamicObject.set("status", "A");
         // 核算信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
         // 核算信息使用状态
         newDynamicObject.set("enable", "1");
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("bd_materialcalinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
@@ -381,9 +387,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialsalinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 销售信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 销售单位
@@ -391,7 +397,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 销售信息数据状态
         newDynamicObject.set("status", "A");
         // 销售信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
         // 销售信息使用状态
         newDynamicObject.set("enable", "1");
         // 控制发货数量
@@ -403,7 +409,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("bd_materialsalinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
@@ -413,9 +420,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialpurchaseinfo");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 采购信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 采购单位
@@ -423,7 +430,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 采购信息数据状态
         newDynamicObject.set("status", "A");
         // 采购信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
         // 采购信息使用状态
         newDynamicObject.set("enable", "1");
         // 控制收货数量
@@ -435,7 +442,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("bd_materialpurchaseinfo", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
     /**
@@ -443,11 +451,50 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
      */
     private void buyerInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("msbd_puropermaterctrl");
+        CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule("msbd_puropermaterctrl", newDynamicObject, null);
+        String number = CodeRuleServiceHelper.readNumber(codeRule, newDynamicObject);
 
+        // 采购组织
+        newDynamicObject.set("org", dynamicObject.get("org"));
+        // 编码
+        newDynamicObject.set("number", number);
+        // 名称
+        newDynamicObject.set("name", number);
+        // 控制维度
+        newDynamicObject.set("controldimension", "OPER_MATER");
+        // 控制类型
+        newDynamicObject.set("controltype", "ALLOW");
+        // 数据状态
+        newDynamicObject.set("status", "A");
+        // 使用状态
+        newDynamicObject.set("enable", "1");
+        // 数据类型
+        newDynamicObject.set("datatype", "msbd_puropermaterctrl");
         // 创建人
         newDynamicObject.set("creator", RequestContext.get().getCurrUserId());
 
-        SaveServiceHelper.saveOperate("msbd_puropermaterctrl", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 可采明细
+        DynamicObjectCollection entryentity = newDynamicObject.getDynamicObjectCollection("entryentity");
+        DynamicObject addNew = entryentity.addNew();
+
+        // 采购员
+        DynamicObject operator = BusinessDataServiceHelper.loadSingle("bd_operator", new QFilter[]{new QFilter("operatornumber", QCP.equals, dynamicObject.getDynamicObject("nckd_buyer").getString("number"))});
+        // 获取物料
+        DynamicObject material = dynamicObject.getDynamicObject("nckd_materialnumber");
+        // 物料采购信息
+        DynamicObject single = BusinessDataServiceHelper.loadSingle("bd_materialpurchaseinfo", new QFilter[]{new QFilter("masterid", QCP.equals, material.getPkValue())});
+
+        // 采购员编码
+        addNew.set("operator", operator);
+        // 采购组编码
+        addNew.set("operatorgroup", dynamicObject.get("nckd_purchaseorg"));
+        // 主物料
+        addNew.set("materialmasterid", material);
+        // 物料编码
+        addNew.set("material", single);
+
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
 
@@ -458,15 +505,15 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_inspect_cfg");
 
         // 物料
-        newDynamicObject.set("masterid", this.getMaterial(dynamicObject));
+        newDynamicObject.set("masterid", dynamicObject.get("nckd_materialnumber"));
         // 物料
-        newDynamicObject.set("material", this.getMaterial(dynamicObject));
+        newDynamicObject.set("material", dynamicObject.get("nckd_materialnumber"));
         // 质检信息创建组织
         newDynamicObject.set("createorg", dynamicObject.get("org"));
         // 质检信息数据状态
         newDynamicObject.set("status", "A");
         // 质检信息控制策略
-        newDynamicObject.set("ctrlstrategy", this.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
+        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("org")));
         // 质检信息使用状态
         newDynamicObject.set("enable", "1");
         // 创建人
@@ -483,6 +530,25 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
             addNew.set("nocheckflag", dynamicObject1.get("nckd_nocheckflag"));
         });
 
-        SaveServiceHelper.saveOperate("bd_inspect_cfg", new DynamicObject[]{newDynamicObject}, OperateOption.create());
+        // 数据处理
+        MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
-}
+
+    private void baseInfo(DynamicObject dynamicObject) {
+        //查询物料
+        DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue(),"bd_material");
+        dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));//物料名称
+        dynamic.set("modelnum",dynamicObject.get("nckd_alterspecificat"));//规格
+        dynamic.set("modelnum",dynamicObject.get("nckd_altermodel"));//型号
+        dynamic.set("modifier",RequestContext.get().getCurrUserId());//修改人
+        dynamic.set("modifytime", new Date());//修改时间
+        dynamic.set("group",dynamicObject.get("nckd_altermaterialclass"));//物料分组
+        dynamic.set("helpcode",dynamicObject.get("nckd_altermnemoniccode"));//助记码
+        dynamic.set("oldnumber",dynamicObject.get("nckd_alteroldnumber"));//旧物料编码
+        dynamic.set("description",dynamicObject.get("nckd_alterremark"));//描述
+        dynamic.set("hazardous",dynamicObject.get("nckd_altermaterialrisk"));//物料危险性
+        dynamic.set("enableoutsource",dynamicObject.get("nckd_alteroutsourcing"));//可委外
+        SaveServiceHelper.update(dynamic);
+    }
+
+    }

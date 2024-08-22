@@ -41,8 +41,8 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * 销售出库单审核自动执行采购订单下推采购收货单
- * 服务插件
+ * 销售出库单审核服务插件 自动执行采购订单下推采购收货单
+ * 表单标识：nckd_im_saloutbill_ext
  * author:吴国强 2024-07-12
  */
 public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
