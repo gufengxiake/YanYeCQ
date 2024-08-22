@@ -62,8 +62,10 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
             return;
         }
         nckdInventry.clear();
+        cfm.set("nckd_receiptinvoice",false);
         try {
             SaveServiceHelper.save(new DynamicObject[]{cfm});
+            this.getView().updateView();
             this.getView().showMessage("取消发票指定成功");
         }catch (Exception ex){
             this.getView().showMessage(ex.getMessage());

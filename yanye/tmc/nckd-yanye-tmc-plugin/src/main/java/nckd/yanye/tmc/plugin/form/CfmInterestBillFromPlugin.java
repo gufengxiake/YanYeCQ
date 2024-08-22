@@ -52,7 +52,11 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
                 return;
             }
             this.getModel().deleteEntryRow("nckd_inventry",index);
-            this.getView().updateView("nckd_inventry");
+            this.getView().updateView();
+            DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_inventry");
+            if (entity.size() == 0){
+                this.getModel().setValue("nckd_receiptinvoice",false);
+            }
             DynamicObject dataEntity = this.getModel().getDataEntity();
             SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
