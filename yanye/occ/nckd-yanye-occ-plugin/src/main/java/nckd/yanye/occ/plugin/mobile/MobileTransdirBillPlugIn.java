@@ -10,6 +10,7 @@ import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.*;
@@ -29,6 +30,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -45,6 +47,29 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
 
     private static final String targetBill = "im_transdirbill";
 
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        super.afterCreateNewData(e);
+        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
+        if(user!=null){
+            String number=user.getString("number");
+            this.getModel().setItemValueByNumber("nckd_ywy",number);
+        }
+    }
+
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        String propName = e.getProperty().getName();
+        if ("material".equals(propName)) {
+            DynamicObject material = (DynamicObject) e.getChangeSet()[0].getNewValue();
+            String name = material.getDynamicObject("masterid").getString("name");
+            DynamicObject unit=material.getDynamicObject("inventoryunit");
+            //获取当前行
+            int index = e.getChangeSet()[0].getRowIndex();
+            this.getModel().setValue("materialname",name,index);
+            this.getModel().setValue("unit",unit,index);
+        }
+    }
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
