@@ -299,12 +299,12 @@ public class MaterialAttributeInformationUtils {
                 // 审核
                 OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
                 if(!auditOperate.isSuccess()){
-                    logger.error(auditOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-                    throw new KDBizException(auditOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+                    logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
+                    throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                 }
             } else {
-                logger.error(submitOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-                throw new KDBizException(submitOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+                logger.error(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
+                throw new KDBizException(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
             }
         } else {
             logger.error(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
