@@ -74,7 +74,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
 
                     // 【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’或'江西富达盐化有限公司'
                     String number = org.getString("number");
-                    if ("1".equals(materialattribute) && "1".equals(selfmaterialtype) && ("113".equals(number) || "121".equals(number))) {
+                    if (("1".equals(materialattribute) && "1".equals(selfmaterialtype) && ("113".equals(number) || "121".equals(number)))
+                    || ("1".equals(materialattribute) && "2".equals(selfmaterialtype)) || "2".equals(materialattribute)) {
                         // 计划基本信息
                         this.planInfo(data);
                     }
