@@ -273,69 +273,6 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("materialattr", dynamicObject.get("nckd_materialattr"));
         // 计划方式
         newDynamicObject.set("planmode", dynamicObject.get("nckd_planmode"));
-
-        DynamicObject material = this.getMaterial(dynamicObject);
-
-        // 物料
-        newDynamicObject.set("masterid", material);
-        // 物料
-        newDynamicObject.set("material", material);
-        // 编码
-        newDynamicObject.set("number", dynamicObject.getDynamicObject("nckd_materialnumber").getString("number"));
-        // 计划信息创建组织
-        newDynamicObject.set("createorg", dynamicObject.get("nckd_createorg"));
-        // 物料属性
-        newDynamicObject.set("materialattr", dynamicObject.get("nckd_materialattr"));
-        // 数据状态
-        newDynamicObject.set("status", "A");
-        // 控制策略
-        newDynamicObject.set("ctrlstrategy", MaterialAttributeInformationUtils.getCtrlStrgy(dynamicObject.getDynamicObject("nckd_createorg")));
-        // 使用状态
-        newDynamicObject.set("enable", "1");
-        // 计划方式
-        newDynamicObject.set("planmode", dynamicObject.get("nckd_planmode"));
-        // 预留类型
-        newDynamicObject.set("reservedtype", "C");
-        // 成品率
-        newDynamicObject.set("yield", new BigDecimal(1));
-        // 损耗率
-        newDynamicObject.set("wastagerate", new BigDecimal(0));
-        // 损耗计算公式
-        newDynamicObject.set("wastagerateformula", "B");
-        // 提前期类型
-        newDynamicObject.set("leadtimetype", "A");
-        // 固定提前期（天）
-        newDynamicObject.set("fixedleadtime", 0);
-        // 变动提前期（天）
-        newDynamicObject.set("changeleadtime", 0);
-        // 检验提前期（天）
-        newDynamicObject.set("inspectionleadtime", 0);
-        // 前处理时间（天）
-        newDynamicObject.set("preprocessingtime", 0);
-        // 后处理时间（天）
-        newDynamicObject.set("postprocessingtime", 0);
-        // 变动批量
-        newDynamicObject.set("changebatch", 0);
-        // 批量政策
-        newDynamicObject.set("lotpolicy", "A");
-        // 批量数量/取整倍数
-        newDynamicObject.set("batchqty", new BigDecimal(0));
-        // 批量增量
-        newDynamicObject.set("batchincrement", new BigDecimal(0));
-        // 最小批量
-        newDynamicObject.set("minlotsize", new BigDecimal(0));
-        // 最大批量
-        newDynamicObject.set("maxlotsize", new BigDecimal(0));
-        // 分割符号
-        newDynamicObject.set("separatorsymbol", "A");
-        // 分割间隔周期（天）
-        newDynamicObject.set("intervalperiod", new BigDecimal(0));
-        // 分割基数
-        newDynamicObject.set("partitionbase", new BigDecimal(0));
-        // 动态周期（天）
-        newDynamicObject.set("dynamiccycle", new BigDecimal(0));
-        // 固定周期（天）
-        newDynamicObject.set("fixedperiod", new BigDecimal(0));
         // 允许提前期间（天）
         newDynamicObject.set("allowleadtime", dynamicObject.get("nckd_allowleadtime"));
         // 提前容差（天）
@@ -395,7 +332,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
-    private void commonstockInfo(DynamicObject newDynamicObject, DynamicObject dynamicObject) {
+    private void commonstockInfo(DynamicObject newDynamicObject,DynamicObject dynamicObject){
         // 库存单位
         newDynamicObject.set("inventoryunit", dynamicObject.get("nckd_inventoryunit"));
         // 最小包装量
@@ -414,21 +351,12 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("ismaxinvalert", dynamicObject.get("nckd_ismaxinvalert"));
         // 最大库存
         newDynamicObject.set("maxinvqty", dynamicObject.get("nckd_maxinvqty"));
-        // 允许预留
-        newDynamicObject.set("isreserve", 1);
-        // 预留期限
-        newDynamicObject.set("reservationperiod", 0);
-
         if (dynamicObject.get("nckd_lotcoderule") != null) {
             // 启用批号管理
             newDynamicObject.set("enablelot", 1);
             // 批号规则
             newDynamicObject.set("lotcoderule", dynamicObject.get("nckd_lotcoderule"));
         }
-
-        // 序列号生成时点
-        newDynamicObject.set("sngentimepoint", "4");
-
         if (dynamicObject.getBoolean("nckd_enableshelflifemgr")) {
             // 保质期管理
             newDynamicObject.set("enableshelflifemgr", dynamicObject.get("nckd_enableshelflifemgr"));
@@ -447,7 +375,6 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
             // 出库失效提前期
             newDynamicObject.set("dateofoverdueforout", dynamicObject.get("nckd_dateofoverdueforout"));
         }
-
         if (dynamicObject.getBoolean("nckd_enablewarnlead")) {
             // 启用预警
             newDynamicObject.set("enablewarnlead", dynamicObject.get("nckd_enablewarnlead"));
