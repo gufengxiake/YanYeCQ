@@ -76,7 +76,8 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 //                objects.addAll(dynamicObjectCollection);
                 List<String> errorMsg = new ArrayList<>();
                 for (DynamicObject dynamicObject : dynamicObjectCollection) {
-                    setMaterialInfo(dynamicObject,t,errorMsg);
+                    DynamicObject materialObject = setMaterialInfo(dynamicObject,t,errorMsg);
+                    dynamicObject.set("nckd_materialnumber",materialObject.getString("number"));
                     /**
                      * 物料类型nckd_materialtype(1:物资、7:费用、8:资产)
                      * 物料属性nckd_materialattribute(1:自制、2：外购)
@@ -85,17 +86,17 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                     if ("1".equals(dynamicObject.getString("nckd_materialtype"))
                             && "1".equals(dynamicObject.getString("nckd_materialattribute"))
                             && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                        getDynamicObject(dynamicObject, finishedGoodsList, t,errorMsg);
+                        getDynamicObject(dynamicObject, finishedGoodsList, t,errorMsg,materialObject);
                     } else if ("1".equals(dynamicObject.getString("nckd_materialtype"))
                             && "1".equals(dynamicObject.getString("nckd_materialattribute"))
                             && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                        getDynamicObject(dynamicObject, semiFinishedList, t,errorMsg);
+                        getDynamicObject(dynamicObject, semiFinishedList, t,errorMsg,materialObject);
                     } else if (Arrays.asList("1", "8").contains(dynamicObject.getString("nckd_materialtype"))
                             && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                        getDynamicObject(dynamicObject, outsourcingList, t,errorMsg);
+                        getDynamicObject(dynamicObject, outsourcingList, t,errorMsg,materialObject);
                     } else if ("7".equals(dynamicObject.getString("nckd_materialtype"))
                             && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                        getDynamicObject(dynamicObject, feeOutsourcingList, t,errorMsg);
+                        getDynamicObject(dynamicObject, feeOutsourcingList, t,errorMsg,materialObject);
                     }
 
                     // 申请组织
@@ -134,7 +135,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
      * @param list          单据类型集合
      * @return
      */
-    private void getDynamicObject(DynamicObject dynamicObject, List<String> list, DynamicObject object,List<String> errorMsg) {
+    private void getDynamicObject(DynamicObject dynamicObject, List<String> list, DynamicObject object,List<String> errorMsg,DynamicObject materialdynamicObject) {
         if (CollectionUtils.isNotEmpty(errorMsg)){
             return;
         }
@@ -155,6 +156,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             materialmaintenanObject.set("nckd_specifications", dynamicObject.getString("nckd_specifications"));//规格
             materialmaintenanObject.set("nckd_model", dynamicObject.getString("nckd_model"));//型号
             materialmaintenanObject.set("nckd_baseunit", dynamicObject.getDynamicObject("nckd_baseunit"));//基本单位
+            materialmaintenanObject.set("nckd_materialnumber", materialdynamicObject);//物料
 
             materialmaintenanObject.set("nckd_materialtype", dynamicObject.getString("nckd_materialtype"));//物料类型
             materialmaintenanObject.set("nckd_oldmaterialnumber", dynamicObject.getString("nckd_oldmaterialnumber"));//旧物料编码
@@ -178,9 +180,9 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
      * @param dynamicObject 物料申请单-物料信息分录
      * @param mainDynamicObject 物料申请单-单据头
      */
-    public void setMaterialInfo(DynamicObject dynamicObject,DynamicObject mainDynamicObject,List<String> errorMsg){
+    public DynamicObject setMaterialInfo(DynamicObject dynamicObject,DynamicObject mainDynamicObject,List<String> errorMsg){
         if (CollectionUtils.isNotEmpty(errorMsg)){
-            return;
+            return null;
         }
         DynamicObject materialObject = BusinessDataServiceHelper.newDynamicObject("bd_material");
         materialObject.set("createorg",mainDynamicObject.get("nckd_createorg"));//创建组织
@@ -290,9 +292,12 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                     OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
                     OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
                     errorMsg.add(materialObject.getString("name") + "对应的物料发起审核失败");
+                }else {
+                    return materialObject;
                 }
             }
 
         }
+        return null;
     }
 }

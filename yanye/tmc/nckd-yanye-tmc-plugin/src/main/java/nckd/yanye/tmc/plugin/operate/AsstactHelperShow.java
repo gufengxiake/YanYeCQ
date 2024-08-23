@@ -42,7 +42,7 @@ public class AsstactHelperShow {
             String asstactType = basedata.getDataEntityType().getName();
             ListShowParameter lsp;
             ListFilterParameter lspfileter;
-            CloseCallBack closeCallBack;
+            CloseCallBack closeCallBack = null;
             if ("bos_user".equals(asstactType)) {
                 lsp = ShowFormHelper.createShowListForm("er_payeer", false, 2);
                 lspfileter = new ListFilterParameter();
@@ -54,37 +54,39 @@ public class AsstactHelperShow {
                 view.showForm(lsp);
             } else {
                 if (!"bos_org".equals(asstactType)) {
-                    DynamicObjectCollection coll = DynamicListHelper.getBankCollInfo(basedata.getPkValue(), asstactType);
-                    if (coll == null || coll.isEmpty()) {
+                    Object coll = getBankCollInfo(basedata.getPkValue(), asstactType);
+                    if (ObjectUtils.isEmpty(coll)) {
                         view.showTipNotification(ResManager.loadKDString("请维护对应客商的银行信息。", "AsstactHelper_1", "fi-arapcommon", new Object[0]));
                         return;
                     }
 
                     lsp = null;
                     lspfileter  = null;
+                    boolean flag = true;
                     if ("bd_supplier".equals(asstactType)) {
-                        boolean flag = true;
                         // 查询是否存在内部公司
                         DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(basedata.getPkValue(), "bd_supplier").get("internal_company");
                         if (ObjectUtils.isNotEmpty(o)) {
                             // 获取票据账号开户行维护信息
-                            QFilter qFilter = new QFilter("company.masterid", "=", o.getPkValue());
-                            DynamicObject[] load = BusinessDataServiceHelper.load("am_accountmaintenance", "bank",new QFilter[]{qFilter},null );
+                            QFilter qFilter = new QFilter("openorg.masterid", "=", o.getPkValue());
+                            // 查询供应商的银行账户信息
+
+                            DynamicObject[] load = BusinessDataServiceHelper.load("am_accountbank", "bank,bankaccountnumber,currency",new QFilter[]{qFilter},null );
+
                             if (ObjectUtils.isNotEmpty(load)) {
                                 // 存在票据账号开户行维护信息
                                 lsp= getSupplierBankInfoShowParameter(o);
                                 flag = false;
+                                closeCallBack = new CloseCallBack(pluginName, "nckd_assaccount");
                             }
 //                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
                         }
-                        if(flag){
-                           lsp = DynamicListHelper.getSupplierBankInfoShowParameter(basedata.getPkValue());
-                        }
-                    } else {
-                        lsp = DynamicListHelper.getCustomerBankInfoShowParameter(basedata.getPkValue());
-                    }
 
-                    closeCallBack = new CloseCallBack(pluginName, "assaccount");
+                    }
+                    if(ObjectUtils.isEmpty(closeCallBack)){
+                        lsp = DynamicListHelper.getSupplierBankInfoShowParameter(basedata.getPkValue());
+                        closeCallBack = new CloseCallBack(pluginName, "assaccount");
+                    }
                     lsp.setCloseCallBack(closeCallBack);
                     BizExtendHelper.payeeBankInfoFilter(lsp.getListFilterParameter(), view);
                 } else {
@@ -107,22 +109,21 @@ public class AsstactHelperShow {
     public static ListShowParameter getSupplierBankInfoShowParameter(DynamicObject pk) {
         List<String> showFields = new ArrayList();
         showFields.add("bank.name");
-        showFields.add("account.number");
-        showFields.add("bankname");
+        showFields.add("bankaccountnumber");
+        showFields.add("acctname");
         showFields.add("currency.name");
-        showFields.add("isdefault_bank");
-        ListShowParameter lsp = createDynamicListShowParameter("am_accountmaintenance", null, showFields);
+        ListShowParameter lsp = createDynamicListShowParameter("am_accountbank", null, showFields);
         ListFilterParameter lfp = new ListFilterParameter();
-        lfp.setFilter(new QFilter("company.masterid", "=", pk.getPkValue()));
+        lfp.setFilter(new QFilter("openorg.id", "=", pk.getPkValue()));
         lsp.setListFilterParameter(lfp);
         lsp.setCaption(ResManager.loadKDString("供应商-银行信息", "DynamicListHelper_0", "fi-arapcommon", new Object[0]));
         return lsp;
     }
 
     public static ListShowParameter createDynamicListShowParameter(String entity, String entry, List<String> showFields) {
-        ListShowParameter lsp = ShowFormHelper.createShowListForm(entity, true, 2);
+        ListShowParameter lsp = ShowFormHelper.createShowListForm(entity, false);
         lsp.setCustomParam("entity", entity);
-        lsp.setCustomParam("entry", entry);
+//        lsp.setCustomParam("entry", entry);
         lsp.setCustomParam("isEntryMain", Boolean.TRUE);
         lsp.setCustomParam("showFields", showFields);
         LspWapper lspWapper = new LspWapper(lsp);
@@ -132,5 +133,27 @@ public class AsstactHelperShow {
         lsp.setAppId("ap");
         return lsp;
     }
+
+
+    public static Object getBankCollInfo (Object pk, String asstactType) {
+        DynamicObject supp = BusinessDataServiceHelper.loadSingleFromCache(pk, asstactType);
+        DynamicObjectCollection bankColls = supp.getDynamicObjectCollection("entry_bank");
+        if(asstactType.equals("bd_supplier")){
+            DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(pk, "bd_supplier").get("internal_company");
+            // 获取票据账号开户行维护信息
+            if(ObjectUtils.isNotEmpty(o)){
+                QFilter qFilter = new QFilter("openorg.masterid", "=", o.getPkValue());
+                // 查询供应商的银行账户信息
+                DynamicObject[] load = BusinessDataServiceHelper.load("am_accountbank", "bank,bankaccountnumber,currency",new QFilter[]{qFilter});
+                if(ObjectUtils.isNotEmpty(load)){
+                    return load;
+                }
+            }
+
+        }
+        return bankColls != null && bankColls.size() > 0 ? bankColls : null;
+    }
+
+
 
 }

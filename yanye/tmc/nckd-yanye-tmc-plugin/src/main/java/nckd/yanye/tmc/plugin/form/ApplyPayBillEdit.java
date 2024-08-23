@@ -8,7 +8,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.dataentity.serialization.SerializationUtils;
-import kd.bos.dataentity.utils.ObjectUtils;
+
 import kd.bos.entity.datamodel.IBillModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
@@ -48,7 +48,9 @@ import kd.fi.arapcommon.service.log.LogUtil;
 import kd.fi.arapcommon.util.DateUtils;
 import kd.fi.arapcommon.util.EmptyUtils;
 import kd.fi.arapcommon.util.OperationUtils;
+import nckd.yanye.tmc.plugin.operate.AsstactHelperPlugin;
 import nckd.yanye.tmc.plugin.operate.AsstactHelperShow;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -91,7 +93,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
 
     public void registerListener(EventObject e) {
         super.registerListener(e);
-        this.addClickListeners(new String[]{"e_assacct"});
+        this.addClickListeners(new String[]{"nckd_e_assacct"});
 //        this.addClickListeners(new String[]{"nckd_e_assacct"});
 //        this.addClickListeners(new String[]{"e_corebillno"});
 //        this.addClickListeners(new String[]{"sameinfo_view", "sameinfo_ignore", "refund_view", "refund_ignore"});
@@ -381,6 +383,9 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             case "assaccount":
                 this.closeassaccountF7(returnData);
                 break;
+            case "nckd_assaccount":
+                this.closeassaccountF72(returnData);
+                break;
             case "coreBill":
                 this.closecoreBill(returnData);
                 break;
@@ -401,6 +406,39 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         }
 
     }
+
+    // 新回调
+    private void closeassaccountF72(Object returnData) {
+        int curentrow = this.getModel().getEntryCurrentRowIndex("entry");
+        if(ObjectUtils.isEmpty(returnData)){
+            return;
+        }
+        ListSelectedRow listSelectedRow = ((ListSelectedRowCollection) returnData).get(0);
+        // 银行账户号
+        String number = listSelectedRow.getNumber();
+        // 银行账户的key
+        Object primaryKeyValue = listSelectedRow.getPrimaryKeyValue();
+        DynamicObject amAccountbank = BusinessDataServiceHelper.loadSingle(primaryKeyValue, "am_accountbank");
+
+        String assacttype = this.getModel().getValue("e_asstacttype", curentrow).toString();
+        this.getModel().setValue("e_assacct", number, curentrow);
+        this.getModel().setValue("nckd_e_assacct", number, curentrow);
+        // todo 查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
+        QFilter qFilter = new QFilter("account.masterid", "=", primaryKeyValue);
+        // 合作金融机构
+        Object cooperationId = null;
+        DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter});
+        if(ObjectUtils.isEmpty(billbank)){
+//            this.getModel().setValue("e_bebank", amAccountbank.getLong("bank.id"), curentrow);
+            cooperationId = amAccountbank.getLong("bank.id");
+        }else{
+            cooperationId = billbank.getLong("bebank.id");
+        }
+        // 查询合作金融机构对应的行名行号信息
+        DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
+        this.getModel().setValue("e_bebank", bdFinorginfo.getLong("bebank.id"), curentrow);
+    }
+
 
     private void closecoreBill(Object returnData) {
         ArApCorebillHelper.closeCoreBillF7(this.getModel(), "entry", returnData);
@@ -772,7 +810,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         Object propValue = data[0].getNewValue();
         if (!ObjectUtils.isEmpty(propValue)) {
             DynamicObject dydata = (DynamicObject)propValue;
-            Map<Object, Object> map = AsstactHelper.getaccbebankMap(dydata);
+            Map<Object, Object> map = AsstactHelperPlugin.getaccbebankMap(dydata);
             this.getModel().setValue("e_assacct", map.get("account"), row);
             this.getModel().setValue("nckd_e_assacct", map.get("account"), row);
             this.getModel().setValue("e_bebank", map.get("bebank"), row);

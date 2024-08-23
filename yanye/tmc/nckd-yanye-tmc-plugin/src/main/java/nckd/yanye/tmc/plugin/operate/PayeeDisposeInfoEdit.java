@@ -45,7 +45,7 @@ import java.util.stream.Collectors;
 
 /**
  * Module           :财务云-出纳-付款处理-选择收款方
- * Description      :付款处理-选择收款方
+ * Description      :付款处理-选择收款方-- 动态表单插件
  *
  * @author : guozhiwei
  * @date : 2024/8/7

@@ -4,16 +4,16 @@ package nckd.yanye.tmc.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
 
-import java.util.Arrays;
-import java.util.EventObject;
-import java.util.List;
+import java.util.*;
 
 /**
  * Module           :财务云-应付-付款申请-付款申请单
@@ -64,9 +64,10 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                     newValue = (DynamicObject) changeData.getNewValue();
                 }else if(newValuetest != null){
                     eAssacctStr = newValuetest.toString();
-                }else{
-                    return;
                 }
+//                else{
+//                    return;
+//                }
 //                DynamicObject newValue = (DynamicObject) changeData.getNewValue();
                 //获取改变的行号
                 int rowIndex = changeData.getRowIndex();
@@ -85,13 +86,16 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                     String eAsstacttype = name.equals("e_asstacttype") ? newValue.toString():dynamicObject.getString("e_asstacttype");
                     if("bd_supplier".equals(eAsstacttype)){
-                        DynamicObject innerSupplier = isInnerSupplier(eAsstact.get("masterid"));
-                        if(innerSupplier != null){
-                            dynamicObject.set("e_assacct", innerSupplier.getDynamicObject("account").getString("number"));
-                            dynamicObject.set("nckd_e_assacct", innerSupplier.getDynamicObject("account").getString("number"));
-                            dynamicObject.set("e_bebank", innerSupplier.getDynamicObject("bank"));
-                            this.getView().updateView();
-                            return;
+                        if(name.equals("e_assacct")){
+                            Map<String,Object> innerSupplier = isInnerSupplier(eAsstact.get("masterid"));
+                            if(innerSupplier != null){
+                                dynamicObject.set("e_assacct", innerSupplier.get("number"));
+                                dynamicObject.set("nckd_e_assacct", innerSupplier.get("number"));
+
+                                dynamicObject.set("e_bebank", innerSupplier.get("bankid"));
+                                this.getView().updateView();
+                                return;
+                            }
                         }
                         if(ObjectUtils.isNotEmpty(eSettlementtype)){
                             String eSettlementtypeName = (String) eSettlementtype.get("number");
@@ -116,6 +120,25 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                     }
 
                                 }
+                            }else{
+                                //银行账户
+                                String eAssacct = name.equals("e_assacct") ? eAssacctStr:dynamicObject.getString("e_assacct");
+
+                                DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
+
+                                // 不是承兑银行带出正常银行到往来银行字段
+                                DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
+                                if (ObjectUtils.isNotEmpty(entryBank)) {
+
+                                    for (DynamicObject object : entryBank) {
+                                        if (eAssacct.equals(object.getString("bankaccount"))) {
+                                            dynamicObject.set("e_bebank", object.getDynamicObject("bank"));
+                                            // 刷新页面
+                                            this.getView().updateView();
+                                            break; // 找到符合条件的记录后退出循环
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -124,19 +147,34 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
         }
     }
 
-    // 校验是否是内部供应商
-    public DynamicObject isInnerSupplier(Object supplierid) {
-        if (ObjectUtils.isNotEmpty(supplierid)) {
-            // 查询是否存在内部公司
-            DynamicObject internalCompany = BusinessDataServiceHelper.loadSingle(supplierid, "bd_supplier").getDynamicObject("internal_company");
-            if (ObjectUtils.isNotEmpty(internalCompany)) {
-                // 获取票据账号开户行维护信息
-                QFilter qFilter = new QFilter("company.masterid", "=", internalCompany.getPkValue());
-                DynamicObject load = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","bank,openorg,account,billbank,bankname", new QFilter[]{qFilter} );
-                if (ObjectUtils.isNotEmpty(load)) {
-                    // 存在票据账号开户行维护信息
-                    return load;
+//     校验是否是内部供应商
+    public Map<String, Object> isInnerSupplier(Object supplierid) {
+        Map<String, Object> map = new HashMap<>();
+
+        // 查询是否存在内部公司
+        DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(supplierid, "bd_supplier").get("internal_company");
+        if (ObjectUtils.isNotEmpty(o)) {
+            QFilter qFilter = new QFilter("openorg.masterid", "=", o.getPkValue());
+            // 查询供应商的银行账户信息
+            DynamicObject amAccountbank = BusinessDataServiceHelper.loadSingle("am_accountbank", "bank,bankaccountnumber,currency", new QFilter[]{qFilter});
+            if (ObjectUtils.isNotEmpty(amAccountbank)) {
+
+                map.put("number", amAccountbank.getString("bankaccountnumber"));
+                amAccountbank.getLong("bank.id");
+                // todo 查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
+                QFilter qFilter2 = new QFilter("account.masterid", "=", amAccountbank.getPkValue());
+                // 合作金融机构
+                Object cooperationId = null;
+                DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter2});
+                if (ObjectUtils.isNotEmpty(billbank)) {
+                    cooperationId = amAccountbank.get("bank.id");
+                }else{
+                    cooperationId = billbank.getLong("bebank.id");
                 }
+                // 合作金融机构信息
+                DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
+                map.put("bankid",bdFinorginfo.getLong("bebank.id"));
+                return map;
             }
         }
         return null;
