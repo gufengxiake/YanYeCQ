@@ -1,10 +1,16 @@
 package nckd.yanye.tmc.plugin.task;
 
 
-import kd.bos.dataentity.entity.ILocaleString;
-import kd.bos.dataentity.entity.LocaleString;
-import kd.bos.workflow.engine.msg.MessageServiceConfig;
-import kd.bos.workflow.engine.msg.MessageServiceUtil;
+import cn.hutool.json.JSONObject;
+import kd.bos.dataentity.OperateOption;
+import kd.bos.dataentity.serialization.SerializationUtils;
+import kd.bos.db.tx.TX;
+import kd.bos.db.tx.TXHandle;
+import kd.bos.entity.AppInfo;
+import kd.bos.entity.AppMetadataCache;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.entity.param.AppParam;
+import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 import kd.bos.workflow.engine.msg.info.MessageInfo;
 import kd.bos.bec.model.EntityEvent;
 import kd.bos.bec.model.KDBizEvent;
@@ -16,11 +22,15 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.workflow.MessageCenterServiceHelper;
+import kd.tmc.bei.business.helper.CasFlowConfirmLogHelper;
+import kd.tmc.bei.business.helper.RecClaimHelper;
+import kd.tmc.bei.common.helper.ExtendConfigHelper;
+import kd.tmc.fbp.common.helper.TmcOperateServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 
 /**
@@ -75,7 +85,82 @@ public class BankAccountTask  implements IEventServicePlugin {
                                     logger.info("用户云之家id为空，不发送通知");
                                 }
                             }
+                        }else{
+                            //  未配置负责人，根据企业匹配系统参数触发认领操作
+                            logger.info("未配置客户负责人，根据企业匹配系统参数触发认领操作");
+                            // 交易明细编号
+                            DynamicObject billno = transdetail.getDynamicObject("billno");
+                            // 根据交易明细获取 收款入账中心 数据, 应用 fs，
+                            Long companyid = transdetail.getLong("company.masterid");
+
+                            AppInfo appInfo = AppMetadataCache.getAppInfo("fs");
+                            String appId = appInfo.getId();
+                            AppParam appParam = new AppParam();
+                            appParam.setViewType("08");
+                            appParam.setAppId(appId);
+                            appParam.setOrgId(companyid);
+
+                            Map<String,Object> systemMap= SystemParamServiceHelper.loadAppParameterFromCache(appParam);
+                            Object client =  systemMap.get("nckd_usergroup");
+
+                            if(ObjectUtils.isEmpty(client)){
+                                // 如果企业没有配置默认的用户组，则获取最上层用户组
+                                // todo 暂时不执行
+                                logger.info("如果企业没有配置默认的用户组，暂时不执行认领操作");
+                                break;
+                            }
+                            // 获取到需要执行认领收款入账中心key
+                            QFilter qFilter2 = new QFilter("billno", QCP.equals, billno);
+                            DynamicObject beiIntelrec = BusinessDataServiceHelper.loadSingle("bei_intelrec", null, new QFilter[]{qFilter2});
+                            Object pkValue = beiIntelrec.getPkValue();
+                            JSONObject jsonObject = new JSONObject(client);
+                            Map<String,Object> map = new HashMap<>();
+                            // 人员组 key
+                            Object masterid = jsonObject.get("matserid");
+                            // 组名
+                            Object name = jsonObject.get("name");
+                            ArrayList<String> nameList = new ArrayList<>();
+                            nameList.add(name.toString());
+                            ArrayList<String> groupsids = new ArrayList<>();
+                            groupsids.add(masterid.toString());
+                            map.put("usergroupnames",nameList);
+                            map.put("usergroupids",nameList);
+
+                            String jsonStr = SerializationUtils.toJsonString(map);
+                            Long[] ids = new Long[]{(Long) pkValue};
+                            Map<String,String> ruleNotice = new HashMap(1);
+                            ruleNotice.put(pkValue.toString(),jsonStr);
+                            logger.info("认领收款入账中心参数：{}",ruleNotice);
+                            // 执行认领操作
+                            OperationResult result = TmcOperateServiceHelper.execOperateWithoutThrow("pushandsave", "bei_transdetail_cas", ids, OperateOption.create());
+                            logger.info("认领结果：{}",result);
+                            // 推送认领通知到用户
+                            this.noticeMessage(ruleNotice);
+
+                            TXHandle tx = TX.requiresNew();
+                            Throwable var29 = null;
+
+                            try {
+                                CasFlowConfirmLogHelper.saveNoticeLog((List)Arrays.stream(ids).collect(Collectors.toList()));
+                            } catch (Throwable var22) {
+                                var29 = var22;
+                                throw var22;
+                            } finally {
+                                if (tx != null) {
+                                    if (var29 != null) {
+                                        try {
+                                            tx.close();
+                                        } catch (Throwable var21) {
+                                            var29.addSuppressed(var21);
+                                        }
+                                    } else {
+                                        tx.close();
+                                    }
+                                }
+
+                            }
                         }
+
                     }
                 }
             }
@@ -122,6 +207,29 @@ public class BankAccountTask  implements IEventServicePlugin {
     static DynamicObject loadSingle(Object userId) {
         DynamicObject useInfo = BusinessDataServiceHelper.loadSingle(userId, "bos_user");
         return useInfo;
+    }
+
+    // 推送认领通知
+    private void noticeMessage(Map<String, String> ruleNotice) {
+        Map<Object, Map<String, List<Object>>> claimTypeMap = new HashMap(ruleNotice.size());
+        Map<String, List<Object>> typeValue = null;
+        Iterator var4 = ruleNotice.entrySet().iterator();
+
+        while(var4.hasNext()) {
+            Map.Entry<String, String> rule = (Map.Entry)var4.next();
+            Map<String, Object> map = (Map)SerializationUtils.fromJsonString((String)rule.getValue(), Map.class);
+            typeValue = new HashMap();
+            typeValue.put("usergroupids", (List)map.get("usergroupids"));
+            typeValue.put("orgids", (List)map.get("orgids"));
+            typeValue.put("roleids", (List)map.get("roleids"));
+            typeValue.put("userids", (List)map.get("userids"));
+            claimTypeMap.put(rule.getKey(), typeValue);
+        }
+
+        if (ExtendConfigHelper.shouldSendClaimMsg()) {
+            RecClaimHelper.sendClaimNoticeMessage(claimTypeMap, "notice");
+        }
+
     }
 
 
