@@ -31,8 +31,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
 
-//        List<String> fieldKeys = e.getFieldKeys();
-//        fieldKeys.add("");
+        List<String> fieldKeys = e.getFieldKeys();
+        fieldKeys.addAll(this.billEntityType.getAllFields().keySet());
     }
 
     @Override
