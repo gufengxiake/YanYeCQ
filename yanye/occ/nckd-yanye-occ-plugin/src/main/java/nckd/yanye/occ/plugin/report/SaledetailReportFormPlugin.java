@@ -36,6 +36,7 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
         super.processRowData(gridPK, rowData, queryParam);
         Iterator<DynamicObject> iterator = rowData.iterator();
         Map<Long, String> invoiceNo = this.getInvoiceNo(rowData);
+
         while (iterator.hasNext()) {
             DynamicObject row = iterator.next();
             BigDecimal nckd_amount =  row.getBigDecimal("nckd_amount") == null
@@ -50,6 +51,14 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
                 String percent=df.format(nckd_mll);
                 row.set("nckd_mll", percent);
             }
+            String nckd_thsl = row.getString("nckd_thsl");
+            if (nckd_thsl.equals("0")) {
+                row.set("nckd_thbs" , "N");
+            }else{
+                row.set("nckd_thbs" , "Y");
+            }
+
+            //获取发票编号
             if (row.getString("nckd_mainbillentity").equals("ocbsoc_saleorder")) {
                 Long key = row.getLong("nckd_mainbillentryid");
                 if (invoiceNo.isEmpty() || key == 0L) continue;
@@ -85,6 +94,29 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
         }
 
         return invoiceNo;
+    }
+
+    public Map<Long,String> getReturnFlag(DynamicObjectCollection rowData){
+        Iterator<DynamicObject> iterator = rowData.iterator();
+        List<Long> mainbillentryid = new ArrayList<>();
+        while (iterator.hasNext()) {
+            DynamicObject next = iterator.next();
+            mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
+
+        }
+        QFilter qFilter = new QFilter("itementry.id" , QCP.in , mainbillentryid.toArray(new Long[0]));
+        DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "ocbsoc_saleorder", "itementry.joinreturnbaseqty as nckd_thsl , itementry.id as FEntryID",
+                new QFilter[]{qFilter},null);
+        Map<Long,String> returnFlag = new HashMap<>();
+        while (originalBill.hasNext()) {
+            Row row = originalBill.next();
+            Long corebillentryid = row.getLong("FEntryID");
+            String nckdInvoiceno = row.getString("nckd_thsl");
+            returnFlag.put(corebillentryid,nckdInvoiceno);
+        }
+
+        return returnFlag;
     }
 
 }

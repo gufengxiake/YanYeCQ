@@ -28,12 +28,12 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
 //    发票类型，基本单位，辅单位，数量，含税单价，无税金额，税额
 //    税率，折扣额，折扣率，总金额，结算成本，单据日期
 //    审核日期，源头单据号，仓库，备注，核心单据行id,核心单据实体标识
-//    省市区，详细地址，电话，收货人
+//    省市区，详细地址，电话，收货人,退货标识
     private final String [] selectFields = {"nckd_bizorg","nckd_bizdept","nckd_bizoperator","nckd_customer","nckd_material",
             "nckd_fptype","nckd_baseunit","nckd_unit2nd","nckd_qty","nckd_priceandtax","nckd_amount","nckd_taxamount",
             "nckd_taxrateid","nckd_discountamount","nckd_discountrate","nckd_amountandtax","nckd_cbj","nckd_biztime",
             "nckd_auditdate","nckd_mainbillnumber","nckd_warehouse","nckd_comment","nckd_mainbillentryid","nckd_mainbillentity",
-            "nckd_entryaddressid","nckd_entrydetailaddress","nckd_entrytelephone","nckd_entrycontactname"};
+            "nckd_entryaddressid","nckd_entrydetailaddress","nckd_entrytelephone","nckd_entrycontactname","nckd_thsl"};
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
@@ -132,7 +132,8 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
 
         //取要货订单商品明细主键，省市区，详细地址，电话，收货人
         String sFields = "itementry.id as FEntryID,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
-                "itementry.entrytelephone as nckd_entrytelephone,itementry.entrycontactname as nckd_entrycontactname";
+                "itementry.entrytelephone as nckd_entrytelephone,itementry.entrycontactname as nckd_entrycontactname," +
+                "itementry.joinreturnbaseqty as nckd_thsl";
         QFilter qFilter = new QFilter("itementry.id" ,QCP.in , mainbillentryid.toArray(new Long[0]));
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
