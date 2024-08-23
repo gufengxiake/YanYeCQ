@@ -16,7 +16,11 @@ import java.util.*;
 
 /**
  * 业务员借货汇总表界面插件
- */
+ * 表单标识：nckd_ywyjhhz_rpt
+ * author:zzl
+ * date:2024/08/21
+ *  */
+
 public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
     private static String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
             "nckd_materialmodelnum","nckd_unit","nckd_jhqty",

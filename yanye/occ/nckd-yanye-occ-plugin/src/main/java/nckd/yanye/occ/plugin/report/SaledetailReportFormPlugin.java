@@ -1,19 +1,28 @@
 package nckd.yanye.occ.plugin.report;
 
+import kd.bos.algo.DataSet;
+import kd.bos.algo.Row;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.ReportQueryParam;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.EventObject;
-import java.util.Iterator;
+import java.util.*;
+
+import static com.ibm.db2.jcc.am.ao.ds;
 
 /**
- * 报表界面插件
+ * 销售情况明细表界面插件
+ * 表单标识：nckd_saledetail_rpt
+ * author:zzl
+ * date:2024/08/22
  */
 public class SaledetailReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
 
@@ -26,6 +35,7 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
         Iterator<DynamicObject> iterator = rowData.iterator();
+        Map<Long, String> invoiceNo = this.getInvoiceNo(rowData);
         while (iterator.hasNext()) {
             DynamicObject row = iterator.next();
             BigDecimal nckd_amount =  row.getBigDecimal("nckd_amount") == null
@@ -40,9 +50,41 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
                 String percent=df.format(nckd_mll);
                 row.set("nckd_mll", percent);
             }
+            if (row.getString("nckd_mainbillentity").equals("ocbsoc_saleorder")) {
+                Long key = row.getLong("nckd_mainbillentryid");
+                if (invoiceNo.isEmpty() || key == 0L) continue;
+                if (invoiceNo.containsKey(key)) {
+                    row.set("nckd_invoiceno", invoiceNo.get(key));
+                }
+            }else{
+                row.set("nckd_mainbillnumber",null);
+            }
 
         }
+    }
 
+    //获取发票编号
+    public Map<Long,String> getInvoiceNo(DynamicObjectCollection rowData){
+        Iterator<DynamicObject> iterator = rowData.iterator();
+        List<Long> mainbillentryid = new ArrayList<>();
+        while (iterator.hasNext()) {
+            DynamicObject next = iterator.next();
+            mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
+
+        }
+        QFilter qFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryid.toArray(new Long[0]));
+        DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "sim_original_bill", "sim_original_bill_item.corebillentryid as corebillentryid, invoiceno as nckd_invoiceno",
+                new QFilter[]{qFilter},null);
+        Map<Long,String> invoiceNo = new HashMap<>();
+        while (originalBill.hasNext()) {
+            Row row = originalBill.next();
+            Long corebillentryid = row.getLong("corebillentryid");
+            String nckdInvoiceno = row.getString("nckd_invoiceno");
+            invoiceNo.put(corebillentryid,nckdInvoiceno);
+        }
+
+        return invoiceNo;
     }
 
 }

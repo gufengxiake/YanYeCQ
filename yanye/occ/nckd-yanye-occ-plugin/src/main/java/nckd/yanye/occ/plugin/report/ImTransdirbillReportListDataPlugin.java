@@ -21,7 +21,11 @@ import java.util.*;
 
 /**
  * 业务员借货汇总表表取数插件
- */
+ * 表单标识：nckd_ywyjhhz_rpt
+ * author:zzl
+ * date:2024/08/21
+ *  */
+
 public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
 //    String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
