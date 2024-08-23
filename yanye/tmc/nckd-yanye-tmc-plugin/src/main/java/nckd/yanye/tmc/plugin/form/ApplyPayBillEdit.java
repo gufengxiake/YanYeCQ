@@ -811,8 +811,8 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         if (!ObjectUtils.isEmpty(propValue)) {
             DynamicObject dydata = (DynamicObject)propValue;
             Map<Object, Object> map = AsstactHelperPlugin.getaccbebankMap(dydata);
-            this.getModel().setValue("e_assacct", map.get("account"), row);
             this.getModel().setValue("nckd_e_assacct", map.get("account"), row);
+            this.getModel().setValue("e_assacct", map.get("account"), row);
             this.getModel().setValue("e_bebank", map.get("bebank"), row);
             if (map.get("settlementtypeid") != null) {
                 this.getModel().setValue("e_settlementtype", map.get("settlementtypeid"), row);
@@ -822,9 +822,11 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             }
         } else {
             this.getModel().setValue("e_assacct", (Object)null, row);
+            this.getModel().setValue("nckd_e_assacct", (Object)null, row);
             this.getModel().setValue("e_bebank", (Object)null, row);
             this.getModel().setValue("e_settlementtype", ArApSettleTypeHelper.getDefaultSettleType(), row);
         }
+        this.getView().updateView();
 
     }
 
