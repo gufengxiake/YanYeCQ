@@ -112,7 +112,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialmftinfo");
         //单据维护类型：update:修改物料属性
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
             newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
@@ -191,7 +191,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void planInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("mpdm_materialplan");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
             newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
@@ -352,9 +352,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void stockInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialinventoryinfo");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
@@ -466,9 +466,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void checkInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialcalinfo");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialcalinfo", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
@@ -511,9 +511,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void marketInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialsalinfo");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialsalinfo", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
@@ -561,9 +561,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void purchaseInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialpurchaseinfo");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialpurchaseinfo", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
@@ -611,9 +611,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void buyerInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("msbd_puropermaterctrl");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("msbd_puropermaterctrl", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
@@ -675,9 +675,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void inspectInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_inspect_cfg");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.get("org"))
+            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
                     .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
-            newDynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
+            newDynamicObject = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
             }
