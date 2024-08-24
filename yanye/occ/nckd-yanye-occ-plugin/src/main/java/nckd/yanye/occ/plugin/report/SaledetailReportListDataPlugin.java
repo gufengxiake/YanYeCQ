@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * 销售情况明细表取数插件
- * 表单标识：nckd_saledetail_rpt
+ * 表单标识：nckd_saledetailrpt
  * author:zzl
  * date:2024/08/22
  */
@@ -131,14 +131,14 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
             return ds;
 
         //取要货订单商品明细主键，省市区，详细地址，电话，收货人
-        String sFields = "itementry.id as FEntryID,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
+        String sFields = "itementry.subentryentity.id as fdetailid,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
                 "itementry.entrytelephone as nckd_entrytelephone,itementry.entrycontactname as nckd_entrycontactname," +
                 "itementry.joinreturnbaseqty as nckd_thsl";
-        QFilter qFilter = new QFilter("itementry.id" ,QCP.in , mainbillentryid.toArray(new Long[0]));
+        QFilter qFilter = new QFilter("itementry.subentryentity.id" ,QCP.in , mainbillentryid.toArray(new Long[0]));
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
                 new QFilter[]{qFilter},null);
-        ds = ds.leftJoin(saleOrder).on("nckd_mainbillentryid","FEntryID")
+        ds = ds.leftJoin(saleOrder).on("nckd_mainbillentryid","fdetailid")
                 .select(selectFields)
                 .finish();
 
