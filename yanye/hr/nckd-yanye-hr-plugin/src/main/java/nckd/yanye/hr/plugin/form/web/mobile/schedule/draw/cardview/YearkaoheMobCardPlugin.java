@@ -27,14 +27,18 @@ public class YearkaoheMobCardPlugin extends AbstractMobCardEdit {
         contentFields.addField("nckd_hrpi_yearkaohe.nckd_wcjreason"); // 未参加考核原因
     }
 
-    // 有删除按钮
+    // 有删除按钮-true显示，false不显示
     protected boolean hasDeleteOperate() {
-        return true;
+        return false;
     }
 
     // 有新增按钮
     protected boolean hasAddOperate() {
-        return true;
+        return false;
+    }
+
+    protected boolean enableEnterDetail() {
+        return false;
     }
 
     protected String getOrderBys(String tableName) {
