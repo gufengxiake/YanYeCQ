@@ -30,8 +30,8 @@ public class EmpZhichengCardPlugin extends AbstractCardDrawEdit {
         Object personObj = preBindDataVo.getFormShowParameter().getCustomParam("person");
         Long personId = HRJSONUtils.getLongValOfCustomParam(personObj);
         if (personId != null && personId != 0L) {
-            // 头部：类型 nckd_type ，标题：职称/职业技能名称 nckd_zhichengname ，具体业务字段：职称/职业技能等级 nckd_zhichenglevel,是否最高 nckd_iszuigao,聘任日期 nckd_pinrendate,聘任终止日期 nckd_pinrenenddaten,聘任单位 nckd_pinrenorg, 授予时间 awardtime
-            CardViewCompareVo compareVo = new CardViewCompareVo((String)null, "nckd_type", "nckd_zhichengname", "nckd_zhichenglevel,nckd_iszuigao,nckd_pinrendate,nckd_pinrenenddaten,awardtime,unit,approvnum,office,firsttime,secondtime,description", "attachmentpanelap_std");
+            // 头部：类型 nckd_type ，标题：职称/职业技能名称 nckd_zhichengname ，具体业务字段：聘任单位 nckd_pinrenorg,职称/职业技能等级 nckd_zhichenglevel,是否最高 nckd_iszuigao,聘任日期 nckd_pinrendate,聘任终止日期 nckd_pinrenenddaten,聘任单位 nckd_pinrenorg, 授予时间 awardtime
+            CardViewCompareVo compareVo = new CardViewCompareVo((String)null, "nckd_type", "nckd_zhichengname", "nckd_pinrenorg,nckd_zhichenglevel,nckd_iszuigao,nckd_pinrendate,nckd_pinrenenddaten,awardtime,unit,approvnum,office,firsttime,secondtime,description", "attachmentpanelap_std");
             List<String> fields = this.setChildFieldVo(new FieldTransVo(preBindDataVo.getDataMap(), compareVo));
             QFilter[] conFilter = new QFilter[]{new QFilter("person", "=", personId), new QFilter("iscurrentversion", "=", "1")};
             QueryDbVo queryDbVo = new QueryDbVo(conFilter, fields, "hrpi_perprotitle", "createtime desc");
