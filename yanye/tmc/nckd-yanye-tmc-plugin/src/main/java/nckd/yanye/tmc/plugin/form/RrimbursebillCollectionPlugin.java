@@ -73,14 +73,14 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
                 if(ObjectUtils.isNotEmpty(supplier)){
                     Object masterid = supplier.get("masterid");
                     // 内部供应商获取
-                    DynamicObject innerSupplier = isInnerSupplier(masterid);
-                    if(innerSupplier != null){
-                        dynamicObject.set("payeraccount", innerSupplier.getDynamicObject("account").getString("number"));
-//                        dynamicObject.set("nckd_e_assacct", innerSupplier.getDynamicObject("account").getString("number"));
-                        dynamicObject.set("payerbank", innerSupplier.getDynamicObject("bank"));
-                        this.getView().updateView();
-                        return;
-                    }
+//                    DynamicObject innerSupplier = isInnerSupplier(masterid);
+//                    if(innerSupplier != null){
+//                        dynamicObject.set("payeraccount", innerSupplier.getDynamicObject("account").getString("number"));
+////                        dynamicObject.set("nckd_e_assacct", innerSupplier.getDynamicObject("account").getString("number"));
+//                        dynamicObject.set("payerbank", innerSupplier.getDynamicObject("bank"));
+//                        this.getView().updateView();
+//                        return;
+//                    }
                     if(StringUtils.isNotEmpty(paymode)  && (paymode.equals(BANK_ACCEP) || paymode.equals(TRADE_ACCEP))){
 
                         DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
