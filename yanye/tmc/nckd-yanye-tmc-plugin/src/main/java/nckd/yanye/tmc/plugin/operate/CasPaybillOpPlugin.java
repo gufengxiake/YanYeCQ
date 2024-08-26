@@ -1,5 +1,6 @@
 package nckd.yanye.tmc.plugin.operate;
 
+import cn.hutool.core.util.ObjectUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
 import kd.bos.entity.ExtendedDataEntity;
@@ -52,12 +53,12 @@ public class CasPaybillOpPlugin extends AbstractOperationServicePlugIn {
                 for (ExtendedDataEntity dataEntity : dataEntities) {
                     DynamicObject casPaybill = dataEntity.getDataEntity();
                     //背书仅适应结算方式类型是承兑汇票、支票或本票且结算号选择了库存票据的付款单，你所选单据不支持背书。
-                    if (!settlementtypeId.contains(casPaybill.getDynamicObject("settletype").getPkValue())) {
+                    if (!settlementtypeId.contains(casPaybill.getDynamicObject("settletype").getPkValue()) && ObjectUtil.isNotEmpty(casPaybill.getDynamicObject("draftbill"))) {
                         this.addErrorMessage(dataEntity, "背书仅适应结算方式类型是承兑汇票、支票或本票且结算号选择了库存票据的付款单，你所选单据" + casPaybill.getString("billno") + "不支持背书。");
                         continue;
                     }
                     if (!"C".equals(casPaybill.getString("billstatus"))) {
-                        this.addErrorMessage(dataEntity, "单据" + casPaybill.getString("billno") + "未审核不允许背书");
+                        this.addErrorMessage(dataEntity, "单据" + casPaybill.getString("billno") + "不是审核状态不允许背书");
                     }
                 }
             }

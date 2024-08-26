@@ -12,7 +12,6 @@ import kd.bos.form.FormShowParameter;
 import kd.bos.form.ShowFormHelper;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.ClosedCallBackEvent;
-import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
@@ -24,8 +23,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Module           :
- * Description      :
+ * Module           资金云-收款单
+ * Description      :因为要货订单的聚合支付暂时不能整合，先提供备选方案，客户直接在收款单上选择要货订单
  *
  * @author : zhujintao
  * @date : 2024/8/26
