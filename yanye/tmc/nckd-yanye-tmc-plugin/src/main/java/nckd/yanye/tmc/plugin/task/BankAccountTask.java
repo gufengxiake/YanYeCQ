@@ -132,6 +132,8 @@ public class BankAccountTask  implements IEventServicePlugin {
                             nameList.add(name.toString());
                             ArrayList<String> groupsids = new ArrayList<>();
                             groupsids.add(masterid.toString());
+                            noticeData.put("usergroupnames",nameList);
+                            noticeData.put("usergroupids",groupsids);
 
                             String jsonString = SerializationUtils.toJsonString(noticeData);
                             String[] failids = failidString.split(",");
