@@ -40,6 +40,7 @@ public class SupplierFromPlugin extends AbstractFormPlugin {
             supplierMap.put(null, null);
             this.getModel().setValue(SupplierConst.NCKD_PLATFORMSUPID, supplierMap.get(societycreditcode));
             args.setCancel(false);
+
         }
     }
 
