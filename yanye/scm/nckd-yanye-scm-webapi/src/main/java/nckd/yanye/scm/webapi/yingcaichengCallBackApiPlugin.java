@@ -167,12 +167,17 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 JSONObject item = (JSONObject) orderItemsDatum;
                 // 品目id
                 Integer itemId = item.getInteger("itemId");
+                // 品目行号
+                String spuCode = item.getString("spuCode");
                 // 品目编号
                 String itemCode = item.getString("itemCode");
                 // 品目名称
                 String itemName = item.getString("itemName");
                 // 单位
                 String unit = item.getString("unit");
+
+
+                map.put("spuCode", spuCode);
                 map.put("itemCode", itemCode);
                 map.put("itemName", itemName);
                 map.put("unit", unit);
@@ -184,6 +189,10 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 Integer itemId = item.getInteger("itemId");
                 DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
                 DynamicObject addNew = materialEntry.addNew();
+                // 物料行号
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE, itemMap.get(itemId).get("spuCode"));
+                // 物料编码
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIAL, itemMap.get(itemId).get("itemCode"));
                 // 物料名称
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
                 // 单位
@@ -241,7 +250,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 new QFilter[]{new QFilter(PurcontractConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
         );
         if (billnos.length != 0) {
-            throw new KDBizException("已生成过采购合同");
+            return;
         }
 
         //获取源单
@@ -282,6 +291,14 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             );
             // 招采平台价税合计
             tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, totalPrice);
+            // 上游采购申请单
+            tgtObj.set(PurcontractConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurcontractConst.NCKD_UPINFORECEIVEBILL, billNo);
+
+            // 设置含税单价
+            setPriceandtax(tgtObj, receiveObject);
+
             // 保存采购合同
             SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
 
@@ -301,7 +318,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 new QFilter[]{new QFilter(PurorderbillConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
         );
         if (billnos.length != 0) {
-            throw new KDBizException("已生成过采购订单");
+            return;
         }
 
         //获取源单
@@ -342,6 +359,13 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             );
             // 招采平台价税合计
             tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, totalPrice);
+
+            // 上游采购申请单
+            tgtObj.set(PurorderbillConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, billNo);
+            // 设置含税单价
+            setPriceandtax(tgtObj, receiveObject);
 
             // 保存采购订单
             SaveServiceHelper.saveOperate(PurorderbillConst.FORMBILLID, new DynamicObject[]{tgtObj});
@@ -412,6 +436,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
         }
     }
+
+    /**
+     * 含税单价
+     */
+    private static void setPriceandtax(DynamicObject tgtObj, DynamicObject receiveObject) {
+        DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
+        HashMap<String, BigDecimal> map = new HashMap<>();
+        for (DynamicObject obj : materialEntry) {
+            map.put(obj.getString(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE), obj.getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX));
+        }
+
+        DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
+        for (DynamicObject obj : tgtMaterialEntry) {
+            obj.set("priceandtax", map.get(obj.getString("seq")));
+        }
+    }
+
 }
 
 

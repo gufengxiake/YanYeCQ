@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
@@ -21,10 +22,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.*;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
-import java.util.ArrayList;
-import java.util.EventObject;
-import java.util.List;
-import java.util.Set;
+import java.math.BigDecimal;
+import java.util.*;
 
 /**
  * 信息接收单-表单插件
@@ -72,7 +71,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
             // 生成采购订单/合同
             case ADDORDERORCONT:
                 evt.setCancel(true);
-                ConfirmCallBackListener addOrderOrContListener = new ConfirmCallBackListener("addOrderOrCont", this);
+                ConfirmCallBackListener addOrderOrContListener = new ConfirmCallBackListener("addorderorcont", this);
                 this.getView().showConfirm("您确认生成采购订单/合同吗？", MessageBoxOptions.YesNo, addOrderOrContListener);
                 break;
             // 查看成交通知书
@@ -90,7 +89,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         super.confirmCallBack(messageBoxClosedEvent);
         //判断回调参数id
         String callBackId = messageBoxClosedEvent.getCallBackId();
-        if ("addOrderOrCont".equals(callBackId)) {
+        if ("addorderorcont".equals(callBackId)) {
             if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
                 // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
                 // 其他：直接生成采购订单
@@ -127,11 +126,11 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         }
 
         //获取源单
-        String purapplybillno = (String) this.getModel().getValue("nckd_purapplybillno");
+        String purapplyBillNo = (String) this.getModel().getValue("nckd_purapplybillno");
         DynamicObject srcObj = (BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.ALLPROPERTY,
-                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplybillno)}
+                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
         ))[0];
 
         // 单据pkid
@@ -152,7 +151,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
 //        pushArgs.setRuleId("1134727974310918144");
         // 是否输出详细错误报告
-        pushArgs.setBuildConvReport(false);
+        pushArgs.setBuildConvReport(true);
         // 必选，设置需要下推的源单及分录内码
         pushArgs.setSelectedRows(selectedRows);
         // 调用下推引擎，下推目标单并保存
@@ -160,17 +159,26 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurorderbillConst.FORMBILLID
             );
+
             // 招采平台价税合计
             tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, this.getModel().getValue(InforeceivebillConst.NCKD_TOTALPRICE));
-            SaveServiceHelper.saveOperate(PurorderbillConst.FORMBILLID, new DynamicObject[]{tgtObj});
+
+            // 上游采购申请单
+            tgtObj.set(PurorderbillConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
+            // 设置含税单价
+            setPriceandtax(tgtObj, this.getModel().getDataEntity(true));
+
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
 
             this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
-            SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
+            SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("生成采购订单成功!");
         } else {
             this.getView().showErrorNotification("生成采购订单失败！" + pushResult.getMessage());
@@ -192,11 +200,11 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         }
 
         //获取源单
-        String purapplybillno = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURAPPLYBILLNO);
+        String purapplyBillNo = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURAPPLYBILLNO);
         DynamicObject srcObj = (BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.ALLPROPERTY,
-                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplybillno)}
+                new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
         ))[0];
 
         // 单据pkid
@@ -225,16 +233,22 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurcontractConst.FORMBILLID
             );
             // 招采平台价税合计
             tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, this.getModel().getValue(InforeceivebillConst.NCKD_TOTALPRICE));
-            SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
+            // 上游采购申请单
+            tgtObj.set(PurorderbillConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
+            // 设置含税单价
+            setPriceandtax(tgtObj, this.getModel().getDataEntity(true));
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
-            SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
+            SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("生成采购合同成功!");
         } else {
             this.getView().showErrorNotification("生成采购合同失败！" + pushResult.getMessage());
@@ -332,6 +346,22 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         result.setSuccess(false);
         result.setMessage("系统已存在对应的供应商");
         return result;
+    }
+
+    /**
+     * 含税单价
+     */
+    private static void setPriceandtax(DynamicObject tgtObj, DynamicObject receiveObject) {
+        DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
+        HashMap<String, BigDecimal> map = new HashMap<>();
+        for (DynamicObject obj : materialEntry) {
+            map.put(obj.getString(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE), obj.getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX));
+        }
+
+        DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
+        for (DynamicObject obj : tgtMaterialEntry) {
+            obj.set("priceandtax", map.get(obj.getString("seq")));
+        }
     }
 
 }
