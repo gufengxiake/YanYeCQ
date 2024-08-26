@@ -192,7 +192,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 // 物料行号
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE, itemMap.get(itemId).get("spuCode"));
                 // 物料编码
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIAL, itemMap.get(itemId).get("itemCode"));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIAL, BusinessDataServiceHelper.load(
+                        "bd_materialpurchaseinfo",
+                        "id,materialname,masterid",
+                        new QFilter[]{new QFilter("masterid", QCP.equals, itemMap.get(itemId).get("itemCode"))}
+                )[0]);
                 // 物料名称
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
                 // 单位

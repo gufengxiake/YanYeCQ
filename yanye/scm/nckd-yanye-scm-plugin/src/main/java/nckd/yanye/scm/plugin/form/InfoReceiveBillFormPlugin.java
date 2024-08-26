@@ -151,7 +151,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
 //        pushArgs.setRuleId("1134727974310918144");
         // 是否输出详细错误报告
-        pushArgs.setBuildConvReport(true);
+        pushArgs.setBuildConvReport(false);
         // 必选，设置需要下推的源单及分录内码
         pushArgs.setSelectedRows(selectedRows);
         // 调用下推引擎，下推目标单并保存
