@@ -11,6 +11,7 @@ import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.param.BillParam;
@@ -35,6 +36,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.util.CommonUtils;
 import kd.occ.ocbase.common.util.DynamicObjectUtils;
 import kd.occ.ocdma.business.item.ItemHelper;
@@ -53,11 +55,34 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
     private static final String targetBill = "im_transapply";
 
     @Override
+    public void afterCreateNewData(EventObject e) {
+        super.afterCreateNewData(e);
+        DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+        if (user != null) {
+            String number = user.getString("number");
+            this.getModel().setItemValueByNumber("nckd_ywy", number);
+        }
+    }
+
+    @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners("nckd_return");
     }
 
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        String propName = e.getProperty().getName();
+        if ("material".equals(propName)) {
+            DynamicObject material = (DynamicObject) e.getChangeSet()[0].getNewValue();
+            String name = material.getDynamicObject("masterid").getString("name");
+            DynamicObject unit = material.getDynamicObject("inventoryunit");
+            //获取当前行
+            int index = e.getChangeSet()[0].getRowIndex();
+            this.getModel().setValue("materialname", name, index);
+            this.getModel().setValue("unit", unit, index);
+        }
+    }
 
     public void afterDoOperation(AfterDoOperationEventArgs e) {
         super.afterDoOperation(e);
@@ -76,15 +101,15 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                         OperationResult result = OperationServiceHelper.executeOperate("submit", targetBill, new Long[]{pkId}, submitOption);
                         if (!result.isSuccess()) {
                             List<IOperateInfo> errInfo = result.getAllErrorOrValidateInfo();
-                            StringBuilder errMessage=new StringBuilder();
-                            for (IOperateInfo err:errInfo){
+                            StringBuilder errMessage = new StringBuilder();
+                            for (IOperateInfo err : errInfo) {
                                 errMessage.append(err.getMessage());
                             }
                             this.getView().showErrorNotification(errMessage.toString());
                             return;
                         }
-                        this.getView().setEnable(false,"nckd_save");//锁定按钮
-                        this.getView().setEnable(false,"nckd_submit");//锁定按钮
+                        this.getView().setEnable(false, "nckd_save");//锁定按钮
+                        this.getView().setEnable(false, "nckd_submit");//锁定按钮
                     } else {
                         this.getView().showErrorNotification("请先保存单据");
                         return;

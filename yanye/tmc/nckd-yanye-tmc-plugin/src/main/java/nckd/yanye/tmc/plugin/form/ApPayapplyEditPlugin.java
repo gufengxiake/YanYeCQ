@@ -30,7 +30,7 @@ import java.util.*;
 
 public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
-    private final List<String> NAME_LIST = Arrays.asList(new String[]{"e_asstacttype", "e_settlementtype", "e_asstact" , "e_assacct"});
+    private final List<String> NAME_LIST = Arrays.asList(new String[]{"e_asstacttype", "e_settlementtype", "e_asstact" , "nckd_e_assacct"});
 
     private final String BANK_ACCEP = "JSFS06";
     private final String TRADE_ACCEP = "JSFS07";
@@ -59,22 +59,18 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                 ChangeData changeData = e.getChangeSet()[0];
                 Object newValuetest = changeData.getNewValue();
                 DynamicObject newValue = new DynamicObject();
+                //获取改变的行号
+                int rowIndex = changeData.getRowIndex();
+                DynamicObjectCollection collection = this.getModel().getEntryEntity("entry");
+                DynamicObject dynamicObject = collection.get(rowIndex);
                 String eAssacctStr = "";
                 if (newValuetest instanceof DynamicObject) {
                     newValue = (DynamicObject) changeData.getNewValue();
                 }else if(newValuetest != null){
                     eAssacctStr = newValuetest.toString();
                 }
-//                else{
-//                    return;
-//                }
-//                DynamicObject newValue = (DynamicObject) changeData.getNewValue();
-                //获取改变的行号
-                int rowIndex = changeData.getRowIndex();
 
-                DynamicObjectCollection collection = this.getModel().getEntryEntity("entry");
 
-                DynamicObject dynamicObject = collection.get(rowIndex);
                 // 获取结算方式
                 DynamicObject eSettlementtype = name.equals("e_settlementtype") ? newValue:dynamicObject.getDynamicObject("e_settlementtype");
 
@@ -86,23 +82,13 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                     String eAsstacttype = name.equals("e_asstacttype") ? newValue.toString():dynamicObject.getString("e_asstacttype");
                     if("bd_supplier".equals(eAsstacttype)){
-                        if(name.equals("e_assacct")){
-                            Map<String,Object> innerSupplier = isInnerSupplier(eAsstact.get("masterid"));
-                            if(innerSupplier != null){
-                                dynamicObject.set("e_assacct", innerSupplier.get("number"));
-                                dynamicObject.set("nckd_e_assacct", innerSupplier.get("number"));
 
-                                dynamicObject.set("e_bebank", innerSupplier.get("bankid"));
-                                this.getView().updateView();
-                                return;
-                            }
-                        }
                         if(ObjectUtils.isNotEmpty(eSettlementtype)){
                             String eSettlementtypeName = (String) eSettlementtype.get("number");
                             if (BANK_ACCEP.equals(eSettlementtypeName) || TRADE_ACCEP.equals(eSettlementtypeName) ) {
 
                                 //银行账户
-                                String eAssacct = name.equals("e_assacct") ? eAssacctStr:dynamicObject.getString("e_assacct");
+                                String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
 
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
 
@@ -122,7 +108,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                 }
                             }else{
                                 //银行账户
-                                String eAssacct = name.equals("e_assacct") ? eAssacctStr:dynamicObject.getString("e_assacct");
+                                String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
 
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
 
@@ -161,7 +147,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                 map.put("number", amAccountbank.getString("bankaccountnumber"));
                 amAccountbank.getLong("bank.id");
-                // todo 查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
+                //  查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
                 QFilter qFilter2 = new QFilter("account.masterid", "=", amAccountbank.getPkValue());
                 // 合作金融机构
                 Object cooperationId = null;

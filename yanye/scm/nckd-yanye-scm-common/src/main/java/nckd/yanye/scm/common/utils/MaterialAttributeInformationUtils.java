@@ -2,12 +2,14 @@ package nckd.yanye.scm.common.utils;
 
 import java.math.BigDecimal;
 
+import com.alibaba.druid.support.logging.Log;
+import com.alibaba.druid.support.logging.LogFactory;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.orm.query.QCP;
+import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
@@ -20,6 +22,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
  * @description  物料属性信息
  */
 public class MaterialAttributeInformationUtils {
+    private static final Log logger = LogFactory.getLog(MaterialAttributeInformationUtils.class);
+
     /**
      * 生产基本信息
      * @param org   申请组织
@@ -290,11 +294,21 @@ public class MaterialAttributeInformationUtils {
         OperationResult saveOperate = SaveServiceHelper.saveOperate(entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
         if(saveOperate.isSuccess()){
             // 提交
-            OperationResult operationResult = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
-            if(operationResult.isSuccess()){
+            OperationResult submitOperate =  OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+            if(submitOperate.isSuccess()){
                 // 审核
-                OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+                OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+                if(!auditOperate.isSuccess()){
+                    logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
+                    throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
+                }
+            } else {
+                logger.error(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
+                throw new KDBizException(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
             }
+        } else {
+            logger.error(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+            throw new KDBizException(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
         }
     }
 
