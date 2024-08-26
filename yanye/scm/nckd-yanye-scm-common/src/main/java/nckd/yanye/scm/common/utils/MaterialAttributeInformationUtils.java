@@ -96,7 +96,7 @@ public class MaterialAttributeInformationUtils {
         // 物料
         newDynamicObject.set("material", material);
         // 编码
-        newDynamicObject.set("number", material.getDynamicObject("nckd_materialnumber").getString("number"));
+        newDynamicObject.set("number", material.getString("number"));
         // 计划信息创建组织
         newDynamicObject.set("createorg", org);
         // 物料属性
