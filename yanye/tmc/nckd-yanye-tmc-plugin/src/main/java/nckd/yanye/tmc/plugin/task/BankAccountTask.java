@@ -8,6 +8,7 @@ import kd.bos.db.tx.TX;
 import kd.bos.db.tx.TXHandle;
 import kd.bos.entity.AppInfo;
 import kd.bos.entity.AppMetadataCache;
+import kd.bos.entity.cache.IAppCache;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.param.AppParam;
 import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
@@ -25,7 +26,9 @@ import kd.bos.servicehelper.workflow.MessageCenterServiceHelper;
 import kd.tmc.bei.business.helper.CasFlowConfirmLogHelper;
 import kd.tmc.bei.business.helper.RecClaimHelper;
 import kd.tmc.bei.common.helper.ExtendConfigHelper;
+import kd.tmc.fbp.common.helper.TmcAppCache;
 import kd.tmc.fbp.common.helper.TmcOperateServiceHelper;
+import kd.tmc.fbp.common.util.EmptyUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,11 +48,13 @@ public class BankAccountTask  implements IEventServicePlugin {
 
     private static Log logger = LogFactory.getLog(BankAccountTask.class);
 
+    private static IAppCache cache = TmcAppCache.get("cas", "intelrec", "claim");
+
 
     @Override
     public Object handleEvent(KDBizEvent evt) {
         if(evt instanceof EntityEvent){
-            logger.info("付款申请单.退票消息通知.执行插件:-------------------");
+            logger.info("离线导入执行插件:-------------------");
 //            logger.info("插件参数EventId：{}", evt.getEventId());
 //            logger.info("插件参数Source：{}", evt.getSource());
 //            logger.info("插件参数EventNumber：{}", evt.getEventNumber());
@@ -89,10 +94,11 @@ public class BankAccountTask  implements IEventServicePlugin {
                             //  未配置负责人，根据企业匹配系统参数触发认领操作
                             logger.info("未配置客户负责人，根据企业匹配系统参数触发认领操作");
                             // 交易明细编号
-                            DynamicObject billno = transdetail.getDynamicObject("billno");
+                            String billno = transdetail.getString("billno");
+                            logger.info("交易明细编号：{}", billno);
                             // 根据交易明细获取 收款入账中心 数据, 应用 fs，
                             Long companyid = transdetail.getLong("company.masterid");
-
+                            //  orgid 100000, appid /SIQN87JDP2A, ,new AppParam("/SIQN87JDP2A","08",100000L,null)
                             AppInfo appInfo = AppMetadataCache.getAppInfo("fs");
                             String appId = appInfo.getId();
                             AppParam appParam = new AppParam();
@@ -102,6 +108,7 @@ public class BankAccountTask  implements IEventServicePlugin {
 
                             Map<String,Object> systemMap= SystemParamServiceHelper.loadAppParameterFromCache(appParam);
                             Object client =  systemMap.get("nckd_usergroup");
+                            logger.info("收款入账中心配置信息：{}",client);
 
                             if(ObjectUtils.isEmpty(client)){
                                 // 如果企业没有配置默认的用户组，则获取最上层用户组
@@ -109,34 +116,38 @@ public class BankAccountTask  implements IEventServicePlugin {
                                 logger.info("如果企业没有配置默认的用户组，暂时不执行认领操作");
                                 break;
                             }
-                            // 获取到需要执行认领收款入账中心key
+                            // 获取到需要执行认领收款入账中心key 2024178764979648512
                             QFilter qFilter2 = new QFilter("billno", QCP.equals, billno);
-                            DynamicObject beiIntelrec = BusinessDataServiceHelper.loadSingle("bei_intelrec", null, new QFilter[]{qFilter2});
+                            DynamicObject beiIntelrec = BusinessDataServiceHelper.loadSingle("bei_intelrec", "id,billno", new QFilter[]{qFilter2});
+                            logger.info("收款入账中心信息：{}",beiIntelrec);
                             Object pkValue = beiIntelrec.getPkValue();
+                            String failidString = pkValue.toString();
                             JSONObject jsonObject = new JSONObject(client);
-                            Map<String,Object> map = new HashMap<>();
+                            Map<String,Object> noticeData = new HashMap<>();
                             // 人员组 key
-                            Object masterid = jsonObject.get("matserid");
+                            Object masterid = jsonObject.get("id");
                             // 组名
-                            Object name = jsonObject.get("name");
+                            Object name = jsonObject.getJSONObject("name").get("zh_CN");
                             ArrayList<String> nameList = new ArrayList<>();
                             nameList.add(name.toString());
                             ArrayList<String> groupsids = new ArrayList<>();
                             groupsids.add(masterid.toString());
-                            map.put("usergroupnames",nameList);
-                            map.put("usergroupids",nameList);
 
-                            String jsonStr = SerializationUtils.toJsonString(map);
-                            Long[] ids = new Long[]{(Long) pkValue};
-                            Map<String,String> ruleNotice = new HashMap(1);
-                            ruleNotice.put(pkValue.toString(),jsonStr);
-                            logger.info("认领收款入账中心参数：{}",ruleNotice);
-                            // 执行认领操作
+                            String jsonString = SerializationUtils.toJsonString(noticeData);
+                            String[] failids = failidString.split(",");
+                            Map<String, String> ruleNotice = new HashMap(failids.length);
+                            for(int i = 0; i < failids.length; ++i) {
+                                cache.put(failids[i], jsonString);
+                                ruleNotice.put(failids[i], jsonString);
+                            }
+
+                            Long[] ids = (Long[])Arrays.stream(failids).mapToLong(Long::valueOf).boxed().toArray((x$0) -> {
+                                return new Long[x$0];
+                            });
                             OperationResult result = TmcOperateServiceHelper.execOperateWithoutThrow("pushandsave", "bei_transdetail_cas", ids, OperateOption.create());
                             logger.info("认领结果：{}",result);
                             // 推送认领通知到用户
                             this.noticeMessage(ruleNotice);
-
                             TXHandle tx = TX.requiresNew();
                             Throwable var29 = null;
 
@@ -162,6 +173,8 @@ public class BankAccountTask  implements IEventServicePlugin {
                         }
 
                     }
+                }else{
+                    logger.info("未查询到对应客户信息：{}",oppunit);
                 }
             }
         }
@@ -176,7 +189,7 @@ public class BankAccountTask  implements IEventServicePlugin {
         // 云之家通知 金蝶云苍穹消息助手 标识：systempubacc
         MessageInfo messageInfo = new MessageInfo();
         messageInfo.setTitle("您好，您有一条银行流水信息，请注意查收。");
-        messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。");
+        messageInfo.setContent("收到银行推送流水通知，请尽快查看和处理。交易明细编号："+customer.getString("billno")+"。对方户名："+customer.getString("oppunit")+"。");
 
         List<Long> userids = new ArrayList<Long>();
         userids.add((Long) salerid.getPkValue());
