@@ -541,8 +541,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void buyerInfo(DynamicObject dynamicObject) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("msbd_puropermaterctrl");
         if ("update".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            QFilter qFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
-                    .and("masterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
+            QFilter qFilter = new QFilter("org", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())
+                    .and("entryentity.materialmasterid", QCP.equals, dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue());
             newDynamicObject = BusinessDataServiceHelper.loadSingle("msbd_puropermaterctrl", new QFilter[]{qFilter});
             if (ObjectUtil.isNull(newDynamicObject)) {
                 return;
@@ -583,6 +583,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         DynamicObject operator = BusinessDataServiceHelper.loadSingle("bd_operator", new QFilter[]{new QFilter("operatornumber", QCP.equals, dynamicObject.getDynamicObject("nckd_buyer").getString("number"))});
         // 可采明细
         DynamicObjectCollection entryentity = newDynamicObject.getDynamicObjectCollection("entryentity");
+        entryentity.clear();
         DynamicObject addNew = entryentity.addNew();
         // 采购员编码
         addNew.set("operator", operator);
@@ -641,7 +642,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void commoninspectInfo(DynamicObject newDynamicObject, DynamicObject dynamicObject) {
         // 检验控制
         DynamicObjectCollection entryentity = newDynamicObject.getDynamicObjectCollection("entryentity");
-
+        entryentity.clear();
         dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().forEach(dynamicObject1 -> {
             DynamicObject addNew = entryentity.addNew();
             // 业务类型

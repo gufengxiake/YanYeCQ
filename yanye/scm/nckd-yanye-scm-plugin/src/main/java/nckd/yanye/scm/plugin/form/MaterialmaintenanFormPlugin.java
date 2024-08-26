@@ -3,6 +3,7 @@ package nckd.yanye.scm.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.AfterF7SelectEvent;
@@ -76,14 +77,16 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         String nckdmaterialmaintunit = (String)this.getModel().getValue("nckd_materialmaintunit");
         //获取选中的行
         ListSelectedRowCollection collection = afterF7SelectEvent.getListSelectedRowCollection();
-        //查询选中行的物料
-        DynamicObject material = BusinessDataServiceHelper.loadSingle(collection.get(0).getPrimaryKeyValue(), "bd_material");
+        if(collection.size() > 0){
+            //查询选中行的物料
+            DynamicObject material = BusinessDataServiceHelper.loadSingle(collection.get(0).getPrimaryKeyValue(), "bd_material");
 
-        //update：修改物料属性   updateinfo：修改物料基本信息
-        if ("update".equals(nckdmaterialmaintunit)){
-            attributeInfo(material,nckddocumenttype);
-        }else if ("updateinfo".equals(nckdmaterialmaintunit)){
-            updateBaseInfo(material);
+            //update：修改物料属性   updateinfo：修改物料基本信息
+            if ("update".equals(nckdmaterialmaintunit)){
+                attributeInfo(material,nckddocumenttype);
+            }else if ("updateinfo".equals(nckdmaterialmaintunit)){
+                updateBaseInfo(material);
+            }
         }
     }
 
@@ -150,7 +153,8 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 //采购基本信息
                 setBasicProcurementInformation(qFilter);
                 //物料采购员信息
-                setMaterialpurchaserinformation(qFilter);
+                setMaterialpurchaserinformation(new QFilter("org",QCP.equals,orgDynamicObject.getPkValue())
+                        .and("entryentity.materialmasterid",QCP.equals,material.getPkValue()));
                 //质检基本信息
                 setBasicQualityInspectionInformation(qFilter);
                 break;
@@ -170,9 +174,11 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     //设置物料采购员信息
     public void setMaterialpurchaserinformation(QFilter qFilter){
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("msbd_puropermaterctrl", new QFilter[]{qFilter});
+        DynamicObject object = dynamicObject.getDynamicObjectCollection("entryentity").get(0);
+        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_user", new QFilter[]{new QFilter("number", QCP.equals, object.getDynamicObject("operator").getString("operatornumber"))});
         //需要去查询采购组
-        this.getModel().setValue("nckd_purchaseorg",dynamicObject.get("purchaseunit"));//采购组
-        this.getModel().setValue("nckd_buyer",dynamicObject.get("purchaseunit"));//采购员
+        this.getModel().setValue("nckd_purchaseorg",object.get("operatorgroup"));//采购组
+        this.getModel().setValue("nckd_buyer",loadSingle);//采购员
     }
     //设置库存基本信息
     public void setBasicinventoryinformation(QFilter qFilter){
@@ -212,7 +218,7 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     //设置生产基本信息
     public void setBasicProductionInformation(QFilter qFilter){
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_mftunit",dynamicObject.get("dlivratefloor"));//生产计量单位
+        this.getModel().setValue("nckd_mftunit",dynamicObject.get("mftunit"));//生产计量单位
         this.getModel().setValue("nckd_materialattri",dynamicObject.get("materialattr"));//物料属性
         this.getModel().setValue("nckd_departmentorgid",dynamicObject.get("departmentorgid"));//生产部门
         this.getModel().setValue("nckd_bomversionrule",dynamicObject.get("bomversionrule"));//BOM版本规则
@@ -241,6 +247,10 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     //设置质检基本信息
     public void setBasicQualityInspectionInformation(QFilter qFilter){
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_entryentity",dynamicObject.getDynamicObjectCollection("entryentity"));//检验控制
+        dynamicObject.getDynamicObjectCollection("entryentity").stream().forEach(t ->{
+            int row = this.getModel().createNewEntryRow("nckd_entryentity");
+            this.getModel().setValue("nckd_inspecttype",t.get("inspecttype"),row);
+            this.getModel().setValue("nckd_nocheckflag",t.get("nocheckflag"),row);
+        });
     }
 }

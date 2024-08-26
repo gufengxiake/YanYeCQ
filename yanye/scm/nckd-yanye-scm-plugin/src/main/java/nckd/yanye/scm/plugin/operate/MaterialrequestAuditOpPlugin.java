@@ -139,6 +139,9 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             materialmaintenanObject.set("modifytime", new Date());
             materialmaintenanObject.set("billstatus", "A");//单据状态
             materialmaintenanObject.set("org", object.getDynamicObject("org"));//申请组织
+            materialmaintenanObject.set("nckd_createorganiza", object.getDynamicObject("nckd_createorg"));//创建组织
+            materialmaintenanObject.set("nckd_initiatingdepart", RequestContext.get().getOrgId());//发起部门
+            materialmaintenanObject.set("nckd_applicant", RequestContext.get().getCurrUserId());//申请人
             materialmaintenanObject.set("nckd_materialmaintunit", "add");//单据维护类型：新增物料属性
             materialmaintenanObject.set("nckd_documenttype", billType);//单据类型：
             materialmaintenanObject.set("nckd_materialclassify", dynamicObject.getDynamicObject("nckd_materialclassify"));//物料分类
