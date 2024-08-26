@@ -41,7 +41,7 @@ import java.math.BigDecimal;
 import java.util.*;
 
 /**
- * 销售出库单审核服务插件 自动执行采购订单下推采购收货单
+ * 销售出库单审核服务插件 自动执行采购订单下推采购收货单(保存，不自动审核)
  * 表单标识：nckd_im_saloutbill_ext
  * author:吴国强 2024-07-12
  */
@@ -304,17 +304,17 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
 
                             }
                             formView.close();
-                            if (Ids.size() > 0) {
-                                OperateOption auditOption = OperateOption.create();
-                                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-                                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-                                //提交
-                                OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
-                                if (subResult.isSuccess()) {
-                                    //审核
-                                    OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
-                                }
-                            }
+//                            if (Ids.size() > 0) {
+//                                OperateOption auditOption = OperateOption.create();
+//                                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+//                                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+//                                //提交
+//                                OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
+//                                if (subResult.isSuccess()) {
+//                                    //审核
+//                                    OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
+//                                }
+//                            }
 
                         }
                     }

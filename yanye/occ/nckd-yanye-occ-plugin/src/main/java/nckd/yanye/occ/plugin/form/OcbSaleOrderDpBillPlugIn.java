@@ -2,6 +2,7 @@ package nckd.yanye.occ.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.occ.ocbase.formplugin.base.OcbaseBillPlugin;
 import kd.occ.ocbsoc.formplugin.nb2b.SaleOrderB2BEdit;
 
 import java.util.EventObject;
@@ -12,7 +13,7 @@ import java.util.EventObject;
 author:wgq
 date:2024/08/20
  */
-public class OcbSaleOrderDpBillPlugIn extends SaleOrderB2BEdit {
+public class OcbSaleOrderDpBillPlugIn extends OcbaseBillPlugin {
       @Override
       public void afterCreateNewData(EventObject e) {
           //super.afterCreateNewData(e);
