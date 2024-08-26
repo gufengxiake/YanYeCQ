@@ -66,44 +66,45 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
             //单据维护类型 add：修改物料基本信息
             if ("updateinfo".equals(data.getString("nckd_materialmaintunit"))) {
                 baseInfo(data);
-            }
-            switch (documenttype) {
-                case "1":
-                    // 生产基本信息
-                    this.productionInfo(data);
+            } else {
+                switch (documenttype) {
+                    case "1":
+                        // 生产基本信息
+                        this.productionInfo(data);
 
-                    // 【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’或'江西富达盐化有限公司'
-                    String number = org.getString("number");
-                    if (("1".equals(materialattribute) && "1".equals(selfmaterialtype) && ("113".equals(number) || "121".equals(number)))
-                    || ("1".equals(materialattribute) && "2".equals(selfmaterialtype)) || "2".equals(materialattribute)) {
-                        // 计划基本信息
-                        this.planInfo(data);
-                    }
+                        // 【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’或'江西富达盐化有限公司'
+                        String number = org.getString("number");
+                        if (("1".equals(materialattribute) && "1".equals(selfmaterialtype) && ("113".equals(number) || "121".equals(number)))
+                                || ("1".equals(materialattribute) && "2".equals(selfmaterialtype)) || "2".equals(materialattribute)) {
+                            // 计划基本信息
+                            this.planInfo(data);
+                        }
 
-                    // 质检基本信息
-                    this.inspectInfo(data);
+                        // 质检基本信息
+                        this.inspectInfo(data);
 
-                    break;
-                case "2":
-                    // 库存基本信息
-                    this.stockInfo(data);
-                    break;
-                case "3":
-                    // 核算基本信息
-                    this.checkInfo(data);
-                    break;
-                case "4":
-                    // 销售基本信息
-                    this.marketInfo(data);
-                    break;
-                case "5":
-                    // 采购基本信息
-                    this.purchaseInfo(data);
-                    // 物料采购员信息
-                    this.buyerInfo(data);
-                    // 质检基本信息
-                    this.inspectInfo(data);
-                    break;
+                        break;
+                    case "2":
+                        // 库存基本信息
+                        this.stockInfo(data);
+                        break;
+                    case "3":
+                        // 核算基本信息
+                        this.checkInfo(data);
+                        break;
+                    case "4":
+                        // 销售基本信息
+                        this.marketInfo(data);
+                        break;
+                    case "5":
+                        // 采购基本信息
+                        this.purchaseInfo(data);
+                        // 物料采购员信息
+                        this.buyerInfo(data);
+                        // 质检基本信息
+                        this.inspectInfo(data);
+                        break;
+                }
             }
         });
     }
@@ -335,7 +336,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         MaterialAttributeInformationUtils.processData(newDynamicObject);
     }
 
-    private void commonstockInfo(DynamicObject newDynamicObject,DynamicObject dynamicObject){
+    private void commonstockInfo(DynamicObject newDynamicObject, DynamicObject dynamicObject) {
         // 库存单位
         newDynamicObject.set("inventoryunit", dynamicObject.get("nckd_inventoryunit"));
         // 最小包装量
@@ -655,17 +656,53 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     private void baseInfo(DynamicObject dynamicObject) {
         //查询物料
         DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue(), "bd_material");
-        dynamic.set("name", dynamicObject.get("nckd_altermaterialname"));//物料名称
-        dynamic.set("modelnum", dynamicObject.get("nckd_alterspecificat"));//规格
-        dynamic.set("modelnum", dynamicObject.get("nckd_altermodel"));//型号
+        //物料名称
+        if(dynamicObject.get("nckd_altermaterialname") != null){
+            dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));
+        }
+        //规格
+        if(dynamicObject.get("nckd_alterspecificat") != null){
+            dynamic.set("modelnum",dynamicObject.get("nckd_alterspecificat"));
+        }
+        //型号
+        if(dynamicObject.get("nckd_altermodel") != null){
+            dynamic.set("nckd_model",dynamicObject.get("nckd_altermodel"));
+        }
+        //物料分组
+        if(dynamicObject.get("nckd_altermaterialclass") != null){
+            dynamic.set("group",dynamicObject.get("nckd_altermaterialclass"));
+        }
+        //助记码
+        if(dynamicObject.get("nckd_altermnemoniccode") != null){
+            dynamic.set("helpcode",dynamicObject.get("nckd_altermnemoniccode"));
+        }
+        //旧物料编码
+        if(dynamicObject.get("nckd_alteroldnumber") != null){
+            dynamic.set("oldnumber",dynamicObject.get("nckd_alteroldnumber"));
+        }
+        //描述
+        if(dynamicObject.get("nckd_alterremark") != null){
+            dynamic.set("description",dynamicObject.get("nckd_alterremark"));
+        }
+        //物料危险性
+        if(dynamicObject.get("nckd_altermaterialrisk") != null){
+            dynamic.set("hazardous",dynamicObject.get("nckd_altermaterialrisk"));
+        }
+        //可委外
+        if(dynamicObject.get("nckd_alteroutsourcing") != null){
+            dynamic.set("enableoutsource",dynamicObject.get("nckd_alteroutsourcing"));
+        }
+//        dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));//物料名称
+//        dynamic.set("modelnum", dynamicObject.get("nckd_alterspecificat"));//规格
+//        dynamic.set("nckd_model", dynamicObject.get("nckd_altermodel"));//型号
         dynamic.set("modifier", RequestContext.get().getCurrUserId());//修改人
         dynamic.set("modifytime", new Date());//修改时间
-        dynamic.set("group", dynamicObject.get("nckd_altermaterialclass"));//物料分组
-        dynamic.set("helpcode", dynamicObject.get("nckd_altermnemoniccode"));//助记码
-        dynamic.set("oldnumber", dynamicObject.get("nckd_alteroldnumber"));//旧物料编码
-        dynamic.set("description", dynamicObject.get("nckd_alterremark"));//描述
-        dynamic.set("hazardous", dynamicObject.get("nckd_altermaterialrisk"));//物料危险性
-        dynamic.set("enableoutsource", dynamicObject.get("nckd_alteroutsourcing"));//可委外
+//        dynamic.set("group", dynamicObject.get("nckd_altermaterialclass"));//物料分组
+//        dynamic.set("helpcode", dynamicObject.get("nckd_altermnemoniccode"));//助记码
+//        dynamic.set("oldnumber", dynamicObject.get("nckd_alteroldnumber"));//旧物料编码
+//        dynamic.set("description", dynamicObject.get("nckd_alterremark"));//描述
+//        dynamic.set("hazardous", dynamicObject.get("nckd_altermaterialrisk"));//物料危险性
+//        dynamic.set("enableoutsource", dynamicObject.get("nckd_alteroutsourcing"));//可委外
         SaveServiceHelper.update(dynamic);
     }
 
