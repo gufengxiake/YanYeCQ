@@ -1,6 +1,5 @@
-package nckd.yanye.hr.common.utils.capp;
+package nckd.base.common.utils.capp;
 
-import java.util.EventObject;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.encrypt.Encrypters;
 import kd.bos.form.control.Control;
@@ -8,11 +7,16 @@ import kd.bos.form.control.events.BeforeClickEvent;
 import kd.bos.form.control.events.ClickListener;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.plugin.AbstractFormPlugin;
-import nckd.yanye.hr.common.utils.capp.CappConfig;
 
-public class CappConfigPlugin
-        extends AbstractFormPlugin
-        implements ClickListener
+import java.util.EventObject;
+
+/**
+ * 单据名称：capp配置表  标识：capp_config 单据插件
+ * 用于维护系统配置或接口参数
+ * author: chengchaohua
+ * date: 2024-08-27
+ */
+public class CappConfigPlugin extends AbstractFormPlugin implements ClickListener
 {
     private static final String PICTURE_FIELD = "picturefield";
     private static final String ENCODE_VALUE = "encodevalue";
@@ -32,7 +36,7 @@ public class CappConfigPlugin
             getModel().setValue("code", ((String)getModel().getValue("code")).trim());
             getModel().setValue("desc", ((String)getModel().getValue("desc")).trim());
             String type = (String)getModel().getValue("type");
-
+            // type: 1- 文本 ,2- 图片 ,3- 密文
             if ("1".equals(type)) {
 
                 getModel().setValue("picturefield", "");

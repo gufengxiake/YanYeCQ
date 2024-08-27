@@ -204,6 +204,9 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             if("车销订单".equalsIgnoreCase(name)||"自提订单".equalsIgnoreCase(name)||"企业寄售订单".equalsIgnoreCase(name)){
                 dataEntity.set("nckd_autosign",true);
             }
+            else {
+                dataEntity.set("nckd_autosign",false);
+            }
         }
     }
 

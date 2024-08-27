@@ -28,6 +28,11 @@ import kd.occ.ocbase.formplugin.base.OcbaseFormMobPlugin;
 
 import java.util.EventObject;
 
+/*
+ * 签收处理移动表单插件
+ * 表单标识：nckd_ocdma_deliverysign
+ * author:吴国强 2024-08-25
+ */
 public class MobleDelivertUnSignListPlugIn extends OcbaseFormMobPlugin implements TabSelectListener {
 
     @Override

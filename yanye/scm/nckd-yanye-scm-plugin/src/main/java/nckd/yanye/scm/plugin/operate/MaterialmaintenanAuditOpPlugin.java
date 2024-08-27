@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import cn.hutool.core.util.ObjectUtil;
 import kd.bos.coderule.api.CodeRuleInfo;
@@ -19,6 +20,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
+import org.apache.commons.lang.StringUtils;
 
 /**
  * @author husheng
@@ -72,10 +74,13 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                         // 生产基本信息
                         this.productionInfo(data);
 
-                        // 【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’或'江西富达盐化有限公司'
-                        String number = org.getString("number");
-                        if (("1".equals(materialattribute) && "1".equals(selfmaterialtype) && ("113".equals(number) || "121".equals(number)))
-                                || ("1".equals(materialattribute) && "2".equals(selfmaterialtype)) || "2".equals(materialattribute)) {
+                        // 组织范围内属性页签
+                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
+                        List<String> materialproperty = null;
+                        if(dynamicObject != null){
+                            materialproperty = Arrays.stream(dynamicObject.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                        }
+                        if (dynamicObject == null || !materialproperty.contains("2")) {
                             // 计划基本信息
                             this.planInfo(data);
                         }
@@ -187,6 +192,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("issuemode", dynamicObject.get("nckd_issuemode"));
         // 倒冲
         newDynamicObject.set("isbackflush", dynamicObject.get("nckd_isbackflush"));
+        // 是否常规包装
+        newDynamicObject.set("nckd_regularpackaging", dynamicObject.get("nckd_regularpackaging"));
     }
 
     /**
@@ -484,6 +491,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("dlivrateceiling", dynamicObject.get("nckd_dlivrateceiling"));
         // 发货欠发比率(%)
         newDynamicObject.set("dlivratefloor", dynamicObject.get("nckd_dlivratefloor"));
+        // 是否常规包装
+        newDynamicObject.set("nckd_regularpackaging", dynamicObject.get("nckd_regularpackagin"));
     }
 
     /**

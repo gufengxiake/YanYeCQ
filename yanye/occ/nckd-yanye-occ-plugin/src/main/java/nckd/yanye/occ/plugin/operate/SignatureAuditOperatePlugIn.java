@@ -164,6 +164,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                             //审核
                             OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
                         }
+
                     }
 
                 }

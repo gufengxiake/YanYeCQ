@@ -31,9 +31,7 @@ public class WaitSignedOperatePlugin extends AbstractOperationServicePlugIn {
     @Override
     public void afterExecuteOperationTransaction(AfterOperationArgs e) {
         super.afterExecuteOperationTransaction(e);
-        logger.info("待签收单据处理，获取待签收票据操作插件");
-        e.getDataEntities();
-        logger.info("DataEntities:{}", e.getDataEntities());
+//        logger.info("DataEntities:{}", e.getDataEntities());
         e.getOperationKey();
         logger.info("OperationKey:{}", e.getOperationKey());
         e.getSelectedRows();
