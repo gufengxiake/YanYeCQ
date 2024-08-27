@@ -69,11 +69,14 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                 // 获取结算方式
                 DynamicObject eSettlementtype = name.equals("e_settlementtype") ? newValue:dynamicObject.getDynamicObject("e_settlementtype");
-                eSettlementtype = ObjectUtils.isNotEmpty(eSettlementtype.getDataStorage())? eSettlementtype :null;
+                if(ObjectUtils.isNotEmpty(eSettlementtype)){
+                    eSettlementtype = ObjectUtils.isNotEmpty(eSettlementtype.getDataStorage())? eSettlementtype :null;
+                }
 
                 // 获取e_asstact 往来户信息
                 DynamicObject eAsstact = name.equals("e_asstact") ? newValue:dynamicObject.getDynamicObject("e_asstact");
-                if (ObjectUtils.isNotEmpty(eAsstact)) {
+
+                if (ObjectUtils.isNotEmpty(eAsstact) && ObjectUtils.isNotEmpty(eAsstact.getDataStorage()) ) {
                     Object masterid = eAsstact.get("masterid");
 
                     String eAsstacttype = name.equals("e_asstacttype") ? newValue.toString():dynamicObject.getString("e_asstacttype");

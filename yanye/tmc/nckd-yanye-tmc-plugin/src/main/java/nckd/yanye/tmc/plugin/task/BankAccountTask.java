@@ -37,7 +37,7 @@ import java.util.stream.Collectors;
 
 
 /**
- * Module           :
+ * Module           :bei_betransdetail_imp
  * Description      :银行流水推送业务人员
  *
  * @author : guozhiwei
@@ -192,7 +192,7 @@ public class BankAccountTask  implements IEventServicePlugin {
         // 云之家通知 金蝶云苍穹消息助手 标识：systempubacc
         MessageInfo messageInfo = new MessageInfo();
         messageInfo.setTitle("您好，您有一条银行流水信息，请注意查收。");
-        messageInfo.setContent("收到"+customer.getLocaleString("name")+"款项"+customer.get("creditamount") +",请确认对应的订单;");
+        messageInfo.setContent("收到"+customer.getString("oppunit")+"款项"+customer.get("creditamount") +",请确认对应的订单;");
 
         List<Long> userids = new ArrayList<Long>();
         userids.add((Long) salerid.getPkValue());

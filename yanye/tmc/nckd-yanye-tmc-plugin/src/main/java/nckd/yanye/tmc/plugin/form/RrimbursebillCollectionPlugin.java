@@ -97,7 +97,10 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
 //            String paymode = name.equals("paymode")? newValue.getString("number"): ObjectUtils.isNotEmpty(dynamicObject.getDynamicObject("paymode")) ? dynamicObject.getDynamicObject("paymode").getString("number"): null;
 
             DynamicObject paymodeObj = name.equals("paymode")? newValue: dynamicObject.getDynamicObject("paymode");
-            String paymode = ObjectUtils.isNotEmpty(paymodeObj.getDataStorage()) ? paymodeObj.getString("number"): null;
+            String paymode = null;
+            if(ObjectUtils.isNotEmpty(paymodeObj)){
+                paymode = ObjectUtils.isNotEmpty(paymodeObj.getDataStorage()) ? paymodeObj.getString("number"): null;
+            }
             String payertype = name.equals("payertype")?payeraccountStr: dynamicObject.getString("payertype");
 
             if(name.equals("payertype")){
