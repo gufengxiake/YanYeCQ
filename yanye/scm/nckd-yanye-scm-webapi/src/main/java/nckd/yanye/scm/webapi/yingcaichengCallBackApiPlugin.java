@@ -219,23 +219,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
         // 供应商/订单生成失败原因
         receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "自动生成失败!请手动生成");
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "测试, 请手动生成");
 
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
         // 其他：直接生成采购订单
-        if ("2".equals(procurements)) {
-            // 生成采购订单
-            if ("1".equals(purchaseType)) {
-                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
-            } else if ("2".equals(purchaseType)) {
-                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
-            } else {
-                throw new KDBizException("采购类型错误");
-            }
-        } else {
-            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
-        }
+//        if ("2".equals(procurements)) {
+//            // 生成采购订单
+//            if ("1".equals(purchaseType)) {
+//                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+//            } else if ("2".equals(purchaseType)) {
+//                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
+//            } else {
+//                throw new KDBizException("采购类型错误");
+//            }
+//        } else {
+//            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+//        }
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
 
