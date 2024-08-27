@@ -23,6 +23,7 @@ import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.util.*;
 
@@ -197,7 +198,9 @@ public class DeliveryUnSignOperatePlugIn extends AbstractOperationServicePlugIn 
 
         }
         for (DynamicObject dataEntity : e.getDataEntities()) {
-            dataEntity.set("billstatus", "E");
+            dataEntity.set("billstatus", "E");//单据状态
+            dataEntity.set("nckd_unsigner", UserServiceHelper.getCurrentUser("id"));//拒签人
+            dataEntity.set("nckd_unsigndate", new Date());//拒签日期
             SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
         if (!saloutBillIds.isEmpty()) {

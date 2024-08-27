@@ -68,13 +68,13 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 case "start":
                     if(! (filterItem.getDate() == null) ){
                         qFilter = qFilter.and("biztime", QCP.large_equals,
-                                DateUtil.parse(new SimpleDateFormat("yyyy-MM-dd").format(filterItem.getDate()),"yyyy-MM-dd"));
+                                DateUtil.beginOfDay(filterItem.getDate()));
                     }
                     break;
                 case "end":
                     if(! (filterItem.getDate() == null) ){
                         qFilter = qFilter.and("biztime", QCP.less_equals,
-                                DateUtil.parse(new SimpleDateFormat("yyyy-MM-dd").format(filterItem.getDate()),"yyyy-MM-dd"));
+                                DateUtil.endOfDay(filterItem.getDate()));
                     }
                     break;
 
@@ -85,12 +85,14 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                         qFilter = qFilter.and("customer", QCP.equals, customer);
                     }
                     break;
+                // 查询条件部门,标识如不一致,请修改
                 case "nckd_bizdept_q":
                     if(! (filterItem.getValue() == null) ){
                         Long bizdept =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                         qFilter = qFilter.and("bizdept", QCP.equals, bizdept);
                     }
                     break;
+                // 查询条件仓库,标识如不一致,请修改
                 case "nckd_warehouse_q":
                     if(! (filterItem.getValue() == null) ){
                         Long nckd_warehouse_q =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
