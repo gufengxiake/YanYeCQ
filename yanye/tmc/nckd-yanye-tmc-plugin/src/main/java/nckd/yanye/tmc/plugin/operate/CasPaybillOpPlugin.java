@@ -19,8 +19,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * Module           :
- * Description      :
+ * Module           :财务云-出纳-付款单
+ * Description      :批量背书校验
  *
  * @author : zhujintao
  * @date : 2024/8/22
