@@ -657,15 +657,15 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         //查询物料
         DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue(), "bd_material");
         //物料名称
-        if(dynamicObject.get("nckd_altermaterialname") != null){
+        if(!"".equals(dynamicObject.get("nckd_altermaterialname"))){
             dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));
         }
         //规格
-        if(dynamicObject.get("nckd_alterspecificat") != null){
+        if(!"".equals(dynamicObject.get("nckd_alterspecificat"))){
             dynamic.set("modelnum",dynamicObject.get("nckd_alterspecificat"));
         }
         //型号
-        if(dynamicObject.get("nckd_altermodel") != null){
+        if(!"".equals(dynamicObject.get("nckd_altermodel"))){
             dynamic.set("nckd_model",dynamicObject.get("nckd_altermodel"));
         }
         //物料分组
@@ -673,23 +673,23 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
             dynamic.set("group",dynamicObject.get("nckd_altermaterialclass"));
         }
         //助记码
-        if(dynamicObject.get("nckd_altermnemoniccode") != null){
+        if(!"".equals(dynamicObject.get("nckd_altermnemoniccode"))){
             dynamic.set("helpcode",dynamicObject.get("nckd_altermnemoniccode"));
         }
         //旧物料编码
-        if(dynamicObject.get("nckd_alteroldnumber") != null){
+        if(!"".equals(dynamicObject.get("nckd_alteroldnumber"))){
             dynamic.set("oldnumber",dynamicObject.get("nckd_alteroldnumber"));
         }
         //描述
-        if(dynamicObject.get("nckd_alterremark") != null){
+        if(!"".equals(dynamicObject.get("nckd_alterremark"))){
             dynamic.set("description",dynamicObject.get("nckd_alterremark"));
         }
         //物料危险性
-        if(dynamicObject.get("nckd_altermaterialrisk") != null){
+        if(!",,".equals(dynamicObject.getString("nckd_altermaterialrisk"))){
             dynamic.set("hazardous",dynamicObject.get("nckd_altermaterialrisk"));
         }
         //可委外
-        if(dynamicObject.get("nckd_alteroutsourcing") != null){
+        if(dynamicObject.getBoolean("nckd_alteroutsourcing")){
             dynamic.set("enableoutsource",dynamicObject.get("nckd_alteroutsourcing"));
         }
 //        dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));//物料名称

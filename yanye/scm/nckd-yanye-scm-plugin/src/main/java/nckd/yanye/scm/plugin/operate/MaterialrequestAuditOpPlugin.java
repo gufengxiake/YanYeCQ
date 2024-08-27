@@ -114,17 +114,17 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 }
 
                 // 物料属性信息扩展-扩展组织生成默认物料属性
-                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_org", new QFilter[]{new QFilter("number", QCP.equals, "113")});
-                // 生产基本信息
-                MaterialAttributeInformationUtils.defaultProductionInfo(loadSingle,material);
-                // 计划基本信息
-                MaterialAttributeInformationUtils.defaultPlanInfo(loadSingle,material);
-                // 库存基本信息
-                MaterialAttributeInformationUtils.defaultStockInfo(loadSingle,material);
-                // 销售基本信息
-                MaterialAttributeInformationUtils.defaultMarketInfo(loadSingle,material);
-                // 采购基本信息
-                MaterialAttributeInformationUtils.defaultPurchaseInfo(loadSingle,material);
+//                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_org", new QFilter[]{new QFilter("number", QCP.equals, "113")});
+//                // 生产基本信息
+//                MaterialAttributeInformationUtils.defaultProductionInfo(loadSingle,material);
+//                // 计划基本信息
+//                MaterialAttributeInformationUtils.defaultPlanInfo(loadSingle,material);
+//                // 库存基本信息
+//                MaterialAttributeInformationUtils.defaultStockInfo(loadSingle,material);
+//                // 销售基本信息
+//                MaterialAttributeInformationUtils.defaultMarketInfo(loadSingle,material);
+//                // 采购基本信息
+//                MaterialAttributeInformationUtils.defaultPurchaseInfo(loadSingle,material);
             }
             if (CollectionUtils.isNotEmpty(errorMsg)){
                 throw new KDBizException(errorMsg.stream().collect(Collectors.joining(",")));
