@@ -195,7 +195,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIAL, BusinessDataServiceHelper.load(
                         "bd_materialpurchaseinfo",
                         "id,materialname,masterid",
-                        new QFilter[]{new QFilter("masterid", QCP.equals, itemMap.get(itemId).get("itemCode"))}
+                        new QFilter[]{new QFilter("masterid.number", QCP.equals, itemMap.get(itemId).get("itemCode"))}
                 )[0]);
                 // 物料名称
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
