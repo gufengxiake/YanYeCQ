@@ -1,9 +1,5 @@
-package nckd.yanye.hr.common.utils.capp;
+package nckd.base.common.utils.capp;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 import kd.bos.context.RequestContext;
 import kd.bos.data.BusinessDataReader;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -26,9 +22,19 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
-public class CappConfigListPlugin
-  extends AbstractListPlugin
+
+/**
+ * 单据名称：capp配置表  标识：capp_config 列表插件
+ * 用于维护系统配置或接口参数
+ * author: chengchaohua
+ * date: 2024-08-27
+ */
+public class CappConfigListPlugin extends AbstractListPlugin
 {
   private static final String DELETE = "delete";
 

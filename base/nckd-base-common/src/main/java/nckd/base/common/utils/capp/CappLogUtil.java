@@ -1,10 +1,17 @@
-package nckd.yanye.hr.common.utils.capp;
+package nckd.base.common.utils.capp;
 
-import java.util.Date;
 import kd.bos.context.RequestContext;
 import kd.bos.log.api.AppLogInfo;
 import kd.bos.servicehelper.log.LogServiceHelper;
 
+import java.util.Date;
+
+
+/**
+ * 系统日志--自定义开发
+ * author: chengchaohua
+ * date: 2024-08-27
+ */
 public class CappLogUtil
 {
   public static void cappOperationLog(String operationName, String opDescription, String bizObjID) {

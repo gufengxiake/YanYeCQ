@@ -1,10 +1,14 @@
-package nckd.yanye.hr.common.utils.capp;
+package nckd.base.common.utils.capp;
 
 import kd.bos.cache.CacheFactory;
 import kd.bos.cache.DistributeSessionlessCache;
 
 
-
+/**
+ *  自定义缓存
+ * author: chengchaohua
+ * date: 2024-08-27
+ */
 public class CacheBusinessData
 {
   private static final String CACHE_REGION = "BUSSINESS_DATA";
