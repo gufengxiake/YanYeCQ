@@ -1,11 +1,14 @@
 package nckd.yanye.tmc.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowType;
 import kd.bos.form.StyleCss;
@@ -16,6 +19,7 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -51,8 +55,13 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
                 this.getView().showErrorNotification("当前选中行无指定发票,无需取消指定");
                 return;
             }
+            DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                    new QFilter[]{new QFilter("invoicecode", QCP.equals, nckdInventry.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, nckdInventry.get("nckd_i_invoiceno")))});
+            BigDecimal nckdIUsedamt = nckdInventry.getBigDecimal("nckd_i_usedamt");
+            updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
             this.getModel().deleteEntryRow("nckd_inventry",index);
             this.getView().updateView();
+
             DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_inventry");
             if (entity.size() == 0){
                 this.getModel().setValue("nckd_receiptinvoice",false);
@@ -61,6 +70,16 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
             SaveServiceHelper.save(new DynamicObject[]{dataEntity});
         }
 
+    }
+
+    /**
+     * 发票指定后，反写剩余可用发票金额到收票单
+     * @param invoice
+     * @param pricetaxtotal
+     */
+    private static void updateInvoice(DynamicObject invoice, BigDecimal pricetaxtotal) {
+        invoice.set("nckd_remainderamount", pricetaxtotal);
+        SaveServiceHelper.save(new DynamicObject[]{invoice});
     }
 
     /**
@@ -93,25 +112,97 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
 
         BigDecimal pricetaxtotal = invoice.getBigDecimal("pricetaxtotal");//发票金额
         BigDecimal currentActualinstamt = (BigDecimal)this.getModel().getValue("actualinstamt");//当前付息金额
-        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno",
+        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno,nckd_inventry.nckd_i_usedamt",
                 new QFilter[]{new QFilter("nckd_inventry.nckd_i_invoicecode", QCP.equals, invoice.getString("invoicecode"))
                         .and(new QFilter("nckd_inventry.nckd_i_invoiceno", QCP.equals, invoice.getString("invoiceno")))});
         if (cfm == null || cfm.length == 0){
-            this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
-            this.getModel().setValue("nckd_i_usedamt",currentActualinstamt,nckdInventry);
-            return;
+            if (entry.size() - 1 > 0){
+                BigDecimal nckdIUsedamt = BigDecimal.ZERO;//发票已用金额
+                for (int i = 0; i < entry.size()-1; i++) {
+                    nckdIUsedamt = nckdIUsedamt.add(entry.get(i).getBigDecimal("nckd_i_usedamt"));
+                }
+                if (nckdIUsedamt.compareTo(currentActualinstamt) > -1){
+                    this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
+                    this.getModel().setValue("nckd_i_usedamt",BigDecimal.ZERO,nckdInventry);
+                    updateInvoice(invoice, pricetaxtotal);
+                }else {
+                    BigDecimal subtract = currentActualinstamt.subtract(nckdIUsedamt);//当前付息单剩余要冲金额
+                    if (pricetaxtotal.compareTo(subtract) > -1){
+                        this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
+                        this.getModel().setValue("nckd_i_usedamt",subtract,nckdInventry);
+                        updateInvoice(invoice, pricetaxtotal.subtract(subtract));
+                    }else {
+                        this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
+                        this.getModel().setValue("nckd_i_usedamt",pricetaxtotal,nckdInventry);
+                        updateInvoice(invoice, BigDecimal.ZERO);
+                    }
+                }
+                return;
+            }else {
+                //发票金额比付息金额小，可占用金额为发票金额，本次占用金额为发票金额
+                //发票金额比付息金额大，可占用金额为发票金额，本次占用金额为付息金额
+                if (pricetaxtotal.compareTo(currentActualinstamt) > -1){
+                    this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
+                    this.getModel().setValue("nckd_i_usedamt",currentActualinstamt,nckdInventry);
+                    updateInvoice(invoice, pricetaxtotal.subtract(currentActualinstamt));
+                }else {
+                    this.getModel().setValue("nckd_i_canuseamt",pricetaxtotal,nckdInventry);
+                    this.getModel().setValue("nckd_i_usedamt",pricetaxtotal,nckdInventry);
+                    updateInvoice(invoice, BigDecimal.ZERO);
+                }
+                return;
+            }
         }
         if (cfm.length > 0){
-            BigDecimal actualinstamt = BigDecimal.ZERO;//付息金额
-            for (DynamicObject c : cfm) {
-                actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
-            }
-            BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
-            this.getModel().setValue("nckd_i_canuseamt",resultPrice,nckdInventry);
-            if (resultPrice.compareTo(currentActualinstamt) > -1){
-                this.getModel().setValue("nckd_i_usedamt",currentActualinstamt,nckdInventry);
+            BigDecimal actualinstamt = BigDecimal.ZERO;//发票已用金额
+            BigDecimal usedamt = BigDecimal.ZERO;//单据已冲金额
+            if (entry.size() - 1 > 0){
+                for (DynamicObject d : entry) {
+                    usedamt = usedamt.add(d.getBigDecimal("nckd_i_usedamt"));
+                }
+                for (DynamicObject c : cfm) {
+                    //actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+                    DynamicObjectCollection inventry = c.getDynamicObjectCollection("nckd_inventry");
+                    for (DynamicObject e : inventry) {
+                        if (invoice.getString("invoicecode").equals(e.getString("nckd_i_invoicecode")) && invoice.getString("invoiceno").equals(e.getString("nckd_i_invoiceno"))) {
+                            actualinstamt = actualinstamt.add(e.getBigDecimal("nckd_i_usedamt"));
+                        }
+                    }
+                }
+                BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
+                if (usedamt.compareTo(currentActualinstamt) > -1){
+                    this.getModel().setValue("nckd_i_canuseamt",resultPrice,nckdInventry);
+                    this.getModel().setValue("nckd_i_usedamt",BigDecimal.ZERO,nckdInventry);
+                }else {
+                    this.getModel().setValue("nckd_i_canuseamt",resultPrice,nckdInventry);
+                    BigDecimal subtract = currentActualinstamt.subtract(usedamt);
+                    if (subtract.compareTo(resultPrice) > -1){
+                        this.getModel().setValue("nckd_i_usedamt",resultPrice,nckdInventry);
+                        updateInvoice(invoice, BigDecimal.ZERO);
+                    }else {
+                        this.getModel().setValue("nckd_i_usedamt",subtract,nckdInventry);
+                        updateInvoice(invoice, resultPrice.subtract(subtract));
+                    }
+                }
             }else {
-                this.getModel().setValue("nckd_i_usedamt",resultPrice,nckdInventry);
+                for (DynamicObject c : cfm) {
+                    //actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+                    DynamicObjectCollection inventry = c.getDynamicObjectCollection("nckd_inventry");
+                    for (DynamicObject e : inventry) {
+                        if (invoice.getString("invoicecode").equals(e.getString("nckd_i_invoicecode")) && invoice.getString("invoiceno").equals(e.getString("nckd_i_invoiceno"))) {
+                            actualinstamt = actualinstamt.add(e.getBigDecimal("nckd_i_usedamt"));
+                        }
+                    }
+                }
+                BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
+                this.getModel().setValue("nckd_i_canuseamt",resultPrice,nckdInventry);
+                if (resultPrice.compareTo(currentActualinstamt) > -1){
+                    this.getModel().setValue("nckd_i_usedamt",currentActualinstamt,nckdInventry);
+                    updateInvoice(invoice, resultPrice.subtract(currentActualinstamt));
+                }else {
+                    this.getModel().setValue("nckd_i_usedamt",resultPrice,nckdInventry);
+                    updateInvoice(invoice, BigDecimal.ZERO);
+                }
             }
         }
     }
@@ -244,15 +335,14 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
         qFilter.and(new QFilter("org.id",QCP.equals,dataEntity.getDynamicObject("org").getPkValue()));
         qFilter.and(new QFilter("currency.id",QCP.equals,dataEntity.getDynamicObject("currency").getPkValue()));
-        //发票金额大于当前结息金额
-        qFilter.and(new QFilter("pricetaxtotal",QCP.large_equals,dataEntity.getBigDecimal("actualinstamt")));
-        DynamicObjectCollection cfms = dataEntity.getDynamicObjectCollection("nckd_inventry");
+        qFilter.and(new QFilter("nckd_remainderamount",QCP.large_than,0));
+        /*DynamicObjectCollection cfms = dataEntity.getDynamicObjectCollection("nckd_inventry");
         if (cfms != null && cfms.size() > 0){
             for (DynamicObject cfm : cfms) {
                 qFilter.and(new QFilter("invoicecode",QCP.not_equals,cfm.getString("nckd_i_invoicecode")));
                 qFilter.and(new QFilter("invoiceno",QCP.not_equals,cfm.getString("nckd_i_invoiceno")));
             }
-        }
+        }*/
         return qFilter;
     }
 
@@ -264,6 +354,20 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
             ListSelectedRowCollection returnData = (ListSelectedRowCollection) e.getReturnData();
             if (returnData == null){
                 return;
+            }
+            //先清空发票
+            DynamicObjectCollection entry = this.getModel().getEntryEntity("nckd_inventry");
+            for (int i = entry.size()-1; i > -1; i--) {
+                DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                        new QFilter[]{new QFilter("invoicecode", QCP.equals, entry.get(i).get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, entry.get(i).get("nckd_i_invoiceno")))});
+                BigDecimal nckdIUsedamt = entry.get(i).getBigDecimal("nckd_i_usedamt");
+                updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+                this.getModel().deleteEntryRow("nckd_inventry",i);
+            }
+            DynamicObject dataEntity = getModel().getDataEntity(true);
+            OperationResult resultMessage = OperationServiceHelper.executeOperate("save", "cfm_interestbill", new DynamicObject[]{dataEntity}, OperateOption.create());
+            if (!resultMessage.isSuccess()){
+                throw new KDBizException("更新信息失败：" + resultMessage.getMessage());
             }
             int count = 1;
             for (ListSelectedRow date : returnData) {
@@ -282,7 +386,7 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
             }else {
                 this.getModel().setValue("nckd_receiptinvoice",false);
             }
-            DynamicObject dataEntity = this.getModel().getDataEntity();
+            //DynamicObject dataEntity = this.getModel().getDataEntity();
             try {
                 SaveServiceHelper.save(new DynamicObject[]{dataEntity});
                 this.getView().updateView();
@@ -302,20 +406,26 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
     private Boolean verifyInvoice(DynamicObject invoice) {
         String invoicecode = invoice.getString("invoicecode");
         String invoiceno = invoice.getString("invoiceno");
-        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno",
+        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno,nckd_inventry.nckd_i_usedamt",
                 new QFilter[]{new QFilter("nckd_inventry.nckd_i_invoicecode", QCP.equals, invoicecode)
                         .and(new QFilter("nckd_inventry.nckd_i_invoiceno", QCP.equals, invoiceno))});
         if (cfm == null || cfm.length == 0){
             return true;
         }
-        BigDecimal actualinstamt = BigDecimal.ZERO;//付息金额
+        BigDecimal actualinstamt = BigDecimal.ZERO;//已占用金额
         for (DynamicObject c : cfm) {
-            actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+            DynamicObjectCollection entry = c.getDynamicObjectCollection("nckd_inventry");
+            for (DynamicObject e : entry) {
+                if (invoicecode.equals(e.getString("nckd_i_invoicecode")) && invoiceno.equals(e.getString("nckd_i_invoiceno"))) {
+                    actualinstamt = actualinstamt.add(e.getBigDecimal("nckd_i_usedamt"));
+                }
+            }
+            //actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
         }
         BigDecimal pricetaxtotal = invoice.getBigDecimal("pricetaxtotal");//发票金额
-        BigDecimal currentActualinstamt = (BigDecimal)this.getModel().getValue("actualinstamt");//当前付息金额
+        //BigDecimal currentActualinstamt = interestbill.getBigDecimal("actualinstamt");//当前付息金额
         BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
-        if(resultPrice.subtract(currentActualinstamt).compareTo(BigDecimal.ZERO) > -1) {
+        if(resultPrice.compareTo(BigDecimal.ZERO) > -1) {
             return true;
         }
         return false;

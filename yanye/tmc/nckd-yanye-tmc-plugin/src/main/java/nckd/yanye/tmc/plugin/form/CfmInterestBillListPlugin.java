@@ -47,7 +47,6 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
     private void deleteInvoiceEntry() {
         ListSelectedRowCollection selectedRows = this.getSelectedRows();
         if (selectedRows == null || selectedRows.size() == 0){
-            this.getView().showErrorNotification("请至少选择一条数据取消指定");
             return;
         }
         if (selectedRows.size() > 1){
@@ -60,6 +59,13 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
         if (nckdInventry == null || nckdInventry.size() == 0){
             this.getView().showErrorNotification("当前选中行无指定发票,无需取消指定");
             return;
+        }
+        for (DynamicObject d : nckdInventry) {
+            DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                    new QFilter[]{new QFilter("invoicecode", QCP.equals, d.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, d.get("nckd_i_invoiceno")))});
+            BigDecimal nckdIUsedamt = d.getBigDecimal("nckd_i_usedamt");
+            updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+
         }
         nckdInventry.clear();
         cfm.set("nckd_receiptinvoice",false);
@@ -78,7 +84,6 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
     private void openListShowParameter(String listf7, String bill) {
         ListSelectedRowCollection selectedRows = this.getSelectedRows();
         if (selectedRows == null || selectedRows.size() == 0){
-            this.getView().showErrorNotification("请至少选择一条数据");
             return;
         }
         if (selectedRows.size() > 1){
@@ -127,8 +132,7 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
         qFilter.and(new QFilter("org.id",QCP.equals,dataEntity.getDynamicObject("org").getPkValue()));
         qFilter.and(new QFilter("currency.id",QCP.equals,dataEntity.getDynamicObject("currency").getPkValue()));
-        //发票金额大于当前结息金额
-        qFilter.and(new QFilter("pricetaxtotal",QCP.large_equals,dataEntity.getBigDecimal("actualinstamt")));
+        qFilter.and(new QFilter("nckd_remainderamount",QCP.large_than,0));
         DynamicObjectCollection cfms = dataEntity.getDynamicObjectCollection("nckd_inventry");
         if (cfms != null && cfms.size() > 0){
             for (DynamicObject cfm : cfms) {
@@ -150,6 +154,15 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
             if (returnData == null){
                 return;
             }
+            //先清空发票
+            DynamicObjectCollection entry = interestbill.getDynamicObjectCollection("nckd_inventry");
+            for (DynamicObject d : entry) {
+                DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                        new QFilter[]{new QFilter("invoicecode", QCP.equals, d.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, d.get("nckd_i_invoiceno")))});
+                BigDecimal nckdIUsedamt = d.getBigDecimal("nckd_i_usedamt");
+                updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+            }
+            entry.clear();
             int count = 1;
             for (ListSelectedRow date : returnData) {
                 DynamicObject invoice = BusinessDataServiceHelper.loadSingle(date.getPrimaryKeyValue(), "ap_invoice");
@@ -203,46 +216,104 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
 
         BigDecimal pricetaxtotal = invoice.getBigDecimal("pricetaxtotal");//发票金额
         BigDecimal currentActualinstamt = interestbill.getBigDecimal("actualinstamt");//当前付息金额
-        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno",
+        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno,nckd_inventry.nckd_i_usedamt",
                 new QFilter[]{new QFilter("nckd_inventry.nckd_i_invoicecode", QCP.equals, invoice.getString("invoicecode"))
                         .and(new QFilter("nckd_inventry.nckd_i_invoiceno", QCP.equals, invoice.getString("invoiceno")))});
+
         if (cfm == null || cfm.length == 0){
-            newEntry.set("nckd_i_canuseamt",pricetaxtotal);
-            newEntry.set("nckd_i_usedamt",currentActualinstamt);
-            return;
+            if (entry.size() - 1 > 0){
+                BigDecimal nckdIUsedamt = BigDecimal.ZERO;//发票已用金额
+                for (int i = 0; i < entry.size()-1; i++) {
+                    nckdIUsedamt = nckdIUsedamt.add(entry.get(i).getBigDecimal("nckd_i_usedamt"));
+                }
+                if (nckdIUsedamt.compareTo(currentActualinstamt) > -1){
+                    newEntry.set("nckd_i_canuseamt",pricetaxtotal);
+                    newEntry.set("nckd_i_usedamt",BigDecimal.ZERO);
+                    updateInvoice(invoice, pricetaxtotal);
+                }else {
+                    BigDecimal subtract = currentActualinstamt.subtract(nckdIUsedamt);//当前付息单剩余要冲金额
+                    if (pricetaxtotal.compareTo(subtract) > -1){
+                        newEntry.set("nckd_i_canuseamt",pricetaxtotal);
+                        newEntry.set("nckd_i_usedamt",subtract);
+                        updateInvoice(invoice, pricetaxtotal.subtract(subtract));
+                    }else {
+                        newEntry.set("nckd_i_canuseamt",pricetaxtotal);
+                        newEntry.set("nckd_i_usedamt",pricetaxtotal);
+                        updateInvoice(invoice, BigDecimal.ZERO);
+                    }
+                }
+                return;
+            }else {
+                //发票金额比付息金额小，可占用金额为发票金额，本次占用金额为发票金额
+                //发票金额比付息金额大，可占用金额为发票金额，本次占用金额为付息金额
+                if (pricetaxtotal.compareTo(currentActualinstamt) > -1){
+                    newEntry.set("nckd_i_canuseamt",pricetaxtotal);
+                    newEntry.set("nckd_i_usedamt",currentActualinstamt);
+                    updateInvoice(invoice, pricetaxtotal.subtract(currentActualinstamt));
+                }else {
+                    newEntry.set("nckd_i_canuseamt",pricetaxtotal);
+                    newEntry.set("nckd_i_usedamt",pricetaxtotal);
+                    updateInvoice(invoice, BigDecimal.ZERO);
+                }
+                return;
+            }
         }
         if (cfm.length > 0){
-            BigDecimal actualinstamt = BigDecimal.ZERO;//付息金额
+            BigDecimal actualinstamt = BigDecimal.ZERO;//发票已用金额
             for (DynamicObject c : cfm) {
-                actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+                //actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+                DynamicObjectCollection inventry = c.getDynamicObjectCollection("nckd_inventry");
+                for (DynamicObject e : inventry) {
+                    if (invoice.getString("invoicecode").equals(e.getString("nckd_i_invoicecode")) && invoice.getString("invoiceno").equals(e.getString("nckd_i_invoiceno"))) {
+                        actualinstamt = actualinstamt.add(e.getBigDecimal("nckd_i_usedamt"));
+                    }
+                }
             }
             BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
             newEntry.set("nckd_i_canuseamt",resultPrice);
             if (resultPrice.compareTo(currentActualinstamt) > -1){
                 newEntry.set("nckd_i_usedamt",currentActualinstamt);
+                updateInvoice(invoice, resultPrice.subtract(currentActualinstamt));
             }else {
                 newEntry.set("nckd_i_usedamt",resultPrice);
+                updateInvoice(invoice, BigDecimal.ZERO);
             }
         }
+    }
+
+    /**
+     * 发票指定后，反写剩余可用发票金额到收票单
+     * @param invoice
+     * @param pricetaxtotal
+     */
+    private static void updateInvoice(DynamicObject invoice, BigDecimal pricetaxtotal) {
+        invoice.set("nckd_remainderamount", pricetaxtotal);
+        SaveServiceHelper.save(new DynamicObject[]{invoice});
     }
 
     private Boolean verifyInvoice(DynamicObject invoice,DynamicObject interestbill) {
         String invoicecode = invoice.getString("invoicecode");
         String invoiceno = invoice.getString("invoiceno");
-        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno",
+        DynamicObject[] cfm = BusinessDataServiceHelper.load("cfm_interestbill", "id,actualinstamt,nckd_inventry,nckd_inventry.nckd_i_invoicecode,nckd_inventry.nckd_i_invoiceno,nckd_inventry.nckd_i_usedamt",
                 new QFilter[]{new QFilter("nckd_inventry.nckd_i_invoicecode", QCP.equals, invoicecode)
                         .and(new QFilter("nckd_inventry.nckd_i_invoiceno", QCP.equals, invoiceno))});
         if (cfm == null || cfm.length == 0){
             return true;
         }
-        BigDecimal actualinstamt = BigDecimal.ZERO;//付息金额
+        BigDecimal actualinstamt = BigDecimal.ZERO;//已占用金额
         for (DynamicObject c : cfm) {
-            actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
+            DynamicObjectCollection entry = c.getDynamicObjectCollection("nckd_inventry");
+            for (DynamicObject e : entry) {
+                if (invoicecode.equals(e.getString("nckd_i_invoicecode")) && invoiceno.equals(e.getString("nckd_i_invoiceno"))) {
+                    actualinstamt = actualinstamt.add(e.getBigDecimal("nckd_i_usedamt"));
+                }
+            }
+            //actualinstamt = actualinstamt.add(c.getBigDecimal("actualinstamt"));
         }
         BigDecimal pricetaxtotal = invoice.getBigDecimal("pricetaxtotal");//发票金额
-        BigDecimal currentActualinstamt = interestbill.getBigDecimal("actualinstamt");//当前付息金额
+        //BigDecimal currentActualinstamt = interestbill.getBigDecimal("actualinstamt");//当前付息金额
         BigDecimal resultPrice = pricetaxtotal.subtract(actualinstamt);
-        if(resultPrice.subtract(currentActualinstamt).compareTo(BigDecimal.ZERO) > -1) {
+        if(resultPrice.compareTo(BigDecimal.ZERO) > -1) {
             return true;
         }
         return false;
