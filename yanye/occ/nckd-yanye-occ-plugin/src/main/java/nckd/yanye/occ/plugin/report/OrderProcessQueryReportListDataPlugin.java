@@ -98,9 +98,18 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                     break;
             }
         }
-        //取要货订单商品销售组织，销售部门，订货客户，订单日期，订单号,交付计划主键
-        String sFields = "saleorgid as nckd_saleorgid , departmentid as nckd_departmentid , customerid as nckd_customerid ," +
-                "orderdate as nckd_orderdate , billno as nckd_billno,itementry.subentryentity.id as orderdetailid" ;
+        //取要货订单商品销售组织，
+        String sFields = "saleorgid as nckd_saleorgid , " +
+                //销售部门，
+                "departmentid as nckd_departmentid , " +
+                //订货客户，
+                "customerid as nckd_customerid ," +
+                //订单日期，
+                "orderdate as nckd_orderdate , " +
+                //订单号,
+                "billno as nckd_billno," +
+                //交付计划主键
+                "itementry.subentryentity.id as orderdetailid" ;
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
                 new QFilter[]{qFilter},null);
@@ -121,61 +130,88 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
         if(orderdetailid.isEmpty())
             return ds;
 
-        //查询销售出库业务日期，单据号，数量，数量-已退库数量得出实发，审核日期，库管组，核心单据行id,销售出库id
-        String saleOutFields = "biztime as nckd_outdate , billno as nckd_outbillno , billentry.qty as nckd_qtyout ," +
-                " billentry.qty - billentry.returnqty as nckd_qty , auditdate as nckd_outauditdate , " +
-                "operatorgroup as nckd_operatorgroup , billentry.mainbillentryid as mainbillentryid , id as saleoutid ";
+        //查询销售出库业务日期，
+        String saleOutFields = "biztime as nckd_outdate , " +
+                //单据号，
+                "billno as nckd_outbillno , " +
+                //数量，
+                "billentry.qty as nckd_qtyout ," +
+                //数量-已退库数量得出实发，
+                " billentry.qty - billentry.returnqty as nckd_qty , " +
+                //审核日期，
+                "auditdate as nckd_outauditdate , " +
+                //库管组，
+                "operatorgroup as nckd_operatorgroup , " +
+                //核心单据行id,
+                "billentry.mainbillentryid as mainbillentryid , " +
+                //销售出库id
+                "id as saleoutid ";
         QFilter saleOutFilter = new QFilter("billentry.mainbillentryid" ,QCP.in , orderdetailid.toArray(new Long[0]));
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", saleOutFields, new QFilter[]{saleOutFilter},null)
                 .groupBy(new String[]{"nckd_outdate","nckd_outbillno","nckd_outauditdate","nckd_operatorgroup","mainbillentryid","saleoutid"})
                 .sum("nckd_qtyout","nckd_qtyout").sum( "nckd_qty","nckd_qty").finish();
 
-        //查询财务应收单来源单据id，核心单据行id，单据编号，表头金额,财务应收id
+
         QFilter arFilter = new QFilter("entry.corebillentryid" , QCP.in , orderdetailid.toArray(new Long[0]));
         DataSet finarBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                        "ar_finarbill", "entry.e_srcid as e_srcid , entry.corebillentryid as ar_corebillentryid, " +
-                                "billno as nckd_arbillno ,amount as nckd_amountar , id as finarid ",new QFilter[]{arFilter},null)
+                        "ar_finarbill",
+                        //查询财务应收单来源单据id，
+                        "entry.e_srcid as e_srcid , " +
+                                //核心单据行id，
+                                "entry.corebillentryid as ar_corebillentryid, " +
+                                //单据编号，
+                                "billno as nckd_arbillno ," +
+                                //表头金额,
+                                "amount as nckd_amountar , " +
+//                                财务应收id
+                                "id as finarid ",new QFilter[]{arFilter},null)
                 .groupBy(new String[]{"e_srcid","ar_corebillentryid","nckd_arbillno","finarid"}).sum("nckd_amountar","nckd_amountar").finish();
 
-        //查询开票申请单核心单据行id，审核日期，发票号，数量
+
         QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , orderdetailid.toArray(new Long[0]));
         DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "sim_original_bill", "sim_original_bill_item.corebillentryid as sim_corebillentryid, auditdate as nckd_invauditdate ," +
-                        "invoiceno as nckd_invbillno ,sim_original_bill_item.num as nckd_qtyfinv ",new QFilter[]{aimFilter},null);
+                "sim_original_bill",
+                //查询开票申请单核心单据行id，
+                "sim_original_bill_item.corebillentryid as sim_corebillentryid, " +
+//                        审核日期，
+                        "auditdate as nckd_invauditdate ," +
+//                        发票号
+                        "invoiceno as nckd_invbillno ," +
+//                        数量
+                        "sim_original_bill_item.num as nckd_qtyfinv ",new QFilter[]{aimFilter},null);
 //                .groupBy(new String[]{"sim_corebillentryid","nckd_invauditdate","nckd_invbillno"}).sum("nckd_qtyfinv","nckd_qtyfinv").finish();
 
-        //查询收款单来源单据id，核心单据行id，单据编号，表头金额,财务应收id
+
         QFilter casFilter = new QFilter("entry.e_corebillentryid" , QCP.in , orderdetailid.toArray(new Long[0]));
         DataSet recBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                        "cas_recbill", "entry.e_corebillentryid as e_corebillentryid ," +
-                                "billno as nckd_recbillno , actrecamt as nckd_amountrec",new QFilter[]{casFilter},null)
+                        "cas_recbill",
+                        //查询收款单核心单据id，
+                        "entry.e_corebillentryid as e_corebillentryid ," +
+//                                单据编号
+                                "billno as nckd_recbillno , " +
+//                                表头金额
+                                "actrecamt as nckd_amountrec",new QFilter[]{casFilter},null)
                 .groupBy(new String[]{"e_corebillentryid","nckd_recbillno"}).sum("nckd_amountrec","nckd_amountrec").finish();
 
 
-        ArrayList<String> selectFields = new ArrayList<>();
-
         //销售出库关联财务应收 返回字段 销售出库日期，销售出库单据号，销售出库应发数量，销售出库实发数量，销售出库签字日期，销售出库库存组，销售出库核心单据行id
         //财务应收单据号，财务应收金额
-        Collections.addAll(selectFields, new String[]{"nckd_outdate","nckd_outbillno","nckd_qtyout","nckd_qty","nckd_outauditdate",
-                "nckd_operatorgroup","mainbillentryid","nckd_arbillno","nckd_amountar"});
-        im_saloutbill = im_saloutbill.leftJoin(finarBill).on("mainbillentryid","ar_corebillentryid")
-                .on("saleoutid","e_srcid").select(selectFields.toArray(new String[0])).finish();
+        im_saloutbill = im_saloutbill.leftJoin(finarBill).on("mainbillentryid","ar_corebillentryid").on("saleoutid","e_srcid")
+                .select(im_saloutbill.getRowMeta().getFieldNames(),finarBill.getRowMeta().getFieldNames()).finish();
 
 
         //销售出库关联开票申请，增加开票申请审核日期，开票申请发票号，开票申请数量
-        Collections.addAll(selectFields,new String[]{"nckd_invauditdate","nckd_invbillno","nckd_qtyfinv",});
         im_saloutbill = im_saloutbill.leftJoin(originalBill).on("mainbillentryid","sim_corebillentryid")
-                .select(selectFields.toArray(new String[0])).finish();
+                .select(im_saloutbill.getRowMeta().getFieldNames(),originalBill.getRowMeta().getFieldNames()).finish();
 
         //关联上要货订单销售组织，销售部门，客户，订单日期，订单号，交付计划行id
-        Collections.addAll(selectFields, new String[]{"nckd_saleorgid","nckd_departmentid","nckd_customerid","nckd_orderdate","nckd_billno","orderdetailid"});
-        ds = ds.leftJoin(im_saloutbill).on("orderdetailid","mainbillentryid").select(selectFields.toArray(new String[0])).finish();
+        ds = ds.leftJoin(im_saloutbill).on("orderdetailid","mainbillentryid")
+                .select(ds.getRowMeta().getFieldNames(),im_saloutbill.getRowMeta().getFieldNames()).finish();
 
         //关联收款单单据号，收款金额
-        selectFields.add("nckd_recbillno");
-        selectFields.add("nckd_amountrec");
-        ds = ds.leftJoin(recBill).on("orderdetailid","e_corebillentryid").select(selectFields.toArray(new String[0])).finish();
+        ds = ds.leftJoin(recBill).on("orderdetailid","e_corebillentryid")
+                .select(ds.getRowMeta().getFieldNames(),recBill.getRowMeta().getFieldNames()).finish();
 
         return ds;
     }
