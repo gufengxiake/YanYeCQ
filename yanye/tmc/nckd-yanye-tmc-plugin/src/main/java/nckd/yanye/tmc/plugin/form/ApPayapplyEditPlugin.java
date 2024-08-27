@@ -10,8 +10,8 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.util.StringUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
 
@@ -32,13 +32,9 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
     private final List<String> NAME_LIST = Arrays.asList(new String[]{"e_asstacttype", "e_settlementtype", "e_asstact" , "nckd_e_assacct"});
 
-    private final String BANK_ACCEP = "JSFS06";
-    private final String TRADE_ACCEP = "JSFS07";
+    private final List<String> ACCEP_LIST = Arrays.asList(new String[]{"JSFS06", "JSFS07"});
 
-    private final String PURCHASE_PAYMENT_REQUEST = "ap_payapply_BT_S";
-
-    private final String OTHER_PAYMENT_REQUEST = "ap_payapply_oth_BT_S";
-
+    private final List<String> PAYMENT_REQUEST_LIST = Arrays.asList(new String[]{"ap_payapply_BT_S", "ap_payapply_oth_BT_S"});
 
 
     @Override
@@ -54,7 +50,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
             DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype");
             String billtypeNumber = (String) billtype.get("number");
-            if (StringUtils.isNotEmpty(billtypeNumber) && (billtypeNumber.equals(PURCHASE_PAYMENT_REQUEST) || billtypeNumber.equals(OTHER_PAYMENT_REQUEST))) {
+            if (StringUtils.isNotEmpty(billtypeNumber) && PAYMENT_REQUEST_LIST.contains(billtypeNumber)) {
                 // 更新单条分录
                 ChangeData changeData = e.getChangeSet()[0];
                 Object newValuetest = changeData.getNewValue();
@@ -73,7 +69,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                 // 获取结算方式
                 DynamicObject eSettlementtype = name.equals("e_settlementtype") ? newValue:dynamicObject.getDynamicObject("e_settlementtype");
-
+                eSettlementtype = ObjectUtils.isNotEmpty(eSettlementtype.getDataStorage())? eSettlementtype :null;
 
                 // 获取e_asstact 往来户信息
                 DynamicObject eAsstact = name.equals("e_asstact") ? newValue:dynamicObject.getDynamicObject("e_asstact");
@@ -83,15 +79,27 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                     String eAsstacttype = name.equals("e_asstacttype") ? newValue.toString():dynamicObject.getString("e_asstacttype");
                     if("bd_supplier".equals(eAsstacttype)){
 
-                        if(ObjectUtils.isNotEmpty(eSettlementtype)){
-                            String eSettlementtypeName = (String) eSettlementtype.get("number");
-                            if (BANK_ACCEP.equals(eSettlementtypeName) || TRADE_ACCEP.equals(eSettlementtypeName) ) {
-
+                            if (ObjectUtils.isNotEmpty(eSettlementtype) && ACCEP_LIST.contains(eSettlementtype.getString("number")) ) {
+                                String eSettlementtypeName = (String) eSettlementtype.get("number");
                                 //银行账户
                                 String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
 
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
 
+                                DynamicObject o =  eAsstactObject.getDynamicObject("internal_company");
+                                if(ObjectUtils.isNotEmpty(o)){
+                                    QFilter qFilter3 = new QFilter("account.bankaccountnumber", "=", eAssacct);
+                                    // 查询供应商的银行账户信息
+                                    // 根据银行账户去查询对应票据开户行信息
+                                    DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","account,billbank",new QFilter[]{qFilter3});
+                                    if(ObjectUtils.isNotEmpty(billbank)){
+                                        // 合作金融机构信息
+                                        DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(billbank.getLong("billbank.id"),"bd_finorginfo");
+                                        dynamicObject.set("e_bebank", bdFinorginfo.getDynamicObject("bebank"));
+                                        this.getView().updateView();
+                                        return;
+                                    }
+                                }
                                 // 把供应商承兑银行信息自动带出到往来银行字段
                                 DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
                                 if (ObjectUtils.isNotEmpty(entryBank)) {
@@ -107,10 +115,24 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                                 }
                             }else{
-                                //银行账户
                                 String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
-
+                                //  处理内部供应商情况
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
+                                DynamicObject o = eAsstactObject.getDynamicObject("internal_company");
+                                if(ObjectUtils.isNotEmpty(o)){
+                                    QFilter qFilter = new QFilter("openorg.masterid", "=", o.getPkValue());
+                                    QFilter qFilter2 = new QFilter("bankaccountnumber", "=", eAssacct);
+                                    // 查询供应商的银行账户信息
+                                    DynamicObject amAccountbank = BusinessDataServiceHelper.loadSingle("am_accountbank", "bank,bankaccountnumber,currency", new QFilter[]{qFilter,qFilter2});
+                                    if(ObjectUtils.isNotEmpty(amAccountbank)){
+                                        long aLong = amAccountbank.getLong("bank.id");
+                                        // 行名行号
+                                        DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(aLong, "bd_finorginfo");
+                                        dynamicObject.set("e_bebank", bdFinorginfo.getDynamicObject("bebank"));
+                                        this.getView().updateView();
+                                        return;
+                                    }
+                                }
 
                                 // 不是承兑银行带出正常银行到往来银行字段
                                 DynamicObjectCollection entryBank = eAsstactObject.getDynamicObjectCollection("entry_bank");
@@ -125,8 +147,9 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                         }
                                     }
                                 }
+
                             }
-                        }
+
                     }
                 }
             }
@@ -157,7 +180,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                 }else{
                     cooperationId = billbank.getLong("bebank.id");
                 }
-                // 合作金融机构信息
+                // 对应行名行号信息
                 DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
                 map.put("bankid",bdFinorginfo.getLong("bebank.id"));
                 return map;

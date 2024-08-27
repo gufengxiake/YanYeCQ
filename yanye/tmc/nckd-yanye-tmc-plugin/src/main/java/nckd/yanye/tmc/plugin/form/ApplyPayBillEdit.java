@@ -80,6 +80,10 @@ public class ApplyPayBillEdit extends ApBaseEdit {
     private Map<String, Object> splitRowMap = new HashMap(16);
     private DynamicObject settlementType;
 
+    private final String BANK_ACCEP = "JSFS06"; // 银行承兑汇票
+
+    private final String TRADE_ACCEP = "JSFS07";//  商业承兑汇票
+
     public ApplyPayBillEdit() {
     }
 
@@ -413,6 +417,13 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         if(ObjectUtils.isEmpty(returnData)){
             return;
         }
+        // 结算方式
+        boolean isAccept = false;
+        DynamicObject paymode = (DynamicObject) this.getModel().getValue("paymode", curentrow);
+        if(ObjectUtils.isNotEmpty(paymode) && (paymode.getString("number").equals(BANK_ACCEP) || paymode.getString("number").equals(TRADE_ACCEP))){
+            // 结算方式为承兑汇票
+            isAccept = true;
+        }
         ListSelectedRow listSelectedRow = ((ListSelectedRowCollection) returnData).get(0);
         // 银行账户号
         String number = listSelectedRow.getNumber();
@@ -423,16 +434,16 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         String assacttype = this.getModel().getValue("e_asstacttype", curentrow).toString();
         this.getModel().setValue("e_assacct", number, curentrow);
         this.getModel().setValue("nckd_e_assacct", number, curentrow);
-        // todo 查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
+        //  查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
         QFilter qFilter = new QFilter("account.masterid", "=", primaryKeyValue);
         // 合作金融机构
         Object cooperationId = null;
         DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter});
-        if(ObjectUtils.isEmpty(billbank)){
+        if(ObjectUtils.isNotEmpty(billbank) && isAccept){
 //            this.getModel().setValue("e_bebank", amAccountbank.getLong("bank.id"), curentrow);
-            cooperationId = amAccountbank.getLong("bank.id");
-        }else{
             cooperationId = billbank.getLong("bebank.id");
+        }else{
+            cooperationId = amAccountbank.getLong("bank.id");
         }
         // 查询合作金融机构对应的行名行号信息
         DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
