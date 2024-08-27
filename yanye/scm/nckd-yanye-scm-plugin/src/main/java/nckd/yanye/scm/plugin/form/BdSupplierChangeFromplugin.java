@@ -206,6 +206,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(), "bd_supplier");
         DynamicObject bankEntry = supplier.getDynamicObjectCollection("entry_bank").size() <= 0 ? null : supplier.getDynamicObjectCollection("entry_bank").get(0);
         Object changeAfter = this.getModel().getValue("nckd_changeafter", rowIndex);
+        Object merchantType = this.getModel().getValue("nckd_merchanttype");
 
         //判断值改变行是否是当前选中行，不是的话直接中断操作
         if (rowIndex == index && changeAfter == null){
@@ -229,6 +230,11 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
             this.getModel().setValue("nckd_acceptingaccount",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank").get("number"),index);
             this.getModel().setValue("nckd_acceptingbank",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank"),index);
+            if ("carrier".equals(merchantType)) {
+                this.getModel().setValue("nckd_licensenumber",supplier.get("nckd_licensenumber"),index);
+                this.getModel().setValue("nckd_transporttype",supplier.get("nckd_transporttype"),index);
+                this.getModel().setValue("nckd_rate",supplier.getDynamicObject("nckd_rate"),index);
+            }
             //锁定当前分录行
             this.getView().setEnable(false, index, ENTRYFIELD);
             //复制当前行可修改
@@ -255,6 +261,11 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),newIndex);
             this.getModel().setValue("nckd_acceptingaccount",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank").get("number"),newIndex);
             this.getModel().setValue("nckd_acceptingbank",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank"),newIndex);
+            if ("carrier".equals(merchantType)) {
+                this.getModel().setValue("nckd_licensenumber",supplier.get("nckd_licensenumber"),newIndex);
+                this.getModel().setValue("nckd_transporttype",supplier.get("nckd_transporttype"),newIndex);
+                this.getModel().setValue("nckd_rate",supplier.getDynamicObject("nckd_rate"),newIndex);
+            }
             return;
         }
 
@@ -278,6 +289,11 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
             this.getModel().setValue("nckd_acceptingaccount",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank").get("number"),index);
             this.getModel().setValue("nckd_acceptingbank",bankEntry == null ? null : bankEntry.getDynamicObject("nckd_acceptingbank"),index);
+            if ("carrier".equals(merchantType)) {
+                this.getModel().setValue("nckd_licensenumber",supplier.get("nckd_licensenumber"),index);
+                this.getModel().setValue("nckd_transporttype",supplier.get("nckd_transporttype"),index);
+                this.getModel().setValue("nckd_rate",supplier.getDynamicObject("nckd_rate"),index);
+            }
         }
     }
 

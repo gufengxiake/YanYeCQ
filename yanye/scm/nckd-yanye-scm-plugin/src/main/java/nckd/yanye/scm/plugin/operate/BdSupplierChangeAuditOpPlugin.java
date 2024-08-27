@@ -63,6 +63,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("useorg", date.getDynamicObject("org"));//业务组织
                         bdSupplier.set("status", "C");//单据状态
                         bdSupplier.set("enable", "1");//使用状态
+                        bdSupplier.set("ctrlstrategy", "5");//控制策略
                         bdSupplier.set("creator", date.getDynamicObject("creator"));//创建人
                         bdSupplier.set("group", entity.getDynamicObject("nckd_group"));//供应商分组
                         bdSupplier.set("societycreditcode", entity.get("nckd_societycreditcode"));//统一社会信用代码
@@ -102,7 +103,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         }
                     }
                     break;
-                //新增
+                //修改
                 case "update":
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
@@ -136,7 +137,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         }
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdSupplier.getDynamicObjectCollection("entry_bank");
-                        DynamicObject bank = entryBank.addNew();
+                        DynamicObject bank = entryBank.get(0);
                         bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
                         bank.set("accountname", entity.get("nckd_accountname"));//账户名称
                         bank.set("isdefault_bank", true);//默认
@@ -145,11 +146,10 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
 
                         try {
-                            //OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
-                            //if (!result.isSuccess()){
-                            //    throw new KDBizException("保存信息到供应商失败：" + result.getMessage());
-                            //}
-                            SaveServiceHelper.update(bdSupplier);
+                            OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
+                            if (!result.isSuccess()){
+                                throw new KDBizException("更新信息到供应商失败：" + result.getMessage());
+                            }
                         }catch (Exception ex){
                             throw new RuntimeException("保存信息到供应商失败：" + ex);
                         }
