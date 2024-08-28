@@ -192,8 +192,6 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("issuemode", dynamicObject.get("nckd_issuemode"));
         // 倒冲
         newDynamicObject.set("isbackflush", dynamicObject.get("nckd_isbackflush"));
-        // 是否常规包装
-        newDynamicObject.set("nckd_regularpackaging", dynamicObject.get("nckd_regularpackaging"));
     }
 
     /**
@@ -491,8 +489,6 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("dlivrateceiling", dynamicObject.get("nckd_dlivrateceiling"));
         // 发货欠发比率(%)
         newDynamicObject.set("dlivratefloor", dynamicObject.get("nckd_dlivratefloor"));
-        // 是否常规包装
-        newDynamicObject.set("nckd_regularpackaging", dynamicObject.get("nckd_regularpackagin"));
     }
 
     /**
@@ -558,6 +554,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
+            if(ObjectUtil.isNull(dynamicObject.get("org")) && ObjectUtil.isNull(dynamicObject.get("nckd_buyer"))){
+                return;
+            }
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule("msbd_puropermaterctrl", newDynamicObject, null);
             String number = CodeRuleServiceHelper.readNumber(codeRule, newDynamicObject);
             // 编码
@@ -623,8 +622,10 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
+            if(dynamicObject.getDynamicObjectCollection("nckd_entryentity") == null){
+                return;
+            }
             DynamicObject material = this.getMaterial(dynamicObject);
-
             // 物料
             newDynamicObject.set("masterid", material);
             // 物料
