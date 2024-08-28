@@ -357,17 +357,24 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
             }
             //先清空发票
             DynamicObjectCollection entry = this.getModel().getEntryEntity("nckd_inventry");
-            for (int i = entry.size()-1; i > -1; i--) {
-                DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
-                        new QFilter[]{new QFilter("invoicecode", QCP.equals, entry.get(i).get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, entry.get(i).get("nckd_i_invoiceno")))});
-                BigDecimal nckdIUsedamt = entry.get(i).getBigDecimal("nckd_i_usedamt");
-                updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
-                this.getModel().deleteEntryRow("nckd_inventry",i);
+            BigDecimal amount = BigDecimal.ZERO;//当前单据发票累加金额
+            BigDecimal actualinstamt = (BigDecimal) this.getModel().getValue("actualinstamt");//当前付息金额
+            for (DynamicObject d : entry) {
+                amount = amount.add(d.getBigDecimal("nckd_i_usedamt"));
             }
-            DynamicObject dataEntity = getModel().getDataEntity(true);
-            OperationResult resultMessage = OperationServiceHelper.executeOperate("save", "cfm_interestbill", new DynamicObject[]{dataEntity}, OperateOption.create());
-            if (!resultMessage.isSuccess()){
-                throw new KDBizException("更新信息失败：" + resultMessage.getMessage());
+            if (amount.compareTo(actualinstamt) > -1){
+                for (int i = entry.size()-1; i > -1; i--) {
+                    DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                            new QFilter[]{new QFilter("invoicecode", QCP.equals, entry.get(i).get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, entry.get(i).get("nckd_i_invoiceno")))});
+                    BigDecimal nckdIUsedamt = entry.get(i).getBigDecimal("nckd_i_usedamt");
+                    updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+                    this.getModel().deleteEntryRow("nckd_inventry",i);
+                }
+                DynamicObject dataEntity = getModel().getDataEntity(true);
+                OperationResult resultMessage = OperationServiceHelper.executeOperate("save", "cfm_interestbill", new DynamicObject[]{dataEntity}, OperateOption.create());
+                if (!resultMessage.isSuccess()){
+                    throw new KDBizException("更新信息失败：" + resultMessage.getMessage());
+                }
             }
             int count = 1;
             for (ListSelectedRow date : returnData) {
@@ -386,7 +393,7 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
             }else {
                 this.getModel().setValue("nckd_receiptinvoice",false);
             }
-            //DynamicObject dataEntity = this.getModel().getDataEntity();
+            DynamicObject dataEntity = this.getModel().getDataEntity();
             try {
                 SaveServiceHelper.save(new DynamicObject[]{dataEntity});
                 this.getView().updateView();
