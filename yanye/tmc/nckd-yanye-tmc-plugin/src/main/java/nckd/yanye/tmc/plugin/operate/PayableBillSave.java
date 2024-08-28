@@ -6,9 +6,11 @@ import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.param.AppParam;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
+import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 
 import java.util.Map;
@@ -21,6 +23,12 @@ import java.util.Map;
  * @date : 2024/8/27
  */
 public class PayableBillSave extends AbstractOperationServicePlugIn {
+
+    @Override
+    public void onPreparePropertys(PreparePropertysEventArgs e) {
+        super.onPreparePropertys(e);
+
+    }
 
     @Override
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
@@ -42,6 +50,13 @@ public class PayableBillSave extends AbstractOperationServicePlugIn {
                     e.setCancel(true);
                     e.setCancelMessage("无供应商信息不允许保存");
                     return;
+                }
+            }
+            if ("bd_supplier".equals(payeetype)){
+                DynamicObject deliver = dt.getDynamicObject("deliver");
+                if (deliver != null){
+                    dt.set("nckd_client",deliver.getPkValue());
+                    SaveServiceHelper.update(dt);
                 }
             }
         }

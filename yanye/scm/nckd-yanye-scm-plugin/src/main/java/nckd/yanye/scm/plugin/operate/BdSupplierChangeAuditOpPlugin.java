@@ -77,6 +77,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
+                        bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
                         if ("carrier".equals(date.get("nckd_merchanttype"))){
                             bdSupplier.set("nckd_iscys", true);//是否承运商
                             bdSupplier.set("nckd_licensenumber", entity.get("nckd_licensenumber"));//运输许可证编号
@@ -129,6 +130,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
+                        bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
                         if ("carrier".equals(date.get("nckd_merchanttype"))){
                             bdSupplier.set("nckd_iscys", true);//是否承运商
                             bdSupplier.set("nckd_licensenumber", entity.get("nckd_licensenumber"));//运输许可证编号
@@ -144,6 +146,29 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
+
+                        if (!entity.get("nckd_spname").equals(entry.get(t-1).get("nckd_spname"))){
+                            DynamicObjectCollection nameVersionCol = bdSupplier.getDynamicObjectCollection("name$version");
+                            if (nameVersionCol.size() > 0){
+                                DynamicObject col = nameVersionCol.addNew();
+                                col.set("name$version$name", entity.get("nckd_spname"));
+                                col.set("name$version$startdate", new Date());
+                                col.set("name$version$enddate", new Date("2099/1/1 00:00:00"));
+                                col.set("name$version$enable", "1");
+                                col.set("name$version$creator", date.getDynamicObject("creator"));
+                                col.set("name$version$createtime", new Date());
+                                DynamicObject oldCol = nameVersionCol.get(nameVersionCol.size() - 2);
+                                oldCol.set("name$version$enddate", new Date());
+                            }else {
+                                DynamicObject col = nameVersionCol.addNew();
+                                col.set("name$version$name", entity.get("nckd_spname"));
+                                col.set("name$version$startdate", new Date());
+                                col.set("name$version$enddate", new Date("2099/1/1 00:00:00"));
+                                col.set("name$version$enable", "1");
+                                col.set("name$version$creator", date.getDynamicObject("creator"));
+                                col.set("name$version$createtime", new Date());
+                            }
+                        }
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());

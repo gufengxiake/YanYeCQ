@@ -6,13 +6,16 @@ import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.param.AppParam;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
+import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.validate.ErrorLevel;
 import kd.bos.entity.validate.ValidationErrorInfo;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,6 +26,15 @@ import java.util.Map;
  * @date : 2024/8/27
  */
 public class ReceivableBillSave extends AbstractOperationServicePlugIn {
+
+    @Override
+    public void onPreparePropertys(PreparePropertysEventArgs e) {
+        super.onPreparePropertys(e);
+        List<String> fieldKeys = e.getFieldKeys();
+        fieldKeys.add("payeetype");
+        fieldKeys.add("deliver");
+        fieldKeys.add("nckd_client");
+    }
 
     @Override
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
@@ -46,6 +58,14 @@ public class ReceivableBillSave extends AbstractOperationServicePlugIn {
                     return;
                 }
             }
+            if ("bd_customer".equals(payeetype)){
+                DynamicObject deliver = dt.getDynamicObject("deliver");
+                if (deliver != null){
+                    dt.set("nckd_client",deliver.getPkValue());
+                    SaveServiceHelper.update(dt);
+                }
+            }
         }
     }
+
 }
