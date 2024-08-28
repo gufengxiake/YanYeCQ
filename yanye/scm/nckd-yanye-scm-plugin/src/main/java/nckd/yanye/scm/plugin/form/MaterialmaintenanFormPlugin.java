@@ -434,6 +434,7 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     public void setBasicQualityInspectionInformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", new QFilter[]{qFilter});
         if (dynamicObject != null && dynamicObject.getDynamicObjectCollection("entryentity") != null) {
+            this.getModel().deleteEntryData("nckd_entryentity");
             dynamicObject.getDynamicObjectCollection("entryentity").stream().forEach(t -> {
                 int row = this.getModel().createNewEntryRow("nckd_entryentity");
                 this.getModel().setValue("nckd_inspecttype", t.get("inspecttype"), row);
