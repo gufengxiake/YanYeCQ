@@ -35,6 +35,13 @@ import java.math.BigDecimal;
 import java.util.*;
 
 
+/**
+ * 供应链-生产计划单
+ * 表单标识：nckd_pom_planning
+ * author：xiaoxiaopeng
+ * date：2024-08-05
+ */
+
 public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowClickEventListener, BeforeF7SelectListener, AfterF7SelectListener {
 
     @Override

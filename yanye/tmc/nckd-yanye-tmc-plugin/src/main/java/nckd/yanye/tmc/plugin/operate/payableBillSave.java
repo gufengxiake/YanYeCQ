@@ -6,6 +6,7 @@ import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.param.AppParam;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
+import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
@@ -13,22 +14,21 @@ import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 import java.util.Map;
 
 /**
- * 开票登记保存操作插件
+ * Module           :财务云-资金-收票登记
+ * Description      :取收票人全称名称搜索供应商，若没有对应供应商且参数【票据无供应商或客户信息是否允许保存】为否：报错提示【无供应商信息不允许保存】
+ *
+ * @author : xiaoxiaopeng
+ * @date : 2024/8/27
  */
-public class payableBillSave extends AbstractOperationServicePlugIn {
+public class PayableBillSave extends AbstractOperationServicePlugIn {
 
     @Override
-    public void onAddValidators(AddValidatorsEventArgs e) {
-        super.onAddValidators(e);
+    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
+        super.beforeExecuteOperationTransaction(e);
         DynamicObject[] data = e.getDataEntities();
         for (DynamicObject dt : data) {
             String payeetype = dt.getString("payeetype");
             if (!"bd_supplier".equals(payeetype)){
-                continue;
-            }
-            DynamicObject receiver = dt.getDynamicObject("receiver");
-            if (receiver != null){
-                DynamicObject supplier = BusinessDataServiceHelper.loadSingle(receiver.getPkValue(), "bd_supplier");
                 Long pkValue = (Long) dt.getDynamicObject("drawercompany").getPkValue();
                 AppInfo appInfo = AppMetadataCache.getAppInfo("cdm");
                 String appId = appInfo.getId();
@@ -37,19 +37,13 @@ public class payableBillSave extends AbstractOperationServicePlugIn {
                 appParam.setAppId(appId);
                 appParam.setOrgId(pkValue);
                 Map <String,Object> systemMap= SystemParamServiceHelper.loadAppParameterFromCache(appParam);
-                Object client =  systemMap.get("nckd_whetherclient");
-                DynamicObject nckdVendor = dt.getDynamicObject("nckd_vendor");
-                if(nckdVendor == null && client.equals("true")){
-                    this.operationResult.setMessage("无供应商信息不允许保存");
-                    return;
-                }
-                if (supplier == null && client.equals("false")){
-                    this.operationResult.setMessage("无供应商信息不允许保存");
+                Boolean client = (Boolean) systemMap.get("nckd_whetherclient");
+                if(!client){
+                    e.setCancel(true);
+                    e.setCancelMessage("无供应商信息不允许保存");
                     return;
                 }
             }
         }
-
-
     }
 }

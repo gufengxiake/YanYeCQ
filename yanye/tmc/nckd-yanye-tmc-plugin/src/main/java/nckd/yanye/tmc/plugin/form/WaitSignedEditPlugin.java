@@ -32,8 +32,8 @@ public class WaitSignedEditPlugin extends AbstractBillPlugIn {
         // 监听出票日期和汇票到期日， 汇票到期日-出票日期，计算承兑期限
         String name = e.getProperty().getName();
         if(NAME_LIST.contains(name)){
-            Date issueticketdate = name.equals("issueticketdate")?(Date) e.getChangeSet()[0].getNewValue(): (Date) this.getModel().getValue("issueticketdate");
-            Date exchangebillexpiredate = name.equals("exchangebillexpiredate")?(Date) e.getChangeSet()[0].getNewValue(): (Date) this.getModel().getValue("exchangebillexpiredate");
+            Date issueticketdate = "issueticketdate".equals(name)?(Date) e.getChangeSet()[0].getNewValue(): (Date) this.getModel().getValue("issueticketdate");
+            Date exchangebillexpiredate = "exchangebillexpiredate".equals(name)?(Date) e.getChangeSet()[0].getNewValue(): (Date) this.getModel().getValue("exchangebillexpiredate");
 
 
             if(issueticketdate != null && exchangebillexpiredate != null){

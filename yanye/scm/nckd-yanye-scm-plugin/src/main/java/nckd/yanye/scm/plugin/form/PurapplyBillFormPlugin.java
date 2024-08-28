@@ -54,6 +54,18 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         IDataModel model = this.getModel();
         IFormView view = this.getView();
         // 显隐
+        String biddingMethod = visibleSetting(view, model);
+        // 发布方式-自动赋值
+        if ("1".equals(biddingMethod)) {
+            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "1");
+        }
+        if ("2".equals(biddingMethod)) {
+            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "2");
+        }
+    }
+
+    private String visibleSetting(IFormView view, IDataModel model) {
+        // 显隐
         // 公告发布日期
         view.setVisible("timing".equals(model.getValue(PurapplybillConst.NCKD_PUBLISHSET)), PurapplybillConst.NCKD_TIMINGTIME);
         // 按钮
@@ -108,14 +120,9 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         view.setVisible("2".equals(biddingMethod), PurapplybillConst.NCKD_SUPPLIERS3);
         // 允许联合体报名
         view.setVisible("2".equals(biddingMethod), PurapplybillConst.NCKD_ALLOWJOINT);
-        // 发布方式-自动赋值
-        if ("1".equals(biddingMethod)) {
-            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "1");
-        }
-        if ("2".equals(biddingMethod)) {
-            model.setValue(PurapplybillConst.NCKD_PUBLISHINGMETHOD, "2");
-        }
+        return biddingMethod;
     }
+
 
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
@@ -131,6 +138,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
 
     @Override
     public void afterBindData(EventObject e) {
+        visibleSetting(this.getView(), this.getModel());
         //富文本数据回显
         String largeText = (String) this.getModel().getValue(PurapplybillConst.NCKD_BIGNOTICECONTENT);
         if (largeText == null || largeText.trim().isEmpty()) {

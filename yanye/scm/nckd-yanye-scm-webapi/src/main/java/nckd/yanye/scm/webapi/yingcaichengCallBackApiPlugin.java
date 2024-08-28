@@ -8,6 +8,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -167,12 +168,17 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 JSONObject item = (JSONObject) orderItemsDatum;
                 // 品目id
                 Integer itemId = item.getInteger("itemId");
+                // 品目行号
+                String spuCode = item.getString("spuCode");
                 // 品目编号
                 String itemCode = item.getString("itemCode");
                 // 品目名称
                 String itemName = item.getString("itemName");
                 // 单位
                 String unit = item.getString("unit");
+
+
+                map.put("spuCode", spuCode);
                 map.put("itemCode", itemCode);
                 map.put("itemName", itemName);
                 map.put("unit", unit);
@@ -184,6 +190,14 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 Integer itemId = item.getInteger("itemId");
                 DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
                 DynamicObject addNew = materialEntry.addNew();
+                // 物料行号
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE, itemMap.get(itemId).get("spuCode"));
+                // 物料编码
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIAL, BusinessDataServiceHelper.load(
+                        "bd_materialpurchaseinfo",
+                        "id,materialname,masterid",
+                        new QFilter[]{new QFilter("masterid.number", QCP.equals, itemMap.get(itemId).get("itemCode"))}
+                )[0]);
                 // 物料名称
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
                 // 单位
@@ -206,7 +220,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
         // 供应商/订单生成失败原因
         receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "自动生成失败!请手动生成");
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "测试, 请手动生成");
 
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
@@ -223,6 +237,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         } else {
             addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
         }
+
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
 
@@ -241,7 +256,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 new QFilter[]{new QFilter(PurcontractConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
         );
         if (billnos.length != 0) {
-            throw new KDBizException("已生成过采购合同");
+            return;
         }
 
         //获取源单
@@ -274,16 +289,30 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         pushArgs.setSelectedRows(selectedRows);
         // 调用下推引擎，下推目标单并保存
         ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+
+
+
+
+
+
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurcontractConst.FORMBILLID
             );
             // 招采平台价税合计
             tgtObj.set(PurcontractConst.NCKD_TOTALPRICE, totalPrice);
+            // 上游采购申请单
+            tgtObj.set(PurcontractConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurcontractConst.NCKD_UPINFORECEIVEBILL, billNo);
+
+            // 设置含税单价
+            setPriceandtax(tgtObj, receiveObject);
+
             // 保存采购合同
-            SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
@@ -301,7 +330,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 new QFilter[]{new QFilter(PurorderbillConst.NCKD_UPINFORECEIVEBILL, QCP.equals, billNo)}
         );
         if (billnos.length != 0) {
-            throw new KDBizException("已生成过采购订单");
+            return;
         }
 
         //获取源单
@@ -337,14 +366,21 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurorderbillConst.FORMBILLID
             );
             // 招采平台价税合计
             tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, totalPrice);
 
+            // 上游采购申请单
+            tgtObj.set(PurorderbillConst.NCKD_UPAPPLYBILL, purapplyBillNo);
+            // 上游信息接收单
+            tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, billNo);
+            // 设置含税单价
+            setPriceandtax(tgtObj, receiveObject);
+
             // 保存采购订单
-            SaveServiceHelper.saveOperate(PurorderbillConst.FORMBILLID, new DynamicObject[]{tgtObj});
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
@@ -412,6 +448,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
         }
     }
+
+    /**
+     * 含税单价
+     */
+    private static void setPriceandtax(DynamicObject tgtObj, DynamicObject receiveObject) {
+        DynamicObjectCollection materialEntry = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_ENTRYENTITY);
+        HashMap<String, BigDecimal> map = new HashMap<>();
+        for (DynamicObject obj : materialEntry) {
+            map.put(obj.getString(InforeceivebillConst.ENTRYENTITY_NCKD_SPUCODE), obj.getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX));
+        }
+
+        DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
+        for (DynamicObject obj : tgtMaterialEntry) {
+            obj.set("priceandtax", map.get(obj.getString("seq")));
+        }
+    }
+
 }
 
 

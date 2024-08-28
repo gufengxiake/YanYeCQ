@@ -1,6 +1,7 @@
 package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.occ.ocbase.formplugin.base.OcbaseFormMobPlugin;
 import kd.occ.ocdma.formplugin.order.SaleOrderBillPlugin;
 
 import java.util.EventObject;
@@ -10,7 +11,7 @@ import java.util.EventObject;
  * 表单标识：nckd_ocdma_saleorder_add
  * author:吴国强 2024-07-22
  */
-public class MobileSalOrderBillPlugIn extends SaleOrderBillPlugin {
+public class MobileSalOrderBillPlugIn extends OcbaseFormMobPlugin {
     @Override
     public void afterCreateNewData(EventObject e) {
         //super.afterCreateNewData(e);

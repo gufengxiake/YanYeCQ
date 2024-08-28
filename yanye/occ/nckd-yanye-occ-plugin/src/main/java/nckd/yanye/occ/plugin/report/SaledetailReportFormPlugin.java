@@ -20,7 +20,7 @@ import static com.ibm.db2.jcc.am.ao.ds;
 
 /**
  * 销售情况明细表界面插件
- * 表单标识：nckd_saledetail_rpt
+ * 表单标识：nckd_saledetailrpt
  * author:zzl
  * date:2024/08/22
  */
@@ -50,6 +50,14 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
                 String percent=df.format(nckd_mll);
                 row.set("nckd_mll", percent);
             }
+
+            if(row.getBigDecimal("nckd_thsl").compareTo(BigDecimal.ZERO) == 0){
+                row.set("nckd_thbs", "N");
+            }else{
+                row.set("nckd_thbs", "Y");
+            }
+
+            //获取发票编号
             if (row.getString("nckd_mainbillentity").equals("ocbsoc_saleorder")) {
                 Long key = row.getLong("nckd_mainbillentryid");
                 if (invoiceNo.isEmpty() || key == 0L) continue;

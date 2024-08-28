@@ -1,24 +1,21 @@
-package nckd.yanye.hr.report;
+package nckd.yanye.hr.report.shebao;
 
 import kd.bos.algo.DataSet;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
-import kd.bos.entity.format.DateFormatObject;
-import kd.bos.entity.format.FormatObject;
 import kd.bos.entity.report.*;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 
-import java.text.SimpleDateFormat;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 代扣代缴情况表-报表插件
+ * 代扣代缴情况表-报表取数插件
  * 报表标识：nckd_withholdreport
  *
  * @author liuxiao
@@ -109,8 +106,7 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                 null
         );
 
-        dataSet = dataSet.select("ygbh", "ygxm", "sbqj", "sjjndw", "lljndw", "grjfje", "dwjnje", "grbjje", "dwbjje", "grjfje+grbjje grhj", "dwjnje+dwbjje dwhj");
-        dataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "sbqj", "sjjndw", "lljndw"})
+        dataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(sbqj,'yyyy-MM') sbqj", "sjjndw", "lljndw"})
                 .max("grjfje")
                 .max("dwjnje")
                 .max("grbjje")
@@ -127,7 +123,7 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
         ReportColumn ygbh = createReportColumn("ygbh", ReportColumn.TYPE_TEXT, "员工编号");
         ReportColumn ygxm = createReportColumn("ygxm", ReportColumn.TYPE_TEXT, "员工姓名");
-        ReportColumn sbqj = createReportColumn("sbqj", ReportColumn.TYPE_DATE, "社保区间");
+        ReportColumn sbqj = createReportColumn("sbqj", ReportColumn.TYPE_TEXT, "社保区间");
 
         ReportColumn sjjndw = createReportColumn("sjjndw", ReportColumn.TYPE_TEXT, "实际缴纳单位");
         ReportColumn lljndw = createReportColumn("lljndw", ReportColumn.TYPE_TEXT, "理论缴纳单位");

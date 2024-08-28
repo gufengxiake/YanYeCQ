@@ -29,15 +29,15 @@ public class YearkaoheElyCardPlugin extends SmallElyCardEdit
 
     // 有删除按钮
     public boolean hasDeleteOperate() {
-        return true;
+        return false;
     }
     // 有编辑按钮
     public boolean hasEditOperate() {
-        return true;
+        return false;
     }
     // 有新增按钮
     public boolean hasAddOperate() {
-        return true;
+        return false;
     }
     // 数据排序
     public String getOrderBys(String tableName) {

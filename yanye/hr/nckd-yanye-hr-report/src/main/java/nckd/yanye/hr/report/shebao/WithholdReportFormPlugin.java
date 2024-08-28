@@ -1,4 +1,4 @@
-package nckd.yanye.hr.report;
+package nckd.yanye.hr.report.shebao;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -13,6 +13,14 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 
+
+/**
+ * 代扣代缴情况表-报表表单插件
+ * 报表标识：nckd_withholdreport
+ *
+ * @author liuxiao
+ * @since 2024-08-22
+ */
 public class WithholdReportFormPlugin extends AbstractReportFormPlugin {
 
     @Override

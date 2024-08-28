@@ -112,6 +112,19 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                     //【物料属性】为‘外购’
                     MaterialAttributeInformationUtils.defaultMarketInfo(org,material);// 销售基本信息
                 }
+
+                // 物料属性信息扩展-扩展组织生成默认物料属性
+//                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_org", new QFilter[]{new QFilter("number", QCP.equals, "113")});
+//                // 生产基本信息
+//                MaterialAttributeInformationUtils.defaultProductionInfo(loadSingle,material);
+//                // 计划基本信息
+//                MaterialAttributeInformationUtils.defaultPlanInfo(loadSingle,material);
+//                // 库存基本信息
+//                MaterialAttributeInformationUtils.defaultStockInfo(loadSingle,material);
+//                // 销售基本信息
+//                MaterialAttributeInformationUtils.defaultMarketInfo(loadSingle,material);
+//                // 采购基本信息
+//                MaterialAttributeInformationUtils.defaultPurchaseInfo(loadSingle,material);
             }
             if (CollectionUtils.isNotEmpty(errorMsg)){
                 throw new KDBizException(errorMsg.stream().collect(Collectors.joining(",")));
@@ -139,6 +152,9 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             materialmaintenanObject.set("modifytime", new Date());
             materialmaintenanObject.set("billstatus", "A");//单据状态
             materialmaintenanObject.set("org", object.getDynamicObject("org"));//申请组织
+            materialmaintenanObject.set("nckd_createorganiza", object.getDynamicObject("nckd_createorg"));//创建组织
+            materialmaintenanObject.set("nckd_initiatingdepart", RequestContext.get().getOrgId());//发起部门
+            materialmaintenanObject.set("nckd_applicant", RequestContext.get().getCurrUserId());//申请人
             materialmaintenanObject.set("nckd_materialmaintunit", "add");//单据维护类型：新增物料属性
             materialmaintenanObject.set("nckd_documenttype", billType);//单据类型：
             materialmaintenanObject.set("nckd_materialclassify", dynamicObject.getDynamicObject("nckd_materialclassify"));//物料分类

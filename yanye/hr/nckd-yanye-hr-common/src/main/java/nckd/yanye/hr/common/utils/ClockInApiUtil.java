@@ -22,6 +22,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * 打卡数据获取
+ *
+ * @author liuxiao
+ */
 public class ClockInApiUtil {
 
     private static Log log = LogFactory.getLog(ClockInApiUtil.class);

@@ -8,20 +8,17 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.dataentity.serialization.SerializationUtils;
-
 import kd.bos.entity.datamodel.IBillModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.RowDataEntity;
 import kd.bos.entity.datamodel.events.*;
 import kd.bos.entity.operate.PushAndSave;
-import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.EntryProp;
 import kd.bos.form.*;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Label;
-import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
@@ -47,11 +44,9 @@ import kd.fi.arapcommon.service.BillStatusCtrlService;
 import kd.fi.arapcommon.service.log.LogUtil;
 import kd.fi.arapcommon.util.DateUtils;
 import kd.fi.arapcommon.util.EmptyUtils;
-import kd.fi.arapcommon.util.OperationUtils;
 import nckd.yanye.tmc.plugin.operate.AsstactHelperPlugin;
 import nckd.yanye.tmc.plugin.operate.AsstactHelperShow;
 import org.apache.commons.lang3.ObjectUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -80,6 +75,10 @@ public class ApplyPayBillEdit extends ApBaseEdit {
     private Map<String, Object> splitRowMap = new HashMap(16);
     private DynamicObject settlementType;
 
+    private final String BANK_ACCEP = "JSFS06"; // 银行承兑汇票
+
+    private final String TRADE_ACCEP = "JSFS07";//  商业承兑汇票
+
     public ApplyPayBillEdit() {
     }
 
@@ -94,11 +93,6 @@ public class ApplyPayBillEdit extends ApBaseEdit {
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners(new String[]{"nckd_e_assacct"});
-//        this.addClickListeners(new String[]{"nckd_e_assacct"});
-//        this.addClickListeners(new String[]{"e_corebillno"});
-//        this.addClickListeners(new String[]{"sameinfo_view", "sameinfo_ignore", "refund_view", "refund_ignore"});
-//        this.addItemClickListeners(new String[]{"tbmain"});
-//        this.addItemClickListeners(new String[]{"advcontoolbarap2"});
         this.filterMaterialVersion();
     }
 
@@ -413,6 +407,13 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         if(ObjectUtils.isEmpty(returnData)){
             return;
         }
+        // 结算方式
+        boolean isAccept = false;
+        DynamicObject paymode = (DynamicObject) this.getModel().getValue("paymode", curentrow);
+        if(ObjectUtils.isNotEmpty(paymode) && (BANK_ACCEP.equals(paymode.getString("number")) || TRADE_ACCEP.equals(paymode.getString("number")))){
+            // 结算方式为承兑汇票
+            isAccept = true;
+        }
         ListSelectedRow listSelectedRow = ((ListSelectedRowCollection) returnData).get(0);
         // 银行账户号
         String number = listSelectedRow.getNumber();
@@ -423,16 +424,16 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         String assacttype = this.getModel().getValue("e_asstacttype", curentrow).toString();
         this.getModel().setValue("e_assacct", number, curentrow);
         this.getModel().setValue("nckd_e_assacct", number, curentrow);
-        // todo 查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
+        //  查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
         QFilter qFilter = new QFilter("account.masterid", "=", primaryKeyValue);
         // 合作金融机构
         Object cooperationId = null;
         DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter});
-        if(ObjectUtils.isEmpty(billbank)){
+        if(ObjectUtils.isNotEmpty(billbank) && isAccept){
 //            this.getModel().setValue("e_bebank", amAccountbank.getLong("bank.id"), curentrow);
-            cooperationId = amAccountbank.getLong("bank.id");
-        }else{
             cooperationId = billbank.getLong("bebank.id");
+        }else{
+            cooperationId = amAccountbank.getLong("bank.id");
         }
         // 查询合作金融机构对应的行名行号信息
         DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
@@ -505,8 +506,8 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             Object entryKey = rowInfo.getEntryPrimaryKeyValue();
             Object pk = rowInfo.getPrimaryKeyValue();
             DynamicObject account;
-            if (!assacttype.equals("bd_customer") && !assacttype.equals("bd_supplier")) {
-                if (assacttype.equals("bos_user")) {
+            if (!"bd_customer".equals(assacttype) && !"bd_supplier".equals(assacttype)) {
+                if ("bos_user".equals(assacttype)) {
                     account = BusinessDataServiceHelper.loadSingleFromCache(pk, "er_payeer", "id,payerbank,payeraccount");
                     if (!ObjectUtils.isEmpty(account)) {
                         this.getModel().setValue("e_assacct", account.getString("payeraccount"), curentrow);

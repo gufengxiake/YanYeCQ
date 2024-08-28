@@ -410,6 +410,7 @@ public class PayeeDisposeInfoEdit extends DynamicFormPlugin {
                     break;
                 case "payeebankname":
                     this.payeeBankNameChanged((String)newValue);
+                    break;
             }
 
         }

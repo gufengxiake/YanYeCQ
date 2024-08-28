@@ -41,9 +41,10 @@ public class EmpChuFenInfoCardPlugin extends AbstractCardDrawEdit {
         PreBindDataVo preBindDataVo = super.prefixHandlerBeforeBindData(args);
         Long personId = HRJSONUtils.getLongValOfCustomParam(preBindDataVo.getFormShowParameter().getCustomParam("person"));
         if (personId != null && personId != 0L) {
-            // 头部：处分日期 nckd_chufendate ，标题：处分名称 nckd_chufenname ，具体业务字段：
+            // 头部：处分日期 nckd_chufendate ，标题：处分名称 nckd_chufenname ，
+            // 具体业务字段：nckd_leibie 处分类别,nckd_chufentype 处理结果,nckd_chufenenddate 处分影响结束日期
             CardViewCompareVo compareVo = new CardViewCompareVo("nckd_chufendate", "nckd_chufenname",
-                    "nckd_chufentype,nckd_chufenenddate,nckd_chufenpizhun,nckd_chufenwenhao");
+                    "nckd_leibie,nckd_chufentype,nckd_chufenenddate,nckd_chufenpizhun,nckd_chufenwenhao");
             List<String> fields = this.setChildFieldVo(new FieldTransVo(preBindDataVo.getDataMap(), compareVo));
             QFilter[] conFilter = new QFilter[]{new QFilter("person", "=", personId)};
             // 年度考核信息基础页面 页面编码：nckd_hrpi_chufeninfo，排序字段：处分日期 nckd_chufendate

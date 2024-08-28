@@ -4,6 +4,7 @@ import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.RefObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.EntityType;
+import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.form.*;
 import kd.bos.form.events.AfterDoOperationEventArgs;
@@ -127,11 +128,12 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             //获取列表选中数据
             BillList billlistap = this.getView().getControl("billlistap");
             ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
+            List<ListSelectedRow> selectedRowList = selectedRows.stream().filter(e -> "C".equals(e.getBillStatus())).collect(Collectors.toList());
             EntityType entityType = billlistap.getEntityType();
-            //获取选中行pkid
-            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
+            //获取选中行审核状态数据的pkid
+            List<Object> list = selectedRowList.stream().map(e -> e.getPrimaryKeyValue()).collect(Collectors.toList());
             //获取完整数据
-            DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(list.toArray(), entityType);
             String[] numberStr = {"JSFS06", "JSFS07", "JSFS02", "JSFS03"};
             QFilter qFilter = new QFilter("number", QCP.in, numberStr);
             DynamicObject[] settlementtype = BusinessDataServiceHelper.load("bd_settlementtype", "id", qFilter.toArray());

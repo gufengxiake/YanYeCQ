@@ -96,7 +96,7 @@ public class MaterialAttributeInformationUtils {
         // 物料
         newDynamicObject.set("material", material);
         // 编码
-        newDynamicObject.set("number", material.getDynamicObject("nckd_materialnumber").getString("number"));
+        newDynamicObject.set("number", material.getString("number"));
         // 计划信息创建组织
         newDynamicObject.set("createorg", org);
         // 物料属性
@@ -299,12 +299,12 @@ public class MaterialAttributeInformationUtils {
                 // 审核
                 OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
                 if(!auditOperate.isSuccess()){
-                    logger.error(auditOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-                    throw new KDBizException(auditOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+                    logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
+                    throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                 }
             } else {
-                logger.error(submitOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-                throw new KDBizException(submitOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+                logger.error(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
+                throw new KDBizException(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
             }
         } else {
             logger.error(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());

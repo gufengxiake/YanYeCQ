@@ -13,12 +13,13 @@ import java.util.EventObject;
 /**
  * 岗位申请单，标识：nckd_homs_positionb_ext
  * author:chengchaohua
- * date:2024-0816
+ * date:2024-08-16
  */
 public class PositionBillEditEx extends HRCoreBaseBillEdit {
 
     private static Log logger = LogFactory.getLog(PositionBillEditEx.class);
 
+    // 二开，增加一个文本控件查看时显示组织长名称
     public void afterBindData(EventObject eventObject) {
         // 行政组织
         DynamicObject value = (DynamicObject)this.getModel().getValue("adminorg");
