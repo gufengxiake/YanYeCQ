@@ -1,25 +1,29 @@
 package nckd.yanye.hr.common;
 
 
+import nckd.base.common.utils.capp.CappConfig;
+
 /**
  * 钉钉云之家平台常量
+ *
+ * @author liuxiao
  */
 public class ClockInConst {
 
     /**
-     * 云之家团队id：26165950
+     * 云之家-团队id
      */
-    public static final String YZJ_EID = "26165950";
+    public static final String YZJ_EID = CappConfig.getConfigValue("yzj_eid");
     /**
-     * 云之家密钥
+     * 云之家-密钥
      */
-    public static final String YZJ_SECRET = "apqQLDJPISlrlrZqZntEPc74HJdB8e0S";
+    public static final String YZJ_SECRET = CappConfig.getConfigValue("yzj_secret");
     /**
-     * 钉钉应用的唯一标识key
+     * 钉钉-应用的唯一标识key
      */
-    public static final String DD_APPKEY = "dingrmfpvm18a2p3cdqv";
+    public static final String DD_APPKEY = CappConfig.getConfigValue("dd_appkey");
     /**
-     * 钉钉应用的密钥
+     * 钉钉-应用的密钥
      */
-    public static final String DD_APPSECRET = "DsLmClLqPsQIqnUA71Ues99u60F6BbHvqg1y7nG6Iyq9pDCRN8ctxJcFRh9Kp5V2";
+    public static final String DD_APPSECRET = CappConfig.getConfigValue("dd_appsecret");
 }

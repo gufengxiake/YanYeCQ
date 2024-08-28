@@ -8,6 +8,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -224,18 +225,19 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
         // 其他：直接生成采购订单
-//        if ("2".equals(procurements)) {
-//            // 生成采购订单
-//            if ("1".equals(purchaseType)) {
-//                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
-//            } else if ("2".equals(purchaseType)) {
-//                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
-//            } else {
-//                throw new KDBizException("采购类型错误");
-//            }
-//        } else {
-//            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
-//        }
+        if ("2".equals(procurements)) {
+            // 生成采购订单
+            if ("1".equals(purchaseType)) {
+                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+            } else if ("2".equals(purchaseType)) {
+                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
+            } else {
+                throw new KDBizException("采购类型错误");
+            }
+        } else {
+            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+        }
+
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
 
@@ -287,10 +289,16 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         pushArgs.setSelectedRows(selectedRows);
         // 调用下推引擎，下推目标单并保存
         ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+
+
+
+
+
+
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurcontractConst.FORMBILLID
             );
             // 招采平台价税合计
@@ -304,7 +312,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             setPriceandtax(tgtObj, receiveObject);
 
             // 保存采购合同
-            SaveServiceHelper.saveOperate(PurcontractConst.FORMBILLID, new DynamicObject[]{tgtObj});
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
@@ -358,7 +366,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds,
+                    targetBillIds.toArray()[0],
                     PurorderbillConst.FORMBILLID
             );
             // 招采平台价税合计
@@ -372,7 +380,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             setPriceandtax(tgtObj, receiveObject);
 
             // 保存采购订单
-            SaveServiceHelper.saveOperate(PurorderbillConst.FORMBILLID, new DynamicObject[]{tgtObj});
+            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
             receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);

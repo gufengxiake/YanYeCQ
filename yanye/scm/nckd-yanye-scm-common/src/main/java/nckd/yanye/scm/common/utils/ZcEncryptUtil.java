@@ -28,7 +28,7 @@ public class ZcEncryptUtil {
     public static boolean checkSignature(String signature,
                                          String timestamp,
                                          String nonce) {
-        String rawString = Stream.of(nonce, timestamp, ZcPlatformConst.SECRET)
+        String rawString = Stream.of(nonce, timestamp, ZcPlatformConst.ZC_MSG_SECRET)
                 .sorted(String::compareTo)
                 .collect(Collectors.joining());
         return Objects.equals(signature, SecureUtil.sha1(rawString));
@@ -46,7 +46,7 @@ public class ZcEncryptUtil {
                 .toString();
 
         String encryptBody = SecureUtil.aes(
-                        SecureUtil.md5(ZcPlatformConst.SECRET).toLowerCase()
+                        SecureUtil.md5(ZcPlatformConst.ZC_MSG_SECRET).toLowerCase()
                                 .getBytes())
                 .encryptBase64(rawJson);
         return encryptBody;
@@ -60,7 +60,7 @@ public class ZcEncryptUtil {
      */
     public static String decryptBody(String encryptBody) {
         String decryptStr = SecureUtil.aes(
-                        SecureUtil.md5(ZcPlatformConst.SECRET).toLowerCase()
+                        SecureUtil.md5(ZcPlatformConst.ZC_MSG_SECRET).toLowerCase()
                                 .getBytes())
                 .decryptStr(encryptBody);
         return decryptStr;
