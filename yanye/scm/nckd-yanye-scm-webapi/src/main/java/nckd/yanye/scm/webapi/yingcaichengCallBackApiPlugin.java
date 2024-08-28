@@ -8,7 +8,6 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
-import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -200,8 +199,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 )[0]);
                 // 物料名称
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_MATERIALNAME, itemMap.get(itemId).get("itemName"));
-                // 单位
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_UNIT, itemMap.get(itemId).get("unit"));
                 // 数量
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_APPLYQTY, item.getBigDecimal("awardNum").divide(new BigDecimal(100), RoundingMode.HALF_UP));
                 // 含税单价
@@ -213,29 +210,43 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, offerPrice.multiply(item.getBigDecimal("awardNum")));
             }
         }
+        // 查看供应商是否存在
+        DynamicObject supplier = null;
+        DynamicObject dynamicObject = receiveObject.getDynamicObjectCollection(InforeceivebillConst.ENTRYENTITYID_NCKD_WINENTRYENTITY).get(0);
+        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
+                SupplierConst.FORMBILLID,
+                SupplierConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(SupplierConst.NCKD_PLATFORMSUPID, QCP.equals, dynamicObject.getString("nckd_supplierid"))}
+        );
+        if (dynamicObjects.length == 0) {
+            receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "系统未找到中标供应商信息，请维护");
+        } else {
+            supplier = dynamicObjects[0];
+        }
+
 
         // 招采成交价税合计
         receiveObject.set(InforeceivebillConst.NCKD_TOTALPRICE, totalPrice);
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
-        // 供应商/订单生成失败原因
+        // 订单/合同生成失败原因
         receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "测试, 请手动生成");
 
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "生成失败!");
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
         // 其他：直接生成采购订单
         if ("2".equals(procurements)) {
             // 生成采购订单
             if ("1".equals(purchaseType)) {
-                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
             } else if ("2".equals(purchaseType)) {
-                addContract(billNo, purapplyBillNo, totalPrice, receiveObject);
+                addContract(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
             } else {
                 throw new KDBizException("采购类型错误");
             }
         } else {
-            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject);
+            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
         }
 
         // 保存信息接收单
@@ -248,7 +259,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
     /**
      * 生成采购合同
      */
-    private void addContract(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject) {
+    private void addContract(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject, DynamicObject supplier) {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurcontractConst.FORMBILLID,
@@ -289,12 +300,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         pushArgs.setSelectedRows(selectedRows);
         // 调用下推引擎，下推目标单并保存
         ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
-
-
-
-
-
-
         if (pushResult.isSuccess()) {
             Set<Object> targetBillIds = pushResult.getTargetBillIds();
             DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
@@ -311,6 +316,12 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             // 设置含税单价
             setPriceandtax(tgtObj, receiveObject);
 
+            // 供应商信息
+            tgtObj.set("supplier", supplier);
+            tgtObj.set("providersupplier", supplier);
+            tgtObj.set("invoicesupplier", supplier);
+            tgtObj.set("receivesupplier", supplier);
+
             // 保存采购合同
             SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
@@ -322,7 +333,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
     /**
      * 生成采购订单
      */
-    private void addOrder(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject) {
+    private void addOrder(String billNo, String purapplyBillNo, BigDecimal totalPrice, DynamicObject receiveObject, DynamicObject supplier) {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurorderbillConst.FORMBILLID,
@@ -378,6 +389,12 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, billNo);
             // 设置含税单价
             setPriceandtax(tgtObj, receiveObject);
+
+            // 供应商信息
+            tgtObj.set("supplier", supplier);
+            tgtObj.set("providersupplier", supplier);
+            tgtObj.set("invoicesupplier", supplier);
+            tgtObj.set("receivesupplier", supplier);
 
             // 保存采购订单
             SaveServiceHelper.save(new DynamicObject[]{tgtObj});
@@ -461,7 +478,10 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
         for (DynamicObject obj : tgtMaterialEntry) {
-            obj.set("priceandtax", map.get(obj.getString("seq")));
+            BigDecimal seq = map.get(obj.getString("seq"));
+            boolean flag = seq != null;
+            obj.set("priceandtax", seq);
+            obj.set("nckd_topush", flag);
         }
     }
 
