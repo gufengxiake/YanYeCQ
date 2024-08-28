@@ -6,11 +6,13 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
+import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.OrgProp;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.control.Control;
 import kd.bos.form.field.*;
 import kd.bos.form.field.events.AfterF7SelectEvent;
@@ -114,6 +116,9 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         if ("nckd_buyer".equals(name)) {
             //  根据采购组获取采购员
             DynamicObject purchaseorg = (DynamicObject) this.getModel().getValue("nckd_purchaseorg");
+            if(purchaseorg == null){
+                throw new KDBizException("请先选择采购组");
+            }
             DynamicObject operatorgroup = BusinessDataServiceHelper.loadSingle(purchaseorg.getPkValue(), "bd_operatorgroup");
             List<Object> objects = operatorgroup.getDynamicObjectCollection("entryentity").stream().map(dynamicObject ->
                     dynamicObject.getDynamicObject("operator").getPkValue()
