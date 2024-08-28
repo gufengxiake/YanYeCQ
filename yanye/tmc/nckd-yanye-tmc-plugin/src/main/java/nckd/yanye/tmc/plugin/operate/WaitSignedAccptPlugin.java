@@ -29,7 +29,7 @@ public class WaitSignedAccptPlugin implements IEventServicePlugin {
 
     @Override
     public Object handleEvent(KDBizEvent evt) {
-        logger.info("离线导入执行插件:-------------------");
+        logger.info("待签收票据处理执行插件:-------------------");
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
 
@@ -37,7 +37,7 @@ public class WaitSignedAccptPlugin implements IEventServicePlugin {
         String newAcceptancePeriod = null;
         // 获取导入的数据，进行计算
         for (String businesskey : businesskeys) {
-            transdetail = BusinessDataServiceHelper.loadSingle(businesskey, "bei_transdetail");
+            transdetail = BusinessDataServiceHelper.loadSingle(businesskey, "cdm_electronic_sign_deal");
             Date issueticketdate = transdetail.getDate("issueticketdate");
             Date exchangebillexpiredate = transdetail.getDate("exchangebillexpiredate");
             String acceptancePeriod = transdetail.getString("nckd_acceptance_period");
