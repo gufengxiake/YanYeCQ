@@ -8,7 +8,6 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
-import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.openapi.common.custom.annotation.*;
@@ -109,6 +108,9 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         JSONObject orderData = ZcPlatformApiUtil.getOrderData(orderId, msgObj.getInteger("purchaseType"));
 
         DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
+        // 订单/合同生成失败原因
+        receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "生成失败!");
 
         // 单据编号
         String billNo = winData.getString("winId");
@@ -229,29 +231,28 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         receiveObject.set(InforeceivebillConst.NCKD_TOTALPRICE, totalPrice);
         // 信息接收单状态-C：已审核
         receiveObject.set(InforeceivebillConst.BILLSTATUS, "C");
-        // 订单/合同生成失败原因
-        receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
 
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "生成失败!");
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
         // 其他：直接生成采购订单
-        if ("2".equals(procurements)) {
-            // 生成采购订单
-            if ("1".equals(purchaseType)) {
-                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
-            } else if ("2".equals(purchaseType)) {
-                addContract(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
+        if (supplier != null) {
+            if ("2".equals(procurements)) {
+                // 生成采购订单
+                if ("1".equals(purchaseType)) {
+                    addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
+                    // 生成采购合同
+                } else if ("2".equals(purchaseType)) {
+                    addContract(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
+                } else {
+                    receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "采购类型错误!");
+                }
             } else {
-                throw new KDBizException("采购类型错误");
+                addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
             }
-        } else {
-            addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
         }
 
         // 保存信息接收单
         SaveServiceHelper.saveOperate(InforeceivebillConst.FORMBILLID, new DynamicObject[]{receiveObject});
-
 
         return CustomApiResult.success("success");
     }
