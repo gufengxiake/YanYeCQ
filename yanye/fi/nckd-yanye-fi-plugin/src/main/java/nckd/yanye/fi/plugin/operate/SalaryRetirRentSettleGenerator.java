@@ -47,7 +47,7 @@ public class SalaryRetirRentSettleGenerator {
 
     public void generate() {
         // 改为退让人员单据
-        SalaryInterstDetailGenerator generator = new SalaryInterstDetailGenerator(this.paramPos);  //InterestDetailGenerator(this.paramPos);
+        SalaryInterstDetailGenerator generator = new SalaryInterstDetailGenerator(this.paramPos);
         List<DynamicObject> interestDetails = generator.generate();
         List<DynamicObject> rentSettles = new ArrayList(this.paramPos.size());
         Iterator var4 = interestDetails.iterator();

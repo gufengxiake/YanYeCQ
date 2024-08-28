@@ -2,11 +2,9 @@ package nckd.yanye.tmc.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -85,7 +83,7 @@ public class AsstactHelperPlugin {
                     }
                 }
                 // 是内部供应商
-                if(asstactType.equals("bd_supplier") && ObjectUtils.isNotEmpty(asstact.getDynamicObject("internal_company"))){
+                if("bd_supplier".equals(asstactType) && ObjectUtils.isNotEmpty(asstact.getDynamicObject("internal_company"))){
                     // 更新银行账号和银行信息
 
                     Map<String,Object> innerSupplier = isInnerSupplier(asstact.getPkValue());
@@ -120,7 +118,11 @@ public class AsstactHelperPlugin {
         return defaultAccount;
     }
 
-    //     校验是否是内部供应商
+    /**
+     * 校验是否是内部供应商
+     *
+     */
+
     public static Map<String, Object> isInnerSupplier(Object supplierid) {
         Map<String, Object> map = new HashMap<>();
 

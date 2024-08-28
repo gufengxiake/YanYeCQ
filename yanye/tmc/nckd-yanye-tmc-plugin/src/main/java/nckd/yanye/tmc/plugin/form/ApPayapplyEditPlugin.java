@@ -4,15 +4,12 @@ package nckd.yanye.tmc.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import java.util.*;
 
 /**
@@ -35,6 +32,9 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
     private final List<String> ACCEP_LIST = Arrays.asList(new String[]{"JSFS06", "JSFS07"});
 
     private final List<String> PAYMENT_REQUEST_LIST = Arrays.asList(new String[]{"ap_payapply_BT_S", "ap_payapply_oth_BT_S"});
+
+    private final String BD_SUPPER ="bd_supplier";
+    private final String NUMBER ="number";//编号
 
 
     @Override
@@ -68,24 +68,24 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
 
                 // 获取结算方式
-                DynamicObject eSettlementtype = name.equals("e_settlementtype") ? newValue:dynamicObject.getDynamicObject("e_settlementtype");
+                DynamicObject eSettlementtype = "e_settlementtype".equals(name) ? newValue:dynamicObject.getDynamicObject("e_settlementtype");
                 if(ObjectUtils.isNotEmpty(eSettlementtype)){
                     eSettlementtype = ObjectUtils.isNotEmpty(eSettlementtype.getDataStorage())? eSettlementtype :null;
                 }
 
                 // 获取e_asstact 往来户信息
-                DynamicObject eAsstact = name.equals("e_asstact") ? newValue:dynamicObject.getDynamicObject("e_asstact");
+                DynamicObject eAsstact = "e_asstact".equals(name) ? newValue:dynamicObject.getDynamicObject("e_asstact");
 
                 if (ObjectUtils.isNotEmpty(eAsstact) && ObjectUtils.isNotEmpty(eAsstact.getDataStorage()) ) {
                     Object masterid = eAsstact.get("masterid");
 
-                    String eAsstacttype = name.equals("e_asstacttype") ? newValue.toString():dynamicObject.getString("e_asstacttype");
-                    if("bd_supplier".equals(eAsstacttype)){
+                    String eAsstacttype = "e_asstacttype".equals(name) ? newValue.toString():dynamicObject.getString("e_asstacttype");
+                    if(BD_SUPPER.equals(eAsstacttype)){
 
-                            if (ObjectUtils.isNotEmpty(eSettlementtype) && ACCEP_LIST.contains(eSettlementtype.getString("number")) ) {
-                                String eSettlementtypeName = (String) eSettlementtype.get("number");
+                            if (ObjectUtils.isNotEmpty(eSettlementtype) && ACCEP_LIST.contains(eSettlementtype.getString(NUMBER)) ) {
+                                String eSettlementtypeName = (String) eSettlementtype.get(NUMBER);
                                 //银行账户
-                                String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
+                                String eAssacct = "nckd_e_assacct".equals(name) ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
 
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
 
@@ -108,7 +108,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                 if (ObjectUtils.isNotEmpty(entryBank)) {
 
                                     for (DynamicObject object : entryBank) {
-                                        if (eAssacct.equals(object.getString("bankaccount"))) {
+                                        if (object.getString("bankaccount").equals(eAssacct)) {
                                             dynamicObject.set("e_bebank", object.getDynamicObject("nckd_acceptingbank"));
                                             // 刷新页面
                                             this.getView().updateView();
@@ -118,7 +118,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
 
                                 }
                             }else{
-                                String eAssacct = name.equals("nckd_e_assacct") ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
+                                String eAssacct = "nckd_e_assacct".equals(name) ? eAssacctStr:dynamicObject.getString("nckd_e_assacct");
                                 //  处理内部供应商情况
                                 DynamicObject eAsstactObject = BusinessDataServiceHelper.loadSingle(masterid, "bd_supplier");
                                 DynamicObject o = eAsstactObject.getDynamicObject("internal_company");
@@ -142,7 +142,7 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                 if (ObjectUtils.isNotEmpty(entryBank)) {
 
                                     for (DynamicObject object : entryBank) {
-                                        if (eAssacct.equals(object.getString("bankaccount"))) {
+                                        if (object.getString("bankaccount").equals(eAssacct)) {
                                             dynamicObject.set("e_bebank", object.getDynamicObject("bank"));
                                             // 刷新页面
                                             this.getView().updateView();
@@ -157,39 +157,6 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                 }
             }
         }
-    }
-
-//     校验是否是内部供应商
-    public Map<String, Object> isInnerSupplier(Object supplierid) {
-        Map<String, Object> map = new HashMap<>();
-
-        // 查询是否存在内部公司
-        DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(supplierid, "bd_supplier").get("internal_company");
-        if (ObjectUtils.isNotEmpty(o)) {
-            QFilter qFilter = new QFilter("openorg.masterid", "=", o.getPkValue());
-            // 查询供应商的银行账户信息
-            DynamicObject amAccountbank = BusinessDataServiceHelper.loadSingle("am_accountbank", "bank,bankaccountnumber,currency", new QFilter[]{qFilter});
-            if (ObjectUtils.isNotEmpty(amAccountbank)) {
-
-                map.put("number", amAccountbank.getString("bankaccountnumber"));
-                amAccountbank.getLong("bank.id");
-                //  查询银行账户是否有对应票据开户行信息，如果有，则设置到e_bebank
-                QFilter qFilter2 = new QFilter("account.masterid", "=", amAccountbank.getPkValue());
-                // 合作金融机构
-                Object cooperationId = null;
-                DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter2});
-                if (ObjectUtils.isNotEmpty(billbank)) {
-                    cooperationId = amAccountbank.get("bank.id");
-                }else{
-                    cooperationId = billbank.getLong("bebank.id");
-                }
-                // 对应行名行号信息
-                DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
-                map.put("bankid",bdFinorginfo.getLong("bebank.id"));
-                return map;
-            }
-        }
-        return null;
     }
 
 }

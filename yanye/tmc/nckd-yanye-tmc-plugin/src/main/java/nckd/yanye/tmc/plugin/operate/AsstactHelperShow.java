@@ -3,7 +3,6 @@ package nckd.yanye.tmc.plugin.operate;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.resource.ResManager;
-
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.IFormView;
 import kd.bos.form.ShowFormHelper;
@@ -15,7 +14,6 @@ import kd.fi.arapcommon.helper.BizExtendHelper;
 import kd.fi.arapcommon.helper.DynamicListHelper;
 import kd.fi.arapcommon.helper.LspWapper;
 import org.apache.commons.lang3.ObjectUtils;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -79,7 +77,6 @@ public class AsstactHelperShow {
                                 flag = false;
                                 closeCallBack = new CloseCallBack(pluginName, "nckd_assaccount");
                             }
-//                            lsp = DynamicListHelper.getSupplierBankInfoShowParameter(o.getPkValue());
                         }
 
                     }
@@ -123,7 +120,6 @@ public class AsstactHelperShow {
     public static ListShowParameter createDynamicListShowParameter(String entity, String entry, List<String> showFields) {
         ListShowParameter lsp = ShowFormHelper.createShowListForm(entity, false);
         lsp.setCustomParam("entity", entity);
-//        lsp.setCustomParam("entry", entry);
         lsp.setCustomParam("isEntryMain", Boolean.TRUE);
         lsp.setCustomParam("showFields", showFields);
         LspWapper lspWapper = new LspWapper(lsp);
@@ -138,7 +134,7 @@ public class AsstactHelperShow {
     public static Object getBankCollInfo (Object pk, String asstactType) {
         DynamicObject supp = BusinessDataServiceHelper.loadSingleFromCache(pk, asstactType);
         DynamicObjectCollection bankColls = supp.getDynamicObjectCollection("entry_bank");
-        if(asstactType.equals("bd_supplier")){
+        if("bd_supplier".equals(asstactType)){
             DynamicObject o = (DynamicObject) BusinessDataServiceHelper.loadSingle(pk, "bd_supplier").get("internal_company");
             // 获取票据账号开户行维护信息
             if(ObjectUtils.isNotEmpty(o)){

@@ -1,17 +1,8 @@
 package nckd.yanye.tmc.plugin.task;
 
 
-import cn.hutool.json.JSONObject;
-import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.serialization.SerializationUtils;
-import kd.bos.db.tx.TX;
-import kd.bos.db.tx.TXHandle;
-import kd.bos.entity.AppInfo;
-import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.cache.IAppCache;
-import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.entity.param.AppParam;
-import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 import kd.bos.workflow.engine.msg.info.MessageInfo;
 import kd.bos.bec.model.EntityEvent;
 import kd.bos.bec.model.KDBizEvent;
@@ -32,6 +23,8 @@ import kd.tmc.fbp.common.util.EmptyUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -55,11 +48,7 @@ public class BankAccountTask  implements IEventServicePlugin {
     public Object handleEvent(KDBizEvent evt) {
         if(evt instanceof EntityEvent){
             logger.info("离线导入执行插件:-------------------");
-//            logger.info("插件参数EventId：{}", evt.getEventId());
-//            logger.info("插件参数Source：{}", evt.getSource());
-//            logger.info("插件参数EventNumber：{}", evt.getEventNumber());
             logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
-//            logger.info("插件参数entityNumber：{}", ((EntityEvent) evt).getEntityNumber());
 
             // 交易明细id
             List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
@@ -192,7 +181,11 @@ public class BankAccountTask  implements IEventServicePlugin {
         // 云之家通知 金蝶云苍穹消息助手 标识：systempubacc
         MessageInfo messageInfo = new MessageInfo();
         messageInfo.setTitle("您好，您有一条银行流水信息，请注意查收。");
-        messageInfo.setContent("收到"+customer.getString("oppunit")+"款项"+customer.get("creditamount") +",请确认对应的订单;");
+        BigDecimal number = customer.getBigDecimal("creditamount");
+        // 设置两位小数的精度
+        BigDecimal scaledNumber = number.setScale(2, RoundingMode.DOWN);
+
+        messageInfo.setContent("收到"+customer.getString("oppunit")+"款项"+customer.get("currency.sign")+scaledNumber +",请确认对应的订单;");
 
         List<Long> userids = new ArrayList<Long>();
         userids.add((Long) salerid.getPkValue());
@@ -200,32 +193,28 @@ public class BankAccountTask  implements IEventServicePlugin {
         messageInfo.setUserIds(userids);
         // 发送人信息
         messageInfo.setSenderId((Long) customer.getDynamicObject("creator").getPkValue());
-//        messageInfo.setSenderId(creator.getLong("useropenid"));
         logger.info("设置发送人成功：{}",(Long) customer.getDynamicObject("creator").getPkValue());
         messageInfo.setType(MessageInfo.TYPE_MESSAGE);
         messageInfo.setNotifyType("yunzhijia");
         messageInfo.setTag("银行流水");
         logger.info("发送信息体messageInfo:{}",messageInfo);
-//        MessageServiceConfig messageServiceConfig = new MessageServiceConfig();
-//        messageServiceConfig.setServiceKey("yunzhijia");
-
-//        MessageServiceUtil.updateToDoMsgContent(messageServiceConfig,messageInfo);
-//        String contentToReplace = messageInfo.getContent();
-//        messageInfo.setContent(contentToReplace);
 
         long l = MessageCenterServiceHelper.sendMessage(messageInfo);
         logger.info("发送通知成功：{}",l);
-
-
     }
-
-    // 获取用户信息
+    /**
+     * 获取用户信息
+     */
     static DynamicObject loadSingle(Object userId) {
         DynamicObject useInfo = BusinessDataServiceHelper.loadSingle(userId, "bos_user");
         return useInfo;
     }
 
-    // 推送认领通知
+    /**
+     * @deprecated  推送认领通知
+     * @param ruleNotice
+     */
+
     private void noticeMessage(Map<String, String> ruleNotice) {
         Map<Object, Map<String, List<Object>>> claimTypeMap = new HashMap(ruleNotice.size());
         Map<String, List<Object>> typeValue = null;

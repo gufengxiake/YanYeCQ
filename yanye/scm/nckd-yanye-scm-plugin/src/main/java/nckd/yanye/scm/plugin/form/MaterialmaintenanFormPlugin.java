@@ -1,5 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
+import kd.bd.sbd.enums.EndDateCalTypeEnum;
+import kd.bd.sbd.servicehelper.BDServiceHelper;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -9,6 +11,7 @@ import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.OrgProp;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.field.*;
 import kd.bos.form.field.events.AfterF7SelectEvent;
 import kd.bos.form.field.events.AfterF7SelectListener;
@@ -42,6 +45,14 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         buyerEdit.addBeforeF7SelectListener(this);
         BasedataEdit materialnumberEdit = this.getControl("nckd_materialnumber");
         materialnumberEdit.addAfterF7SelectListener(this);
+        BasedataEdit purchaseunit = this.getControl("nckd_purchaseunit");
+        purchaseunit.addBeforeF7SelectListener(this);
+        BasedataEdit inventoryunit = this.getControl("nckd_inventoryunit");
+        inventoryunit.addBeforeF7SelectListener(this);
+        BasedataEdit salesunit = this.getControl("nckd_salesunit");
+        salesunit.addBeforeF7SelectListener(this);
+        BasedataEdit mftunit = this.getControl("nckd_mftunit");
+        mftunit.addBeforeF7SelectListener(this);
     }
 
     @Override
@@ -52,13 +63,41 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         this.getModel().setValue("nckd_createorganiza", dynamicObject);
         this.getModel().setValue("nckd_initiatingdepart", RequestContext.get().getOrgId());
         super.afterCreateNewData(e);
+    }
+
+    @Override
+    public void beforeBindData(EventObject e) {
+        super.beforeBindData(e);
+
+        String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
+        if ("update".equals(materialmaintunit)) {
+            ComboEdit combo = this.getView().getControl("nckd_documenttype");
+            List<ComboItem> items = new ArrayList<>();
+            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
+            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
+            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
+            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
+            combo.setComboItems(items);
+        } else if ("add".equals(materialmaintunit)) {
+            String nckdDocumenttype = (String) this.getModel().getValue("nckd_documenttype");
+            if ("1".equals(nckdDocumenttype)) {
+                this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
+                this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
+            } else if ("2".equals(nckdDocumenttype)) {
+                this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
+            } else if ("4".equals(nckdDocumenttype)) {
+                this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
+            } else if ("5".equals(nckdDocumenttype)) {
+                this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
+            }
+        }
 
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         // 组织范围内属性页签
         DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
-        if(loadSingle != null){
+        if (loadSingle != null) {
             List<String> materialproperty = Arrays.stream(loadSingle.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
-            if(materialproperty.contains("2")){
+            if (materialproperty.contains("2")) {
                 this.setEditShow(false);
             } else {
                 this.setEditShow(true);
@@ -69,38 +108,34 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     }
 
     @Override
-    public void beforeBindData(EventObject e) {
-        super.beforeBindData(e);
-
-        String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
-        if("update".equals(materialmaintunit)){
-            ComboEdit combo = this.getView().getControl("nckd_documenttype");
-            List<ComboItem> items = new ArrayList<>();
-            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
-            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
-            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
-            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
-            combo.setComboItems(items);
-        }
-    }
-
-    @Override
     public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
         String name = beforeF7SelectEvent.getProperty().getName();
         List<QFilter> qFilters = new ArrayList<>();
         if ("nckd_buyer".equals(name)) {
             //  根据采购组获取采购员
             DynamicObject purchaseorg = (DynamicObject) this.getModel().getValue("nckd_purchaseorg");
+            if (purchaseorg == null) {
+                throw new KDBizException("请先选择采购组");
+            }
             DynamicObject operatorgroup = BusinessDataServiceHelper.loadSingle(purchaseorg.getPkValue(), "bd_operatorgroup");
-            List<Object> objects = operatorgroup.getDynamicObjectCollection("entryentity").stream().map(dynamicObject -> {
-                return dynamicObject.getDynamicObject("operator").getPkValue();
-            }).collect(Collectors.toList());
+            List<Object> objects = operatorgroup.getDynamicObjectCollection("entryentity").stream().map(dynamicObject ->
+                    dynamicObject.getDynamicObject("operator").getPkValue()
+            ).collect(Collectors.toList());
             QFilter qFilter = new QFilter("id", QCP.in, objects);
             qFilters.add(qFilter);
         } else if ("nckd_purchaseorg".equals(name)) {
             // 业务组类型是采购组
             QFilter qFilter = new QFilter("operatorgrouptype", QCP.equals, "CGZ");
             qFilters.add(qFilter);
+        } else if ("nckd_purchaseunit".equals(name) || "nckd_inventoryunit".equals(name) || "nckd_salesunit".equals(name) || "nckd_mftunit".equals(name)) {
+            DynamicObject matDO = (DynamicObject) this.getModel().getValue("nckd_materialnumber");
+            if (matDO != null) {
+                DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(matDO.getPkValue(), "bd_material");
+                DynamicObject baseunitDO = bdMaterial.getDynamicObject("baseunit");
+                List fixconunitlist = BDServiceHelper.getAssistMUListResult(matDO.getLong("id"), baseunitDO.getLong("id"), "1");
+                QFilter fixconFilter = new QFilter("id", "in", fixconunitlist);
+                qFilters.add(fixconFilter);
+            }
         }
         beforeF7SelectEvent.setCustomQFilters(qFilters);
     }
@@ -145,16 +180,49 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
             }
             combo.setComboItems(items);
             this.getView().updateView();
+        } else if ("nckd_documenttype".equals(name)) {
+            ChangeData changeData = e.getChangeSet()[0];
+            String nckdDocumenttype = (String) changeData.getNewValue();
+            String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
+            if ("add".equals(materialmaintunit)) {
+                if ("1".equals(nckdDocumenttype)) {
+                    this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
+                    this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
+                } else if ("2".equals(nckdDocumenttype)) {
+                    this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
+                } else if ("4".equals(nckdDocumenttype)) {
+                    this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
+                } else if ("5".equals(nckdDocumenttype)) {
+                    this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
+                }
+            } else if ("update".equals(materialmaintunit)) {
+                DynamicObject materialnumber = (DynamicObject) this.getModel().getValue("nckd_materialnumber");
+                if (materialnumber != null) {
+                    DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(materialnumber.getPkValue(), "bd_material");
+                    attributeInfo(bdMaterial, nckdDocumenttype);
+                }
+            }
+        } else if ("nckd_enableshelflifemgr".equals(name)) {
+            ChangeData changeData = e.getChangeSet()[0];
+            Boolean enableshelflifemgr = (Boolean) changeData.getNewValue();
+            if (enableshelflifemgr) {
+                this.getModel().setValue("nckd_calculationforenddat", EndDateCalTypeEnum.STARTDATEADDSHELFLIFE.getValue());
+            }
+        } else if ("nckd_materialattri".equals(name)) {
+            ChangeData changeData = e.getChangeSet()[0];
+            String materialattri = (String) changeData.getNewValue();
+            this.getModel().setValue("nckd_materialattr", materialattri);
         }
     }
 
     /**
      * 计划基本信息是否展示
+     *
      * @param flag
      */
-    private void setEditShow(Boolean flag){
+    private void setEditShow(Boolean flag) {
         // 隐藏页签
-        this.getView().setVisible(flag,"nckd_tabpageap6");
+        this.getView().setVisible(flag, "nckd_tabpageap6");
 
         // 设置字段非必填
         // 前端属性设置
@@ -226,10 +294,10 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org");
                 DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
                 List<String> materialproperty = null;
-                if(dynamicObject != null){
+                if (dynamicObject != null) {
                     materialproperty = Arrays.stream(dynamicObject.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                 }
-                if(dynamicObject == null || !materialproperty.contains("2")){
+                if (dynamicObject == null || !materialproperty.contains("2")) {
                     //计划基本信息
                     setBasicinformationplan(qFilter);
                 }
@@ -266,97 +334,106 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     public void setBasicProcurementInformation(QFilter qFilter) {
         //物料采购基本信息
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialpurchaseinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_purchaseunit", dynamicObject.get("purchaseunit"));//采购单位
-        this.getModel().setValue("nckd_iscontrolqty", dynamicObject.get("iscontrolqty"));//控制收货数量
-        this.getModel().setValue("nckd_receiverateup", dynamicObject.get("receiverateup"));//收货超收比率(%)
-        this.getModel().setValue("nckd_receiveratedown", dynamicObject.get("receiveratedown"));//收货欠收比率(%)
-
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_purchaseunit", dynamicObject.get("purchaseunit"));//采购单位
+            this.getModel().setValue("nckd_iscontrolqty", dynamicObject.get("iscontrolqty"));//控制收货数量
+            this.getModel().setValue("nckd_receiverateup", dynamicObject.get("receiverateup"));//收货超收比率(%)
+            this.getModel().setValue("nckd_receiveratedown", dynamicObject.get("receiveratedown"));//收货欠收比率(%)
+        }
     }
 
     //设置物料采购员信息
     public void setMaterialpurchaserinformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("msbd_puropermaterctrl", new QFilter[]{qFilter});
-        DynamicObject object = dynamicObject.getDynamicObjectCollection("entryentity").get(0);
-        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_user", new QFilter[]{new QFilter("number", QCP.equals, object.getDynamicObject("operator").getString("operatornumber"))});
-        //需要去查询采购组
-        this.getModel().setValue("nckd_purchaseorg", object.get("operatorgroup"));//采购组
-        this.getModel().setValue("nckd_buyer", loadSingle);//采购员
+        if (dynamicObject != null) {
+            DynamicObject object = dynamicObject.getDynamicObjectCollection("entryentity").get(0);
+            DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("bos_user", new QFilter[]{new QFilter("number", QCP.equals, object.getDynamicObject("operator").getString("operatornumber"))});
+            //需要去查询采购组
+            this.getModel().setValue("nckd_purchaseorg", object.get("operatorgroup"));//采购组
+            this.getModel().setValue("nckd_buyer", loadSingle);//采购员
+        }
     }
 
     //设置库存基本信息
     public void setBasicinventoryinformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_inventoryunit", dynamicObject.get("inventoryunit"));//库存单位
-        this.getModel().setValue("nckd_minpackqty", dynamicObject.get("minpackqty"));//最小包装量
-        this.getModel().setValue("nckd_ispurchaseinspect", dynamicObject.get("ispurchaseinspect"));//来料检验
-        this.getModel().setValue("nckd_ismininvalert", dynamicObject.get("ismininvalert"));//启用最小库存预警
-        this.getModel().setValue("nckd_mininvqty", dynamicObject.get("mininvqty"));//最小库存
-        this.getModel().setValue("nckd_issaftyinvalert", dynamicObject.get("issaftyinvalert"));//启用安全库存预警
-        this.getModel().setValue("nckd_saftyinvqty", dynamicObject.get("saftyinvqty"));//安全库存
-        this.getModel().setValue("nckd_ismaxinvalert", dynamicObject.get("ismaxinvalert"));//启用最大库存预警
-        this.getModel().setValue("nckd_maxinvqty", dynamicObject.get("maxinvqty"));//最大库存
-        this.getModel().setValue("nckd_lotcoderule", dynamicObject.get("lotcoderule"));//批号规则
-        this.getModel().setValue("nckd_enableshelflifemgr", dynamicObject.get("enableshelflifemgr"));//保质期管理
-        this.getModel().setValue("nckd_shelflifeunit", dynamicObject.get("shelflifeunit"));//保质期单位
-        this.getModel().setValue("nckd_shelflife", dynamicObject.get("shelflife"));//保质期
-        this.getModel().setValue("nckd_calculationforenddat", dynamicObject.get("calculationforenddate"));//到期日计算方式
-        this.getModel().setValue("nckd_leadtimeunit", dynamicObject.get("leadtimeunit"));//提前期单位
-        this.getModel().setValue("nckd_dateofoverdueforin", dynamicObject.get("dateofoverdueforin"));//入库失效提前期
-        this.getModel().setValue("nckd_dateofoverdueforout", dynamicObject.get("dateofoverdueforout"));//出库失效提前期
-        this.getModel().setValue("nckd_enablewarnlead", dynamicObject.get("enablewarnlead"));//启用预警
-        this.getModel().setValue("nckd_warnleadtime", dynamicObject.get("warnleadtime"));//预警提前期
-        this.getModel().setValue("nckd_manustrategy", dynamicObject.get("manustrategy"));//制造策略
-        this.getModel().setValue("nckd_outboundrule", dynamicObject.get("outboundrule"));//出库规则
-
-
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_inventoryunit", dynamicObject.get("inventoryunit"));//库存单位
+            this.getModel().setValue("nckd_minpackqty", dynamicObject.get("minpackqty"));//最小包装量
+            this.getModel().setValue("nckd_ispurchaseinspect", dynamicObject.get("ispurchaseinspect"));//来料检验
+            this.getModel().setValue("nckd_ismininvalert", dynamicObject.get("ismininvalert"));//启用最小库存预警
+            this.getModel().setValue("nckd_mininvqty", dynamicObject.get("mininvqty"));//最小库存
+            this.getModel().setValue("nckd_issaftyinvalert", dynamicObject.get("issaftyinvalert"));//启用安全库存预警
+            this.getModel().setValue("nckd_saftyinvqty", dynamicObject.get("saftyinvqty"));//安全库存
+            this.getModel().setValue("nckd_ismaxinvalert", dynamicObject.get("ismaxinvalert"));//启用最大库存预警
+            this.getModel().setValue("nckd_maxinvqty", dynamicObject.get("maxinvqty"));//最大库存
+            this.getModel().setValue("nckd_lotcoderule", dynamicObject.get("lotcoderule"));//批号规则
+            this.getModel().setValue("nckd_enableshelflifemgr", dynamicObject.get("enableshelflifemgr"));//保质期管理
+            this.getModel().setValue("nckd_shelflifeunit", dynamicObject.get("shelflifeunit"));//保质期单位
+            this.getModel().setValue("nckd_shelflife", dynamicObject.get("shelflife"));//保质期
+            this.getModel().setValue("nckd_calculationforenddat", dynamicObject.get("calculationforenddate"));//到期日计算方式
+            this.getModel().setValue("nckd_leadtimeunit", dynamicObject.get("leadtimeunit"));//提前期单位
+            this.getModel().setValue("nckd_dateofoverdueforin", dynamicObject.get("dateofoverdueforin"));//入库失效提前期
+            this.getModel().setValue("nckd_dateofoverdueforout", dynamicObject.get("dateofoverdueforout"));//出库失效提前期
+            this.getModel().setValue("nckd_enablewarnlead", dynamicObject.get("enablewarnlead"));//启用预警
+            this.getModel().setValue("nckd_warnleadtime", dynamicObject.get("warnleadtime"));//预警提前期
+            this.getModel().setValue("nckd_manustrategy", dynamicObject.get("manustrategy"));//制造策略
+            this.getModel().setValue("nckd_outboundrule", dynamicObject.get("outboundrule"));//出库规则
+        }
     }
 
     //设置销售基本信息
     public void setBasicSalesInformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialsalinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_salesunit", dynamicObject.get("salesunit"));//销售单位
-        this.getModel().setValue("nckd_iscontrolsendqty", dynamicObject.get("iscontrolqty"));//控制发货数量
-        this.getModel().setValue("nckd_dlivrateceiling", dynamicObject.get("dlivrateceiling"));//发货超发比率(%)
-        this.getModel().setValue("nckd_dlivratefloor", dynamicObject.get("dlivratefloor"));//发货欠发比率(%)
-        this.getModel().setValue("nckd_regularpackagin", dynamicObject.get("nckd_regularpackaging"));//是否常规包装
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_salesunit", dynamicObject.get("salesunit"));//销售单位
+            this.getModel().setValue("nckd_iscontrolsendqty", dynamicObject.get("iscontrolqty"));//控制发货数量
+            this.getModel().setValue("nckd_dlivrateceiling", dynamicObject.get("dlivrateceiling"));//发货超发比率(%)
+            this.getModel().setValue("nckd_dlivratefloor", dynamicObject.get("dlivratefloor"));//发货欠发比率(%)
+        }
     }
 
     //设置生产基本信息
     public void setBasicProductionInformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_mftunit", dynamicObject.get("mftunit"));//生产计量单位
-        this.getModel().setValue("nckd_materialattri", dynamicObject.get("materialattr"));//物料属性
-        this.getModel().setValue("nckd_departmentorgid", dynamicObject.get("departmentorgid"));//生产部门
-        this.getModel().setValue("nckd_bomversionrule", dynamicObject.get("bomversionrule"));//BOM版本规则
-        this.getModel().setValue("nckd_isjointproduct", dynamicObject.get("isjointproduct"));//可联副产品
-        this.getModel().setValue("nckd_supplyorgunitid", dynamicObject.get("supplyorgunitid"));//供货库存组织
-        this.getModel().setValue("nckd_issuemode", dynamicObject.get("issuemode"));//领送料方式
-        this.getModel().setValue("nckd_isbackflush", dynamicObject.get("isbackflush"));//倒冲
-        this.getModel().setValue("nckd_regularpackaging", dynamicObject.get("nckd_regularpackaging"));//是否常规包装
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_mftunit", dynamicObject.get("mftunit"));//生产计量单位
+            this.getModel().setValue("nckd_materialattri", dynamicObject.get("materialattr"));//物料属性
+            this.getModel().setValue("nckd_departmentorgid", dynamicObject.get("departmentorgid"));//生产部门
+            this.getModel().setValue("nckd_bomversionrule", dynamicObject.get("bomversionrule"));//BOM版本规则
+            this.getModel().setValue("nckd_isjointproduct", dynamicObject.get("isjointproduct"));//可联副产品
+            this.getModel().setValue("nckd_supplyorgunitid", dynamicObject.get("supplyorgunitid"));//供货库存组织
+            this.getModel().setValue("nckd_issuemode", dynamicObject.get("issuemode"));//领送料方式
+            this.getModel().setValue("nckd_isbackflush", dynamicObject.get("isbackflush"));//倒冲
+        }
     }
 
     //设置核算基本信息
     public void setBasicaccountinginformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_materialcalinfo", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_group", dynamicObject.get("group"));//存货类别
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_group", dynamicObject.get("group"));//存货类别
+        }
     }
 
     //设置计划基本信息
     public void setBasicinformationplan(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", new QFilter[]{qFilter});
-        this.getModel().setValue("nckd_createorg", dynamicObject.get("createorg"));//计划信息创建组织
-        this.getModel().setValue("nckd_materialattr", dynamicObject.get("materialattr"));//物料属性
-        this.getModel().setValue("nckd_planmode", dynamicObject.get("planmode"));//计划方式
-        this.getModel().setValue("nckd_allowleadtime", dynamicObject.get("allowleadtime"));//允许提前期间（天）
-        this.getModel().setValue("nckd_leadadvance", dynamicObject.get("leadadvance"));//提前容差（天）
-        this.getModel().setValue("nckd_fallowdelayperiod", dynamicObject.get("allowdelayperiod"));//允许延后期间（天）
-        this.getModel().setValue("nckd_delaytolerance", dynamicObject.get("delaytolerance"));//延后容差（天）
+        if (dynamicObject != null) {
+            this.getModel().setValue("nckd_createorg", dynamicObject.get("createorg"));//计划信息创建组织
+            this.getModel().setValue("nckd_materialattr", dynamicObject.get("materialattr"));//物料属性
+            this.getModel().setValue("nckd_planmode", dynamicObject.get("planmode"));//计划方式
+            this.getModel().setValue("nckd_allowleadtime", dynamicObject.get("allowleadtime"));//允许提前期间（天）
+            this.getModel().setValue("nckd_leadadvance", dynamicObject.get("leadadvance"));//提前容差（天）
+            this.getModel().setValue("nckd_fallowdelayperiod", dynamicObject.get("allowdelayperiod"));//允许延后期间（天）
+            this.getModel().setValue("nckd_delaytolerance", dynamicObject.get("delaytolerance"));//延后容差（天）
+        }
     }
 
     //设置质检基本信息
     public void setBasicQualityInspectionInformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", new QFilter[]{qFilter});
-        if(dynamicObject != null && dynamicObject.getDynamicObjectCollection("entryentity") != null){
+        if (dynamicObject != null && dynamicObject.getDynamicObjectCollection("entryentity") != null) {
             dynamicObject.getDynamicObjectCollection("entryentity").stream().forEach(t -> {
                 int row = this.getModel().createNewEntryRow("nckd_entryentity");
                 this.getModel().setValue("nckd_inspecttype", t.get("inspecttype"), row);

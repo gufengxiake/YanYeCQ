@@ -44,6 +44,8 @@ public class ReceivingBillEditExtPlugin extends AbstractBillPlugIn {
             case "e_corebillno":
                 this.getCorebilltypeToChange();
                 break;
+            default:
+                break;
         }
     }
 

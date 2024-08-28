@@ -65,7 +65,6 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
                     new QFilter[]{new QFilter("invoicecode", QCP.equals, d.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, d.get("nckd_i_invoiceno")))});
             BigDecimal nckdIUsedamt = d.getBigDecimal("nckd_i_usedamt");
             updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
-
         }
         nckdInventry.clear();
         cfm.set("nckd_receiptinvoice",false);
@@ -156,13 +155,20 @@ public class CfmInterestBillListPlugin extends AbstractListPlugin {
             }
             //先清空发票
             DynamicObjectCollection entry = interestbill.getDynamicObjectCollection("nckd_inventry");
+            BigDecimal amount = BigDecimal.ZERO;//当前单据发票累加金额
+            BigDecimal actualinstamt = interestbill.getBigDecimal("actualinstamt");//当前付息金额
             for (DynamicObject d : entry) {
-                DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
-                        new QFilter[]{new QFilter("invoicecode", QCP.equals, d.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, d.get("nckd_i_invoiceno")))});
-                BigDecimal nckdIUsedamt = d.getBigDecimal("nckd_i_usedamt");
-                updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+                amount = amount.add(d.getBigDecimal("nckd_i_usedamt"));
             }
-            entry.clear();
+            if (amount.compareTo(actualinstamt) > -1){
+                for (DynamicObject d : entry) {
+                    DynamicObject invoice = BusinessDataServiceHelper.loadSingle("ap_invoice", "id,invoicecode,invoiceno,nckd_remainderamount",
+                            new QFilter[]{new QFilter("invoicecode", QCP.equals, d.get("nckd_i_invoicecode")).and(new QFilter("invoiceno", QCP.equals, d.get("nckd_i_invoiceno")))});
+                    BigDecimal nckdIUsedamt = d.getBigDecimal("nckd_i_usedamt");
+                    updateInvoice(invoice, nckdIUsedamt.add(invoice.getBigDecimal("nckd_remainderamount")));
+                }
+                entry.clear();
+            }
             int count = 1;
             for (ListSelectedRow date : returnData) {
                 DynamicObject invoice = BusinessDataServiceHelper.loadSingle(date.getPrimaryKeyValue(), "ap_invoice");
