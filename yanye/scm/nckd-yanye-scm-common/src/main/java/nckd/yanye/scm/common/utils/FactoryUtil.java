@@ -1,5 +1,11 @@
 package nckd.yanye.scm.common.utils;
-
+/**
+ * Module           :
+ * Description      : 5G工厂接口配置类
+ *
+ * @author : yaosijie
+ * @date : 2024/8/27
+ */
 public class FactoryUtil {
 
     /**
