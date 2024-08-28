@@ -15,7 +15,7 @@ import java.math.RoundingMode;
 import java.util.List;
 
 /**
- * Module           :财务云-出纳-收票登记-付款金额(大写)字段回写
+ * Module           :财务云-出纳-付款处理-付款金额(大写)字段回写
  * Description      :付款金额(大写)字段回写
  *
  * @author : guozhiwei
@@ -29,14 +29,14 @@ public class PayCasBillUpBillPlugin implements IEventServicePlugin {
 
     @Override
     public Object handleEvent(KDBizEvent evt) {
-        logger.info("收票登记保存处理执行插件:-------------------");
+        logger.info("付款处理保存处理执行插件:-------------------");
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
         DynamicObject casPaybill = null;
         for (String businesskey : businesskeys) {
             casPaybill = BusinessDataServiceHelper.loadSingle(businesskey, "cas_paybill");
             String nckdActpayamtupper = casPaybill.getString("nckd_actpayamtupper");
-            if(StringUtils.isEmpty(nckdActpayamtupper)){
+            if(StringUtils.isNotEmpty(nckdActpayamtupper)){
                 return null;
             }
             // 付款金额(大写)字段回写
