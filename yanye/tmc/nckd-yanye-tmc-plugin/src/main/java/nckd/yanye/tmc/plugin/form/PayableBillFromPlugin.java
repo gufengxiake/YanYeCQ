@@ -19,10 +19,18 @@ public class PayableBillFromPlugin extends AbstractBillPlugIn {
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);
         String name = e.getProperty().getName();
+        String payeetype = this.getModel().getValue("payeetype").toString();
+        if (name.equals("payeetype")) {
+            if (!payeetype.equals("bd_supplier")){
+                this.getModel().setValue("nckd_vendor",null);
+            }
+        }
         //收票人全称带出供应商
         if (name.equals("receiver")) {
-            DynamicObject receiver = (DynamicObject) this.getModel().getValue("receiver");
-            this.getModel().setValue("nckd_vendor",receiver.getPkValue());
+            if (payeetype.equals("bd_supplier")){
+                DynamicObject receiver = (DynamicObject) this.getModel().getValue("receiver");
+                this.getModel().setValue("nckd_vendor",receiver.getPkValue());
+            }
         }
     }
 }

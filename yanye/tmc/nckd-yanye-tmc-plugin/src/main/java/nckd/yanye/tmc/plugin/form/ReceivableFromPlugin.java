@@ -18,10 +18,18 @@ public class ReceivableFromPlugin extends AbstractBillPlugIn {
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);
         String name = e.getProperty().getName();
+        String payeetype = this.getModel().getValue("payeetype").toString();
+        if (name.equals("payeetype")){
+            if (!payeetype.equals("bd_customer")){
+                this.getModel().setValue("nckd_client",null);
+            }
+        }
         //交票人全称带出客户
         if (name.equals("deliver")) {
-            DynamicObject deliver = (DynamicObject) this.getModel().getValue("deliver");
-            this.getModel().setValue("nckd_client",deliver.getPkValue());
+            if (payeetype.equals("bd_customer")){
+                DynamicObject deliver = (DynamicObject) this.getModel().getValue("deliver");
+                this.getModel().setValue("nckd_client",deliver.getPkValue());
+            }
         }
     }
 }
