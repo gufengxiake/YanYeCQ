@@ -8,20 +8,17 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.dataentity.serialization.SerializationUtils;
-
 import kd.bos.entity.datamodel.IBillModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.RowDataEntity;
 import kd.bos.entity.datamodel.events.*;
 import kd.bos.entity.operate.PushAndSave;
-import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.EntryProp;
 import kd.bos.form.*;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Label;
-import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
@@ -47,11 +44,9 @@ import kd.fi.arapcommon.service.BillStatusCtrlService;
 import kd.fi.arapcommon.service.log.LogUtil;
 import kd.fi.arapcommon.util.DateUtils;
 import kd.fi.arapcommon.util.EmptyUtils;
-import kd.fi.arapcommon.util.OperationUtils;
 import nckd.yanye.tmc.plugin.operate.AsstactHelperPlugin;
 import nckd.yanye.tmc.plugin.operate.AsstactHelperShow;
 import org.apache.commons.lang3.ObjectUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -98,11 +93,6 @@ public class ApplyPayBillEdit extends ApBaseEdit {
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners(new String[]{"nckd_e_assacct"});
-//        this.addClickListeners(new String[]{"nckd_e_assacct"});
-//        this.addClickListeners(new String[]{"e_corebillno"});
-//        this.addClickListeners(new String[]{"sameinfo_view", "sameinfo_ignore", "refund_view", "refund_ignore"});
-//        this.addItemClickListeners(new String[]{"tbmain"});
-//        this.addItemClickListeners(new String[]{"advcontoolbarap2"});
         this.filterMaterialVersion();
     }
 
@@ -420,7 +410,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         // 结算方式
         boolean isAccept = false;
         DynamicObject paymode = (DynamicObject) this.getModel().getValue("paymode", curentrow);
-        if(ObjectUtils.isNotEmpty(paymode) && (paymode.getString("number").equals(BANK_ACCEP) || paymode.getString("number").equals(TRADE_ACCEP))){
+        if(ObjectUtils.isNotEmpty(paymode) && (BANK_ACCEP.equals(paymode.getString("number")) || TRADE_ACCEP.equals(paymode.getString("number")))){
             // 结算方式为承兑汇票
             isAccept = true;
         }
@@ -516,8 +506,8 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             Object entryKey = rowInfo.getEntryPrimaryKeyValue();
             Object pk = rowInfo.getPrimaryKeyValue();
             DynamicObject account;
-            if (!assacttype.equals("bd_customer") && !assacttype.equals("bd_supplier")) {
-                if (assacttype.equals("bos_user")) {
+            if (!"bd_customer".equals(assacttype) && !"bd_supplier".equals(assacttype)) {
+                if ("bos_user".equals(assacttype)) {
                     account = BusinessDataServiceHelper.loadSingleFromCache(pk, "er_payeer", "id,payerbank,payeraccount");
                     if (!ObjectUtils.isEmpty(account)) {
                         this.getModel().setValue("e_assacct", account.getString("payeraccount"), curentrow);

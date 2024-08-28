@@ -22,11 +22,11 @@ public class GmGuaranteecontractValueConversionRule implements JavaValueConversi
         String[] fguaranteeways = loadSingle.getString("guaranteeway").split(",");
         String value = Arrays.stream(fguaranteeways).filter(s1 -> !Objects.isNull(s1)).map(s1 -> {
             String way = null;
-            if (s1.equals("ensure")) {//保证
+            if ("ensure".equals(s1)) {//保证
                 way = "保证";
-            } else if (s1.equals("mortgage")) {//抵押
+            } else if ("mortgage".equals(s1)) {//抵押
                 way = "抵押";
-            } else if (s1.equals("pledge")) {//质押
+            } else if ("pledge".equals(s1)) {//质押
                 way = "质押";
             }
             return way;
