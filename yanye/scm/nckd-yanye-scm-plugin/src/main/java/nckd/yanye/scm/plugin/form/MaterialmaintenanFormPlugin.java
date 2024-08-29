@@ -94,9 +94,10 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
 
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         // 组织范围内属性页签
-        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
+        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
         if (loadSingle != null) {
-            List<String> materialproperty = Arrays.stream(loadSingle.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+            List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamicObject -> dynamicObject.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+            List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
             if (materialproperty.contains("2")) {
                 this.setEditShow(false);
             } else {
@@ -292,10 +293,11 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
 
                 // 组织范围内属性页签
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org");
-                DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
+                DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                 List<String> materialproperty = null;
                 if (dynamicObject != null) {
-                    materialproperty = Arrays.stream(dynamicObject.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                    List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> dynamic.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                    materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                 }
                 if (dynamicObject == null || !materialproperty.contains("2")) {
                     //计划基本信息
