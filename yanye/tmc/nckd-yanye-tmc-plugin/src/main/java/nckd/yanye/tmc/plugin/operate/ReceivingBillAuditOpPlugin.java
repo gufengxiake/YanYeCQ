@@ -84,9 +84,14 @@ public class ReceivingBillAuditOpPlugin extends AbstractOperationServicePlugIn {
                     String eCorebillno = casRecbillEntry.getString("e_corebillno");
                     QFilter qFilter = new QFilter("billno", QCP.equals, eCorebillno);
                     //应收金额 sumreceivableamount,已收金额 sumrecamount,待收金额 sumunrecamount
-                    DynamicObject loadSingleRecbill = BusinessDataServiceHelper.loadSingle("ocbsoc_saleorder", "id,sumreceivableamount,sumrecamount,sumunrecamount", qFilter.toArray());
+                    DynamicObject loadSingleRecbill = BusinessDataServiceHelper.loadSingle("ocbsoc_saleorder", "id,sumreceivableamount,sumrecamount,sumunrecamount,paystatus", qFilter.toArray());
                     loadSingleRecbill.set("sumrecamount", loadSingleRecbill.getBigDecimal("sumrecamount").add(eReceivableamt));
                     loadSingleRecbill.set("sumunrecamount", loadSingleRecbill.getBigDecimal("sumreceivableamount").subtract(loadSingleRecbill.getBigDecimal("sumrecamount")));
+                    if (loadSingleRecbill.getBigDecimal("sumunrecamount").compareTo(new BigDecimal(0)) == 0) {
+                        loadSingleRecbill.set("paystatus", "C");
+                    } else {
+                        loadSingleRecbill.set("paystatus", "B");
+                    }
                     SaveServiceHelper.update(loadSingleRecbill);
                 }
             }
