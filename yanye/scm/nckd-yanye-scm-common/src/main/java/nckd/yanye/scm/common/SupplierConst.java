@@ -3,10 +3,9 @@ package nckd.yanye.scm.common;
 /**
  * Module           : 基础服务云--基础资料模块--供应商单据
  * Description      : 单据常量类
- *
- * @author : Generator
- * @version : 1.0
- * @date : 2024-07-05
+ * @date            : 2024-08-29
+ * @author          : Generator
+ * @version         : 1.0
  */
 public class SupplierConst {
 
@@ -214,6 +213,11 @@ public class SupplierConst {
     public static final String ENTRY_LINKMAN_PHONECODE = "phonecode";
 
     /**
+     * Type:boolean,Name:删除标识
+     */
+    public static final String ENTRY_LINKMAN_DELETEIDENTITY = "deleteidentity";
+
+    /**
      * 分录entry_bank实体标识
      */
     public static final String ENTRYENTITYID_ENTRY_BANK = "entry_bank";
@@ -234,7 +238,7 @@ public class SupplierConst {
     public static final String ENTRY_BANK_MULTILANGUAGETEXT = "multilanguagetext";
 
     /**
-     * Type:DynamicObject,sourceEntityId:bd_currency,Name:币别
+     * Type:DynamicObject,sourceEntityId:bd_currency,Name:币种
      */
     public static final String ENTRY_BANK_CURRENCY = "currency";
 
@@ -299,6 +303,11 @@ public class SupplierConst {
     public static final String ENTRY_BANK_PAYEEPHONE = "payeephone";
 
     /**
+     * Type:DynamicObject,sourceEntityId:bd_bebank,Name:承兑银行
+     */
+    public static final String ENTRY_BANK_NCKD_ACCEPTINGBANK = "nckd_acceptingbank";
+
+    /**
      * Type:DynamicObject,sourceEntityId:bos_user,Name:负责人
      */
     public static final String PURCHASERID = "purchaserid";
@@ -324,7 +333,7 @@ public class SupplierConst {
     public static final String RECEIVINGSUPPLIERID = "receivingsupplierid";
 
     /**
-     * Type:DynamicObject,sourceEntityId:bd_currency,Name:交易币别
+     * Type:DynamicObject,sourceEntityId:bd_currency,Name:交易币
      */
     public static final String SETTLEMENTCYID = "settlementcyid";
 
@@ -494,7 +503,7 @@ public class SupplierConst {
     public static final String TAXRATE = "taxrate";
 
     /**
-     * Type:DynamicObject,sourceEntityId:bd_currency,Name:付款币别
+     * Type:DynamicObject,sourceEntityId:bd_currency,Name:付款币种
      */
     public static final String PAYMENTCURRENCY = "paymentcurrency";
 
@@ -789,6 +798,41 @@ public class SupplierConst {
     public static final String NCKD_PLATFORMSUPID = "nckd_platformsupid";
 
     /**
+     * Type:boolean,Name:是否承运商
+     */
+    public static final String NCKD_ISCYS = "nckd_iscys";
+
+    /**
+     * Type:String,Name:单位类型
+     */
+    public static final String NCKD_UNITTYPE = "nckd_unittype";
+
+    /**
+     * Type:String,Name:运输许可证编号
+     */
+    public static final String NCKD_LICENSENUMBER = "nckd_licensenumber";
+
+    /**
+     * Type:String,Name:运输方式
+     */
+    public static final String NCKD_TRANSPORTTYPE = "nckd_transporttype";
+
+    /**
+     * Type:DynamicObject,sourceEntityId:bd_taxrate,Name:承运商税率
+     */
+    public static final String NCKD_RATE = "nckd_rate";
+
+    /**
+     * Type:String,Name:供应商类型
+     */
+    public static final String NCKD_SUPPLIERTYPE = "nckd_suppliertype";
+
+    /**
+     * Type:String,Name:合作状态
+     */
+    public static final String NCKD_COOPERATESTATUS = "nckd_cooperatestatus";
+
+    /**
      * 分录billhead_lk实体标识
      */
     public static final String ENTRYENTITYID_BILLHEAD_LK = "billhead_lk";
@@ -858,6 +902,6 @@ public class SupplierConst {
      */
     public static final String NAME$VERSION_NAME$VERSION$CREATETIME = "name$version$createtime";
 
-    public static final String ALLPROPERTY = "id,number,name,status,creator,modifier,enable,createtime,modifytime,masterid,org,createorg,useorg,ctrlstrategy,sourcedata,bitindex,srcindex,srccreateorg,disabler,disabledate,entry_linkman.id,entry_linkman.contactperson,entry_linkman.multilanguagetext,entry_linkman.gender,entry_linkman.contactpersonpost,entry_linkman.dept,entry_linkman.phone,entry_linkman.fax,entry_linkman.email,entry_linkman.mobile,entry_linkman.postalcode,entry_linkman.address,entry_linkman.isdefault_linkman,entry_linkman.role,entry_linkman.invalid,entry_linkman.familyname,entry_linkman.givenname,entry_linkman.middlename,entry_linkman.alias,entry_linkman.associatedaddress,entry_linkman.phonecode,entry_bank.id,entry_bank.bankaccount,entry_bank.accountname,entry_bank.multilanguagetext,entry_bank.currency,entry_bank.isdefault_bank,entry_bank.bank,entry_bank.bankaccounttype,entry_bank.settlment,entry_bank.commissionbearer,entry_bank.liquidationparam,entry_bank.agentbank,entry_bank.agentbankaccount,entry_bank.iban,entry_bank.payeeadmindivision,entry_bank.payeeaddress,entry_bank.payeephone,purchaserid,purchasedeptid,invoicesupplierid,deliversupplierid,receivingsupplierid,settlementcyid,settlementtypeid,paycond,issuppcolla,adminorg,simplename,taxtype,type,country,bizpartner_address,linkman,bizpartner_phone,bizpartner_fax,societycreditcode,orgcode,biz_register_num,tx_register_no,artificialperson,internal_company,bizpartnerid,group,picturefield,bizpartner,malldate,mallstatus,regcapital,businessterm,businessscope,establishdate,entry_groupstandard.id,entry_groupstandard.standardid,entry_groupstandard.groupid,entry_groupstandard.supplierid,taxrate,paymentcurrency,enablevmi,bizfunction,invoicehold,payhold,purchasehold,admindivision,url,postal_code,invoicetype,employee,entry_address.id,entry_address.addnumber,entry_address.addlinkman,entry_address.addemail,entry_address.addtimezone,entry_address.default,entry_address.addid,entry_address.addstatus,entry_address.addinvalid,entry_address.addfulladdress,entry_address.supplieraddress,entry_address.addname,entry_address.addphone,entry_address.addadmindivision,entry_address.addsupplieraddrsspurpose,entry_address.addpostalcode,entry_address.addphonecode,entry_site.id,entry_site.sitenumber,entry_site.sitestatus,entry_site.sitebizfunction,entry_site.siteid,entry_site.sitecreateorg,entry_site.siteuseorg,entry_site.sitename,entry_site.siteaddress,paymentunit,matchingrule,invoiceaddress,idno,blocsupplier,simplepinyin,billaddress,supplier_status,invoicecategory,invaliddate,simplesupplier,taxregistplace,taxno,entry_tax.id,entry_tax.taxcertificate,entry_tax.effectivedate,entry_tax.expirydate,duns,curegcapital,approverid,approvedate,nckd_platformsupid,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid,name$version.id,name$version.name$version$name,name$version.multilanguagetext,name$version.name$version$startdate,name$version.name$version$enddate,name$version.name$version$enable,name$version.name$version$modifier,name$version.name$version$modifytime,name$version.name$version$creator,name$version.name$version$createtime";
+    public static final String ALLPROPERTY = "id,number,name,status,creator,modifier,enable,createtime,modifytime,masterid,org,createorg,useorg,ctrlstrategy,sourcedata,bitindex,srcindex,srccreateorg,disabler,disabledate,entry_linkman.id,entry_linkman.contactperson,entry_linkman.multilanguagetext,entry_linkman.gender,entry_linkman.contactpersonpost,entry_linkman.dept,entry_linkman.phone,entry_linkman.fax,entry_linkman.email,entry_linkman.mobile,entry_linkman.postalcode,entry_linkman.address,entry_linkman.isdefault_linkman,entry_linkman.role,entry_linkman.invalid,entry_linkman.familyname,entry_linkman.givenname,entry_linkman.middlename,entry_linkman.alias,entry_linkman.associatedaddress,entry_linkman.phonecode,entry_linkman.deleteidentity,entry_bank.id,entry_bank.bankaccount,entry_bank.accountname,entry_bank.multilanguagetext,entry_bank.currency,entry_bank.isdefault_bank,entry_bank.bank,entry_bank.bankaccounttype,entry_bank.settlment,entry_bank.commissionbearer,entry_bank.liquidationparam,entry_bank.agentbank,entry_bank.agentbankaccount,entry_bank.iban,entry_bank.payeeadmindivision,entry_bank.payeeaddress,entry_bank.payeephone,entry_bank.nckd_acceptingbank,purchaserid,purchasedeptid,invoicesupplierid,deliversupplierid,receivingsupplierid,settlementcyid,settlementtypeid,paycond,issuppcolla,adminorg,simplename,taxtype,type,country,bizpartner_address,linkman,bizpartner_phone,bizpartner_fax,societycreditcode,orgcode,biz_register_num,tx_register_no,artificialperson,internal_company,bizpartnerid,group,picturefield,bizpartner,malldate,mallstatus,regcapital,businessterm,businessscope,establishdate,entry_groupstandard.id,entry_groupstandard.standardid,entry_groupstandard.groupid,entry_groupstandard.supplierid,taxrate,paymentcurrency,enablevmi,bizfunction,invoicehold,payhold,purchasehold,admindivision,url,postal_code,invoicetype,employee,entry_address.id,entry_address.addnumber,entry_address.addlinkman,entry_address.addemail,entry_address.addtimezone,entry_address.default,entry_address.addid,entry_address.addstatus,entry_address.addinvalid,entry_address.addfulladdress,entry_address.supplieraddress,entry_address.addname,entry_address.addphone,entry_address.addadmindivision,entry_address.addsupplieraddrsspurpose,entry_address.addpostalcode,entry_address.addphonecode,entry_site.id,entry_site.sitenumber,entry_site.sitestatus,entry_site.sitebizfunction,entry_site.siteid,entry_site.sitecreateorg,entry_site.siteuseorg,entry_site.sitename,entry_site.siteaddress,paymentunit,matchingrule,invoiceaddress,idno,blocsupplier,simplepinyin,billaddress,supplier_status,invoicecategory,invaliddate,simplesupplier,taxregistplace,taxno,entry_tax.id,entry_tax.taxcertificate,entry_tax.effectivedate,entry_tax.expirydate,duns,curegcapital,approverid,approvedate,nckd_platformsupid,nckd_iscys,nckd_unittype,nckd_licensenumber,nckd_transporttype,nckd_rate,nckd_suppliertype,nckd_cooperatestatus,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid,name$version.id,name$version.name$version$name,name$version.multilanguagetext,name$version.name$version$startdate,name$version.name$version$enddate,name$version.name$version$enable,name$version.name$version$modifier,name$version.name$version$modifytime,name$version.name$version$creator,name$version.name$version$createtime";
 
 }

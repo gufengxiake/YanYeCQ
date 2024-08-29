@@ -252,26 +252,32 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 初始化结果json
         JSONObject resultJson = null;
 
+        // 采购单id
+        String orderIdPre = null;
         // 获取采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
             JSONObject xbJson = ZcPlatformJsonUtil.getXbJson(model);
             resultJson = ZcPlatformApiUtil.addOrder(xbJson, "XB");
+            orderIdPre = "XB-";
         } else if ("competitive".equals(procurements)) {
             JSONObject tpJson = ZcPlatformJsonUtil.getTpJson(model);
             resultJson = ZcPlatformApiUtil.addOrder(tpJson, "TP");
+            orderIdPre = "TP-";
         } else if ("singlesupplier".equals(procurements)) {
             JSONObject dyJson = ZcPlatformJsonUtil.getDyJson(model);
             resultJson = ZcPlatformApiUtil.addOrder(dyJson, "ZB");
+            orderIdPre = "ZB-";
         } else if ("bidprocurement".equals(procurements)) {
             JSONObject zbJson = ZcPlatformJsonUtil.getZbJson(model);
             resultJson = ZcPlatformApiUtil.addOrder(zbJson, "ZB");
+            orderIdPre = "ZB-";
         } else {
             throw new KDBizException("该单据不可推送!");
         }
 
         if (resultJson.getBooleanValue("success")) {
-            this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, resultJson.getJSONObject("data").getString("orderId"));
+            this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, orderIdPre + resultJson.getJSONObject("data").getString("orderId"));
             this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
             SaveServiceHelper.saveOperate(this.getView().getEntityId(), new DynamicObject[]{this.getModel().getDataEntity(true)});
             this.getView().showSuccessNotification("公告发布成功!");

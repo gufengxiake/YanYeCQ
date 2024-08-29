@@ -76,13 +76,29 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         JSONObject msgObj = JSON.parseObject(decryptMsg);
 
         // 采购单id
+        String procurements = msgObj.getString("purchaseType");
+        String orderIdPre = null;
+        switch (procurements) {
+            case "1":
+                orderIdPre = "ZB-";
+                break;
+            case "8":
+                orderIdPre = "TP-";
+                break;
+            case "2":
+                orderIdPre = "XB-";
+                break;
+            default:
+                break;
+        }
         String orderId = msgObj.getString("orderId");
         // 是否有苍穹对应申请单
         DynamicObject[] purapplyBillObj = BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
-                PurapplybillConst.BILLNO,
-                new QFilter[]{new QFilter(PurapplybillConst.NCKD_PURCHASEID, QCP.equals, orderId)}
+                PurapplybillConst.ALLPROPERTY,
+                new QFilter[]{new QFilter(PurapplybillConst.NCKD_PURCHASEID, QCP.equals, orderIdPre + orderId)}
         );
+
         if (purapplyBillObj.length == 0) {
             return CustomApiResult.success("success");
         }
@@ -93,6 +109,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 InforeceivebillConst.BILLNO,
                 new QFilter[]{new QFilter(InforeceivebillConst.BILLNO, QCP.equals, msgObj.getString("winId"))}
         );
+
         if (receiveBillObj.length > 0) {
             return CustomApiResult.success("success");
         }
@@ -118,12 +135,29 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 采购申请单单号
         String purapplyBillNo = purapplyBillObj[0].getString(PurapplybillConst.BILLNO);
         receiveObject.set(InforeceivebillConst.NCKD_PURAPPLYBILLNO, purapplyBillNo);
-        // 采购类型:单次采购 or 协议供货
-        String purchaseType = orderData.getString("negotiatePurchaseType");
-        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, purchaseType);
         // 采购方式
-        String procurements = msgObj.getString("purchaseType");
         receiveObject.set(InforeceivebillConst.NCKD_PROCUREMENTS, procurements);
+        // 采购类型:单次采购 or 协议供货
+        String purchaseType = null;
+        switch (purapplyBillObj[0].getString(PurapplybillConst.NCKD_PROCUREMENTS)) {
+            case "pricecomparison":
+            case "singlebrand":
+                purchaseType = purapplyBillObj[0].getString("nckd_purchasetype");
+                break;
+            case "competitive":
+                purchaseType = purapplyBillObj[0].getString("nckd_purchasetype1");
+                break;
+            case "singlesupplier":
+                purchaseType = purapplyBillObj[0].getString("nckd_purchasetype2");
+                break;
+            case "bidprocurement":
+                purchaseType = purapplyBillObj[0].getString("nckd_purchasetype3");
+                break;
+            default:
+                break;
+        }
+        receiveObject.set(InforeceivebillConst.NCKD_PURCHASETYPE, purchaseType);
+
         // todo 币别
         receiveObject.set(InforeceivebillConst.NCKD_CURRENCY, 1);
         // 采购单id
@@ -207,7 +241,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 BigDecimal offerPrice = item.getBigDecimal("offerPrice").divide(new BigDecimal(100), RoundingMode.HALF_UP);
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX, offerPrice);
                 // 税率
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getInteger("offerTaxRate"));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getBigDecimal("offerTaxRate").divide(new BigDecimal(100), RoundingMode.HALF_UP));
                 // 价税合计
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, offerPrice.multiply(item.getBigDecimal("awardNum")));
             }
@@ -234,20 +268,15 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
 
         // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
-        // 其他：直接生成采购订单
         if (supplier != null) {
-            if ("2".equals(procurements)) {
-                // 生成采购订单
-                if ("1".equals(purchaseType)) {
-                    addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
-                    // 生成采购合同
-                } else if ("2".equals(purchaseType)) {
-                    addContract(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
-                } else {
-                    receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "采购类型错误!");
-                }
-            } else {
+            // 生成采购订单
+            if ("1".equals(purchaseType)) {
                 addOrder(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
+                // 生成采购合同
+            } else if ("0".equals(purchaseType)) {
+                addContract(billNo, purapplyBillNo, totalPrice, receiveObject, supplier);
+            } else {
+                receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, "采购类型错误!");
             }
         }
 

@@ -3,10 +3,9 @@ package nckd.yanye.scm.common;
 /**
  * Module           : 供应链云--采购管理模块--信息接收单单据
  * Description      : 单据常量类
- *
- * @author : Generator
- * @version : 1.0
- * @date : 2024-07-29
+ * @date            : 2024-08-29
+ * @author          : Generator
+ * @version         : 1.0
  */
 public class InforeceivebillConst {
 
@@ -79,11 +78,6 @@ public class InforeceivebillConst {
     public static final String ENTRYENTITY_NCKD_MATERIALNAME = "nckd_materialname";
 
     /**
-     * Type:DynamicObject,sourceEntityId:bd_measureunits,Name:计量单位
-     */
-    public static final String ENTRYENTITY_NCKD_UNIT = "nckd_unit";
-
-    /**
      * Type:java.math.BigDecimal,Name:数量
      */
     public static final String ENTRYENTITY_NCKD_APPLYQTY = "nckd_applyqty";
@@ -119,6 +113,11 @@ public class InforeceivebillConst {
     public static final String ENTRYENTITY_NCKD_AMOUNTANDTAX = "nckd_amountandtax";
 
     /**
+     * Type:String,Name:物料行号
+     */
+    public static final String ENTRYENTITY_NCKD_SPUCODE = "nckd_spucode";
+
+    /**
      * Type:String,Name:采购申请单单号
      */
     public static final String NCKD_PURAPPLYBILLNO = "nckd_purapplybillno";
@@ -134,7 +133,7 @@ public class InforeceivebillConst {
     public static final String NCKD_GENERATIONSTATUS = "nckd_generationstatus";
 
     /**
-     * Type:String,Name:供应商/订单生成失败原因
+     * Type:String,Name:采购订单/合同生成失败原因
      */
     public static final String NCKD_FAILINFO = "nckd_failinfo";
 
@@ -183,12 +182,6 @@ public class InforeceivebillConst {
      */
     public static final String NCKD_ORDERID = "nckd_orderid";
 
-    /**
-     * Type:String,Name:成交id
-     */
-    public static final String NCKD_WINID = "nckd_winid";
+    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,entryentity.id,entryentity.modifierfield,entryentity.modifydatefield,entryentity.nckd_material,entryentity.nckd_materialname,entryentity.nckd_applyqty,entryentity.nckd_price,entryentity.nckd_priceandtax,entryentity.nckd_taxrate,entryentity.nckd_amount,entryentity.nckd_taxamount,entryentity.nckd_amountandtax,entryentity.nckd_spucode,nckd_purapplybillno,nckd_totalprice,nckd_generationstatus,nckd_failinfo,nckd_currency,nckd_winentryentity.id,nckd_winentryentity.nckd_supplierid,nckd_winentryentity.nckd_suppliername,nckd_winentryentity.nckd_uscc,nckd_winentryentity.nckd_bidprice,nckd_purchasetype,nckd_procurements,nckd_orderid";
 
-    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,entryentity.id,entryentity.modifierfield,entryentity.modifydatefield,entryentity.nckd_material,entryentity.nckd_materialname,entryentity.nckd_unit,entryentity.nckd_applyqty,entryentity.nckd_price,entryentity.nckd_priceandtax,entryentity.nckd_taxrate,entryentity.nckd_amount,entryentity.nckd_taxamount,entryentity.nckd_amountandtax,nckd_purapplybillno,nckd_totalprice,nckd_generationstatus,nckd_failinfo,nckd_currency,nckd_winentryentity.id,nckd_winentryentity.nckd_supplierid,nckd_winentryentity.nckd_suppliername,nckd_winentryentity.nckd_uscc,nckd_winentryentity.nckd_bidprice,nckd_purchasetype,nckd_procurements,nckd_orderid,nckd_winid";
-
-    public static final String ENTRYENTITY_NCKD_SPUCODE = "nckd_spucode";
 }

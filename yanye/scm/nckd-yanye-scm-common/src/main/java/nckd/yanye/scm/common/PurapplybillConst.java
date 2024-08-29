@@ -3,10 +3,9 @@ package nckd.yanye.scm.common;
 /**
  * Module           : 供应链云--采购管理模块--采购申请单单据
  * Description      : 单据常量类
- *
- * @author : Generator
- * @version : 1.0
- * @date : 2024-08-05
+ * @date            : 2024-08-29
+ * @author          : Generator
+ * @version         : 1.0
  */
 public class PurapplybillConst {
 
@@ -657,6 +656,9 @@ public class PurapplybillConst {
      * Type:String,Name:采购类型
      */
     public static final String NCKD_PURCHASETYPE = "nckd_purchasetype";
+    public static final String NCKD_PURCHASETYPE1 = "nckd_purchasetype1";
+    public static final String NCKD_PURCHASETYPE2 = "nckd_purchasetype2";
+    public static final String NCKD_PURCHASETYPE3 = "nckd_purchasetype3";
 
     /**
      * Type:String,Name:报价含税
@@ -739,7 +741,7 @@ public class PurapplybillConst {
     public static final String NCKD_REMARKS = "nckd_remarks";
 
     /**
-     * Type:String,Name:公告标题
+     * Type:String,Name:公告/邀请函标题
      */
     public static final String NCKD_ANNOUNCEMENTTITLE = "nckd_announcementtitle";
 
@@ -762,11 +764,6 @@ public class PurapplybillConst {
      * Type:DynamicObject,Name:供应商
      */
     public static final String NCKD_SUPPLIERS = "nckd_suppliers";
-
-    /**
-     * Type:String,Name:邀请函标题
-     */
-    public static final String NCKD_INVITATIONTITLE = "nckd_invitationtitle";
 
     /**
      * Type:String,Name:谈判采购名称
@@ -1024,21 +1021,6 @@ public class PurapplybillConst {
     public static final String NCKD_MARGINAMOUNT = "nckd_marginamount";
 
     /**
-     * Type:DynamicObject,sourceEntityId:bd_admindivision,Name:谈判地点
-     */
-    public static final String NCKD_NEGOTIATIONADDR = "nckd_negotiationaddr";
-
-    /**
-     * Type:DynamicObject,sourceEntityId:bd_admindivision,Name:项目地点
-     */
-    public static final String NCKD_PROJECTADDR = "nckd_projectaddr";
-
-    /**
-     * Type:DynamicObject,sourceEntityId:bd_admindivision,Name:招标地点
-     */
-    public static final String NCKD_TENDERADDR = "nckd_tenderaddr";
-
-    /**
      * Type:String,Name:已推送采购单对应id
      */
     public static final String NCKD_PURCHASEID = "nckd_purchaseid";
@@ -1052,11 +1034,6 @@ public class PurapplybillConst {
      * Type:String,Name:收货地址
      */
     public static final String NCKD_ADDRESS = "nckd_address";
-
-    /**
-     * Type:String,Name:已推送对应公告id
-     */
-    public static final String NCKD_NOTICEID = "nckd_noticeid";
 
     /**
      * Type:java.util.Date,Name:保证金缴纳截止时间
@@ -1084,6 +1061,51 @@ public class PurapplybillConst {
     public static final String NCKD_REVIEWID = "nckd_reviewid";
 
     /**
+     * Type:String,Name:谈判地点
+     */
+    public static final String NCKD_NEGOTIATIONADDR = "nckd_negotiationaddr";
+
+    /**
+     * Type:String,Name:招标地点
+     */
+    public static final String NCKD_TENDERADDR = "nckd_tenderaddr";
+
+    /**
+     * Type:String,Name:项目地点
+     */
+    public static final String NCKD_PROJECTADDR = "nckd_projectaddr";
+
+    /**
+     * Type:java.util.Date,Name:报名开始时间
+     */
+    public static final String NCKD_SIGNUPSTARTTIME = "nckd_signupstarttime";
+
+    /**
+     * Type:java.util.Date,Name:报名结束时间
+     */
+    public static final String NCKD_SIGNUPENDTIME = "nckd_signupendtime";
+
+    /**
+     * Type:java.util.Date,Name:开标时间
+     */
+    public static final String NCKD_OPENTIME = "nckd_opentime";
+
+    /**
+     * Type:boolean,Name:招采平台公告已作废
+     */
+    public static final String NCKD_CLOSED = "nckd_closed";
+
+    /**
+     * Type:String,Name:投入类型
+     */
+    public static final String NCKD_TRLX = "nckd_trlx";
+
+    /**
+     * Type:DynamicObject,sourceEntityId:bd_project,Name:项目
+     */
+    public static final String NCKD_XM = "nckd_xm";
+
+    /**
      * 分录billhead_lk实体标识
      */
     public static final String ENTRYENTITYID_BILLHEAD_LK = "billhead_lk";
@@ -1102,13 +1124,8 @@ public class PurapplybillConst {
      * Type:java.lang.Long,Name:源单主实体内码
      */
     public static final String BILLHEAD_LK_BILLHEAD_LK_SID = "billhead_lk_sid";
+
+    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,dept,bizuser,comment,closer,closedate,canceler,canceldate,billentry.id,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.baseqty,billentry.baseunit,billentry.entrycomment,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.materialmasterid,billentry.materialversion,billentry.auxunit,billentry.auxqty,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.entryreqorg,billentry.deliverdate,billentry.purleadday,billentry.purdate,billentry.entryrecorg,billentry.entryoperatorgroup,billentry.entryoperator,billentry.supplier,billentry.price,billentry.taxrate,billentry.priceandtax,billentry.amount,billentry.amountandtax,billentry.entrypurog,billentry.reqdate,billentry.applyqty,billentry.entrypurdept,billentry.orderbaseqty,billentry.receivebaseqty,billentry.invbaseqty,billentry.orderqty,billentry.entryrecdept,billentry.entryreqdept,billentry.taxamount,billentry.receiveqty,billentry.invqty,billentry.taxrateid,billentry.project,billentry.joinqty,billentry.joinbaseqty,billentry.srcbillentity,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryid,billentry.srcbillentryseq,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.tracknumber,billentry.configuredcode,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.salbillnumber,billentry.avinvbaseqty,billentry.entrychangetype,billentry.purmethod,billentry.bomtime,billentry.ecostcenter,billentry.isredordermate,billentry.warehouse,billentry.wbs,closestatus,cancelstatus,biztime,billcretype,lastupdateuser,lastupdatetime,unitsrctype,totalallamount,currency,istax,inquirystatus,bidstatus,changestatus,changedate,changer,subversion,version,nckd_procurements,nckd_pushed,nckd_whetherpush,nckd_inquirylistname,nckd_projecttype,nckd_quotation,nckd_detailedaddr,nckd_publishmedia,nckd_quotationsign,nckd_quotationattsign,nckd_deadline,nckd_purchasetype,nckd_includestax,nckd_allowforpartial,nckd_quotationcurrency,nckd_controlprice,nckd_totalprice,nckd_mustupatt,nckd_inquirymethod,nckd_comparmethod,nckd_publicscope,nckd_viewlist,nckd_registeraudit,nckd_reviewmethod,nckd_whetherreviewol,nckd_internaldocuments,nckd_inquirydocument,nckd_remarks,nckd_announcementtitle,nckd_publishset,nckd_timingtime,nckd_disposalmethod,nckd_suppliers,nckd_negotiatedname,nckd_negotiatednum,nckd_negotiatedbudget,nckd_regstarttime,nckd_subdeadtime,nckd_regendtime,nckd_projecttype1,nckd_disposalmethod1,nckd_quotation1,nckd_publishmedia1,nckd_negotiationmode,nckd_detailedaddr1,nckd_competitionmode,nckd_suppliers1,nckd_publicscope1,nckd_viewlist1,nckd_registeraudit1,nckd_reviewmethod1,nckd_whetherreviewol1,nckd_internaldocuments1,nckd_negotiatingdocuments,nckd_tenderfee,nckd_servicefee,nckd_projectname,nckd_projectamount,nckd_projecttype2,nckd_quotation2,nckd_detailedaddr2,nckd_procurementscopeatt,nckd_internaldocuments2,nckd_projectfiles,nckd_tendername,nckd_tenderestimate,nckd_bidmethod,nckd_quotation3,nckd_regstarttime1,nckd_regendtime1,nckd_bidopentime,nckd_projecttype3,nckd_detailedaddr3,nckd_biddingmethod,nckd_publishingmethod,nckd_publicscope2,nckd_viewlist2,nckd_registeraudit2,nckd_allowjoint,nckd_bidonline,nckd_tenderfee1,nckd_uploadfile,nckd_otherannexes,nckd_marginamount,nckd_purchaseid,nckd_bignoticecontent,nckd_address,nckd_depositendtime,nckd_internalattachments,nckd_suppliers2,nckd_suppliers3,nckd_reviewid,nckd_negotiationaddr,nckd_tenderaddr,nckd_projectaddr,nckd_signupstarttime,nckd_signupendtime,nckd_opentime,nckd_closed,nckd_trlx,nckd_xm,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid,nckd_purchasetype1,nckd_purchasetype2,nckd_purchasetype3";
+
     public static final String NCKD_NOTICECONTENT = "nckd_noticecontent";
-
-
-    public static final String ALLPROPERTY = "id,billno,billstatus,creator,modifier,auditor,auditdate,modifytime,createtime,org,billtype,biztype,dept,bizuser,comment,closer,closedate,canceler,canceldate,billentry.id,billentry.material,billentry.auxpty,billentry.qty,billentry.unit,billentry.baseqty,billentry.baseunit,billentry.entrycomment,billentry.materialname,billentry.rowclosestatus,billentry.rowterminatestatus,billentry.materialmasterid,billentry.materialversion,billentry.auxunit,billentry.auxqty,billentry.entrycreator,billentry.entrycreatetime,billentry.entrymodifier,billentry.entrymodifytime,billentry.linetype,billentry.entryreqorg,billentry.deliverdate,billentry.purleadday,billentry.purdate,billentry.entryrecorg,billentry.entryoperatorgroup,billentry.entryoperator,billentry.supplier,billentry.price,billentry.taxrate,billentry.priceandtax,billentry.amount,billentry.amountandtax,billentry.entrypurog,billentry.reqdate,billentry.applyqty,billentry.entrypurdept,billentry.orderbaseqty,billentry.receivebaseqty,billentry.invbaseqty,billentry.orderqty,billentry.entryrecdept,billentry.entryreqdept,billentry.taxamount,billentry.receiveqty,billentry.invqty,billentry.taxrateid,billentry.project,billentry.joinqty,billentry.joinbaseqty,billentry.srcbillentity,billentry.srcbillid,billentry.srcbillnumber,billentry.srcbillentryid,billentry.srcbillentryseq,billentry.mftorderid,billentry.mftordernumber,billentry.mftorderentryid,billentry.mftorderentryseq,billentry.producttype,billentry.tracknumber,billentry.configuredcode,billentry.salbillid,billentry.salbillentryid,billentry.salbillentryseq,billentry.salbillnumber,billentry.avinvbaseqty,billentry.entrychangetype,billentry.purmethod,billentry.bomtime,billentry.ecostcenter,billentry.isredordermate,billentry.warehouse,billentry.wbs,closestatus,cancelstatus,biztime,billcretype,lastupdateuser,lastupdatetime,unitsrctype,totalallamount,currency,istax,inquirystatus,bidstatus,changestatus,changedate,changer,subversion,version,nckd_procurements,nckd_pushed,nckd_whetherpush,nckd_inquirylistname,nckd_projecttype,nckd_quotation,nckd_detailedaddr,nckd_publishmedia,nckd_quotationsign,nckd_quotationattsign,nckd_deadline,nckd_purchasetype,nckd_includestax,nckd_allowforpartial,nckd_quotationcurrency,nckd_controlprice,nckd_totalprice,nckd_mustupatt,nckd_inquirymethod,nckd_comparmethod,nckd_publicscope,nckd_viewlist,nckd_registeraudit,nckd_reviewmethod,nckd_whetherreviewol,nckd_internaldocuments,nckd_inquirydocument,nckd_remarks,nckd_announcementtitle,nckd_publishset,nckd_timingtime,nckd_disposalmethod,nckd_suppliers,nckd_invitationtitle,nckd_negotiatedname,nckd_negotiatednum,nckd_negotiatedbudget,nckd_regstarttime,nckd_subdeadtime,nckd_regendtime,nckd_projecttype1,nckd_disposalmethod1,nckd_quotation1,nckd_publishmedia1,nckd_negotiationmode,nckd_detailedaddr1,nckd_competitionmode,nckd_suppliers1,nckd_publicscope1,nckd_viewlist1,nckd_registeraudit1,nckd_reviewmethod1,nckd_whetherreviewol1,nckd_internaldocuments1,nckd_negotiatingdocuments,nckd_tenderfee,nckd_servicefee,nckd_projectname,nckd_projectamount,nckd_projecttype2,nckd_quotation2,nckd_detailedaddr2,nckd_procurementscopeatt,nckd_internaldocuments2,nckd_projectfiles,nckd_tendername,nckd_tenderestimate,nckd_bidmethod,nckd_quotation3,nckd_regstarttime1,nckd_regendtime1,nckd_bidopentime,nckd_projecttype3,nckd_detailedaddr3,nckd_biddingmethod,nckd_publishingmethod,nckd_publicscope2,nckd_viewlist2,nckd_registeraudit2,nckd_allowjoint,nckd_bidonline,nckd_tenderfee1,nckd_uploadfile,nckd_otherannexes,nckd_marginamount,nckd_negotiationaddr,nckd_projectaddr,nckd_tenderaddr,nckd_purchaseid,nckd_bignoticecontent,nckd_address,nckd_noticeid,nckd_depositendtime,nckd_internalattachments,nckd_suppliers2,nckd_suppliers3,nckd_reviewid,billhead_lk.id,billhead_lk.billhead_lk_stableid,billhead_lk.billhead_lk_sbillid,billhead_lk.billhead_lk_sid";
-
-    public static final String NCKD_OPENTIME = "nckd_opentime";
-    public static final String NCKD_SIGNUPENDTIME = "nckd_signupendtime";
-    public static final String NCKD_SIGNUPSTARTTIME = "nckd_signupstarttime";
-    public static final String NCKD_CLOSED = "nckd_closed";
 }
