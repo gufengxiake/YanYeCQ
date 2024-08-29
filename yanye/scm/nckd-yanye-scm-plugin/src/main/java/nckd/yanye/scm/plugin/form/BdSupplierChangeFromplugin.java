@@ -27,9 +27,11 @@ import kd.bos.imageplatform.axis.IScanWebServiceImplServiceStub;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.EventObject;
 import java.util.List;
 
@@ -46,7 +48,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             "nckd_suppliermodify", "nckd_spname", "nckd_group", "nckd_societycreditcode", "nckd_artificialperson",
             "nckd_regcapital", "nckd_basedatafield", "nckd_linkman", "nckd_phone", "nckd_address", "nckd_postalcode",
             "nckd_buyer", "nckd_suppliertype", "nckd_risk", "nckd_bankaccount", "nckd_accountname", "nckd_bank",
-            "nckd_acceptingaccount", "nckd_acceptingbank", "nckd_licensenumber", "nckd_transporttype", "nckd_rate","nckd_currency"};
+            "nckd_acceptingaccount", "nckd_acceptingbank", "nckd_licensenumber", "nckd_transporttype", "nckd_rate",
+            "nckd_currency","nckd_cooperatestatus"};
 
     @Override
     public void registerListener(EventObject e) {
@@ -191,7 +194,6 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         if ("nckd_suppliermodify".equals(fieldKey)) {
             setSupplierModify(rowIndex);
         }
-
     }
 
     /**
@@ -224,6 +226,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
             this.getModel().setValue("nckd_suppliertype","factory",index);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),index);
+            this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
@@ -255,6 +258,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),newIndex);
             this.getModel().setValue("nckd_suppliertype","factory",newIndex);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),newIndex);
+            this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),newIndex);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),newIndex);
             this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),newIndex);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),newIndex);

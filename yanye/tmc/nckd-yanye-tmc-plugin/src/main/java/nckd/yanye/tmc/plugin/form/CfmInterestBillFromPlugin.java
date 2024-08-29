@@ -334,6 +334,7 @@ public class CfmInterestBillFromPlugin extends AbstractBillPlugIn {
     private QFilter setInvoiceFilter(DynamicObject dataEntity) {
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
         qFilter.and(new QFilter("org.id",QCP.equals,dataEntity.getDynamicObject("org").getPkValue()));
+        qFilter.and(new QFilter("asstactname",QCP.equals,dataEntity.getString("textcreditor")));
         qFilter.and(new QFilter("currency.id",QCP.equals,dataEntity.getDynamicObject("currency").getPkValue()));
         qFilter.and(new QFilter("nckd_remainderamount",QCP.large_than,0));
         /*DynamicObjectCollection cfms = dataEntity.getDynamicObjectCollection("nckd_inventry");

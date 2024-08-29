@@ -85,13 +85,11 @@ public class AsstactHelperPlugin {
                 // 是内部供应商
                 if("bd_supplier".equals(asstactType) && ObjectUtils.isNotEmpty(asstact.getDynamicObject("internal_company"))){
                     // 更新银行账号和银行信息
-
                     Map<String,Object> innerSupplier = isInnerSupplier(asstact.getPkValue());
                     if(innerSupplier != null){
                         accountOb = (String) innerSupplier.get("number");
                         bebankOb = (Long) innerSupplier.get("bankid");
                     }
-
                 }
 
                 settlementtypeId = asstact.getDynamicObject("settlementtypeid");
@@ -140,12 +138,7 @@ public class AsstactHelperPlugin {
                 QFilter qFilter2 = new QFilter("account.masterid", "=", amAccountbank.getPkValue());
                 // 合作金融机构
                 Object cooperationId = null;
-                DynamicObject billbank = BusinessDataServiceHelper.loadSingle("am_accountmaintenance","billbank.id",new QFilter[]{qFilter2});
-                if (ObjectUtils.isNotEmpty(billbank)) {
-                    cooperationId = amAccountbank.get("bank.id");
-                }else{
-                    cooperationId = billbank.getLong("billbank.id");
-                }
+                cooperationId = amAccountbank.get("bank.id");
                 // 合作金融机构信息
                 DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
                 map.put("bankid",bdFinorginfo.getLong("bebank.id"));

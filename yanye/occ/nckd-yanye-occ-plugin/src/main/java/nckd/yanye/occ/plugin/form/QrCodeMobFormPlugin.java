@@ -10,15 +10,21 @@ import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.botp.runtime.ConvertOperationResult;
+import kd.bos.entity.botp.runtime.PushArgs;
+import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.QRCode;
 import kd.bos.form.events.BeforeClosedEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.metadata.botp.ConvertRuleReader;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
@@ -26,9 +32,8 @@ import nckd.yanye.occ.plugin.mis.api.MisApiResponseVo;
 import nckd.yanye.occ.plugin.mis.sdk.QR002SDK;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.Date;
-import java.util.EventObject;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -112,7 +117,7 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                 //这个表示本次查询的结果成功与否
                 if ("00".equals(misApiResponse.getRetCode())) {
                     //解密数据
-                    String transResultStr = CCBMisSdk.CCBMisSdk_DataDecrypt(misApiResponse.getData(), "0C4E7AAC9CE14A9FB1E68DF96567D733");
+                    String transResultStr = CCBMisSdk.CCBMisSdk_DataDecrypt(misApiResponse.getData(), key);
                     logger.info("QrCodeMobFormPlugin " + transResultStr);
                     nckdPaylogRecord.set("nckd_respmsg", transResultStr);
                     OperationResult paylogRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
@@ -133,9 +138,73 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                         if (ObjectUtil.isNotEmpty(paytranrecord)) {
                             paytranrecord.set("nckd_paystatus", "A");
                         }
+                        //更新支付流水的支付状态为成功
                         SaveServiceHelper.update(paytranrecord);
                         logger.info("QrCodeMobFormPlugin 更新交易流水记录end");
-                        logger.info("QrCodeMobFormPlugin ");
+
+                        logger.info("QrCodeMobFormPlugin 下推生成收款单start");
+                        //（1）获取需要执行下推的源单数据，并封装数据包
+                        //获取源单id
+                        String billNo = Convert.toStr(customParams.get("billNo"));
+                        QFilter saleorderFilter = new QFilter("billno", QCP.equals, billNo);
+                        DynamicObject ocbsocSaleorder = QueryServiceHelper.queryOne("ocbsoc_saleorder", "*", saleorderFilter.toArray());
+                        Object pkid = ocbsocSaleorder.getPkValue();
+                        //构建选中行数据包
+                        List<ListSelectedRow> selectedRows = new ArrayList<>();
+                        ListSelectedRow selectedRow = new ListSelectedRow(pkid);
+                        selectedRows.add(selectedRow);
+                        //（2）获取单据转换规则
+                        //获取转换规则id
+                        ConvertRuleReader read = new ConvertRuleReader();
+                        List<String> loadRuleIds = read.loadRuleIds("ocbsoc_saleorder", "cas_recbill", false);
+                        //（3）创建下推参数
+                        // 创建下推参数
+                        PushArgs pushArgs = new PushArgs();
+                        // 源单标识，必填
+                        pushArgs.setSourceEntityNumber("ocbsoc_saleorder");
+                        // 目标单据标识，必填
+                        pushArgs.setTargetEntityNumber("cas_recbill");
+                        // 生成转换结果报告，必填
+                        pushArgs.setBuildConvReport(true);
+                        //不检查目标单新增权限,非必填
+                        pushArgs.setHasRight(true);
+                        //传入下推使用的转换规则id，不填则使用默认规则
+                        //pushArgs.setRuleId(loadRuleIds.get(0));
+                        //下推默认保存，必填
+                        pushArgs.setAutoSave(true);
+                        // 设置源单选中的数据包，必填
+                        pushArgs.setSelectedRows(selectedRows);
+                        //（4）执行下推操作，并确认是否执行成功
+
+                        // 执行下推操作
+                        ConvertOperationResult result = ConvertServiceHelper.push(pushArgs);
+                        //获取下推目标单id
+                        if (result.isSuccess()) {
+                            logger.info("QrCodeMobFormPlugin 下推生成收款单成功");
+                            String id = result.getTargetBillFormId();
+                            DynamicObject casRecbill = BusinessDataServiceHelper.loadSingle(id, "cas_recbill");
+                            //TODO 获取到收款单后需要将客户真正付款的金额和付款单的应收金额相比较，相同不更新，否则要更新
+                            BigDecimal payamount = Convert.toBigDecimal(customParams.get("payamount"));
+                            casRecbill.set("actrecamt", payamount);
+                            DynamicObjectCollection casRecbillColl = casRecbill.getDynamicObjectCollection("entry");
+                            DynamicObject casRecbillEntry = casRecbillColl.get(0);
+                            casRecbillEntry.set("e_receivableamt", payamount);
+                            casRecbillEntry.set("e_actamt", payamount);
+                            OperationResult casRecbillSaveResult = OperationServiceHelper.executeOperate("save", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
+                            //=========================================
+                            if (casRecbillSaveResult.isSuccess()) {
+                                logger.info("QrCodeMobFormPlugin 下推生成的收款单更新应收金额成功");
+                                OperationResult casRecbillSubmitResult = OperationServiceHelper.executeOperate("submit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
+                                if (casRecbillSubmitResult.isSuccess()) {
+                                    logger.info("QrCodeMobFormPlugin 下推生成的收款单提交成功");
+                                    OperationResult casRecbillAuditResult = OperationServiceHelper.executeOperate("audit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
+                                    if (casRecbillAuditResult.isSuccess()) {
+                                        logger.info("QrCodeMobFormPlugin 下推生成的收款单审核成功");
+                                    }
+                                }
+                            }
+                        }
+                        logger.info("QrCodeMobFormPlugin 下推生成收款单end");
                         break;
                     }
                 } else {

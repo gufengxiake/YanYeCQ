@@ -87,6 +87,11 @@ public class ReceivingBillAuditOpPlugin extends AbstractOperationServicePlugIn {
                     DynamicObject loadSingleRecbill = BusinessDataServiceHelper.loadSingle("ocbsoc_saleorder", "id,sumreceivableamount,sumrecamount,sumunrecamount", qFilter.toArray());
                     loadSingleRecbill.set("sumrecamount", loadSingleRecbill.getBigDecimal("sumrecamount").add(eReceivableamt));
                     loadSingleRecbill.set("sumunrecamount", loadSingleRecbill.getBigDecimal("sumreceivableamount").subtract(loadSingleRecbill.getBigDecimal("sumrecamount")));
+                    if (loadSingleRecbill.getBigDecimal("sumunrecamount").compareTo(new BigDecimal(0)) == 0) {
+                        loadSingleRecbill.set("paystatus", "C");
+                    } else {
+                        loadSingleRecbill.set("paystatus", "B");
+                    }
                     SaveServiceHelper.update(loadSingleRecbill);
                 }
             }

@@ -9,7 +9,9 @@ import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.operate.result.OperateErrorInfo;
 import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.entity.validate.ValidateResult;
 import kd.bos.exception.KDException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -22,6 +24,8 @@ import nckd.yanye.scm.common.utils.FactoryApiUtil;
 
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.stream.Collectors;
+
 /**
  * Module           :制造云-生产任务管理-生产工单(新)
  * Description      :定时任务通过物料-业务处理对应单生成负库存物料检查单
@@ -67,31 +71,32 @@ public class BussprocessorderTask extends AbstractTask {
              *  "4"：不分班次;
              */
             //构造map,key:物料生产信息id,value：5G智能工厂系统入参
-            Map<Object,String> stringMap = new HashMap<>();
+//            Map<Object,String> stringMap = new HashMap<>();
             for (DynamicObject dynamic : dynamicObjectCollection){
-                String parmeter = dynamic.getString("nckd_parameter");
+                String parmeter = dynamic.getString("nckd_parameter").replace("#","");
                 if (!"4".equals(dynamic.getString("nckd_teamsgroups"))){
                     parmeter = parmeter + "," + getMap().get(dynamic.getString("nckd_teamsgroups"));
                 }
                 if (dynamic.getBoolean("nckd_iscumulative")){
+                    String parameter = dynamic.getString("nckd_parameter").replace("#","");
                     //如果班组是早班并且是否为累计值为true时，需要构造当前数据班组为晚班的数据
                     if (ObjectUtil.equal("1",dynamic.getString("nckd_teamsgroups"))){
-                        String culparameter = dynamic.getString("nckd_parameter")+ "," + getMap().get("3");
+                        String culparameter = parameter+ "," + getMap().get("3");
                         cumList.add(culparameter);
                         //班组为不分班次并且是否为累计值为true时，需要构造当前数据班组为不分班次的数据
                     }else if (ObjectUtil.equal("4",dynamic.getString("nckd_teamsgroups"))){
-                        String culparameter = dynamic.getString("nckd_parameter");
-                        cumList.add(culparameter);
+//                        String culparameter = parameter;
+                        cumList.add(parameter);
                         //如果班组是晚班并且是否为累计值为true时，需要构造当前数据班组为晚班的数据
                     }else if (ObjectUtil.equal("3",dynamic.getString("nckd_teamsgroups"))){
-                        String culparameter = dynamic.getString("nckd_parameter")+","+getMap().get("3");
+                        String culparameter = parameter+","+getMap().get("3");
                         cumList.add(culparameter);
                     }
 
                 }
                 stringList.add(parmeter);
-                stringMap.put(dynamic.getDynamicObject("nckd_materielfield").getPkValue(),dynamic.getString("nckd_parameter")
-                        +","+getMap().get(dynamic.getString("nckd_teamsgroups")));
+//                stringMap.put(dynamic.getDynamicObject("nckd_materielfield").getPkValue(),dynamic.getString("nckd_parameter").replace("#","")
+//                        +","+getMap().get(dynamic.getString("nckd_teamsgroups")));
             }
             //昨天的日期，用于调用5G工厂接口昨天晚班的数据
 
@@ -121,24 +126,25 @@ public class BussprocessorderTask extends AbstractTask {
              */
             //回写物料中的数量
             dynamicObjectCollection.stream().forEach(t-> {
+                String parameter = t.getString("nckd_parameter");
                 if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("1",t.getString("nckd_teamsgroups"))){
                     //班组  3:晚班   1:早班   2:中班
-                    BigDecimal decimal = cumdataMap.get(t.getString("nckd_parameter") + "," + getMap().get("3"));
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter") + "," + getMap().get("1")).subtract(decimal));
+                    BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
+                    t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("1")).subtract(decimal));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("2",t.getString("nckd_teamsgroups"))) {
-                    BigDecimal decimal = dataMap.get(t.getString("nckd_parameter") + "," + getMap().get("1"));
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter") + "," + getMap().get("2")).subtract(decimal));
+                    BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("1"));
+                    t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("2")).subtract(decimal));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))) {
-                    BigDecimal decimal = dataMap.get(t.getString("nckd_parameter") + "," + getMap().get("2"));
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter") + "," + getMap().get("3")).subtract(decimal));
+                    BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("2"));
+                    t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("3")).subtract(decimal));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("4",t.getString("nckd_teamsgroups"))){
-                    BigDecimal decimal = cumdataMap.get(t.getString("nckd_parameter"));
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter")).subtract(decimal));
+                    BigDecimal decimal = cumdataMap.get(parameter);
+                    t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))){
-                    BigDecimal decimal = cumdataMap.get(t.getString("nckd_parameter") + "," + getMap().get("3"));
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter")).subtract(decimal));
+                    BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
+                    t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
                 }else {
-                    t.set("nckd_quantity", dataMap.get(t.getString("nckd_parameter")));
+                    t.set("nckd_quantity", dataMap.get(parameter));
                 }
             });
 //            stringMap.forEach((key,value)->{
@@ -149,7 +155,7 @@ public class BussprocessorderTask extends AbstractTask {
             //调用生产负库存的操作(负库存需要判断是5G工厂类型还是默认类型)  操作按钮：generate
             OperationResult operationResult = saveNegainventoryOrder(date,dynamicObject);
             //插入日志表
-//            saveLog(operationResult);
+            saveLog(operationResult,dynamicObject);
 
         }
 
@@ -174,7 +180,7 @@ public class BussprocessorderTask extends AbstractTask {
         negainventoryOrder.set("modifier", currUserId);
         negainventoryOrder.set("modifytime", new Date());
         negainventoryOrder.set("nckd_datasources", dynamicObject.getString("nckd_datasources"));
-        negainventoryOrder.set("nckd_teamsgroups", dynamicObject.getString("nckd_teamsgroups"));
+
         //分录赋值
         DynamicObjectCollection negainventoryOrderEntryColl = negainventoryOrder.getDynamicObjectCollection("nckd_negainentries");
         DynamicObjectCollection bussProcessOrderEntryColl = dynamicObject.getDynamicObjectCollection("nckd_bussinessentries");
@@ -182,6 +188,7 @@ public class BussprocessorderTask extends AbstractTask {
             DynamicObject negainventoryOrderEntry = negainventoryOrderEntryColl.addNew();
             //这一部分直接由物料-业务处理对应单 分录带过来
             DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
+            negainventoryOrderEntry.set("nckd_teamsgroups", e.getString("nckd_teamsgroups"));
             negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
             negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));
             negainventoryOrderEntry.set("nckd_isinventory", e.getBoolean("nckd_isinventory"));
@@ -202,7 +209,7 @@ public class BussprocessorderTask extends AbstractTask {
             negainventoryOrderEntry.set("nckd_basicunit", material.getDynamicObject("baseunit"));
         });
         //调用保存操作
-        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_negainventoryorder", new Object[]{negainventoryOrder.getPkValue()}, OperateOption.create());
+        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             return saveOperationResult;
         } else {
@@ -223,12 +230,27 @@ public class BussprocessorderTask extends AbstractTask {
         return saveOperationResult;
     }
 
-    public void saveLog(OperationResult operationResult){
+    public void saveLog(OperationResult operationResult,DynamicObject dynamicObject){
         DynamicObject log = BusinessDataServiceHelper.newDynamicObject("nckd_log");
-        log.set("","");
-        log.set("","");
-        log.set("","");
-        log.set("","");
+        log.set("nckd_iserror",!operationResult.isSuccess());//是否异常
+        log.set("nckd_upstream_doc",dynamicObject.getString("billno"));//上游单据编号
+        log.set("creator", RequestContext.get().getCurrUserId());
+        log.set("createtime", new Date());
+        log.set("modifier", RequestContext.get().getCurrUserId());
+        log.set("modifytime", new Date());
+        String msg = operationResult.getMessage();
+        List<String> errorMsgList = new ArrayList<>();
+        if (!operationResult.isSuccess()){
+            //获取分录返回异常列表，需要把列表中的数据整合成string
+            List<ValidateResult> validateResults = operationResult.getValidateResult().getValidateErrors();
+            for (ValidateResult validateResult : validateResults){
+                String key = validateResult.getValidatorKey();//操作类型
+                String errorMsg = validateResult.getAllErrorInfo().stream().map(OperateErrorInfo::getMessage).collect(Collectors.joining(","));
+                errorMsgList.add("操作类型"+key+"，异常信息："+errorMsg);
+            }
+        }
+        log.set("nckd_errorremark",msg+errorMsgList.stream().collect(Collectors.joining(",")));//描述+分录异常描述
+        OperationServiceHelper.executeOperate("save", "nckd_log", new DynamicObject[]{log}, OperateOption.create());
 
     }
 }

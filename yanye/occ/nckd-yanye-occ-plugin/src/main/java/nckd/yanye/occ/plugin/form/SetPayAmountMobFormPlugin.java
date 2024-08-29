@@ -190,6 +190,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                             qrcode.put("billNo", billNo);
                             qrcode.put("saleorgid", saleorgid);
                             qrcode.put("orderdate", orderdate);
+                            qrcode.put("payamount", payamount);
                             showParameter.setCustomParams(qrcode);
                             this.getView().showForm(showParameter);
                         }

@@ -1,5 +1,6 @@
 package nckd.yanye.occ.plugin.report;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
 import kd.bos.algo.Row;
@@ -25,7 +26,11 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
-        QFilter qFilter = new QFilter("1", QCP.equals, 1);
+        ArrayList<QFilter> qFilters = new ArrayList<>();
+        //限定源头是销售订单的出库单
+        QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"sm_salorder");
+        qFilters.add(filter);
+        DateTime start = null,end = null;
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
@@ -33,85 +38,121 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                 case "nckd_customer_q":
                     if (!(filterItem.getValue() == null)) {
                         Long nckd_customer_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("nckd_customer", QCP.equals, nckd_customer_q);
+                        QFilter qFilter = new QFilter("customer", QCP.equals, nckd_customer_q);
+                        qFilters.add(qFilter);
                     }
                     break;
                 // 查询条件发货日期,标识如不一致,请修改
                 case "nckd_fhdate_q_start":
                     if (!(filterItem.getDate() == null)) {
-                        qFilter = qFilter.and("detailentry.nckd_fhdate", QCP.large_equals, DateUtil.beginOfDay(filterItem.getDate()));
+                        start = DateUtil.beginOfDay(filterItem.getDate());
+
                     }
                     break;
                 case "nckd_fhdate_q_end":
                     if (!(filterItem.getDate() == null)) {
-                        qFilter = qFilter.and("detailentry.nckd_fhdate", QCP.less_equals, DateUtil.endOfDay(filterItem.getDate()));
+                        end =  DateUtil.endOfDay(filterItem.getDate());
+
                     }
                     break;
             }
         }
 
         String sFields =
-                //客户编码
-                "nckd_customer as nckd_customer ," +
+                         //客户编码
+                         "customer as nckd_customer ," +
 //                        存货编码
-                        "detailentry.material as nckd_material ," +
-//                        发货日期
-                        "detailentry.nckd_fhdate as nckd_fhdate ," +
+                        "billentry.material as nckd_material ," +
 //                        发货单号
-                        "detailentry.nckd_fhbillno as nckd_fhbillno ," +
+                        "billno as nckd_fhbillno ," +
 //                        发货数量
-                        "detailentry.quantity as nckd_quantity," +
-//                        途损数
-                        "detailentry.nckd_damageqty as nckd_damageqty," +
-//                        客户签收数量
-                        "detailentry.nckd_receiveqty as nckd_receiveqty," +
+                        "billentry.qty as nckd_quantity," +
+//                        销售单价
+                        "billentry.price as nckd_price," +
+//                        销售金额
+                        "billentry.amount as nckd_amount," +
+//                        税额
+                        "billentry.taxamount as nckd_taxamount," +
 //                        运价
-                        "detailentry.pricetax as nckd_pricetax," +
-//                        价税合计
-                        "detailentry.e_pricetaxtotal as nckd_e_pricetaxtotal," +
-//                        运费结算方式
-                        "nckd_freighttype as nckd_freighttype," +
-//                        磅单号
-                        "detailentry.nckd_poundnumber as nckd_poundnumber," +
-//                        车号
-                        "detailentry.nckd_licensenumber as nckd_licensenumber," +
-//                        船柜号
-                        "detailentry.nckd_shipnumber as nckd_shipnumber," +
-//                        报关单号
-                        "detailentry.nckd_declarationnumber as nckd_declarationnumber," +
-//                        运输合同号
-                        "detailentry.nckd_carriagenumber as nckd_carriagenumber," +
+                        "billentry.nckd_pricefieldyf1 as nckd_pricefieldyf1," +
+//                         运费结算方式
+                         "nckd_freighttype as nckd_freighttype," +
+//                      销售出库表体id
+                        "billentry.id as saleoutbodyid," +
 //                        核心单据行id
-                        "detailentry.corebillentryid as corebillentryid";
-        DataSet finapBill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "ap_finapbill", sFields, new QFilter[]{qFilter}, null);
-        finapBill = this.linkSignAtureBill(finapBill);
-        return finapBill.orderBy(finapBill.getRowMeta().getFieldNames());
+                        "billentry.mainbillentryid as mainbillentryid";
+        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
+        im_saloutbill = this.linkSignAtureBill(im_saloutbill);
+        if(start != null && end != null){
+            im_saloutbill = im_saloutbill.filter("nckd_outdate >= to_date('" +  start + "','yyyy-MM-dd')" ).
+                    filter("nckd_outdate <= to_date('" +  end + "','yyyy-MM-dd')" );
+        }
+        return im_saloutbill.orderBy(im_saloutbill.getRowMeta().getFieldNames());
     }
 
     //获取签收单  nckd_signaturebill
     public DataSet linkSignAtureBill(DataSet ds) {
         DataSet copy = ds.copy();
-        List<Long> corebillentryid = new ArrayList<>();
+        List<Long> mainbillentryid = new ArrayList<>();
         while (copy.hasNext()) {
             Row next = copy.next();
-            if (next.getLong("corebillentryid") != null) {
-                corebillentryid.add(next.getLong("corebillentryid"));
+            if (next.getLong("mainbillentryid") != null) {
+                mainbillentryid.add(next.getLong("mainbillentryid"));
             }
         }
-        if (corebillentryid.isEmpty()) return ds;
+        if (mainbillentryid.isEmpty()) return ds;
 
-        QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, corebillentryid.toArray(new Long[0]));
+        //关联销售订单
+        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryid.toArray(new Long[0]));
+        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder"
+                //      销售合同号
+                ,"nckd_salecontractno as nckd_salecontractno," +
+                //        运输合同号
+                        "nckd_trancontractno as nckd_trancontractno," +
+//                        销售订单表体id
+                        "billentry.id as orderbodyid",
+                new QFilter[]{orderFilter}, null);
+        ds = ds.leftJoin(sm_salorder).on("mainbillentryid","orderbodyid").select(ds.getRowMeta().getFieldNames(),sm_salorder.getRowMeta().getFieldNames()).finish();
 
+//        关联签收单
+        QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryid.toArray(new Long[0]));
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
+//                发货日期
+                "nckd_signdate as nckd_fhdate," +
+//                        合理途损+非合理途损 = 途损数量
+                        "entryentity.nckd_lossqty + entryentity.nckd_unableqty as nckd_damageqty," +
+//                        签收数量
+                        "entryentity.nckd_signqty as nckd_signqty,"+
+//                        磅单号
+                        "entryentity.nckd_eleno as nckd_eleno," +
+//                        车号
+                        "entryentity.nckd_cpno1 as nckd_cpno1," +
+//                        船柜号
+                        "entryentity.nckd_ship as nckd_ship," +
+//                        报关单号
+                        "nckd_customsno as nckd_customsno," +
 //                       目的地
                         "nckd_harbor as nckd_harbor," +
-//                        核心单据行id
-                        "entryentity.nckd_mainentrybill as nckd_mainentrybill," +
-//                        来源单据号
-                        "entryentity.nckd_srcbillnumber as nckd_srcbillnumber",
+//                        来源单据行id
+                        "entryentity.nckd_sourceentryid as nckd_sourceentryid",
                 new QFilter[]{signFilter}, null);
-        ds = ds.leftJoin(nckd_signaturebill).on("corebillentryid","nckd_mainentrybill").on("nckd_fhbillno","nckd_srcbillnumber")
+        ds = ds.leftJoin(nckd_signaturebill).on("saleoutbodyid","nckd_sourceentryid")
                 .select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
+
+        //关联开票申请单
+        QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryid.toArray(new Long[0]));
+        DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "sim_original_bill",
+                //查询开票申请单核心单据行id，
+                "sim_original_bill_item.corebillentryid as sim_corebillentryid, " +
+//                        开票日期，
+                        "billdate as nckd_invbilldate ," +
+//                        发票号
+                        "invoiceno as nckd_invbillno ," +
+//                        开票数量
+                        "sim_original_bill_item.num as nckd_qtyfinv ",new QFilter[]{aimFilter},null);
+        ds = ds.leftJoin(originalBill).on("mainbillentryid","sim_corebillentryid")
+                .select(ds.getRowMeta().getFieldNames(),originalBill.getRowMeta().getFieldNames()).finish();
         return ds;
     }
 }
