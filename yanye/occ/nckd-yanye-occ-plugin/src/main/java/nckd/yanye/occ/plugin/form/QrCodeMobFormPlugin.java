@@ -13,6 +13,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.QRCode;
@@ -148,7 +149,7 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                         String billNo = Convert.toStr(customParams.get("billNo"));
                         QFilter saleorderFilter = new QFilter("billno", QCP.equals, billNo);
                         DynamicObject ocbsocSaleorder = QueryServiceHelper.queryOne("ocbsoc_saleorder", "*", saleorderFilter.toArray());
-                        Object pkid = ocbsocSaleorder.getPkValue();
+                        Object pkid = ocbsocSaleorder.get("id");
                         //构建选中行数据包
                         List<ListSelectedRow> selectedRows = new ArrayList<>();
                         ListSelectedRow selectedRow = new ListSelectedRow(pkid);
@@ -177,32 +178,63 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                         //（4）执行下推操作，并确认是否执行成功
 
                         // 执行下推操作
-                        ConvertOperationResult result = ConvertServiceHelper.push(pushArgs);
+                        ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
                         //获取下推目标单id
                         if (result.isSuccess()) {
                             logger.info("QrCodeMobFormPlugin 下推生成收款单成功");
-                            String id = result.getTargetBillFormId();
-                            DynamicObject casRecbill = BusinessDataServiceHelper.loadSingle(id, "cas_recbill");
+                            Set<Object> targetBillIds = result.getTargetBillIds();
+                            Object[] targetBillIdArr = targetBillIds.stream().toArray();
+                            DynamicObject casRecbill = BusinessDataServiceHelper.loadSingle(targetBillIdArr[0], "cas_recbill");
                             //TODO 获取到收款单后需要将客户真正付款的金额和付款单的应收金额相比较，相同不更新，否则要更新
                             BigDecimal payamount = Convert.toBigDecimal(customParams.get("payamount"));
-                            casRecbill.set("actrecamt", payamount);
+                            casRecbill.set("actrecamt", payamount);//收款金额
+                            casRecbill.set("localamt", payamount);//折本位币
+                            casRecbill.set("unsettleamount", payamount);//未结算金额
+                            casRecbill.set("unsettleamountbase", payamount);//未结算金额(本位币)
+                            casRecbill.set("unmatchamountpay", payamount);//未匹配付款金额
+                            casRecbill.set("unmatchamountrec", payamount);//未匹配收款金额
                             DynamicObjectCollection casRecbillColl = casRecbill.getDynamicObjectCollection("entry");
                             DynamicObject casRecbillEntry = casRecbillColl.get(0);
-                            casRecbillEntry.set("e_receivableamt", payamount);
-                            casRecbillEntry.set("e_actamt", payamount);
+                            casRecbillEntry.set("e_receivableamt", payamount);//应收金额
+                            casRecbillEntry.set("e_receivablelocamt", payamount);//应收折本币
+                            casRecbillEntry.set("e_actamt", payamount);//实收金额
+                            casRecbillEntry.set("e_localamt", payamount);//实收折本币
+                            casRecbillEntry.set("e_unsettledamt", payamount);//未结算金额
+                            casRecbillEntry.set("e_unsettledlocalamt", payamount);//未结算金额折本位币
+                            casRecbillEntry.set("e_unlockamt", payamount);//未锁定金额
                             OperationResult casRecbillSaveResult = OperationServiceHelper.executeOperate("save", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
                             //=========================================
                             if (casRecbillSaveResult.isSuccess()) {
-                                logger.info("QrCodeMobFormPlugin 下推生成的收款单更新应收金额成功");
+                                logger.info("QrCodeMobFormPlugin 收款单后台更新应收金额成功");
                                 OperationResult casRecbillSubmitResult = OperationServiceHelper.executeOperate("submit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
                                 if (casRecbillSubmitResult.isSuccess()) {
-                                    logger.info("QrCodeMobFormPlugin 下推生成的收款单提交成功");
+                                    logger.info("QrCodeMobFormPlugin 收款单提交成功");
                                     OperationResult casRecbillAuditResult = OperationServiceHelper.executeOperate("audit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
                                     if (casRecbillAuditResult.isSuccess()) {
-                                        logger.info("QrCodeMobFormPlugin 下推生成的收款单审核成功");
+                                        logger.info("QrCodeMobFormPlugin 收款单审核成功");
+                                    } else {
+                                        List<IOperateInfo> allErrorOrValidateInfo = casRecbillAuditResult.getAllErrorOrValidateInfo();
+                                        for (int j = 0; j < allErrorOrValidateInfo.size(); j++) {
+                                            IOperateInfo iOperateInfo = allErrorOrValidateInfo.get(j);
+                                            String message = iOperateInfo.getMessage();
+                                            logger.info("QrCodeMobFormPlugin 收款单审核失败" + message);
+                                        }
+                                        logger.info("QrCodeMobFormPlugin 收款单审核失败");
                                     }
+                                } else {
+                                    List<IOperateInfo> allErrorOrValidateInfo = casRecbillSubmitResult.getAllErrorOrValidateInfo();
+                                    for (int j = 0; j < allErrorOrValidateInfo.size(); j++) {
+                                        IOperateInfo iOperateInfo = allErrorOrValidateInfo.get(j);
+                                        String message = iOperateInfo.getMessage();
+                                        logger.info("QrCodeMobFormPlugin 收款单提交失败" + message);
+                                    }
+                                    logger.info("QrCodeMobFormPlugin 收款单提交失败" + casRecbillSubmitResult.getMessage());
                                 }
+                            } else {
+                                logger.info("QrCodeMobFormPlugin 收款单后台更新应收金额失败" + casRecbillSaveResult.getMessage());
                             }
+                        } else {
+                            logger.info("QrCodeMobFormPlugin 下推生成收款单失败" + result.getMessage());
                         }
                         logger.info("QrCodeMobFormPlugin 下推生成收款单end");
                         break;
