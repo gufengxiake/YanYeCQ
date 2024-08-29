@@ -10,6 +10,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 
@@ -47,5 +48,13 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
+        for (DynamicObject data : rowData) {
+            for (int i = 1; i <= 6; i++) {
+                BigDecimal sbb = data.getBigDecimal("sbb" + i);
+                BigDecimal gzb = data.getBigDecimal("gzb" + i);
+                BigDecimal pzjl = data.getBigDecimal("pzjl" + i);
+                data.set("ce" + i, sbb.subtract(gzb).subtract(pzjl));
+            }
+        }
     }
 }
