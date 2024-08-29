@@ -73,12 +73,12 @@ public class BussprocessorderTask extends AbstractTask {
             //构造map,key:物料生产信息id,value：5G智能工厂系统入参
 //            Map<Object,String> stringMap = new HashMap<>();
             for (DynamicObject dynamic : dynamicObjectCollection){
-                String parmeter = dynamic.getString("nckd_parameter").replace("#","");
+                String parmeter = dynamic.getString("nckd_parameter").replaceFirst("#","");
                 if (!"4".equals(dynamic.getString("nckd_teamsgroups"))){
                     parmeter = parmeter + "," + getMap().get(dynamic.getString("nckd_teamsgroups"));
                 }
                 if (dynamic.getBoolean("nckd_iscumulative")){
-                    String parameter = dynamic.getString("nckd_parameter").replace("#","");
+                    String parameter = dynamic.getString("nckd_parameter").replaceFirst("#","");
                     //如果班组是早班并且是否为累计值为true时，需要构造当前数据班组为晚班的数据
                     if (ObjectUtil.equal("1",dynamic.getString("nckd_teamsgroups"))){
                         String culparameter = parameter+ "," + getMap().get("3");
@@ -100,8 +100,8 @@ public class BussprocessorderTask extends AbstractTask {
             }
             //昨天的日期，用于调用5G工厂接口昨天晚班的数据
 
-            Date dateTime = DateUtil.offsetDay(new Date(),-7);
-            Date yesterday = DateUtil.offsetDay(new Date(),2);
+            Date dateTime = DateUtil.offsetDay(new Date(),-3);
+            Date yesterday = DateUtil.offsetDay(new Date(),-4);
             //调用5G工厂接口：所有物料
             JSONObject resultJson = FactoryApiUtil.getFactoryInfo(stringList,dateTime);
             JSONArray jsonArray = resultJson.getJSONArray("data");
@@ -109,6 +109,21 @@ public class BussprocessorderTask extends AbstractTask {
             Map<String, BigDecimal> cumdataMap = new HashMap<>();
             for (int i = 0;i<jsonArray.size();i++){
                 dataMap.put(jsonArray.getJSONObject(i).getString("indexName"),jsonArray.getJSONObject(i).getBigDecimal("dataValue"));
+            }
+            //判断返回的参数是否有为空的数据，有则记录日志
+            List<String> msg = new ArrayList<>();
+            for (Map.Entry<String,BigDecimal> entry: dataMap.entrySet()){
+                if (null == entry.getValue()){
+                    msg.add(entry.getKey());
+                }
+            }
+            if (CollectionUtils.isNotEmpty(msg)){
+                OperationResult operation = new OperationResult();
+                operation.setSuccess(false);
+                operation.setMessage("分录中5G智能工厂系统入参字段："
+                        +msg.stream().collect(Collectors.joining(","))+"调用5G工厂接口查询参数dataValue为null");
+                saveLog(operation,dynamicObject);
+                continue;
             }
             //调用5G工厂接口：是否累计值为true的物料
             if (CollectionUtils.isNotEmpty(cumList)){
@@ -125,8 +140,8 @@ public class BussprocessorderTask extends AbstractTask {
              * 计算晚班的累计值，当天晚班的值减去当天中班的值
              */
             //回写物料中的数量
-            dynamicObjectCollection.stream().forEach(t-> {
-                String parameter = t.getString("nckd_parameter");
+            dynamicObjectCollection.forEach(t-> {
+                String parameter = t.getString("nckd_parameter").replaceFirst("#","");
                 if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("1",t.getString("nckd_teamsgroups"))){
                     //班组  3:晚班   1:早班   2:中班
                     BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
@@ -136,12 +151,12 @@ public class BussprocessorderTask extends AbstractTask {
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("2")).subtract(decimal));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("2"));
+                    if (decimal == null){
+                        decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
+                    }
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("3")).subtract(decimal));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("4",t.getString("nckd_teamsgroups"))){
                     BigDecimal decimal = cumdataMap.get(parameter);
-                    t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
-                }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))){
-                    BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
                 }else {
                     t.set("nckd_quantity", dataMap.get(parameter));
