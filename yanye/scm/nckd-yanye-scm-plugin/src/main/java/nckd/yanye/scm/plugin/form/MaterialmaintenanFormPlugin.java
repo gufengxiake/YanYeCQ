@@ -6,14 +6,12 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
-import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.OrgProp;
 import kd.bos.exception.KDBizException;
-import kd.bos.form.control.Control;
 import kd.bos.form.field.*;
 import kd.bos.form.field.events.AfterF7SelectEvent;
 import kd.bos.form.field.events.AfterF7SelectListener;
@@ -65,20 +63,6 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         this.getModel().setValue("nckd_createorganiza", dynamicObject);
         this.getModel().setValue("nckd_initiatingdepart", RequestContext.get().getOrgId());
         super.afterCreateNewData(e);
-
-        DynamicObject org = (DynamicObject) this.getModel().getValue("org");
-        // 组织范围内属性页签
-        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
-        if (loadSingle != null) {
-            List<String> materialproperty = Arrays.stream(loadSingle.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
-            if (materialproperty.contains("2")) {
-                this.setEditShow(false);
-            } else {
-                this.setEditShow(true);
-            }
-        } else {
-            this.setEditShow(true);
-        }
     }
 
     @Override
@@ -107,6 +91,20 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
             }
         }
+
+        DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+        // 组织范围内属性页签
+        DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
+        if (loadSingle != null) {
+            List<String> materialproperty = Arrays.stream(loadSingle.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+            if (materialproperty.contains("2")) {
+                this.setEditShow(false);
+            } else {
+                this.setEditShow(true);
+            }
+        } else {
+            this.setEditShow(true);
+        }
     }
 
     @Override
@@ -116,7 +114,7 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         if ("nckd_buyer".equals(name)) {
             //  根据采购组获取采购员
             DynamicObject purchaseorg = (DynamicObject) this.getModel().getValue("nckd_purchaseorg");
-            if(purchaseorg == null){
+            if (purchaseorg == null) {
                 throw new KDBizException("请先选择采购组");
             }
             DynamicObject operatorgroup = BusinessDataServiceHelper.loadSingle(purchaseorg.getPkValue(), "bd_operatorgroup");
@@ -190,8 +188,7 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 if ("1".equals(nckdDocumenttype)) {
                     this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
                     this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
-                }
-                if ("2".equals(nckdDocumenttype)) {
+                } else if ("2".equals(nckdDocumenttype)) {
                     this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
                 } else if ("4".equals(nckdDocumenttype)) {
                     this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
@@ -437,6 +434,7 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     public void setBasicQualityInspectionInformation(QFilter qFilter) {
         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", new QFilter[]{qFilter});
         if (dynamicObject != null && dynamicObject.getDynamicObjectCollection("entryentity") != null) {
+            this.getModel().deleteEntryData("nckd_entryentity");
             dynamicObject.getDynamicObjectCollection("entryentity").stream().forEach(t -> {
                 int row = this.getModel().createNewEntryRow("nckd_entryentity");
                 this.getModel().setValue("nckd_inspecttype", t.get("inspecttype"), row);

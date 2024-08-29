@@ -91,20 +91,32 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         String callBackId = messageBoxClosedEvent.getCallBackId();
         if ("addorderorcont".equals(callBackId)) {
             if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                // 查看供应商是否存在
+                String supplierId = (String) this.getModel().getValue("nckd_supplierid");
+                DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
+                        SupplierConst.FORMBILLID,
+                        SupplierConst.ALLPROPERTY,
+                        new QFilter[]{new QFilter(SupplierConst.NCKD_PLATFORMSUPID, QCP.equals, supplierId)}
+                );
+                if (dynamicObjects.length == 0) {
+                    throw new KDBizException("系统未找到中标供应商信息，请维护!");
+                }
+                DynamicObject supplier = dynamicObjects[0];
+
                 // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
                 // 其他：直接生成采购订单
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
                 String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
                 if ("2".equals(procurements)) {
                     if ("1".equals(purchaseType)) {
-                        addOrder();
+                        addOrder(supplier);
                     } else if ("2".equals(purchaseType)) {
-                        addContract();
+                        addContract(supplier);
                     } else {
                         throw new KDBizException("采购类型错误");
                     }
                 } else {
-                    addOrder();
+                    addOrder(supplier);
                 }
             }
         }
@@ -114,7 +126,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
      * 生成采购订单
      */
-    private void addOrder() {
+    private void addOrder(DynamicObject supplier) {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurorderbillConst.FORMBILLID,
@@ -173,6 +185,12 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
             // 设置含税单价
             setPriceandtax(tgtObj, this.getModel().getDataEntity(true));
 
+            // 供应商信息
+            tgtObj.set("supplier", supplier);
+            tgtObj.set("providersupplier", supplier);
+            tgtObj.set("invoicesupplier", supplier);
+            tgtObj.set("receivesupplier", supplier);
+
             SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
 
@@ -188,7 +206,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
      * 生成采购合同
      */
-    private void addContract() {
+    private void addContract(DynamicObject supplier) {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurcontractConst.FORMBILLID,
@@ -244,6 +262,13 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
             tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
             // 设置含税单价
             setPriceandtax(tgtObj, this.getModel().getDataEntity(true));
+
+            // 供应商信息
+            tgtObj.set("supplier", supplier);
+            tgtObj.set("providersupplier", supplier);
+            tgtObj.set("invoicesupplier", supplier);
+            tgtObj.set("receivesupplier", supplier);
+
             SaveServiceHelper.save(new DynamicObject[]{tgtObj});
 
             this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
@@ -360,7 +385,10 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
 
         DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
         for (DynamicObject obj : tgtMaterialEntry) {
-            obj.set("priceandtax", map.get(obj.getString("seq")));
+            BigDecimal seq = map.get(obj.getString("seq"));
+            boolean flag = seq != null;
+            obj.set("priceandtax", seq);
+            obj.set("nckd_topush", flag);
         }
     }
 

@@ -57,7 +57,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
 
     //获取要货订单相关信息
     public DataSet getSaleOrder(ReportQueryParam reportQueryParam){
-        QFilter qFilter = new QFilter("1", QCP.equals,1);
+        ArrayList<QFilter> qFilters = new ArrayList<>();
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
@@ -66,34 +66,37 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 case "nckd_saleorgid_q":
                     if(!(filterItem.getValue() == null)){
                         Long bizOrg = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("saleorgid", QCP.equals, bizOrg);
+                        QFilter qFilter = new QFilter("saleorgid", QCP.equals, bizOrg);
+                        qFilters.add(qFilter);
                     }
                     break;
                 // 查询条件销售部门,标识如不一致,请修改
                 case "nckd_departmentid_q":
                     if(! (filterItem.getValue() == null) ){
                         Long bizoperator =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("departmentid", QCP.equals, bizoperator);
+                        QFilter qFilter = new QFilter("departmentid", QCP.equals, bizoperator);
+                        qFilters.add(qFilter);
                     }
                     break;
                 // 查询条件客户名称,标识如不一致,请修改
                 case "nckd_customerid_q":
                     if(! (filterItem.getValue() == null) ){
                         Long customer =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("customerid", QCP.equals, customer);
+                        QFilter qFilter = new QFilter("customerid", QCP.equals, customer);
+                        qFilters.add(qFilter);
                     }
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "orderdate_start":
                     if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("orderdate", QCP.large_equals,
-                                DateUtil.beginOfDay(filterItem.getDate()));
+                        QFilter qFilter = new QFilter("orderdate", QCP.large_equals,DateUtil.beginOfDay(filterItem.getDate()));
+                        qFilters.add(qFilter);
                     }
                     break;
                 case "orderdate_end":
                     if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("orderdate", QCP.less_equals,
-                                DateUtil.endOfDay(filterItem.getDate()));
+                        QFilter qFilter = new QFilter("orderdate", QCP.less_equals,DateUtil.endOfDay(filterItem.getDate()));
+                        qFilters.add(qFilter);
                     }
                     break;
             }
@@ -112,7 +115,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 "itementry.subentryentity.id as orderdetailid" ;
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
-                new QFilter[]{qFilter},null);
+                qFilters.toArray(new QFilter[0]),null);
 
         return saleOrder;
     }

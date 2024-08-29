@@ -409,7 +409,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         }
         // 结算方式
         boolean isAccept = false;
-        DynamicObject paymode = (DynamicObject) this.getModel().getValue("paymode", curentrow);
+        DynamicObject paymode = (DynamicObject) this.getModel().getValue("e_settlementtype", curentrow);
         if(ObjectUtils.isNotEmpty(paymode) && (BANK_ACCEP.equals(paymode.getString("number")) || TRADE_ACCEP.equals(paymode.getString("number")))){
             // 结算方式为承兑汇票
             isAccept = true;
@@ -437,7 +437,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         }
         // 查询合作金融机构对应的行名行号信息
         DynamicObject bdFinorginfo = BusinessDataServiceHelper.loadSingle(cooperationId, "bd_finorginfo");
-        this.getModel().setValue("e_bebank", bdFinorginfo.getLong("bebank.id"), curentrow);
+        this.getModel().setValue("e_bebank", bdFinorginfo.getDynamicObject("bebank"), curentrow);
     }
 
 
