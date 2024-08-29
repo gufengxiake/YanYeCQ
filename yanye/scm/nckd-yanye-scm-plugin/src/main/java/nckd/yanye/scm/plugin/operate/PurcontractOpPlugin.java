@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.operate;
 
+import cn.hutool.core.util.ObjectUtil;
 import dm.jdbc.util.StringUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -68,7 +69,6 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                             .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getDynamicObject("material").getDynamicObject("masterid").getString("name")));
                     //构造查询条件 ，这里没办法 每个合同的条件都不一样
                     QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue())
-                            .and("supplier", QCP.equals, supplier.getPkValue())
                             .and("billstatus", QCP.equals, "C")
                             .and("validstatus", QCP.equals, "B")
                             .and("closestatus", QCP.equals, "A")
@@ -76,6 +76,9 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                             .and(new QFilter("biztimebegin", QCP.less_equals, biztimebegin).and("biztimeend", QCP.large_equals, biztimebegin)
                                     .or(new QFilter("biztimebegin", QCP.less_equals, biztimeend).and("biztimeend", QCP.large_equals, biztimeend))
                                     .or(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
+                    if (ObjectUtil.isNotEmpty(supplier)) {
+                        qFilter.and("supplier", QCP.equals, supplier.getPkValue());
+                    }
                     //String entityName, String selectProperties, QFilter[] filters
                     DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.material,billentry.seq", qFilter.toArray());
                     if (purcontractArr.length > 0) {
