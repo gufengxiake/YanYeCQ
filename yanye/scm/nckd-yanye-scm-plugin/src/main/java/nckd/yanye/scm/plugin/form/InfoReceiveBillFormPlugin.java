@@ -108,15 +108,14 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
 
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
                 String msg = "";
-                DynamicObject tgtObj;
+                DynamicObject tgtObj = null;
                 // 1-单次采购-下推采购订单；
                 if ("1".equals(purchaseType)) {
                     tgtObj = addOrder(supplier);
                     msg = "生成采购订单成功";
                     //2-协议采购-下推采购合同
                 } else if ("0".equals(purchaseType)) {
-//                    tgtObj = addOrder(supplier);
-                    tgtObj = addContract(supplier);
+                    tgtObj = addOrder(supplier);
                     msg = "生成采购合同成功";
                 } else {
                     throw new KDBizException("采购类型错误");
