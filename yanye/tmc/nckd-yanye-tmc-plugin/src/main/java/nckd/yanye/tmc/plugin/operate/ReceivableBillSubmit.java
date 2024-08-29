@@ -9,10 +9,7 @@ import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
-import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.validate.AbstractValidator;
-import kd.bos.entity.validate.ErrorLevel;
-import kd.bos.entity.validate.ValidationErrorInfo;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -30,7 +27,7 @@ import java.util.Map;
  * @author : xiaoxiaopeng
  * @date : 2024/8/27
  */
-public class ReceivableBillSave extends AbstractOperationServicePlugIn {
+public class ReceivableBillSubmit extends AbstractOperationServicePlugIn {
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

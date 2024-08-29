@@ -3,6 +3,13 @@ package nckd.yanye.tmc.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.form.operate.FormOperate;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+
+import java.util.EventObject;
 
 /**
  * Module           :财务云-资金-收票登记
@@ -30,6 +37,15 @@ public class ReceivableFromPlugin extends AbstractBillPlugIn {
                 DynamicObject deliver = (DynamicObject) this.getModel().getValue("deliver");
                 this.getModel().setValue("nckd_client",deliver.getPkValue());
             }
+        }
+    }
+
+    @Override
+    public void afterBindData(EventObject e) {
+        super.afterBindData(e);
+        Object value = this.getModel().getValue("billstatus");
+        if (!"C".equals(value)){
+            this.getView().setEnable(false,"nckd_client");
         }
     }
 }
