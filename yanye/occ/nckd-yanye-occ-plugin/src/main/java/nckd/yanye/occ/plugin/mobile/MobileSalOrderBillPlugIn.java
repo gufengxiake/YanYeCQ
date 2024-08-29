@@ -1,6 +1,11 @@
 package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.formplugin.base.OcbaseFormMobPlugin;
 import kd.occ.ocdma.formplugin.order.SaleOrderBillPlugin;
 
@@ -47,6 +52,23 @@ public class MobileSalOrderBillPlugIn extends OcbaseFormMobPlugin {
             this.getModel().setValue("nckd_mail",mail);
 
 
+        }
+
+        //给业务员赋值
+        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
+        if(user!=null){
+            String number=user.getString("number");
+            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
+                    .and("opergrptype", QCP.equals, "XSZ");
+            //查找业务员
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+                    "id", qFilter.toArray(), "");
+            if(!collections.isEmpty()){
+                DynamicObject operatorItem = collections.get(0);
+                String operatorId = operatorItem.getString("id");
+                this.getModel().setItemValueByID("nckd_salerid",operatorId);
+            }
         }
 
     }

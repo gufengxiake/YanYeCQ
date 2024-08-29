@@ -39,7 +39,8 @@ public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn 
                 }
             }
             dataObject.set("nckd_amountfieldys", count);
-            SaveServiceHelper.save(new DynamicObject[]{dataObject});
+            //
+            SaveServiceHelper.update(new DynamicObject[]{dataObject});
         }
     }
 }

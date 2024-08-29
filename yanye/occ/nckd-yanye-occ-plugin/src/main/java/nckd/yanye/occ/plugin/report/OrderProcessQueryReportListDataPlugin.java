@@ -48,9 +48,11 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
             }
         }
         //根据出库日期条件再过滤
-        if(outdate_start != null && outdate_end != null){
-            saleOrder = saleOrder.filter("nckd_outdate >= to_date('" +  outdate_start + "','yyyy-MM-dd')" ).
-                    filter("nckd_outdate <= to_date('" +  outdate_end + "','yyyy-MM-dd')" );
+        if(outdate_start != null ){
+            saleOrder = saleOrder.filter("nckd_outdate >= to_date('" +  outdate_start + "','yyyy-MM-dd hh:mm:ss')");
+        }
+        if( outdate_end != null){
+            saleOrder = saleOrder.filter("nckd_outdate <= to_date('" +  outdate_end + "','yyyy-MM-dd hh:mm:ss')");
         }
         return saleOrder;
     }

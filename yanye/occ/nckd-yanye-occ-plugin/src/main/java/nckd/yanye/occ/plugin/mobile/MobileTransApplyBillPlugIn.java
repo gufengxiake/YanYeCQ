@@ -57,10 +57,24 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
     @Override
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
-        DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
-        if (user != null) {
-            String number = user.getString("number");
-            this.getModel().setItemValueByNumber("nckd_ywy", number);
+        //默认单据类型为借货单
+        this.getModel().setItemValueByID("billtype","1994937113375673344");
+
+        //设置业务员
+        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
+        if(user!=null){
+            String number=user.getString("number");
+            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
+                    .and("opergrptype", QCP.equals, "XSZ");
+            //查找业务员
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+                    "id", qFilter.toArray(), "");
+            if(!collections.isEmpty()){
+                DynamicObject operatorItem = collections.get(0);
+                String operatorId = operatorItem.getString("id");
+                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            }
         }
     }
 
@@ -108,8 +122,9 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                             this.getView().showErrorNotification(errMessage.toString());
                             return;
                         }
-                        this.getView().setEnable(false, "nckd_save");//锁定按钮
-                        this.getView().setEnable(false, "nckd_submit");//锁定按钮
+                        this.getModel().setValue("billstatus","B");
+                        //this.getView().setEnable(false, "org","applydept","billtype","nckd_ywy","biztime","material","materialname","unit","qty","warehouse","inwarehouse","lotnumber");//锁定字段
+                        //this.getView().setEnable(false, "nckd_submit","nckd_save");//锁定按钮
                     } else {
                         this.getView().showErrorNotification("请先保存单据");
                         return;

@@ -2,9 +2,11 @@ package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.db.DB;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.*;
 import kd.bos.form.cardentry.CardEntry;
+import kd.bos.form.container.Tab;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.TabSelectEvent;
 import kd.bos.form.control.events.TabSelectListener;
@@ -86,6 +88,8 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
         }
     }
 
+
+
     public void tabSelected(TabSelectEvent tabSelectEvent) {
         switch (((Control)tabSelectEvent.getSource()).getKey().toLowerCase()) {
             case "tabap":
@@ -93,6 +97,23 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
                 MobileControlUtils.BillListRefresh(billList, new QFilter[]{this.getOrderFilter(tabSelectEvent.getTabKey())});
             default:
         }
+    }
+
+    public void propertyChanged(PropertyChangedArgs e) {
+        switch (e.getProperty().getName()) {
+            case "enddate":
+            case "startdate":
+            case "orderdatespan":
+                this.refreshBillList();
+            default:
+        }
+    }
+
+    private void refreshBillList() {
+        BillList billList = (BillList)this.getControl("billlistap");
+        Tab tab = (Tab)this.getControl("tabap");
+        String curTabKey = tab.getCurrentTab();
+        MobileControlUtils.BillListRefresh(billList, new QFilter[]{this.getOrderFilter(curTabKey)});
     }
     private QFilter getOrderFilter(String key) {
         QFilter filter = SaleOrderHelper.getOrderChannelFilter();
