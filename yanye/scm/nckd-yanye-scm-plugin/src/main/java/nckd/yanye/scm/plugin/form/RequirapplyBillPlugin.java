@@ -47,7 +47,6 @@ public class RequirapplyBillPlugin extends AbstractBillPlugIn {
         DynamicObject dept = (DynamicObject) this.getModel().getValue("dept");
         Object deptId = dept.getPkValue();
 
-
         //物料
         if (propName.equals("materialmasterid")) {
             //Date billDate = DateTime.now().toDate();
