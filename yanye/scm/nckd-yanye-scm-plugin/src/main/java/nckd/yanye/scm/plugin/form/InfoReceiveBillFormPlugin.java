@@ -109,13 +109,13 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
                 String msg = "";
                 DynamicObject tgtObj = null;
-                // 1-单次采购-下推采购订单；
+                // 1-单次采购-下推采购订单
                 if ("1".equals(purchaseType)) {
-                    tgtObj = addOrder(supplier);
+                    tgtObj = addOrder();
                     msg = "生成采购订单成功";
                     //2-协议采购-下推采购合同
                 } else if ("0".equals(purchaseType)) {
-                    tgtObj = addOrder(supplier);
+                    tgtObj = addContract();
                     msg = "生成采购合同成功";
                 } else {
                     throw new KDBizException("采购类型错误");
@@ -127,7 +127,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 // 上游信息接收单
                 tgtObj.set(PurorderbillConst.NCKD_UPINFORECEIVEBILL, this.getModel().getValue(InforeceivebillConst.BILLNO));
                 // 采购方式为询比：设置含税单价
-                if ("2".equals(this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE))) {
+                if ("2".equals(this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS))) {
                     setPriceandtax(tgtObj, this.getModel().getDataEntity(true));
                 }
 
@@ -153,7 +153,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      *
      * @return
      */
-    private DynamicObject addOrder(DynamicObject supplier) {
+    private DynamicObject addOrder() {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurorderbillConst.FORMBILLID,
@@ -202,7 +202,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
      *
      * @return
      */
-    private DynamicObject addContract(DynamicObject supplier) {
+    private DynamicObject addContract() {
         //如果下游有单据，打断操作
         DynamicObject[] billnos = BusinessDataServiceHelper.load(
                 PurcontractConst.FORMBILLID,
@@ -351,16 +351,23 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
 
 
+        // 财务信息：税额
+        BigDecimal totaltaxamount = BigDecimal.ZERO;
+        // 财务信息：金额
+        BigDecimal totalamount = BigDecimal.ZERO;
+        // 财务信息：价税合计
+        BigDecimal totalallamount = BigDecimal.ZERO;
         for (DynamicObject obj : tgtMaterialEntry) {
             String seq = obj.getString("seq");
-            BigDecimal priceandtax = map.get(seq).getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX);
+            DynamicObject dynamicObject = map.get(seq);
+            BigDecimal priceandtax = dynamicObject.getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX);
             boolean toPush = priceandtax != null;
             // 含税单价
             obj.set("priceandtax", priceandtax);
             // 是否来自招采平台推送
             obj.set("nckd_topush", toPush);
             // 税率(%)
-            BigDecimal taxrate = map.get(seq).getBigDecimal("nckd_taxrate");
+            BigDecimal taxrate = dynamicObject.getBigDecimal("nckd_taxrate");
             obj.set("taxrate", taxrate);
             // 税率
             obj.set("taxrateid", BusinessDataServiceHelper.load(
@@ -369,26 +376,31 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                     new QFilter[]{new QFilter("taxrate", QCP.equals, taxrate)}
             )[0]);
 
-
             // 价税合计 = 数量 * 含税单价
             BigDecimal amountandtax = obj.getBigDecimal("qty").multiply(obj.getBigDecimal("priceandtax"));
             obj.set("amountandtax", amountandtax);
             obj.set("curamountandtax", amountandtax);
+            totalallamount = totalallamount.add(amountandtax);
+
             // 单价=含税单价/（1+税率 / 100）
             BigDecimal price = obj.getBigDecimal("priceandtax").divide(BigDecimal.ONE.add(obj.getBigDecimal("taxrate").divide(new BigDecimal(100))), 2, RoundingMode.HALF_UP);
             obj.set("price", price);
+
             // 金额=单价*数量
             BigDecimal amount = price.multiply(obj.getBigDecimal("qty"));
             obj.set("amount", amount);
             obj.set("curamount", amount);
+            totalamount = totalamount.add(amount);
 
             // 税额 = 价税合计 - 金额
             BigDecimal taxAmount = amountandtax.subtract(amount);
             obj.set("taxamount", taxAmount);
             obj.set("curtaxamount", taxAmount);
+            totaltaxamount = totaltaxamount.add(taxAmount);
         }
-
-
+        tgtObj.set("totaltaxamount", totaltaxamount);
+        tgtObj.set("totalamount", totalamount);
+        tgtObj.set("totalallamount", totalallamount);
     }
 
 
