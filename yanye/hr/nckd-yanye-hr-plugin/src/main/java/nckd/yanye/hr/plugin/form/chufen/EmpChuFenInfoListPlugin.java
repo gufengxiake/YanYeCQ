@@ -23,6 +23,7 @@ public class EmpChuFenInfoListPlugin extends InfoClassifyListPlugin {
 
     }
 
+    // 这里的字段没要求可以不写，写了这里的字段在页面上就默认隐藏
     protected void customerVisibleColumnList(List<String> visibleColumnList) {
 //        visibleColumnList.add("nckd_chufenname");
 //        visibleColumnList.add("nckd_chufentype.name");
