@@ -128,6 +128,8 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
 
+        // 申请组织
+        receiveObject.set("nckd_org", purapplyBillObj[0].get(PurapplybillConst.ORG));
         // 单据编号
         String billNo = winData.getString("winId");
         receiveObject.set(InforeceivebillConst.BILLNO, billNo);
@@ -389,7 +391,6 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         } else {
             throw new KDBizException("生成采购合同失败！" + pushResult.getMessage());
         }
-
     }
 
 
@@ -491,16 +492,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         DynamicObjectCollection tgtMaterialEntry = tgtObj.getDynamicObjectCollection("billentry");
 
 
+        // 财务信息：税额
+        BigDecimal totaltaxamount = BigDecimal.ZERO;
+        // 财务信息：金额
+        BigDecimal totalamount = BigDecimal.ZERO;
+        // 财务信息：价税合计
+        BigDecimal totalallamount = BigDecimal.ZERO;
         for (DynamicObject obj : tgtMaterialEntry) {
             String seq = obj.getString("seq");
-            BigDecimal priceandtax = map.get(seq).getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX);
+            DynamicObject dynamicObject = map.get(seq);
+            BigDecimal priceandtax = dynamicObject.getBigDecimal(InforeceivebillConst.ENTRYENTITY_NCKD_PRICEANDTAX);
             boolean toPush = priceandtax != null;
             // 含税单价
             obj.set("priceandtax", priceandtax);
             // 是否来自招采平台推送
             obj.set("nckd_topush", toPush);
             // 税率(%)
-            BigDecimal taxrate = map.get(seq).getBigDecimal("nckd_taxrate");
+            BigDecimal taxrate = dynamicObject.getBigDecimal("nckd_taxrate");
             obj.set("taxrate", taxrate);
             // 税率
             obj.set("taxrateid", BusinessDataServiceHelper.load(
@@ -514,21 +522,27 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             BigDecimal amountandtax = obj.getBigDecimal("qty").multiply(obj.getBigDecimal("priceandtax"));
             obj.set("amountandtax", amountandtax);
             obj.set("curamountandtax", amountandtax);
+            totalallamount = totalallamount.add(amountandtax);
+
             // 单价=含税单价/（1+税率 / 100）
             BigDecimal price = obj.getBigDecimal("priceandtax").divide(BigDecimal.ONE.add(obj.getBigDecimal("taxrate").divide(new BigDecimal(100))), 2, RoundingMode.HALF_UP);
             obj.set("price", price);
+
             // 金额=单价*数量
             BigDecimal amount = price.multiply(obj.getBigDecimal("qty"));
             obj.set("amount", amount);
             obj.set("curamount", amount);
+            totalamount = totalamount.add(amount);
 
             // 税额 = 价税合计 - 金额
             BigDecimal taxAmount = amountandtax.subtract(amount);
             obj.set("taxamount", taxAmount);
             obj.set("curtaxamount", taxAmount);
+            totaltaxamount = totaltaxamount.add(taxAmount);
         }
-
-
+        tgtObj.set("totaltaxamount", totaltaxamount);
+        tgtObj.set("totalamount", totalamount);
+        tgtObj.set("totalallamount", totalallamount);
     }
 
 }
