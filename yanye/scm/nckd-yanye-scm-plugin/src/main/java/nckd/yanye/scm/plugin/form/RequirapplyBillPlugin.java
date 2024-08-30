@@ -63,7 +63,6 @@ public class RequirapplyBillPlugin extends AbstractBillPlugIn {
                 for (DynamicObject auxptyent : auxptyentry) {
                     String num=  DynamicObjectUtils.getDynamicObject(auxptyent,"auxpty").getString("number");
 //                     auxptyent.getDynamicObject("");
-
                     if("001".equals(num))
                     {
                         resut="A";
