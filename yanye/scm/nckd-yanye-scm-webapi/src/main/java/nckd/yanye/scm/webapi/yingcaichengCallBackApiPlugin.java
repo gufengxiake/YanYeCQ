@@ -312,6 +312,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             tgtObj.set("providersupplier", supplier);
             tgtObj.set("invoicesupplier", supplier);
             tgtObj.set("receivesupplier", supplier);
+
+            if ("conm_purcontract".equals(tgtObj.getDataEntityType().getName())) {
+                tgtObj.set("party2nd", supplier.getString("name"));
+            }
+
             OperationResult operationResult = SaveServiceHelper.saveOperate(formBillId, new DynamicObject[]{tgtObj});
             if (operationResult.isSuccess()) {
                 receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
@@ -552,10 +557,18 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             obj.set("taxamount", taxAmount);
             obj.set("curtaxamount", taxAmount);
             totaltaxamount = totaltaxamount.add(taxAmount);
+
+            // 采购合同：含税单价上下限
+            if ("conm_purcontract".equals(tgtObj.getDataEntityType().getName())) {
+                obj.set("nckd_priceandtaxup", priceandtax);
+                obj.set("nckd_priceandtaxlow", priceandtax);
+            }
         }
         tgtObj.set("totaltaxamount", totaltaxamount);
         tgtObj.set("totalamount", totalamount);
         tgtObj.set("totalallamount", totalallamount);
+
+
     }
 
 }

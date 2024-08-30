@@ -145,6 +145,11 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 tgtObj.set("invoicesupplier", supplier);
                 tgtObj.set("receivesupplier", supplier);
 
+
+                if ("conm_purcontract".equals(tgtObj.getDataEntityType().getName())) {
+                    tgtObj.set("party2nd", supplier.getString("name"));
+                }
+
                 OperationResult operationResult = SaveServiceHelper.saveOperate(formBillId, new DynamicObject[]{tgtObj});
 
                 if (operationResult.isSuccess()) {
@@ -409,6 +414,12 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
             obj.set("taxamount", taxAmount);
             obj.set("curtaxamount", taxAmount);
             totaltaxamount = totaltaxamount.add(taxAmount);
+
+            // 采购合同：含税单价上下限
+            if ("conm_purcontract".equals(tgtObj.getDataEntityType().getName())) {
+                obj.set("nckd_priceandtaxup", priceandtax);
+                obj.set("nckd_priceandtaxlow", priceandtax);
+            }
         }
         tgtObj.set("totaltaxamount", totaltaxamount);
         tgtObj.set("totalamount", totalamount);
