@@ -138,6 +138,7 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                         DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus", paytranrecordFilter.toArray());
                         if (ObjectUtil.isNotEmpty(paytranrecord)) {
                             paytranrecord.set("nckd_paystatus", "A");
+                            paytranrecord.set("nckd_querycount", i + 1);
                         }
                         //更新支付流水的支付状态为成功
                         SaveServiceHelper.update(paytranrecord);

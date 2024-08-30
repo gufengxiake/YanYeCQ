@@ -1,5 +1,6 @@
 package nckd.yanye.tmc.plugin.form;
 
+import cn.hutool.core.util.ObjectUtil;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.ObjectUtils;
@@ -13,6 +14,7 @@ import kd.bos.form.ShowFormHelper;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.list.ListShowParameter;
+import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.fi.cas.enums.ClaimCoreBillTypeEnum;
@@ -52,8 +54,14 @@ public class ReceivingBillEditExtPlugin extends AbstractBillPlugIn {
     private void getCorebilltypeToChange() {
         int iRow = this.getModel().getEntryCurrentRowIndex("entry");
         Object corebilltype = this.getModel().getValue("e_corebilltype", iRow);
+        Object value = this.getModel().getValue("payer");//收款人id
+        if (ObjectUtil.isEmpty(value)) {
+            this.getView().showErrorNotification("请先填写收款方信息");
+        }
         if ("ocbsoc_saleorder".equals(corebilltype)) {
             ListShowParameter lsp = ShowFormHelper.createShowListForm(String.valueOf(corebilltype), false, 2);
+            List<QFilter> qFilters = lsp.getListFilterParameter().getQFilters();
+            qFilters.add(new QFilter("saleorgid", QCP.equals, value));
             lsp.setCustomParam("ismergerows", Boolean.FALSE);
             CloseCallBack closeCallBack = new CloseCallBack(this, "e_corebillno_ext");
             lsp.setCloseCallBack(closeCallBack);
