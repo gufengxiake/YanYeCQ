@@ -54,14 +54,11 @@ public class ReceivingBillEditExtPlugin extends AbstractBillPlugIn {
     private void getCorebilltypeToChange() {
         int iRow = this.getModel().getEntryCurrentRowIndex("entry");
         Object corebilltype = this.getModel().getValue("e_corebilltype", iRow);
-        Object value = this.getModel().getValue("payer");//收款人id
-        if (ObjectUtil.isEmpty(value)) {
-            this.getView().showErrorNotification("请先填写收款方信息");
-        }
+        DynamicObject value = (DynamicObject)this.getModel().getValue("org");//收款人id
         if ("ocbsoc_saleorder".equals(corebilltype)) {
             ListShowParameter lsp = ShowFormHelper.createShowListForm(String.valueOf(corebilltype), false, 2);
             List<QFilter> qFilters = lsp.getListFilterParameter().getQFilters();
-            qFilters.add(new QFilter("saleorgid", QCP.equals, value));
+            qFilters.add(new QFilter("saleorgid", QCP.equals, value.getPkValue()));
             lsp.setCustomParam("ismergerows", Boolean.FALSE);
             CloseCallBack closeCallBack = new CloseCallBack(this, "e_corebillno_ext");
             lsp.setCloseCallBack(closeCallBack);
