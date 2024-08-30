@@ -4,12 +4,15 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.AppInfo;
 import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.ExtendedDataEntity;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.param.AppParam;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
+import kd.bos.entity.plugin.args.ReturnOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.entity.validate.ErrorLevel;
 import kd.bos.entity.validate.ValidationErrorInfo;
@@ -32,6 +35,30 @@ import java.util.Map;
  */
 public class ReceivableBillSave extends AbstractOperationServicePlugIn {
 
+
+    @Override
+    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
+        super.afterExecuteOperationTransaction(e);
+        DynamicObject[] dataEntities = e.getDataEntities();
+        for (DynamicObject dataEntity : dataEntities) {
+            String draftbillno = dataEntity.getString("draftbillno");
+            String payeetype = dataEntity.getString("payeetype");
+            if (StringUtils.isNotEmpty(draftbillno)) {
+                DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_sign_deal", "id,billno",
+                        new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
+                if (electronic != null) {
+                    if ("bd_customer".equals(payeetype)){
+                        DynamicObject deliver = dataEntity.getDynamicObject("deliver");
+                        if (deliver != null){
+                            dataEntity.set("nckd_client",deliver.getPkValue());
+                            SaveServiceHelper.update(dataEntity);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
@@ -42,16 +69,10 @@ public class ReceivableBillSave extends AbstractOperationServicePlugIn {
         fieldKeys.add("draftbillno");
     }
 
-    @Override
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        super.beforeExecuteOperationTransaction(e);
-
-    }
 
     @Override
     public void onAddValidators(AddValidatorsEventArgs e) {
         super.onAddValidators(e);
-
         e.addValidator(new AbstractValidator() {
             @Override
             public void validate() {
@@ -64,14 +85,7 @@ public class ReceivableBillSave extends AbstractOperationServicePlugIn {
                         DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_sign_deal", "id,billno",
                                 new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
                         if (electronic != null) {
-                            if ("bd_customer".equals(payeetype)){
-                                DynamicObject deliver = dataEntity.getDynamicObject("deliver");
-                                if (deliver != null){
-                                    dataEntity.set("nckd_client",deliver.getPkValue());
-                                    SaveServiceHelper.update(dataEntity);
-                                }
-                            }
-                            return;
+                            break;
                         }
                     }
                     if (!"bd_customer".equals(payeetype)){

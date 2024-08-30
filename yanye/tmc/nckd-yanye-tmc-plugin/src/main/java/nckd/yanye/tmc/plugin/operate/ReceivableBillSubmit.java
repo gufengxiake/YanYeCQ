@@ -55,22 +55,7 @@ public class ReceivableBillSubmit extends AbstractOperationServicePlugIn {
                 ExtendedDataEntity[] data = this.getDataEntities();
                 for (ExtendedDataEntity dt : data) {
                     DynamicObject dataEntity = dt.getDataEntity();
-                    String draftbillno = dataEntity.getString("draftbillno");
                     String payeetype = dataEntity.getString("payeetype");
-                    if (StringUtils.isNotEmpty(draftbillno)) {
-                        DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_sign_deal", "id,billno",
-                                new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
-                        if (electronic != null) {
-                            if ("bd_customer".equals(payeetype)){
-                                DynamicObject deliver = dataEntity.getDynamicObject("deliver");
-                                if (deliver != null){
-                                    dataEntity.set("nckd_client",deliver.getPkValue());
-                                    SaveServiceHelper.update(dataEntity);
-                                }
-                            }
-                            return;
-                        }
-                    }
                     if (!"bd_customer".equals(payeetype)){
                         Long pkValue = (Long) dataEntity.getDynamicObject("company").getPkValue();
                         AppInfo appInfo = AppMetadataCache.getAppInfo("cdm");
