@@ -5,6 +5,8 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.tx.TX;
 import kd.bos.db.tx.TXHandle;
+import kd.bos.entity.EntityMetadataCache;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
@@ -26,7 +28,10 @@ import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  * 信息接收单-表单插件
@@ -109,14 +114,17 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 String purchaseType = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURCHASETYPE);
                 String msg = "";
                 DynamicObject tgtObj = null;
+                String formBillId;
                 // 1-单次采购-下推采购订单
                 if ("1".equals(purchaseType)) {
                     tgtObj = addOrder();
-                    msg = "生成采购订单成功";
+                    msg = "生成采购订单";
+                    formBillId = PurorderbillConst.FORMBILLID;
                     //2-协议采购-下推采购合同
                 } else if ("0".equals(purchaseType)) {
                     tgtObj = addContract();
-                    msg = "生成采购合同成功";
+                    msg = "生成采购合同";
+                    formBillId = PurcontractConst.FORMBILLID;
                 } else {
                     throw new KDBizException("采购类型错误");
                 }
@@ -137,12 +145,19 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 tgtObj.set("invoicesupplier", supplier);
                 tgtObj.set("receivesupplier", supplier);
 
-                SaveServiceHelper.save(new DynamicObject[]{tgtObj});
+                OperationResult operationResult = SaveServiceHelper.saveOperate(formBillId, new DynamicObject[]{tgtObj});
 
-                this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
-                this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
-                SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
-                this.getView().showSuccessNotification(msg);
+                if (operationResult.isSuccess()) {
+                    this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
+                    this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, null);
+                    SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
+                    this.getView().showSuccessNotification(msg + "成功！");
+                } else {
+                    this.getModel().setValue(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
+                    this.getModel().setValue(InforeceivebillConst.NCKD_FAILINFO, operationResult.getMessage());
+                    SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
+                    this.getView().showErrorNotification(msg + "失败！" + operationResult.getMessage());
+                }
             }
         }
     }
@@ -166,27 +181,26 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
 
         //获取源单
         String purapplyBillNo = (String) this.getModel().getValue("nckd_purapplybillno");
-        DynamicObject srcObj = (BusinessDataServiceHelper.load(
+        DynamicObject[] srcObjs = (BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.ALLPROPERTY,
                 new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
-        ))[0];
+        ));
+        DynamicObject srcObj = srcObjs[0];
+
 
         // 构建下推参数
         PushArgs pushArgs = getPushArgs(srcObj, PurorderbillConst.FORMBILLID);
         // 调用下推引擎，下推目标单并保存
         try (TXHandle h = TX.required("addOrder")) {
             try {
-                ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+                ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
                 if (pushResult.isSuccess()) {
-                    Set<Object> targetBillIds = pushResult.getTargetBillIds();
-                    DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                            targetBillIds.toArray()[0],
-                            PurorderbillConst.FORMBILLID
-                    );
-                    return tgtObj;
+                    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+                    List<DynamicObject> targetDos = pushResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+                    return targetDos.get(0);
                 } else {
-                    throw new KDBizException("生成订单失败！" + pushResult.getMessage());
+                    throw new KDBizException("采购申请单生成采购订单失败！" + pushResult.getMessage() + "：" + pushResult.getBillReports());
                 }
             } catch (Throwable e) {
                 h.markRollback();
@@ -215,27 +229,25 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
 
         //获取源单
         String purapplyBillNo = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PURAPPLYBILLNO);
-        DynamicObject srcObj = (BusinessDataServiceHelper.load(
+        DynamicObject[] srcObjs = (BusinessDataServiceHelper.load(
                 PurapplybillConst.FORMBILLID,
                 PurapplybillConst.ALLPROPERTY,
                 new QFilter[]{new QFilter(PurapplybillConst.BILLNO, QCP.equals, purapplyBillNo)}
-        ))[0];
+        ));
+        DynamicObject srcObj = srcObjs[0];
 
         // 构建下推参数
         PushArgs pushArgs = getPushArgs(srcObj, PurcontractConst.FORMBILLID);
         // 调用下推引擎，下推目标单并保存
         try (TXHandle h = TX.required("addContract")) {
             try {
-                ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+                ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
                 if (pushResult.isSuccess()) {
-                    Set<Object> targetBillIds = pushResult.getTargetBillIds();
-                    DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                            targetBillIds.toArray()[0],
-                            PurcontractConst.FORMBILLID
-                    );
-                    return tgtObj;
+                    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+                    List<DynamicObject> targetDos = pushResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+                    return targetDos.get(0);
                 } else {
-                    throw new KDBizException("生成采购合同失败！" + pushResult.getMessage());
+                    throw new KDBizException("采购申请单生成采购合同失败！" + pushResult.getMessage() + "：" + pushResult.getBillReports());
                 }
             } catch (Throwable e) {
                 h.markRollback();
@@ -418,11 +430,11 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         // 必选，目标单标识
         pushArgs.setTargetEntityNumber(formbillid);
         // 可选，自动保存
-//        pushArgs.setAutoSave(true);
+        pushArgs.setAutoSave(false);
         // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
 //        pushArgs.setRuleId("1134727974310918144");
         // 是否输出详细错误报告
-        pushArgs.setBuildConvReport(false);
+        pushArgs.setBuildConvReport(true);
         // 必选，设置需要下推的源单及分录内码
         pushArgs.setSelectedRows(selectedRows);
         return pushArgs;

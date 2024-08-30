@@ -26,21 +26,24 @@ public class SupplierFromPlugin extends AbstractFormPlugin {
 
         // 保存或提交时根据社会统一代码获取招采平台供应商id
         if ("save".equals(operateKey) || "submit".equals(operateKey)) {
-            String societycreditcode = (String) this.getModel().getValue(SupplierConst.SOCIETYCREDITCODE);
-            //获取招采平台供应商列表
-            JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier();
-            //遍历招采平台供应商列表，对应社会统一代码与id
-            HashMap<String, String> supplierMap = new HashMap<>();
-            for (int i = 0; i < allSuppliers.size(); i++) {
-                JSONObject zcSupplier = allSuppliers.getJSONObject(i);
-                String socialCreditCode = zcSupplier.getString("socialCreditCode");
-                String companyId = zcSupplier.getString("companyId");
-                supplierMap.put(socialCreditCode, companyId);
-            }
-            supplierMap.put(null, null);
-            this.getModel().setValue(SupplierConst.NCKD_PLATFORMSUPID, supplierMap.get(societycreditcode));
-            args.setCancel(false);
+            try {
+                String societycreditcode = (String) this.getModel().getValue(SupplierConst.SOCIETYCREDITCODE);
+                //获取招采平台供应商列表
+                JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier();
+                //遍历招采平台供应商列表，对应社会统一代码与id
+                HashMap<String, String> supplierMap = new HashMap<>();
+                for (int i = 0; i < allSuppliers.size(); i++) {
+                    JSONObject zcSupplier = allSuppliers.getJSONObject(i);
+                    String socialCreditCode = zcSupplier.getString("socialCreditCode");
+                    String companyId = zcSupplier.getString("companyId");
+                    supplierMap.put(socialCreditCode, companyId);
+                }
+                supplierMap.put(null, null);
+                this.getModel().setValue(SupplierConst.NCKD_PLATFORMSUPID, supplierMap.get(societycreditcode));
+            } catch (Exception e) {
 
+            }
+            args.setCancel(false);
         }
     }
 

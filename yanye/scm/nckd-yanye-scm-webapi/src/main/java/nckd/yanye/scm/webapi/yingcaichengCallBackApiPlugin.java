@@ -5,9 +5,12 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.EntityMetadataCache;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -27,7 +30,10 @@ import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * 招采平台回调api
@@ -273,18 +279,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         try {
             DynamicObject tgtObj = null;
-            // 询比：1-单次采购-下推采购订单；2-协议采购-下推采购合同
+            String formBillId = null;
             if (supplier != null) {
                 // 生成采购订单
                 if ("1".equals(purchaseType)) {
                     tgtObj = addOrder(billNo, purapplyBillNo);
+                    formBillId = PurorderbillConst.FORMBILLID;
                     // 生成采购合同
                 } else if ("0".equals(purchaseType)) {
                     tgtObj = addContract(billNo, purapplyBillNo);
-                } else {
-                    msg = "采购类型错误!";
+                    formBillId = PurcontractConst.FORMBILLID;
                 }
             }
+
+            if (tgtObj == null) {
+                throw new KDBizException("采购类型错误");
+            }
+
             // 招采平台价税合计
             tgtObj.set(PurorderbillConst.NCKD_TOTALPRICE, totalPrice);
             // 上游采购申请单
@@ -301,15 +312,23 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             tgtObj.set("providersupplier", supplier);
             tgtObj.set("invoicesupplier", supplier);
             tgtObj.set("receivesupplier", supplier);
-
-            SaveServiceHelper.save(new DynamicObject[]{tgtObj});
+            OperationResult operationResult = SaveServiceHelper.saveOperate(formBillId, new DynamicObject[]{tgtObj});
+            if (operationResult.isSuccess()) {
+                receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
+                msg = null;
+            } else {
+                receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, false);
+                msg = operationResult.getMessage();
+            }
         } catch (Exception e) {
+            // 保存信息接收单
+            receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, e.getMessage());
+            SaveServiceHelper.save(new DynamicObject[]{receiveObject});
             return CustomApiResult.success("success");
         }
-        receiveObject.set(InforeceivebillConst.NCKD_GENERATIONSTATUS, true);
-        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, null);
 
         // 保存信息接收单
+        receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, msg);
         SaveServiceHelper.save(new DynamicObject[]{receiveObject});
         return CustomApiResult.success("success");
     }
@@ -340,14 +359,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 构建下推参数
         PushArgs pushArgs = getPushArgs(srcObj, PurorderbillConst.FORMBILLID);
         // 调用下推引擎，下推目标单并保存
-        ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+        ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
         if (pushResult.isSuccess()) {
-            Set<Object> targetBillIds = pushResult.getTargetBillIds();
-            DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds.toArray()[0],
-                    PurorderbillConst.FORMBILLID
-            );
-            return tgtObj;
+            MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+            List<DynamicObject> targetDos = pushResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+            return targetDos.get(0);
         } else {
             throw new KDBizException("生成订单失败！" + pushResult.getMessage());
         }
@@ -380,14 +396,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 构建下推参数
         PushArgs pushArgs = getPushArgs(srcObj, PurcontractConst.FORMBILLID);
         // 调用下推引擎，下推目标单并保存
-        ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+        ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
         if (pushResult.isSuccess()) {
-            Set<Object> targetBillIds = pushResult.getTargetBillIds();
-            DynamicObject tgtObj = BusinessDataServiceHelper.loadSingle(
-                    targetBillIds.toArray()[0],
-                    PurcontractConst.FORMBILLID
-            );
-            return tgtObj;
+            MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+            List<DynamicObject> targetDos = pushResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+            return targetDos.get(0);
         } else {
             throw new KDBizException("生成采购合同失败！" + pushResult.getMessage());
         }
@@ -469,11 +482,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 必选，目标单标识
         pushArgs.setTargetEntityNumber(formbillid);
         // 可选，自动保存
-//        pushArgs.setAutoSave(true);
+        pushArgs.setAutoSave(false);
         // 可选，设置单据转换规则的id，如果没有设置，会自动匹配一个规则进行转换
 //        pushArgs.setRuleId("1134727974310918144");
         // 是否输出详细错误报告
-        pushArgs.setBuildConvReport(false);
+        pushArgs.setBuildConvReport(true);
         // 必选，设置需要下推的源单及分录内码
         pushArgs.setSelectedRows(selectedRows);
         return pushArgs;
