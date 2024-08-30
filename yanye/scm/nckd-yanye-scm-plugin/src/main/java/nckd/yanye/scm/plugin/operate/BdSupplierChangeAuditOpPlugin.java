@@ -147,7 +147,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
 
-                        if (!entity.get("nckd_spname").equals(entry.get(t-1).get("nckd_spname"))){
+                        if (!entity.get("nckd_spname").equals(bdSupplier.getString("name"))){
                             DynamicObjectCollection nameVersionCol = bdSupplier.getDynamicObjectCollection("name$version");
                             if (nameVersionCol.size() > 0){
                                 DynamicObject col = nameVersionCol.addNew();

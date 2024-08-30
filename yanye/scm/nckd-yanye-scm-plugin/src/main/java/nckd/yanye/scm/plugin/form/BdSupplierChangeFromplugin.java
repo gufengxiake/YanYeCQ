@@ -36,7 +36,7 @@ import java.util.EventObject;
 import java.util.List;
 
 /**
- * 主数据-客商信息维护单表单插件
+ * 主数据-供应商信息维护单表单插件
  * 表单标识：nckd_bd_supplier_change
  * author：xiaoxiaopeng
  * date：2024-08-22
