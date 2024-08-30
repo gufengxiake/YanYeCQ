@@ -45,7 +45,7 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
                 //计算毛利率 = 金额-结算成本/金额
                 nckd_mll = nckd_amount.subtract(row.getBigDecimal("nckd_cbj") == null
                         ? BigDecimal.ZERO : row.getBigDecimal("nckd_cbj"))  ;
-                nckd_mll = nckd_mll.divide(nckd_amount);
+                nckd_mll = nckd_mll.divide(nckd_amount,BigDecimal.ROUND_CEILING);
                 DecimalFormat df = new DecimalFormat("0.00%");
                 String percent=df.format(nckd_mll);
                 row.set("nckd_mll", percent);
