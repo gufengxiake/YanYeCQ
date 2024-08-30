@@ -78,8 +78,8 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     BigDecimal signQty = entryRowData.getBigDecimal("nckd_signqty");//签收数量
                     BigDecimal unableQty = entryRowData.getBigDecimal("nckd_unableqty");//签收数量
                     if (signQty.compareTo(outQty) > 0) {
-                        BigDecimal sourcebillId = entryRowData.getBigDecimal("nckd_sourcebillid");
-                        BigDecimal sourceentryId = entryRowData.getBigDecimal("nckd_sourceentryid");
+                        Object sourcebillId = entryRowData.get("nckd_sourcebillid");
+                        Object sourceentryId = entryRowData.get("nckd_sourceentryid");
                         ListSelectedRow row = new ListSelectedRow();
                         //必填，设置源单单据id
                         row.setPrimaryKeyValue(sourcebillId);
@@ -91,8 +91,8 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                         //entryQtyMap.put(sourceentryId, signQty.subtract(outQty));
                     }
                     if (unableQty.compareTo(BigDecimal.ZERO) > 0) {
-                        BigDecimal sourcebillId = entryRowData.getBigDecimal("nckd_sourcebillid");
-                        BigDecimal sourceentryId = entryRowData.getBigDecimal("nckd_sourceentryid");
+                        Object sourcebillId = entryRowData.get("nckd_sourcebillid");
+                        Object sourceentryId = entryRowData.get("nckd_sourceentryid");
                         ListSelectedRow row = new ListSelectedRow();
                         //必填，设置源单单据id
                         row.setPrimaryKeyValue(sourcebillId);

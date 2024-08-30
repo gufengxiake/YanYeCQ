@@ -1,6 +1,7 @@
 package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
@@ -12,7 +13,7 @@ import kd.occ.ocbsoc.opplugin.delivery.DeliveryRecordSavePlugin;
  * author:吴国强 2024-07-20
  */
 
-public class DeliveryRecordSaveOperatePlugIn extends DeliveryRecordSavePlugin {
+public class DeliveryRecordSaveOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);

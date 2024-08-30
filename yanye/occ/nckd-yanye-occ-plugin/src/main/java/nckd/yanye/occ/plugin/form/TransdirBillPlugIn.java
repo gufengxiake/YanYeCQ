@@ -93,7 +93,17 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
         DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
         if(user!=null){
             String number=user.getString("number");
-            this.getModel().setItemValueByNumber("nckd_ywy",number);
+            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
+                    .and("opergrptype", QCP.equals, "XSZ");
+            //查找业务员
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+                    "id", qFilter.toArray(), "");
+            if(!collections.isEmpty()){
+                DynamicObject operatorItem = collections.get(0);
+                String operatorId = operatorItem.getString("id");
+                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            }
         }
     }
 //    @Override

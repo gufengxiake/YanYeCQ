@@ -75,10 +75,11 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                         this.productionInfo(data);
 
                         // 组织范围内属性页签
-                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_org", QCP.equals, org.getPkValue())});
+                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                         List<String> materialproperty = null;
                         if(dynamicObject != null){
-                            materialproperty = Arrays.stream(dynamicObject.getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                            List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> dynamic.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                            materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                         }
                         if (dynamicObject == null || !materialproperty.contains("2")) {
                             // 计划基本信息
@@ -554,7 +555,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            if(ObjectUtil.isNull(dynamicObject.get("org")) && ObjectUtil.isNull(dynamicObject.get("nckd_buyer"))){
+            if(ObjectUtil.isNull(dynamicObject.get("nckd_purchaseorg")) && ObjectUtil.isNull(dynamicObject.get("nckd_buyer"))){
                 return;
             }
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule("msbd_puropermaterctrl", newDynamicObject, null);
@@ -622,7 +623,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            if(dynamicObject.getDynamicObjectCollection("nckd_entryentity") == null){
+            if(dynamicObject.getDynamicObjectCollection("nckd_entryentity").size() == 0){
                 return;
             }
             DynamicObject material = this.getMaterial(dynamicObject);

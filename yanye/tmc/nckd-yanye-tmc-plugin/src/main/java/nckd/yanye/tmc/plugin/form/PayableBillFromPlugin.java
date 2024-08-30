@@ -5,6 +5,8 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 
+import java.util.EventObject;
+
 /**
  * Module           :财务云-资金-开票登记
  * Description      :表单插件
@@ -31,6 +33,15 @@ public class PayableBillFromPlugin extends AbstractBillPlugIn {
                 DynamicObject receiver = (DynamicObject) this.getModel().getValue("receiver");
                 this.getModel().setValue("nckd_vendor",receiver.getPkValue());
             }
+        }
+    }
+
+    @Override
+    public void afterBindData(EventObject e) {
+        super.afterBindData(e);
+        Object value = this.getModel().getValue("billstatus");
+        if (!"C".equals(value)){
+            this.getView().setEnable(false,"nckd_vendor");
         }
     }
 }

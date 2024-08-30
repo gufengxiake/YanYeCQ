@@ -28,6 +28,7 @@ import kd.bos.mvc.SessionManager;
 import kd.bos.mvc.bill.BillModel;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
@@ -50,10 +51,24 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
     @Override
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
+        //默认单据类型为借货归还单
+        this.getModel().setItemValueByID("billtype","1980435141796826112");
+
+        //设置业务员
         DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
         if(user!=null){
             String number=user.getString("number");
-            this.getModel().setItemValueByNumber("nckd_ywy",number);
+            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
+                    .and("opergrptype", QCP.equals, "XSZ");
+            //查找业务员
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+                    "id", qFilter.toArray(), "");
+            if(!collections.isEmpty()){
+                DynamicObject operatorItem = collections.get(0);
+                String operatorId = operatorItem.getString("id");
+                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            }
         }
     }
 
@@ -101,8 +116,9 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                             this.getView().showErrorNotification(errMessage.toString());
                             return;
                         }
-                        this.getView().setEnable(false,"nckd_save");//锁定按钮
-                        this.getView().setEnable(false,"nckd_submit");//锁定按钮
+                        this.getModel().setValue("billstatus","B");
+                        //this.getView().setEnable(false,"nckd_save");//锁定按钮
+                        //this.getView().setEnable(false,"nckd_submit");//锁定按钮
                     } else {
                         this.getView().showErrorNotification("请先保存单据");
                         return;
@@ -192,15 +208,16 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                 QFilter sFilter = new QFilter("createorg", QCP.equals, orgId)
                         .and("status", QCP.equals, "C")
                         .and("nckd_bm", QCP.equals, deptId);
-
                 //查找部门对应仓库
-                DynamicObjectCollection stockDycll = QueryServiceHelper.query("nckd_bmcksz",
-                        "id,nckd_ck.number number", sFilter.toArray(), "modifytime");
-                String number = "";
-                if (!stockDycll.isEmpty()) {
-                    DynamicObject stockItem = stockDycll.get(0);
-                    number = stockItem.getString("number");
+                DynamicObjectCollection depcollections = QueryServiceHelper.query("nckd_bmcksz",
+                        "id,nckd_ck.id stockId", sFilter.toArray(), "modifytime");
+                Object stockId=null;
+                if (!depcollections.isEmpty()) {
+                    DynamicObject stockItem = depcollections.get(0);
+                     stockId = stockItem.get("stockId");
+                    //depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
                 }
+
                 int row = 0;
                 for (DynamicObject object : collections) {
                     Object matId = object.get("number");//物料编码
@@ -214,7 +231,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                     this.getModel().setItemValueByID("unit", unitId, row);
                     this.getModel().setValue("qty", qty, row);
                     this.getModel().setItemValueByID("outwarehouse", stock, row);//调出仓库
-                    this.getModel().setItemValueByNumber("warehouse", number, row);//调入仓库
+                    this.getModel().setItemValueByID("warehouse", stockId, row);//调入仓库
                     this.getModel().setValue("inlotnumber", lotNum, row);
                     //this.getModel().setItemValueByNumber("lot", lotNum, row);
                     row++;
