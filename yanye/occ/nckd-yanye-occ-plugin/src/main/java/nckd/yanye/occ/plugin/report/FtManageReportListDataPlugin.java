@@ -18,7 +18,7 @@ import java.util.List;
 
 /**
  * 外贸管理报表-报表取数插件
- * 表单标识：nckd_ftmanage_rpt
+ * 表单标识：nckd_salemanage_rpt
  * author:zzl
  * date:2024/08/28
  */
@@ -36,7 +36,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
             switch (filterItem.getPropName()) {
                 // 查询条件收货单位,标识如不一致,请修改
                 case "nckd_customer_q":
-                    if (!(filterItem.getValue() == null)) {
+                    if (filterItem.getValue() != null) {
                         Long nckd_customer_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                         QFilter qFilter = new QFilter("customer", QCP.equals, nckd_customer_q);
                         qFilters.add(qFilter);
@@ -44,13 +44,13 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                     break;
                 // 查询条件发货日期,标识如不一致,请修改
                 case "nckd_fhdate_q_start":
-                    if (!(filterItem.getDate() == null)) {
+                    if (filterItem.getDate() != null) {
                         start = DateUtil.beginOfDay(filterItem.getDate());
 
                     }
                     break;
                 case "nckd_fhdate_q_end":
-                    if (!(filterItem.getDate() == null)) {
+                    if (filterItem.getDate() != null) {
                         end =  DateUtil.endOfDay(filterItem.getDate());
 
                     }
@@ -83,9 +83,11 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                         "billentry.mainbillentryid as mainbillentryid";
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
         im_saloutbill = this.linkSignAtureBill(im_saloutbill);
-        if(start != null && end != null){
-            im_saloutbill = im_saloutbill.filter("nckd_outdate >= to_date('" +  start + "','yyyy-MM-dd')" ).
-                    filter("nckd_outdate <= to_date('" +  end + "','yyyy-MM-dd')" );
+        if(start != null ){
+            im_saloutbill = im_saloutbill.filter("nckd_fhdate >= to_date('" +  start + "','yyyy-MM-dd hh:mm:ss')" );
+        }
+        if( end != null){
+            im_saloutbill = im_saloutbill.filter("nckd_fhdate <= to_date('" +  end + "','yyyy-MM-dd hh:mm:ss')"  );
         }
         return im_saloutbill.orderBy(im_saloutbill.getRowMeta().getFieldNames());
     }

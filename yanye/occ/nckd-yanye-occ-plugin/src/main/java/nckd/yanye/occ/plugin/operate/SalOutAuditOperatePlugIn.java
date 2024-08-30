@@ -91,7 +91,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             botpbill1_Ids = sourceBillIds.get(botpbill1_EntityNumber);
 
         }
-        //获取上游销售订单对应的采购订单分录
+        //获取上游销售订单对应的销售订单分录
         HashSet<Long> saloutBillIds = new HashSet<>();
         if (sourceBillIds.containsKey("sm_salorder")) {
             saloutBillIds = sourceBillIds.get("sm_salorder");
@@ -126,36 +126,36 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
 
 
         if (!saloutBillIds.isEmpty()) {
-            Map<String, BigDecimal> srcQty = new HashMap<>();
-            Map<String, String> srcLot = new HashMap<>();
-            Map<String, Date> srcProduceDate = new HashMap<>();
-            Map<String, Date> srcExpiryDate = new HashMap<>();
-            for (Object salOutPk : saloutBillIds) {
-                DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "sm_salorder");
-                //获取单据体数据的集合
-                DynamicObjectCollection goodsEntities = saloutBill.getDynamicObjectCollection("billentry");
-                for (DynamicObject entryObj : goodsEntities) {
-                    //获取某行数据的id
-                    Object entryId = entryObj.getPkValue();
-                    String srcbillentryid = entryObj.getString("srcbillentryid");//来源单据行Id
-                    if (outQty.containsKey(entryId.toString())) {
-                        srcQty.put(srcbillentryid, outQty.get(entryId.toString()));
-                    }
-                    if (outLot.containsKey(entryId.toString())) {
-                        srcLot.put(srcbillentryid, outLot.get(entryId.toString()));
-                    }
-                    if (outProduceDate.containsKey(entryId.toString())) {
-                        srcProduceDate.put(srcbillentryid, outProduceDate.get(entryId.toString()));
-                    }
-                    if (outExpiryDate.containsKey(entryId.toString())) {
-                        srcExpiryDate.put(srcbillentryid, outExpiryDate.get(entryId.toString()));
-                    }
-                }
-            }
+//            Map<String, BigDecimal> srcQty = new HashMap<>();
+//            Map<String, String> srcLot = new HashMap<>();
+//            Map<String, Date> srcProduceDate = new HashMap<>();
+//            Map<String, Date> srcExpiryDate = new HashMap<>();
+//            for (Object salOutPk : saloutBillIds) {
+//                DynamicObject saloutBill = BusinessDataServiceHelper.loadSingle(salOutPk, "sm_salorder");
+//                //获取单据体数据的集合
+//                DynamicObjectCollection goodsEntities = saloutBill.getDynamicObjectCollection("billentry");
+//                for (DynamicObject entryObj : goodsEntities) {
+//                    //获取某行数据的id
+//                    Object entryId = entryObj.getPkValue();
+//                    String srcbillentryid = entryObj.getString("srcbillentryid");//来源单据行Id
+//                    if (outQty.containsKey(entryId.toString())) {
+//                        srcQty.put(srcbillentryid, outQty.get(entryId.toString()));
+//                    }
+//                    if (outLot.containsKey(entryId.toString())) {
+//                        srcLot.put(srcbillentryid, outLot.get(entryId.toString()));
+//                    }
+//                    if (outProduceDate.containsKey(entryId.toString())) {
+//                        srcProduceDate.put(srcbillentryid, outProduceDate.get(entryId.toString()));
+//                    }
+//                    if (outExpiryDate.containsKey(entryId.toString())) {
+//                        srcExpiryDate.put(srcbillentryid, outExpiryDate.get(entryId.toString()));
+//                    }
+//                }
+//            }
             if (!botpbill1_Ids.isEmpty()) {
                 String sourceBill = "pm_purorderbill";//采购订单
                 String targetBill = "im_purreceivebill";//采购收货单
-                String ruleId = "1984882450534238208";//单据转换Id
+                String ruleId = "2025459918533834752";//单据转换Id
                 // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
                 for (Object pk : botpbill1_Ids) {
 
@@ -286,10 +286,10 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                 int row = 0;
                                 for (DynamicObject entryRow : entry) {
                                     String mainbillentryid = entryRow.getString("mainbillentryid");//核心单据行Id
-                                    BigDecimal qty = srcQty.get(mainbillentryid);
-                                    String lot = srcLot.get(mainbillentryid);
-                                    Date producedate = srcProduceDate.get(mainbillentryid);
-                                    Date expirydate = srcExpiryDate.get(mainbillentryid);
+                                    BigDecimal qty = outQty.get(mainbillentryid);
+                                    String lot = outLot.get(mainbillentryid);
+                                    Date producedate = outProduceDate.get(mainbillentryid);
+                                    Date expirydate = outExpiryDate.get(mainbillentryid);
                                     mode.setValue("qty", qty, row);
                                     mode.setValue("lotnumber", lot, row);
                                     mode.setValue("producedate", producedate, row);

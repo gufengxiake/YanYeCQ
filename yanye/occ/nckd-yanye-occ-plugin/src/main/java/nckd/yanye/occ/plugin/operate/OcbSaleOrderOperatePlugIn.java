@@ -9,6 +9,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -41,6 +42,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
         e.getFieldKeys().add("sub_warehouseid1");//发货仓库
         e.getFieldKeys().add("sub_warehouseid");//
         e.getFieldKeys().add("nckd_autosign");//自动签收
+        e.getFieldKeys().add("itemid");//商品
     }
 
     /**
@@ -68,9 +70,10 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                 }
                 orderEntryIdList.get(resultSeq).add(orderEntryId);
             }
+            //商品明细单据体
+            DynamicObjectCollection itemEntry = dataEntity.getDynamicObjectCollection("itementry");
             if (!orderEntryIdList.isEmpty()) {
-                //商品明细单据体
-                DynamicObjectCollection itemEntry = dataEntity.getDynamicObjectCollection("itementry");
+
                 //遍历分录Id集合
                 for (HashSet<Object> entryIds : orderEntryIdList.values()) {
                     if (!entryIds.isEmpty()) {
@@ -83,11 +86,13 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                                     .filter(dynamicObject -> entryId.equals(dynamicObject.getPkValue()))
                                     .findFirst()
                                     .orElse(null);
-                            objectList.add(entryRow);
-                            BigDecimal taxAmount = entryRow.getBigDecimal("taxamount");
-                            taxAmountCount = taxAmountCount.add(taxAmount);
-                            BigDecimal amount = entryRow.getBigDecimal("standardamount");
-                            amountCount = amountCount.add(amount);
+                            if (entryRow != null) {
+                                objectList.add(entryRow);
+                                BigDecimal taxAmount = entryRow.getBigDecimal("taxamount");
+                                taxAmountCount = taxAmountCount.add(taxAmount);
+                                BigDecimal amount = entryRow.getBigDecimal("standardamount");
+                                amountCount = amountCount.add(amount);
+                            }
                         }
                         if (!amountCount.equals(BigDecimal.ZERO)) {
                             //再次遍历计算分摊金额
@@ -110,6 +115,15 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             }
             //计算分摊金额-----结束
 
+            //携带分录物料对应的税率----开始
+            this.setTaxrate(itemEntry);
+            //携带分录物料对应的税率----结束
+
+            //携带订货渠道地址联系信息--开始
+            this.setAddresSpane(dataEntity, itemEntry);
+            //携带订货渠道地址联系信息--结束
+
+
             //携带仓库信息---开始
             this.setStock(dataEntity);
             //携带仓库信息---结束
@@ -118,10 +132,47 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             this.setAutoSign(dataEntity);
             //设置是否发货记录自动签收--结束
 
-
         }
 
     }
+
+    private void setAddresSpane(DynamicObject dataEntity, DynamicObjectCollection itemEntry) {
+        DynamicObject orderchannelid = dataEntity.getDynamicObject("orderchannelid");
+        if (orderchannelid != null && !itemEntry.isEmpty()) {
+            //省市区
+            Object area = orderchannelid.get("area");
+            //详细地址
+            String address = orderchannelid.getString("address");
+            //联系人
+            String contact = orderchannelid.getString("contact");
+            //联系人电话
+            String contactphone = orderchannelid.getString("contactphone");
+            for (DynamicObject itemEntryRow : itemEntry) {
+                itemEntryRow.set("entryaddressid", area);
+                itemEntryRow.set("entrydetailaddress", address);
+                itemEntryRow.set("entrycontactname", contact);
+                itemEntryRow.set("entrytelephone", contactphone);
+            }
+
+        }
+    }
+
+    private void setTaxrate(DynamicObjectCollection itemEntry) {
+        for (DynamicObject entryRow : itemEntry) {
+            DynamicObject item = entryRow.getDynamicObject("itemid");//商品
+            Object materialId = item.get("material.id");//物料Id
+            DynamicObject material = BusinessDataServiceHelper.loadSingle(materialId, "bd_material");
+            DynamicObject taxrate = material.getDynamicObject("taxrate");
+            BigDecimal taxratede = BigDecimal.ZERO;
+            if (taxrate != null) {
+                taxratede = taxrate.getBigDecimal("taxrate");
+            }
+            entryRow.set("taxrateid", taxrate);
+            entryRow.set("taxrate", taxratede);
+
+        }
+    }
+
 
     private void setStock(DynamicObject dataEntity) {
         DynamicObject billType = dataEntity.getDynamicObject("billtypeid");//单据类型
@@ -143,16 +194,16 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                 if (!collections.isEmpty()) {
                     DynamicObject stockItem = collections.get(0);
                     String stockId = stockItem.getString("id");
-                    DynamicObject stock= BusinessDataServiceHelper.loadSingle(stockId,"bd_warehouse");
-                    DynamicObjectCollection plane_entry=dataEntity.getDynamicObjectCollection("plane_entry");
-                    for(DynamicObject planRow:plane_entry){
-                        planRow.set("sub_warehouseid1",stock);
+                    DynamicObject stock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+                    DynamicObjectCollection plane_entry = dataEntity.getDynamicObjectCollection("plane_entry");
+                    for (DynamicObject planRow : plane_entry) {
+                        planRow.set("sub_warehouseid1", stock);
                     }
-                    DynamicObjectCollection itementry=dataEntity.getDynamicObjectCollection("itementry");
-                    for(DynamicObject itemObj:itementry){
-                        DynamicObjectCollection subentryentity=itemObj.getDynamicObjectCollection("subentryentity");
-                        for(DynamicObject sub:subentryentity){
-                            sub.set("sub_warehouseid",stock);
+                    DynamicObjectCollection itementry = dataEntity.getDynamicObjectCollection("itementry");
+                    for (DynamicObject itemObj : itementry) {
+                        DynamicObjectCollection subentryentity = itemObj.getDynamicObjectCollection("subentryentity");
+                        for (DynamicObject sub : subentryentity) {
+                            sub.set("sub_warehouseid", stock);
                         }
                     }
                 }
@@ -178,16 +229,16 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                     if (!collections.isEmpty()) {
                         DynamicObject stockItem = collections.get(0);
                         String stockId = stockItem.getString("stockId");
-                        DynamicObject stock= BusinessDataServiceHelper.loadSingle(stockId,"bd_warehouse");
-                        DynamicObjectCollection plane_entry=dataEntity.getDynamicObjectCollection("plane_entry");
-                        for(DynamicObject planRow:plane_entry){
-                            planRow.set("sub_warehouseid1",stock);
+                        DynamicObject stock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+                        DynamicObjectCollection plane_entry = dataEntity.getDynamicObjectCollection("plane_entry");
+                        for (DynamicObject planRow : plane_entry) {
+                            planRow.set("sub_warehouseid1", stock);
                         }
-                        DynamicObjectCollection itementry=dataEntity.getDynamicObjectCollection("itementry");
-                        for(DynamicObject itemObj:itementry){
-                            DynamicObjectCollection subentryentity=itemObj.getDynamicObjectCollection("subentryentity");
-                            for(DynamicObject sub:subentryentity){
-                                sub.set("sub_warehouseid",stock);
+                        DynamicObjectCollection itementry = dataEntity.getDynamicObjectCollection("itementry");
+                        for (DynamicObject itemObj : itementry) {
+                            DynamicObjectCollection subentryentity = itemObj.getDynamicObjectCollection("subentryentity");
+                            for (DynamicObject sub : subentryentity) {
+                                sub.set("sub_warehouseid", stock);
                             }
                         }
                     }
@@ -196,16 +247,15 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
         }
     }
 
-    private void setAutoSign(DynamicObject dataEntity){
+    private void setAutoSign(DynamicObject dataEntity) {
         DynamicObject billType = dataEntity.getDynamicObject("billtypeid");//单据类型
         if (billType != null) {
             String name = billType.getString("name");
             Object id = billType.getPkValue();
-            if("车销订单".equalsIgnoreCase(name)||"自提订单".equalsIgnoreCase(name)||"企业寄售订单".equalsIgnoreCase(name)){
-                dataEntity.set("nckd_autosign",true);
-            }
-            else {
-                dataEntity.set("nckd_autosign",false);
+            if ("车销订单".equalsIgnoreCase(name) || "自提订单".equalsIgnoreCase(name) || "企业寄售订单".equalsIgnoreCase(name)) {
+                dataEntity.set("nckd_autosign", true);
+            } else {
+                dataEntity.set("nckd_autosign", false);
             }
         }
     }
