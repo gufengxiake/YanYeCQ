@@ -133,6 +133,21 @@ public class BussprocessorderTask extends AbstractTask {
                     cumdataMap.put(cumjsonArray.getJSONObject(i).getString("indexName"),cumjsonArray.getJSONObject(i).getBigDecimal("dataValue"));
                 }
             }
+            //判断返回的参数是否有为空的数据，有则记录日志
+            List<String> yestodayMsg = new ArrayList<>();
+            for (Map.Entry<String,BigDecimal> entry: dataMap.entrySet()){
+                if (null == entry.getValue()){
+                    yestodayMsg.add(entry.getKey());
+                }
+            }
+            if (CollectionUtils.isNotEmpty(msg)){
+                OperationResult operation = new OperationResult();
+                operation.setSuccess(false);
+                operation.setMessage("分录中5G智能工厂系统入参字段："
+                        +msg.stream().collect(Collectors.joining(","))+"调用5G工厂接口查询返回参数dataValue为null");
+                saveLog(operation,dynamicObject);
+                continue;
+            }
 
             /**
              * 计算早班的累计值，早班的值减去前一天晚班的值
