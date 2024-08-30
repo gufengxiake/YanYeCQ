@@ -36,14 +36,8 @@ public class PayableBillSubmit extends AbstractOperationServicePlugIn {
         fieldKeys.add("payeetype");
         fieldKeys.add("receiver");
         fieldKeys.add("nckd_vendor");
-        fieldKeys.add("draftbillno");
         fieldKeys.add("drawercompany");
 
-    }
-
-    @Override
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        super.beforeExecuteOperationTransaction(e);
     }
 
     @Override
@@ -54,22 +48,7 @@ public class PayableBillSubmit extends AbstractOperationServicePlugIn {
             public void validate() {
                 for (ExtendedDataEntity dt : this.getDataEntities()) {
                     DynamicObject dataEntity = dt.getDataEntity();
-                    String draftbillno = dataEntity.getString("draftbillno");
                     String payeetype = dataEntity.getString("payeetype");
-                    if (StringUtils.isNotEmpty(draftbillno)) {
-                        DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_pay_deal", "id,billno",
-                                new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
-                        if (electronic != null) {
-                            if ("bd_supplier".equals(payeetype)){
-                                DynamicObject receiver = dataEntity.getDynamicObject("receiver");
-                                if (receiver != null){
-                                    dataEntity.set("nckd_vendor",receiver.getPkValue());
-                                    SaveServiceHelper.update(dataEntity);
-                                }
-                            }
-                            return;
-                        }
-                    }
                     if (!"bd_supplier".equals(payeetype)){
                         Long pkValue = (Long) dataEntity.getDynamicObject("drawercompany").getPkValue();
                         AppInfo appInfo = AppMetadataCache.getAppInfo("cdm");

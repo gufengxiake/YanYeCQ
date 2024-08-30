@@ -8,6 +8,7 @@ import kd.bos.entity.param.AppParam;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.orm.query.QCP;
@@ -42,8 +43,26 @@ public class PayableBillSave extends AbstractOperationServicePlugIn {
     }
 
     @Override
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        super.beforeExecuteOperationTransaction(e);
+    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
+        super.afterExecuteOperationTransaction(e);
+        DynamicObject[] dataEntities = e.getDataEntities();
+        for (DynamicObject dataEntity : dataEntities) {
+            String draftbillno = dataEntity.getString("draftbillno");
+            String payeetype = dataEntity.getString("payeetype");
+            if (StringUtils.isNotEmpty(draftbillno)) {
+                DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_pay_deal", "id,billno",
+                        new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
+                if (electronic != null) {
+                    if ("bd_supplier".equals(payeetype)){
+                        DynamicObject receiver = dataEntity.getDynamicObject("receiver");
+                        if (receiver != null){
+                            dataEntity.set("nckd_vendor",receiver.getPkValue());
+                            SaveServiceHelper.update(dataEntity);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Override
@@ -60,16 +79,10 @@ public class PayableBillSave extends AbstractOperationServicePlugIn {
                         DynamicObject electronic = BusinessDataServiceHelper.loadSingle("cdm_electronic_pay_deal", "id,billno",
                                 new QFilter[]{new QFilter("billno", QCP.equals, draftbillno)});
                         if (electronic != null) {
-                            if ("bd_supplier".equals(payeetype)){
-                                DynamicObject receiver = dataEntity.getDynamicObject("receiver");
-                                if (receiver != null){
-                                    dataEntity.set("nckd_vendor",receiver.getPkValue());
-                                    SaveServiceHelper.update(dataEntity);
-                                }
-                            }
-                            return;
+                            break;
                         }
                     }
+
                     if (!"bd_supplier".equals(payeetype)){
                         Long pkValue = (Long) dataEntity.getDynamicObject("drawercompany").getPkValue();
                         AppInfo appInfo = AppMetadataCache.getAppInfo("cdm");
