@@ -145,9 +145,19 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 tgtObj.set("invoicesupplier", supplier);
                 tgtObj.set("receivesupplier", supplier);
 
-
                 if ("conm_purcontract".equals(tgtObj.getDataEntityType().getName())) {
                     tgtObj.set("party2nd", supplier.getString("name"));
+                }
+
+                // 付款
+                if ("pm_purorderbill".equals(tgtObj.getDataEntityType().getName())) {
+                    DynamicObjectCollection purbillentry_pay = tgtObj.getDynamicObjectCollection("purbillentry_pay");
+                    if (purbillentry_pay.isEmpty()) {
+                        DynamicObject addNew = purbillentry_pay.addNew();
+                        addNew.set("payamount", tgtObj.getBigDecimal("totalallamount"));
+                    }else {
+                        purbillentry_pay.get(0).set("payamount", tgtObj.getBigDecimal("totalallamount"));
+                    }
                 }
 
                 OperationResult operationResult = SaveServiceHelper.saveOperate(formBillId, new DynamicObject[]{tgtObj});

@@ -58,7 +58,7 @@ public class SynchronizeSuppliersTask extends AbstractTask {
             supplierObj.set(SupplierConst.NCKD_PLATFORMSUPID, supplierMap.get(socialCreditCode));
         }
 
-        SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, load);
+        SaveServiceHelper.save(load);
     }
 
     @Override
