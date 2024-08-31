@@ -115,9 +115,9 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             }
             //计算分摊金额-----结束
 
-            //携带分录物料对应的税率----开始
+            //携带赠品分录物料对应的税率----开始
             this.setTaxrate(itemEntry);
-            //携带分录物料对应的税率----结束
+            //携带赠品分录物料对应的税率----结束
 
             //携带订货渠道地址联系信息--开始
             this.setAddresSpane(dataEntity, itemEntry);
@@ -159,17 +159,20 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
 
     private void setTaxrate(DynamicObjectCollection itemEntry) {
         for (DynamicObject entryRow : itemEntry) {
-            DynamicObject item = entryRow.getDynamicObject("itemid");//商品
-            Object materialId = item.get("material.id");//物料Id
-            DynamicObject material = BusinessDataServiceHelper.loadSingle(materialId, "bd_material");
-            DynamicObject taxrate = material.getDynamicObject("taxrate");
-            BigDecimal taxratede = BigDecimal.ZERO;
-            if (taxrate != null) {
-                taxratede = taxrate.getBigDecimal("taxrate");
+            //是否赠品
+            boolean ispresent=entryRow.getBoolean("ispresent");
+            if(ispresent){
+                DynamicObject item = entryRow.getDynamicObject("itemid");//商品
+                Object materialId = item.get("material.id");//物料Id
+                DynamicObject material = BusinessDataServiceHelper.loadSingle(materialId, "bd_material");
+                DynamicObject taxrate = material.getDynamicObject("taxrate");
+                BigDecimal taxratede = BigDecimal.ZERO;
+                if (taxrate != null) {
+                    taxratede = taxrate.getBigDecimal("taxrate");
+                }
+                entryRow.set("taxrateid", taxrate);
+                entryRow.set("taxrate", taxratede);
             }
-            entryRow.set("taxrateid", taxrate);
-            entryRow.set("taxrate", taxratede);
-
         }
     }
 
