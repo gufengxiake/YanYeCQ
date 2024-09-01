@@ -84,16 +84,26 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
         Date begin = DateUtil.beginOfMonth(new SimpleDateFormat("yyyy-MM").parse(yearMonth));
         Date end = DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(yearMonth));
 //        查询条件根据取出的年月进行过来
-        QFilter qFilter = new QFilter("orderdate", QCP.large_equals , begin).and("orderdate", QCP.less_equals , end);
+        QFilter qFilter = new QFilter("biztime", QCP.large_equals , begin).and("biztime", QCP.less_equals , end);
         if(!hmuaKeyUser.isEmpty()){
-//            业务员编码与用户编码进行匹配
-            qFilter.and("nckd_salerid.operatornumber",QCP.in,hmuaKeyUser);
+//            销售员编码与用户编码进行匹配
+            qFilter.and("bizoperator.operatornumber",QCP.in,hmuaKeyUser);
         }
         if(!hmuaKeyTeam.isEmpty()){
 //            销售部门与团队进行匹配
-            qFilter.and("departmentid",QCP.in,hmuaKeyTeam);
+            qFilter.and("bizdept",QCP.in,hmuaKeyTeam);
         }
 
+        //根据条件匹配对应的销售出库单的核心来源单据行id
+        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                        "im_saloutbill", "billentry.mainbillentryid as mainbillentryid", new QFilter[]{qFilter},null);
+
+        ArrayList<Long> mainbillentryid = new ArrayList<>();
+        while (im_saloutbill.hasNext()) {
+            mainbillentryid.add(im_saloutbill.next().getLong("mainbillentryid"));
+        }
+
+        QFilter orderFilter = new QFilter("itementry.subentryentity.id",QCP.in,mainbillentryid.toArray(new Long[0]));
         //取要货订单业务员，
         String sFields = "nckd_salerid.operatornumber as nckd_salerid , " +
                 //销售部门，
@@ -101,7 +111,7 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
                 //累计出库基本数量 - 累计退货基本数量 = 订单实际出库数量，
                 "itementry.totaloutstockbaseqty - itementry.totalreturnbaseqty as complete";
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "ocbsoc_saleorder", sFields, new QFilter[]{qFilter},null)
+                "ocbsoc_saleorder", sFields, new QFilter[]{orderFilter},null)
                 .groupBy(new String[]{"nckd_salerid","departmentid"}).sum("complete").finish();
 
 
