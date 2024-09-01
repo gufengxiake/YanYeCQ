@@ -315,7 +315,7 @@ public class MaterialAttributeInformationUtils {
     /**
      * 获取BOM版本规则
      */
-    private static DynamicObject getDefaultBOMRuleVer() {
+    public static DynamicObject getDefaultBOMRuleVer() {
         QFilter qFilter = new QFilter("isdefault", "=", Boolean.TRUE);
         qFilter.and(new QFilter("enable", "=", Boolean.TRUE));
         DynamicObject rule = BusinessDataServiceHelper.loadSingleFromCache("bd_bomversionrule_new", "id", qFilter.toArray());
