@@ -63,7 +63,7 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
                 DynamicObject supplier = BusinessDataServiceHelper.loadSingle(payee, "bd_supplier");
                 String unittype = supplier.getString("nckd_unittype");
                 //不为正常单位
-                if ("A" != unittype) {
+                if (!StringUtils.equals("A", unittype)) {
                     RefObject<String> afterConfirm = new RefObject<>();
                     // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
                     if (!formOperate.getOption().tryGetVariableValue(OPPARAM_AFTERCONFIRM, afterConfirm)) {
