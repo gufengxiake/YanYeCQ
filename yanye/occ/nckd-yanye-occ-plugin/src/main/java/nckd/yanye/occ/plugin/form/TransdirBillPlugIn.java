@@ -42,6 +42,11 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
         inWareHouseEdit.addBeforeF7SelectListener(this);
         BasedataEdit wareHoseEdit = this.getView().getControl("outwarehouse");
         wareHoseEdit.addBeforeF7SelectListener(this);
+        wareHoseEdit.addBeforeF7SelectListener(this);
+        BasedataEdit salerIdEdit = this.getView().getControl("nckd_ywy");
+        salerIdEdit.addBeforeF7SelectListener(this);
+        BasedataEdit operatorEdit = this.getView().getControl("nckd_operatorgroup");
+        operatorEdit.addBeforeF7SelectListener(this);
     }
 
     @Override
@@ -84,92 +89,67 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                 qFilters.add(new QFilter("nckd_isjh", QCP.not_equals, "1"));
                 formShowParameter.getListFilterParameter().setQFilters(qFilters);
             }
+        }else if (name.equalsIgnoreCase("nckd_operatorgroup")) {
+            //销售组织
+            DynamicObject salOrg = (DynamicObject) this.getModel().getValue("org", 0);
+            if (salOrg == null) {
+                this.getView().showErrorNotification("请先选择申请组织！");
+                return;
+            }
+            Object orgId = salOrg.getPkValue();
+            ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+            List<QFilter> qFilters = new ArrayList<>();
+            qFilters.add(new QFilter("createorg.id", QCP.equals, orgId).and("operatorgrouptype", QCP.equals, "XSZ"));
+            formShowParameter.getListFilterParameter().setQFilters(qFilters);
+
+        } else if (name.equalsIgnoreCase("nckd_ywy")) {
+            DynamicObject operatorGroup = (DynamicObject) this.getModel().getValue("nckd_operatorgroup", 0);
+            if (operatorGroup == null) {
+                this.getView().showErrorNotification("请先选择业务组！");
+                return;
+            }
+            Object operatorGroupId = operatorGroup.getPkValue();
+            ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+            List<QFilter> qFilters = new ArrayList<>();
+            qFilters.add(new QFilter("operatorgrpid", QCP.equals, operatorGroupId));
+            formShowParameter.getListFilterParameter().setQFilters(qFilters);
         }
 
 
     }
     @Override
     public void afterCreateNewData(EventObject e) {
-        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
-        if(user!=null){
-            String number=user.getString("number");
-            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
-            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
-                    .and("opergrptype", QCP.equals, "XSZ");
-            //查找业务员
-            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+        Long orgId = RequestContext.get().getOrgId();
+        if (orgId != 0) {
+            // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                    .and("operatorgrouptype", QCP.equals, "XSZ");
+            //查找业务组
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operatorgroup",
                     "id", qFilter.toArray(), "");
-            if(!collections.isEmpty()){
-                DynamicObject operatorItem = collections.get(0);
-                String operatorId = operatorItem.getString("id");
-                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            if (!collections.isEmpty()) {
+                DynamicObject operatorGroupItem = collections.get(0);
+                long operatorGroupId = (long) operatorGroupItem.get("id");
+                this.getModel().setItemValueByID("nckd_operatorgroup", operatorGroupId);
+                DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+                if (user != null && operatorGroupId != 0) {
+                    String number = user.getString("number");
+                    // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
+                    QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
+                            .and("operatorgrpid", QCP.equals, operatorGroupId);
+                    //查找业务员
+                    DynamicObjectCollection opreatorColl = QueryServiceHelper.query("bd_operator",
+                            "id", Filter.toArray(), "");
+                    if (!opreatorColl.isEmpty()) {
+                        DynamicObject operatorItem = opreatorColl.get(0);
+                        String operatorId = operatorItem.getString("id");
+                        this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+                }
             }
+
         }
     }
-//    @Override
-//    public void propertyChanged(PropertyChangedArgs e) {
-//        String propName = e.getProperty().getName();
-//        if ("billtype".equals(propName)) {
-//            DynamicObject billtype = (DynamicObject) e.getChangeSet()[0].getNewValue();
-//            String nameq = billtype.getString("name");
-//            Object id = billtype.getPkValue();
-//            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
-//            Object orgId = org.getPkValue();
-//            // 构造QFilter
-//            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
-//            // 将选中的id对应的数据从数据库加载出来
-//            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
-//                    "id", qFilter.toArray(), "");
-//            if(collections.isEmpty()){return;}
-//            DynamicObject stock = collections.get(0);
-//            String stockId = stock.getString(("id"));
-//            int row = this.getModel().getEntryRowCount("billentry");
-//            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
-//
-//                for (int i = 0; i < row; i++) {
-//
-//                    this.getModel().setItemValueByID("outwarehouse", stockId, i);
-//                }
-//            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-//                for (int i = 0; i < row; i++) {
-//
-//                    this.getModel().setItemValueByID("warehouse", stockId, i);
-//                }
-//            }
-//        }
-//    }
-
-//    @Override
-//    public void afterAddRow(AfterAddRowEventArgs e) {
-//        super.afterAddRow(e);
-//        if ("billentry".equals(e.getEntryProp().getName())) {
-//            DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
-//            Object orgId = org.getPkValue();
-//            DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype", 0);
-//            String nameq = billtype.getString("name");
-//            Object id = billtype.getPkValue();
-//            // 构造QFilter
-//            QFilter qFilter = new QFilter("nckd_isjh", QCP.equals, "1").and("createorg.id", QCP.equals, orgId);
-//            // 将选中的id对应的数据从数据库加载出来
-//            DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
-//                    "id", qFilter.toArray(), "");
-//            DynamicObject stock = collections.get(0);
-//            String stockId = stock.getString(("id"));
-//            RowDataEntity[] rowdata = e.getRowDataEntities();
-//            if (id.equals("1980435141796826112") || nameq.equalsIgnoreCase("借货归还单")) {
-//
-//                for (RowDataEntity rowDataEntity : rowdata) {
-//                    int currentindex = rowDataEntity.getRowIndex();
-//                    this.getModel().setItemValueByID("outwarehouse", stockId, currentindex);
-//                }
-//            } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
-//                for (RowDataEntity rowDataEntity : rowdata) {
-//                    int currentindex = rowDataEntity.getRowIndex();
-//                    this.getModel().setItemValueByID("warehouse", stockId, currentindex);
-//                }
-//            }
-//        }
-//    }
 
     @Override
     public void itemClick(ItemClickEvent e) {

@@ -21,6 +21,11 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/*
+ * 销售助手首页插件
+ * 表单标识：nckd_ocsaa_home_ext
+ * author:吴国强 2024-08-28
+ */
 public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
     public void registerListener(EventObject e) {
         super.registerListener(e);
