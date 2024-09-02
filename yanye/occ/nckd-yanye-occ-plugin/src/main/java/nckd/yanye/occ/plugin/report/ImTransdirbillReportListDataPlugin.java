@@ -31,10 +31,10 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
 //    String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
 //    DBRoute faRoute = DBRoute.of("scm");
 
-    private static String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
+    private static final String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
             "nckd_materialmodelnum","nckd_unit","nckd_jhqty",
             "nckd_xsqty","nckd_jchhqty","nckd_jhyeqty"};
-    private static DataType[] DATATYPES = {DataType.LongType, DataType.LongType,
+    private static final DataType[] DATATYPES = {DataType.LongType, DataType.LongType,
             DataType.LongType,DataType.StringType,DataType.StringType,DataType.LongType,
             DataType.LongType, DataType.LongType,DataType.LongType, DataType.LongType
     };
@@ -107,7 +107,7 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
                 .sum("CASE WHEN fbilltypeid = 1980435141796826112L THEN fqty ELSE 0 END ","nckd_jchhqty")
                 .finish();
 
-        im.select(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_unit","nckd_jhqty","nckd_xsqty","nckd_jchhqty"});
+        im.select("nckd_forg","nckd_ywy","nckd_material","nckd_unit","nckd_jhqty","nckd_xsqty","nckd_jchhqty");
 
         return im;
     }

@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 销售情况明细表取数插件
+ * 销售情况明细表-报表取数插件
  * 表单标识：nckd_saledetailrpt
  * author:zzl
  * date:2024/08/22
@@ -44,8 +44,7 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
 
     //获取销售出库单
     public DataSet getSaleOutBill(ReportQueryParam reportQueryParam){
-
-        QFilter qFilter = new QFilter("1", QCP.equals,1);
+        ArrayList<QFilter> qFilters = new ArrayList<>();
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
@@ -54,27 +53,27 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 case "nckd_bizorg_q":
                     if(!(filterItem.getValue() == null)){
                         Long bizOrg = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("bizorg", QCP.equals, bizOrg);
+                        qFilters.add(new QFilter("bizorg", QCP.equals, bizOrg));
                     }
                     break;
                 // 查询条件业务员,标识如不一致,请修改
                 case "nckd_bizoperator_q":
                     if(! (filterItem.getValue() == null) ){
                         Long bizoperator =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("bizoperator", QCP.equals, bizoperator);
+                        qFilters.add(new QFilter("bizoperator", QCP.equals, bizoperator));
                     }
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "start":
                     if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("biztime", QCP.large_equals,
-                                DateUtil.beginOfDay(filterItem.getDate()));
+                        qFilters.add(new QFilter("biztime", QCP.large_equals,
+                                DateUtil.beginOfDay(filterItem.getDate())));
                     }
                     break;
                 case "end":
                     if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("biztime", QCP.less_equals,
-                                DateUtil.endOfDay(filterItem.getDate()));
+                        qFilters.add(new QFilter("biztime", QCP.less_equals,
+                                DateUtil.endOfDay(filterItem.getDate())));
                     }
                     break;
 
@@ -82,21 +81,21 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 case "nckd_customer_q":
                     if(! (filterItem.getValue() == null) ){
                         Long customer =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("customer", QCP.equals, customer);
+                        qFilters.add(new QFilter("customer", QCP.equals, customer));
                     }
                     break;
                 // 查询条件部门,标识如不一致,请修改
                 case "nckd_bizdept_q":
                     if(! (filterItem.getValue() == null) ){
                         Long bizdept =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("bizdept", QCP.equals, bizdept);
+                        qFilters.add(new QFilter("bizdept", QCP.equals, bizdept));
                     }
                     break;
                 // 查询条件仓库,标识如不一致,请修改
                 case "nckd_warehouse_q":
                     if(! (filterItem.getValue() == null) ){
                         Long nckd_warehouse_q =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("billentry.warehouse", QCP.equals, nckd_warehouse_q);
+                        qFilters.add(new QFilter("billentry.warehouse", QCP.equals, nckd_warehouse_q));
                     }
                     break;
             }
@@ -114,7 +113,7 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
 
 
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "im_saloutbill", sFields, new QFilter[]{qFilter},null);
+                "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]),null);
 
         return im_saloutbill;
     }
@@ -126,14 +125,14 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
         while (copy.hasNext()) {
             Row next = copy.next();
             if (next.getLong("nckd_mainbillentryid") != null
-                    && next.getLong("nckd_mainbillentryid")!= 0) {
+                    && next.getLong("nckd_mainbillentryid")!= 0L) {
                 mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
             }
         }
         if(mainbillentryid.isEmpty())
             return ds;
 
-        //取要货订单商品明细主键，省市区，详细地址，电话，收货人
+        //取要货订单交付明细主键，省市区，详细地址，电话，收货人
         String sFields = "itementry.subentryentity.id as fdetailid,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
                 "itementry.entrytelephone as nckd_entrytelephone,itementry.entrycontactname as nckd_entrycontactname," +
                 "itementry.joinreturnbaseqty as nckd_thsl";

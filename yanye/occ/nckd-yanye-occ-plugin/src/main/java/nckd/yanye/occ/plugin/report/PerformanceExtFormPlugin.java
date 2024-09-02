@@ -13,6 +13,7 @@ import kd.sdk.plugin.Plugin;
 import cn.hutool.core.date.DateUtil;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -48,7 +49,7 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
                 //给完成情况-已完成赋值
                 next.set("PL-LJ-0001t",new DecimalFormat("0.00").format(complete));
                 BigDecimal target = new BigDecimal(String.valueOf(next.get("hmua_target")));
-                target = complete.divide(target,BigDecimal.ROUND_CEILING);
+                target = complete.divide(target, RoundingMode.CEILING);
                 //给完成情况-完成率赋值
                 next.set("PL-LJ-0001f",new DecimalFormat("0.00%").format(target));
             }
@@ -67,7 +68,7 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //获取用户编码
-            hmuaKeyUser.add((String) ((DynamicObject)next.get("hmua_flow_user")).getString("number"));
+            hmuaKeyUser.add(((DynamicObject)next.get("hmua_flow_user")).getString("number"));
             hmuaKeyTeam.add((Long) ((DynamicObject)next.get("hmua_team")).getPkValue());
             if(hmuaYear == null){
                 hmuaYear = next.getString("hmua_year_field");
