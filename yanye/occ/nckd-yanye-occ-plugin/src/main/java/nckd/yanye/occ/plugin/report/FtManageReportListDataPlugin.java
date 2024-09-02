@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 外贸管理报表-报表取数插件
+ * 销售管理报表-报表取数插件
  * 表单标识：nckd_salemanage_rpt
  * author:zzl
  * date:2024/08/28
@@ -98,7 +98,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         List<Long> mainbillentryid = new ArrayList<>();
         while (copy.hasNext()) {
             Row next = copy.next();
-            if (next.getLong("mainbillentryid") != null) {
+            if (next.getLong("mainbillentryid") != null
+                    && next.getLong("mainbillentryid")!= 0) {
                 mainbillentryid.add(next.getLong("mainbillentryid"));
             }
         }

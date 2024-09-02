@@ -99,7 +99,8 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         List<Long> mainbillentryid = new ArrayList<>();
         while (copy.hasNext()) {
             Row next = copy.next();
-            if (next.getLong("mainbillentryid") != null) {
+            if (next.getLong("mainbillentryid") != null
+                    && next.getLong("mainbillentryid")!= 0) {
                 mainbillentryid.add(next.getLong("mainbillentryid"));
             }
         }

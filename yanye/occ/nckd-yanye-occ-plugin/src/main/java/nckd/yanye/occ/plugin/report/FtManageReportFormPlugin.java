@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.util.Iterator;
 
 /**
- * 外贸管理报表-报表界面插件
+ * 销售管理报表-报表界面插件
  * 表单标识：nckd_salemanage_rpt
  * author:zzl
  * date:2024/08/29

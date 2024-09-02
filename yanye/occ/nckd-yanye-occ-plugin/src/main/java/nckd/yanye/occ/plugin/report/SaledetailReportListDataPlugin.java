@@ -125,7 +125,8 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
         List<Long> mainbillentryid = new ArrayList<>();
         while (copy.hasNext()) {
             Row next = copy.next();
-            if (next.getLong("nckd_mainbillentryid") != null) {
+            if (next.getLong("nckd_mainbillentryid") != null
+                    && next.getLong("nckd_mainbillentryid")!= 0) {
                 mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
             }
         }
