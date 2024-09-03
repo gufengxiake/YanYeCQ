@@ -1,6 +1,7 @@
 package nckd.yanye.hr.report.shebao;
 
 import kd.bos.algo.DataSet;
+import kd.bos.algo.GroupbyDataSet;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
@@ -22,6 +23,30 @@ import java.util.stream.Collectors;
  * @since 2024-08-22
  */
 public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
+    private final String[] PROJECTS = {
+            "养老保险",
+            "医疗保险",
+            "大病医疗保险",
+            "失业保险",
+            "工伤保险",
+            "补充工伤保险",
+            "住房公积金",
+            "企业年金",
+    };
+
+
+    private final String[] FIELDS = {
+            "ygbh", "ygxm", "sbqj", "sjjndw", "lljndw",
+            "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grhj1", "dwhj1",
+            "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grhj2", "dwhj2",
+            "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grhj3", "dwhj3",
+            "grjfje4", "dwjfje4", "grbjje4", "dwbjje4", "grhj4", "dwhj4",
+            "grjfje5", "dwjfje5", "grbjje5", "dwbjje5", "grhj5", "dwhj5",
+            "grjfje6", "dwjfje6", "grbjje6", "dwbjje6", "grhj6", "dwhj6",
+            "grjfje7", "dwjfje7", "grbjje7", "dwbjje7", "grhj7", "dwhj7",
+            "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grhj8", "dwhj8"
+    };
+
 
     @Override
     public DataSet query(ReportQueryParam queryParam, Object o) {
@@ -78,6 +103,26 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         // 自定义过滤
         QFilter[] filters = new QFilter[]{qFilter};
 
+        // 查询语句
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < PROJECTS.length; i++) {
+            String project = PROJECTS[i];
+            // 个人缴费金额
+            sb.append("(CASE WHEN entryentity.insuranceitem.name = '").append(project).append("个人缴费金额' THEN entryentity.amountvalue END) ").append("grjfje").append(i + 1);
+            sb.append(",");
+            // 单位缴费金额
+            sb.append("(CASE WHEN entryentity.insuranceitem.name = '").append(project).append("单位缴费金额' THEN entryentity.amountvalue END) ").append("dwjfje").append(i + 1);
+            sb.append(",");
+            // 个人补缴金额
+            sb.append("(CASE WHEN entryentity.insuranceitem.name = '").append(project).append("个人补缴金额' THEN entryentity.amountvalue END) ").append("grbjje").append(i + 1);
+            sb.append(",");
+            // 单位补缴金额
+            sb.append("(CASE WHEN entryentity.insuranceitem.name = '").append(project).append("单位补缴金额' THEN entryentity.amountvalue END) ").append("dwbjje").append(i + 1);
+            if (i != (PROJECTS.length - 1)) {
+                sb.append(",");
+            }
+        }
+
         DataSet dataSet = QueryServiceHelper.queryDataSet(
                 "hcsi_calperson",
                 "hcsi_calperson",
@@ -92,28 +137,35 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                         "welfarepayer.name sjjndw," +
                         // 理论缴纳单位
                         "sinsurfilev.welfarepayertheory.name lljndw," +
-                        // 养老保险个人缴费金额
-                        "(CASE WHEN entryentity.insuranceitem.name = '养老保险个人缴费金额' THEN entryentity.amountvalue END) grjfje," +
-                        // 养老保险单位缴费金额
-                        "(CASE WHEN entryentity.insuranceitem.name = '养老保险单位缴费金额' THEN entryentity.amountvalue END) dwjnje," +
-                        // 养老保险个人补缴金额
-                        "(CASE WHEN entryentity.insuranceitem.name = '养老保险个人补缴金额' THEN entryentity.amountvalue END) grbjje," +
-                        // 养老保险单位补缴金额
-                        "(CASE WHEN entryentity.insuranceitem.name = '养老保险单位补缴金额' THEN entryentity.amountvalue END) dwbjje" +
+                        sb +
                         ""
                 ,
                 filters,
                 null
         );
+        dataSet = dataSet.select(new String[]{
+                "ygbh", "ygxm", "sbqj", "sjjndw", "lljndw",
+                "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grjfje1+grbjje1 grhj1", "dwjfje1+dwbjje1 dwhj1",
+                "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grjfje2+grbjje2 grhj2", "dwjfje2+dwbjje2 dwhj2",
+                "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grjfje3+grbjje3 grhj3", "dwjfje3+dwbjje3 dwhj3",
+                "grjfje4", "dwjfje4", "grbjje4", "dwbjje4", "grjfje4+grbjje4 grhj4", "dwjfje4+dwbjje4 dwhj4",
+                "grjfje5", "dwjfje5", "grbjje5", "dwbjje5", "grjfje5+grbjje5 grhj5", "dwjfje5+dwbjje5 dwhj5",
+                "grjfje6", "dwjfje6", "grbjje6", "dwbjje6", "grjfje6+grbjje6 grhj6", "dwjfje6+dwbjje6 dwhj6",
+                "grjfje7", "dwjfje7", "grbjje7", "dwbjje7", "grjfje7+grbjje7 grhj7", "dwjfje7+dwbjje7 dwhj7",
+                "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grjfje8+grbjje8 grhj8", "dwjfje8+dwbjje8 dwhj8"
+        });
 
-        dataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(sbqj,'yyyy-MM') sbqj", "sjjndw", "lljndw"})
-                .max("grjfje")
-                .max("dwjnje")
-                .max("grbjje")
-                .max("dwbjje")
-                .max("grhj")
-                .max("dwhj")
-                .finish().orderBy(new String[]{"ygbh", "sjjndw", "lljndw", "sbqj"});
+        GroupbyDataSet groupbyDataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(sbqj,'yyyy-MM') sbqj", "sjjndw", "lljndw"});
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet = groupbyDataSet
+                    .max("grjfje" + (i + 1))
+                    .max("dwjfje" + (i + 1))
+                    .max("grbjje" + (i + 1))
+                    .max("dwbjje" + (i + 1))
+                    .max("grhj" + (i + 1))
+                    .max("dwhj" + (i + 1));
+        }
+        dataSet = groupbyDataSet.finish().orderBy(new String[]{"ygbh", "sjjndw", "lljndw", "sbqj"});
 
         return dataSet;
     }
@@ -127,23 +179,25 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
 
         ReportColumn sjjndw = createReportColumn("sjjndw", ReportColumn.TYPE_TEXT, "实际缴纳单位");
         ReportColumn lljndw = createReportColumn("lljndw", ReportColumn.TYPE_TEXT, "理论缴纳单位");
-
-        ReportColumnGroup ylbx = createReportColumnGroup("ylbx", "养老保险");
-        ylbx.getChildren().add(createReportColumn("grjfje", ReportColumn.TYPE_DECIMAL, "个人缴费金额"));
-        ylbx.getChildren().add(createReportColumn("dwjnje", ReportColumn.TYPE_DECIMAL, "单位缴纳金额"));
-        ylbx.getChildren().add(createReportColumn("grbjje", ReportColumn.TYPE_DECIMAL, "个人补交金额"));
-        ylbx.getChildren().add(createReportColumn("dwbjje", ReportColumn.TYPE_DECIMAL, "单位补交金额"));
-        ylbx.getChildren().add(createReportColumn("grhj", ReportColumn.TYPE_DECIMAL, "个人合计"));
-        ylbx.getChildren().add(createReportColumn("dwhj", ReportColumn.TYPE_DECIMAL, "单位合计"));
-
-
         columns.add(ygbh);
         columns.add(ygxm);
         columns.add(sbqj);
         columns.add(sjjndw);
         columns.add(lljndw);
-        columns.add(ylbx);
-//        columns.add(createReportColumn("test", ReportColumn.TYPE_TEXT, "test"));
+
+        // 险种
+        for (int i = 0; i < PROJECTS.length; i++) {
+            String project = PROJECTS[i];
+            ReportColumnGroup welfaretype = createReportColumnGroup(String.valueOf(i), project);
+            welfaretype.getChildren().add(createReportColumn("grjfje" + (i + 1), ReportColumn.TYPE_DECIMAL, "个人缴费金额"));
+            welfaretype.getChildren().add(createReportColumn("dwjfje" + (i + 1), ReportColumn.TYPE_DECIMAL, "单位缴费金额"));
+            welfaretype.getChildren().add(createReportColumn("grbjje" + (i + 1), ReportColumn.TYPE_DECIMAL, "个人补缴金额"));
+            welfaretype.getChildren().add(createReportColumn("dwbjje" + (i + 1), ReportColumn.TYPE_DECIMAL, "单位补缴金额"));
+            welfaretype.getChildren().add(createReportColumn("grhj" + (i + 1), ReportColumn.TYPE_DECIMAL, "个人合计"));
+            welfaretype.getChildren().add(createReportColumn("dwhj" + (i + 1), ReportColumn.TYPE_DECIMAL, "单位合计"));
+            columns.add(welfaretype);
+        }
+
         return columns;
     }
 
