@@ -1,4 +1,4 @@
-package nckd.yanye.occ.plugin.form;
+package nckd.yanye.occ.plugin.task;
 
 import cn.hutool.core.convert.Convert;
 import cn.hutool.core.date.DateUtil;
@@ -6,7 +6,6 @@ import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.ccb.CCBMisSdk;
-import kd.bos.bill.AbstractMobBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -16,14 +15,15 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.form.FormShowParameter;
-import kd.bos.form.control.QRCode;
-import kd.bos.form.events.BeforeClosedEvent;
+import kd.bos.exception.KDBizException;
+import kd.bos.exception.KDException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.metadata.botp.ConvertRuleReader;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.schedule.api.MessageHandler;
+import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
@@ -44,54 +44,60 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Module           :全渠道云-B2B订单中心-二维码
- * Description      :生成支付二维码
+ * Module           :系统服务云-调度中心-调度执行程序
+ * Description      :全渠道聚合支付功能，如果客户从要货订单移动端发起支付，建行不会主动返回交易状态，如果客户在支付二维码nckd_qrcode界面没有手动
+ * 点击“支付完成”，或者点击了，但是银行尚未处理完这笔交易，则需要定时任务去轮询银行的接口获取交易
  *
  * @author : zhujintao
- * @date : 2024/8/20
+ * @date : 2024/9/3
  */
-public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
-    private static final Log logger = LogFactory.getLog(QrCodeMobFormPlugin.class);
+public class GetTransactionStatementTask extends AbstractTask {
+    private static final Log logger = LogFactory.getLog(GetTransactionStatementTask.class);
 
     @Override
-    public void afterCreateNewData(EventObject e) {
-        super.afterCreateNewData(e);
-        FormShowParameter formShowParameter = this.getView().getFormShowParameter();
-        Map<String, Object> customParams = formShowParameter.getCustomParams();
-        JSONObject transResultJson = JSONUtil.parseObj(customParams.get("transResultJson"));
-        QRCode code = this.getView().getControl("nckd_qrcodeap");
-        JSONObject transData = transResultJson.getJSONObject("transData");
-        code.setUrl(transData.getStr("qrCodeUrl"));
-        this.getModel().setValue("nckd_billno", Convert.toStr(customParams.get("billNo")));
-        this.getModel().setValue("nckd_orderdate", Convert.toDate(customParams.get("orderdate")));
-        com.alibaba.fastjson.JSONObject saleorgid = (com.alibaba.fastjson.JSONObject) customParams.get("saleorgid");
-        JSONObject name = JSONUtil.parseObj(saleorgid.getString("name"));
-        this.getModel().setValue("nckd_supplier", name.getStr("zh_CN"));
-        this.getModel().setValue("nckd_sumunrecamount", Convert.toBigDecimal(customParams.get("sumunrecamount")));
+    public MessageHandler getMessageHandle() {
+        return super.getMessageHandle();
+    }
+
+    @Override
+    public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
+        if (ObjectUtil.isNotEmpty(map)) {
+            //TODO 获取传入的支付参数配置编码
+            Object orderNo = map.get("orderNo");
+            logger.info("GetTransactionStatementTask 根据交易订单号" + orderNo + "去查询交易流水记录");
+            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, orderNo);
+            paytranrecordFilter.and("billstatus", QCP.equals, "C").and("nckd_paystatus", QCP.equals, "D");
+            DynamicObject payTranRecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", paytranrecordFilter.toArray());
+
+            if (ObjectUtil.isNotEmpty(payTranRecord)) {
+                logger.info("GetTransactionStatementTask 获取到对应交易流水记录");
+                QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, payTranRecord.getDynamicObject("nckd_saleorg").getPkValue());
+                payparamconfigFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
+                DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", payparamconfigFilter.toArray());
+                getTransactionStatement(payParamConfig, payTranRecord);
+            } else {
+                logger.info("GetTransactionStatementTask 没有获取到对应交易流水记录");
+            }
+        } else {
+            logger.info("GetTransactionStatementTask 全量获取符合条件的交易流水记录进行银行接口调用start");
+            QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
+            qFilter.and("nckd_paystatus", QCP.equals, "D");
+            DynamicObject[] payTranRecordArr = BusinessDataServiceHelper.load("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", qFilter.toArray());
+            for (DynamicObject dynamicObject : payTranRecordArr) {
+                QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("nckd_saleorg").getPkValue());
+                payparamconfigFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
+                DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", payparamconfigFilter.toArray());
+                getTransactionStatement(payParamConfig, dynamicObject);
+            }
+            logger.info("GetTransactionStatementTask 全量获取符合条件的交易流水记录进行银行接口调用end");
+        }
     }
 
     /**
-     * 关闭二维码界面就启动立刻启动查询，获取银行的QR002 - 聚合主扫结果查询
-     *
-     * @param e
+     * @param payParamConfig
+     * @param payTranRecord
      */
-    @Override
-    public void beforeClosed(BeforeClosedEvent e) {
-        super.beforeClosed(e);
-        FormShowParameter formShowParameter = this.getView().getFormShowParameter();
-        Map<String, Object> customParams = formShowParameter.getCustomParams();
-        //用于查询必不可少的条件
-        String orderNo = Convert.toStr(customParams.get("orderNo"));
-        com.alibaba.fastjson.JSONObject saleorgid = (com.alibaba.fastjson.JSONObject) customParams.get("saleorgid");
-        QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, saleorgid.get("id"));
-        payparamconfigFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
-        DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", payparamconfigFilter.toArray());
-        if (ObjectUtil.isEmpty(payParamConfig)) {
-            JSONObject name = JSONUtil.parseObj(saleorgid.getString("name"));
-            logger.info("QrCodeMobFormPlugin " + "没有获取到销售组织 " + name.getStr("zh_CN") + " 对应的支付参数配置");
-            this.getView().showErrorNotification("没有获取到销售组织 " + name.getStr("zh_CN") + " 对应的支付参数配置");
-            return;
-        }
+    private void getTransactionStatement(DynamicObject payParamConfig, DynamicObject payTranRecord) {
         DynamicObjectCollection nckdEntryentity = payParamConfig.getDynamicObjectCollection("nckd_entryentity");
         Map<String, String> nckdEntryentityMap = nckdEntryentity.stream().collect(Collectors.toMap(k -> k.getString("nckd_payparamnbr"), v -> v.getString("nckd_payparamvalue")));
         String key = nckdEntryentityMap.get("key");
@@ -103,10 +109,9 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
         String gps = nckdEntryentityMap.get("gps");
         boolean paramConfigResult = StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(merchantCode) && StringUtils.isNotEmpty(terminalId) && StringUtils.isNotEmpty(url) && StringUtils.isNotEmpty(apiVer) && StringUtils.isNotEmpty(gps);
         if (!paramConfigResult) {
-            this.getView().showErrorNotification("请检查支付参数交易密钥，授权码，商户号，终端号，请求地址，版本号，gps是否为空");
-            return;
+            logger.info("GetTransactionStatementTask 请检查支付参数交易密钥，授权码，商户号，终端号，请求地址，版本号，gps是否为空");
+            throw new KDBizException("GetTransactionStatementTask 请检查支付参数交易密钥，授权码，商户号，终端号，请求地址，版本号，gps是否为空");
         }
-
         DynamicObject nckdPaylogRecord = BusinessDataServiceHelper.newDynamicObject("nckd_paylogrecord");
         //生成交易操作记录
         long currUserId = RequestContext.get().getCurrUserId();
@@ -119,18 +124,18 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
         nckdPaylogRecord.set("billstatus", "C");
         nckdPaylogRecord.set("org", userDefaultOrgID);
         //调银行的QR002 - 聚合主扫结果查询
-        MisApiResponseVo misApiResponse = QR002SDK.qr002(orderNo, nckdPaylogRecord, key, merchantCode, terminalId, url, apiVer, address, gps);
+        String nckdOrderno = payTranRecord.getString("nckd_orderno");
+        MisApiResponseVo misApiResponse = QR002SDK.qr002(nckdOrderno, nckdPaylogRecord, key, merchantCode, terminalId, url, apiVer, address, gps);
         //这个表示本次查询的结果成功与否
         if ("00".equals(misApiResponse.getRetCode())) {
             //解密数据
             String transResultStr = CCBMisSdk.CCBMisSdk_DataDecrypt(misApiResponse.getData(), key);
-            logger.info("QrCodeMobFormPlugin 聚合主扫结果查询结果" + transResultStr);
+            logger.info("GetTransactionStatementTask 聚合主扫结果查询结果" + transResultStr);
             nckdPaylogRecord.set("nckd_respmsg", transResultStr);
-            OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
+            OperationResult paylogRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
 
             JSONObject transResultJson = JSONUtil.parseObj(transResultStr);
             JSONObject transData = transResultJson.getJSONObject("transData");
-
             logger.info("QrCodeMobFormPlugin 更新交易流水记录start");
             /**
              * 原交易成功	retCode=="00" 且 transData.statusCode=="00"	提示成功
@@ -138,7 +143,7 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
              * 未知	其他	继续轮询
              */
             //成功获取交易数据则更新交易流水记录 成功、失败、异常、不支持的交易状态
-            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, orderNo).and("nckd_paystatus", QCP.equals, "D");
+            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, nckdOrderno).and("nckd_paystatus", QCP.equals, "D");
             DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
             //这个表示要查询的那个订单的交易状态成功与否
             if (!"00".equals(transData.getStr("statusCode"))) {
@@ -166,67 +171,68 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
             }
             //更新支付流水的支付状态为成功
             SaveServiceHelper.update(paytranrecord);
-            logger.info("QrCodeMobFormPlugin 更新交易流水记录end");
+            logger.info("GetTransactionStatementTask 更新交易流水记录end");
             //========================================================
-            logger.info("QrCodeMobFormPlugin 下推生成收款单start");
-            ConvertOperationResult convertResult = convertCasRecBill(customParams);
+            logger.info("GetTransactionStatementTask 下推生成收款单start");
+            ConvertOperationResult convertResult = convertCasRecBill(payTranRecord);
             //获取下推目标单id
             if (!convertResult.isSuccess()) {
-                logger.info("QrCodeMobFormPlugin 下推生成收款单失败" + convertResult.getMessage());
+                logger.info("GetTransactionStatementTask 下推生成收款单失败" + convertResult.getMessage());
                 return;
             }
-            logger.info("QrCodeMobFormPlugin 下推生成收款单成功");
+            logger.info("GetTransactionStatementTask 下推生成收款单成功");
             Set<Object> targetBillIds = convertResult.getTargetBillIds();
             Object[] targetBillIdArr = targetBillIds.stream().toArray();
             DynamicObject casRecbill = BusinessDataServiceHelper.loadSingle(targetBillIdArr[0], "cas_recbill");
             //TODO 获取到收款单后需要将客户真正付款的金额和付款单的应收金额相比较，相同不更新，否则要更新
-            OperationResult updateCasRecBillResult = updateCasRecBill(customParams, casRecbill);
+            OperationResult updateCasRecBillResult = updateCasRecBill(payTranRecord, casRecbill);
             //=========================================
             if (!updateCasRecBillResult.isSuccess()) {
-                logger.info("QrCodeMobFormPlugin 收款单后台更新应收金额失败" + updateCasRecBillResult.getMessage());
+                logger.info("GetTransactionStatementTask 收款单后台更新应收金额失败" + updateCasRecBillResult.getMessage());
                 return;
             }
-            logger.info("QrCodeMobFormPlugin 收款单后台更新应收金额成功");
+            logger.info("GetTransactionStatementTask 收款单后台更新应收金额成功");
             OperationResult casRecbillSubmitResult = OperationServiceHelper.executeOperate("submit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
             if (!casRecbillSubmitResult.isSuccess()) {
                 List<IOperateInfo> allErrorOrValidateInfo = casRecbillSubmitResult.getAllErrorOrValidateInfo();
                 for (int j = 0; j < allErrorOrValidateInfo.size(); j++) {
                     IOperateInfo iOperateInfo = allErrorOrValidateInfo.get(j);
                     String message = iOperateInfo.getMessage();
-                    logger.info("QrCodeMobFormPlugin 收款单提交失败" + message);
+                    logger.info("GetTransactionStatementTask 收款单提交失败" + message);
                 }
-                logger.info("QrCodeMobFormPlugin 收款单提交失败" + casRecbillSubmitResult.getMessage());
+                logger.info("GetTransactionStatementTask 收款单提交失败" + casRecbillSubmitResult.getMessage());
             }
-            logger.info("QrCodeMobFormPlugin 收款单提交成功");
+            logger.info("GetTransactionStatementTask 收款单提交成功");
             OperationResult casRecbillAuditResult = OperationServiceHelper.executeOperate("audit", "cas_recbill", new DynamicObject[]{casRecbill}, OperateOption.create());
             if (!casRecbillAuditResult.isSuccess()) {
                 List<IOperateInfo> allErrorOrValidateInfo = casRecbillAuditResult.getAllErrorOrValidateInfo();
                 for (int j = 0; j < allErrorOrValidateInfo.size(); j++) {
                     IOperateInfo iOperateInfo = allErrorOrValidateInfo.get(j);
                     String message = iOperateInfo.getMessage();
-                    logger.info("QrCodeMobFormPlugin 收款单审核失败" + message);
+                    logger.info("GetTransactionStatementTask 收款单审核失败" + message);
                 }
-                logger.info("QrCodeMobFormPlugin 收款单审核失败");
+                logger.info("GetTransactionStatementTask 收款单审核失败");
             }
-            logger.info("QrCodeMobFormPlugin 收款单审核成功");
+            logger.info("GetTransactionStatementTask 收款单审核成功");
 
         } else {
             //请求失败
-            logger.info("QrCodeMobFormPlugin 聚合主扫结果查询请求失败" + misApiResponse.getRetErrMsg());
+            logger.info("GetTransactionStatementTask " + misApiResponse.getRetErrMsg());
             nckdPaylogRecord.set("nckd_respmsg", misApiResponse.getRetErrMsg());
             OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
         }
+
     }
 
     /**
      * 如果输入的支付金额小于待付金额，那么需要更新收款处理
      *
-     * @param customParams
+     * @param payTranRecord
      * @param casRecbill
      * @return
      */
-    public static OperationResult updateCasRecBill(Map<String, Object> customParams, DynamicObject casRecbill) {
-        BigDecimal payamount = Convert.toBigDecimal(customParams.get("payamount"));
+    public static OperationResult updateCasRecBill(DynamicObject payTranRecord, DynamicObject casRecbill) {
+        BigDecimal payamount = Convert.toBigDecimal(payTranRecord.get("nckd_payamount"));
         casRecbill.set("actrecamt", payamount);//收款金额
         casRecbill.set("localamt", payamount);//折本位币
         casRecbill.set("unsettleamount", payamount);//未结算金额
@@ -249,13 +255,13 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
     /**
      * 下推生成收款记录
      *
-     * @param customParams
+     * @param payTranRecord
      * @return
      */
-    public static ConvertOperationResult convertCasRecBill(Map<String, Object> customParams) {
+    public static ConvertOperationResult convertCasRecBill(DynamicObject payTranRecord) {
         //（1）获取需要执行下推的源单数据，并封装数据包
         //获取源单id
-        String billNo = Convert.toStr(customParams.get("billNo"));
+        String billNo = Convert.toStr(payTranRecord.getString("nckd_saleorderno"));
         QFilter saleorderFilter = new QFilter("billno", QCP.equals, billNo);
         DynamicObject ocbsocSaleorder = QueryServiceHelper.queryOne("ocbsoc_saleorder", "*", saleorderFilter.toArray());
         Object pkid = ocbsocSaleorder.get("id");
@@ -312,5 +318,10 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
         // 将 LocalDateTime 转换为 Instant
         Instant instant = currentTime.atZone(ZoneId.systemDefault()).toInstant();
         return Date.from(instant);
+    }
+
+    @Override
+    public boolean isSupportReSchedule() {
+        return super.isSupportReSchedule();
     }
 }
