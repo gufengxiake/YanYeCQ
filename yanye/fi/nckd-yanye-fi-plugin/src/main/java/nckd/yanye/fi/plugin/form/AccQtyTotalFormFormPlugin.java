@@ -55,5 +55,6 @@ public class AccQtyTotalFormFormPlugin extends AbstractReportFormPlugin {
                 newUnit.set("name", null);
             });
         }
+
     }
 }
