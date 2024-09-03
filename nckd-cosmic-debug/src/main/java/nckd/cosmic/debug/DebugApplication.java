@@ -11,50 +11,34 @@ package nckd.cosmic.debug;
  * 启动本地应用程序(微服务节点)
  */
 public class DebugApplication {
-	
-	
-
     public static void main(String[] args) {
-
-//      Thread.currentThread().setContextClassLoader(new KDSecurityClassLoader(Thread.currentThread().getContextClassLoader()));
-
+//    	Thread.currentThread().setContextClassLoader(new KDSecurityClassLoader(Thread.currentThread().getContextClassLoader()));
         Launcher cosmic = new Launcher(false);
 
-        //cosmic.setClusterNumber("nckd-sit");
-
-
-//        cosmic.setClusterNumber("cosmic");
-//        cosmic.setTenantNumber("ierp");
-//        cosmic.setConfigUrl("127.0.0.1:2181/?user=zookeeper&password=wszygr332");
+        // 本地环境配置
+//        cosmic.setClusterNumber("cosmic"); // 群集
+//        cosmic.setTenantNumber("ierp"); // 租户id
+//        cosmic.setConfigUrl("127.0.0.1:2181?user=zookeeper&password=zk123456");
 //        cosmic.setMcServerUrl("http://127.0.0.1:8090");
 //        cosmic.setFsServerUrl("127.0.0.1", 8100);
+//        cosmic.setImageServerUrl("127.0.0.1", 8100);
 
+        // 本地静态文件仓库
+        cosmic.setWebResPath("E:/cangqiong/cqfwconfig/static-file-service");
 
-
+        // 测试环境配置（新）
         cosmic.setClusterNumber("nckd-sit");
         cosmic.setTenantNumber("ierp-tenant");
         cosmic.setConfigUrl("36.133.14.214:8002?user=zookeeper&password=d@f*g:SGVsbG8==oHZtj98tfV63eA01L9fIEDAXfSWRE+IjSVOnoy5fttCba2RwYXNzd29yZA==");
         cosmic.setMcServerUrl("http://36.133.14.214:8090"); // 可以
         cosmic.setFsServerUrl("36.133.14.214", 8022);  // 可以
-        cosmic.setImageServerUrl("127.0.0.1", 8100);
-
-
-        //cosmic.setTenantNumber("nckd-sit");
-
-        //cosmic.setConfigUrl("127.0.0.1:2181/?user=zookeeper&password=zhu123456");
-//        cosmic.setConfigUrl("124.71.130.36:2181?user=zookeeper&password=d@f*g:SGVsbG8==ospsxPHznsepO4pT4JrgBDJ2nwUYhViKIMaOg4gYfNAca2RwYXNzd29yZA==");
-//        cosmic.setMcServerUrl("http://124.71.130.36:8090");
-
-//        cosmic.setWebResPath("E:/JiangXiSaltDev/static-file-service");
-//        cosmic.setFsServerUrl("124.71.130.36", 8022);
-//        cosmic.setImageServerUrl("127.0.0.1", 8100);
+        cosmic.setImageServerUrl("36.133.14.214", 8100);
 
         //自定义本地苍穹调试服务的端口
-        cosmic.setCosmicWepPort(8881);
-        cosmic.setWebResPath("E:/work/cangqiong/cqfwconfig/static-file-service");
+        cosmic.setCosmicWepPort(8080);
 //        cosmic.setDubboConfig(false, true, true);
         cosmic.start();
-        
-        
+
+
     }
 }
