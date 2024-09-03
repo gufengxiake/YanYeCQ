@@ -41,7 +41,7 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
                 // 查询条件销售部门,标识如不一致,请修改
                 case "nckd_bizdept_q":
                     if (!(filterItem.getValue() == null)) {
-                        QFilter qFilter = new QFilter("bizoperator", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
+                        QFilter qFilter = new QFilter("bizdept", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
                         qFilters.add(qFilter);
                     }
                     break;
@@ -94,17 +94,10 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
 
     //关联开票申请单
     public DataSet linkOriginal(DataSet ds){
-        DataSet copy = ds.copy();
-        List<Long> mainbillentryid = new ArrayList<>();
-        while (copy.hasNext()) {
-            Row next = copy.next();
-            if (next.getLong("mainbillentryid") != null && next.getLong("mainbillentryid")!= 0L ) {
-                mainbillentryid.add(next.getLong("mainbillentryid"));
-            }
-        }
-        if (mainbillentryid.isEmpty()) return ds;
+        List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
+        if (mainbillentryidToList.isEmpty()) return ds;
 
-        QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryid.toArray(new Long[0]));
+        QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryidToList.toArray(new Long[0]));
         DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sim_original_bill",
                 //查询开票申请单核心单据行id，
