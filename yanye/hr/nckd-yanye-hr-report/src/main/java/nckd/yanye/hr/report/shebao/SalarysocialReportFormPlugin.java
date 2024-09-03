@@ -11,7 +11,9 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
+import java.util.Date;
 
 
 /**
@@ -36,6 +38,17 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
             "企业年金",
     };
 
+    private final String[] amountFields = {
+            "sbb1", "gzb1", "pzjl1", "ce1",
+            "sbb2", "gzb2", "pzjl2", "ce2",
+            "sbb3", "gzb3", "pzjl3", "ce3",
+            "sbb4", "gzb4", "pzjl4", "ce4",
+            "sbb5", "gzb5", "pzjl5", "ce5",
+            "sbb6", "gzb6", "pzjl6", "ce6",
+            "sbb7", "gzb7", "pzjl7", "ce7",
+            "sbb8", "gzb8", "pzjl8", "ce8",
+    };
+
     @Override
     public void initDefaultQueryParam(ReportQueryParam queryParam) {
         super.initDefaultQueryParam(queryParam);
@@ -49,7 +62,10 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
         if (dynamicObject == null) {
             this.getView().showErrorNotification("未找到当月对应的社保期间，请维护！");
         }
+        // 社保开始期间：默认当月
         filter.addFilterItem("nckd_sbksqj", dynamicObject);
+        // 薪酬开始日期：默认当月
+        filter.addFilterItem("nckd_xcksrq", Date.from(lastDayOfMonth.atStartOfDay(ZoneId.systemDefault()).toInstant()));
     }
 
     @Override
@@ -68,5 +84,18 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
                 data.set("ce" + i, sbb.subtract(gzb).subtract(pzjl));
             }
         }
+
+        DynamicObject total = new DynamicObject(rowData.getDynamicObjectType());
+        total.set("qj", "合计");
+
+        for (DynamicObject data : rowData) {
+            for (String field : amountFields) {
+                BigDecimal value = data.getBigDecimal(field);
+                BigDecimal sum = total.getBigDecimal(field).add(value);
+                total.set(field, sum);
+            }
+        }
+
+        rowData.add(total);
     }
 }

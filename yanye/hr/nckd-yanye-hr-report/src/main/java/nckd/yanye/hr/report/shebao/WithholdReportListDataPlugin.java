@@ -69,14 +69,17 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
             throw new KDBizException("社保开始期间不能为空");
         }
 
-//        // 实际参保单位或理论参保单位至少录入一项
-//        if (sjcbdw.getValue() == null && llcbdw.getValue() == null) {
-//            throw new KDBizException("实际参保单位或理论参保单位至少录入一项");
-//        }
+        // 实际参保单位或理论参保单位至少录入一项
+        if (sjcbdw.getValue() == null && llcbdw.getValue() == null) {
+            throw new KDBizException("实际参保单位或理论参保单位至少录入一项");
+        }
 
         // 过滤
         // 社保开始期间
-        QFilter qFilter = new QFilter("sinsurperiod.perioddate", QCP.large_equals, ((DynamicObject) sbksqj.getValue()).getDate("perioddate"));
+        QFilter qFilter = new QFilter("sinsurperiod.perioddate",
+                QCP.large_equals,
+                ((DynamicObject) sbksqj.getValue()).getDate("perioddate")
+        );
         // 人员
         if (users.getValue() != null) {
             qFilter = qFilter.and(
@@ -98,7 +101,6 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         if (llcbdw.getValue() != null) {
             qFilter = qFilter.and(new QFilter("sinsurfilev.welfarepayertheory", QCP.equals, ((DynamicObject) llcbdw.getValue()).getLong("id")));
         }
-
 
         // 自定义过滤
         QFilter[] filters = new QFilter[]{qFilter};
