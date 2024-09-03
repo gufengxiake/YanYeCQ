@@ -56,15 +56,4 @@ public class AccQtyTotalFormFormPlugin extends AbstractReportFormPlugin {
             });
         }
     }
-
-    @Override
-    public void afterBindData(EventObject e) {
-        super.afterBindData(e);
-        MainEntityType type = getModel().getDataEntityType();
-        DecimalProp prop = (DecimalProp) type.getProperty("yearbdebitqty");
-        int precision = 15;
-        int scale = 3;
-        prop.setPrecision(precision);
-        prop.setScale(scale);
-    }
 }
