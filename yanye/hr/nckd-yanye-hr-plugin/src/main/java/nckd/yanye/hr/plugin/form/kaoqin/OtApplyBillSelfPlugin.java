@@ -3,21 +3,25 @@ package nckd.yanye.hr.plugin.form.kaoqin;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.AppInfo;
+import kd.bos.entity.AppMetadataCache;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.events.ChangeData;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.param.AppParam;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 import kd.fi.ap.formplugin.ApBaseEdit;
 import org.apache.commons.lang3.ObjectUtils;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.EventObject;
+import java.util.Map;
 
 /**
  * Module           :工时假勤云-加班管理-加班申请
@@ -27,17 +31,13 @@ import java.util.EventObject;
  * @date  2024-08-30 9：15
  *
  */
-public class OtApplyBillSelfPPlugin extends ApBaseEdit {
+public class OtApplyBillSelfPlugin extends ApBaseEdit {
 
 
     public void registerListener(EventObject e) {
         super.registerListener(e);
-//        this.addClickListeners(new String[]{"nckd_advconbaritemap2"});
-//        this.addItemClickListeners("advcontoolbarap2");
         this.addItemClickListeners("advcontoolbarap2");
-        this.addClickListeners(new String[]{"btnok"});
 
-//        this.filterMaterialVersion();
     }
 
     @Override
@@ -62,14 +62,57 @@ public class OtApplyBillSelfPPlugin extends ApBaseEdit {
 
         }
     }
+    // 生命周期创建后进行按钮初始化
+    public void propertyChanged(PropertyChangedArgs e) {
+        String key = e.getProperty().getName();
+        ChangeData[] changeData = e.getChangeSet();
+        Object newValue = changeData[0].getNewValue();
+        Object oldValue = changeData[0].getOldValue();
+        if("org".equals(key)){
+            if(ObjectUtils.isEmpty(newValue)){
+                // 组织为空直接隐藏,然后返回出去
+                this.getView().setVisible(false,"nckd_advconbaritemap2");
+                return;
+            }
+            filterMaterialVersion(newValue);
+        }
+
+    }
+
+
+    // 组织变更进行按钮初始化
+    private void filterMaterialVersion(Object org) {
+        DynamicObject newValue1 = (DynamicObject) org;
+        this.getView().setVisible(false,"nckd_advconbaritemap2");
+        if(ObjectUtils.isNotEmpty(newValue1.getDataStorage()) && ObjectUtils.isNotEmpty(newValue1)){
+            // 组织id
+            Object pkValue = ((DynamicObject) org).getPkValue();
+            // 获取系统参数配置
+            AppInfo appInfo = AppMetadataCache.getAppInfo("wtp");
+            String appId = appInfo.getId();
+            AppParam appParam = new AppParam();
+            appParam.setViewType("26");
+            appParam.setAppId(appId);
+            appParam.setOrgId((Long) pkValue);
+
+            Map<String,Object> systemMap= SystemParamServiceHelper.loadAppParameterFromCache(appParam);
+            boolean client =  (boolean)systemMap.get("nckd_duty");
+            // 如果勾选配置了，则显示按钮
+            if(client){
+                this.getView().setVisible(true,"nckd_advconbaritemap2");
+                return;
+            }
+//            logger.info("收款入账中心配置信息：{}",client);
+        }
+        this.getView().setVisible(false,"nckd_advconbaritemap2");
+
+    }
+
+
 
     public void click(EventObject evt) {
         super.click(evt);
         Control c = (Control)evt.getSource();
-//        switch (c.getKey().toLowerCase()) {
-//            case "nckd_advconbaritemap2":
-//                break;
-//        }
     }
     public void closedCallBack(ClosedCallBackEvent e) {
         super.closedCallBack(e);
@@ -104,25 +147,7 @@ public class OtApplyBillSelfPPlugin extends ApBaseEdit {
                 // 新增行号
                 i = model.insertEntryRow("sdentry", scentry.size() + 1);
             }
-            addNewEntry(i,returnDatum,0);
-
-//            System.out.println(returnDatum);
-//            // 加班类型
-//            dynamicObject.set("sdottype",returnDatum.getDynamicObject("nckd_sdottype"));
-//            // 值班类型
-//            dynamicObject.set("nckd_dutytype",returnDatum.getDynamicObject("nckd_dutytype"));
-//            //加班日期
-//            dynamicObject.set("otdutydate",returnDatum.getDate("nckd_otdutydate"));
-//            //开始日期
-//            dynamicObject.set("otstartdate",returnDatum.getDate("nckd_otstartdate"));
-//            //结束日期
-//            dynamicObject.set("otenddate",returnDatum.getDate("nckd_otenddate"));
-//            // 补偿方式
-//            dynamicObject.set("compentyped",returnDatum.get("nckd_compentyped"));
-//            // 加班原因
-//            dynamicObject.set("otresond",returnDatum.getString("nckd_textfield"));
-
-
+            addNewEntry(i,returnDatum);
             int days = returnDatum.getInt("nckd_dutydays");
 
             // 判断值班天数是否超过1天
@@ -140,34 +165,21 @@ public class OtApplyBillSelfPPlugin extends ApBaseEdit {
                     returnDatum.set("nckd_otstartdate",combineDateAddDays(nckdOtstartdate, i1+1));
                     returnDatum.set("nckd_otenddate",combineDateAddDays(nckdOtenddate, i1+1));
                     int sdentry = model.insertEntryRow("sdentry", index);
-                    addNewEntry(sdentry,returnDatum,1);
+                    addNewEntry(sdentry,returnDatum);
                 }
-
-
-//                addNewEntry(i+1,dynamicObject,0);
-//                DynamicObject dynamicObject2 = scentry.addNew();
-//                dynamicObject2  = dynamicObject;
-//                dynamicObject2.getDate("dynamicObject2")
-//                dynamicObject2.set("dynamicObject2",+1);
             }
 
 
         }
-        this.getView().updateView();
-//        DynamicObjectCollection scentry = this.getModel().getEntryEntity("scentry");
-//        DynamicObject dynamicObject = scentry.addNew();
-
-
     }
 
-    private void addNewEntry(int row,DynamicObject returnDatum,int days) {
+    private void addNewEntry(int row,DynamicObject returnDatum) {
         IDataModel model = this.getModel();
         // 加班类型
-        model.setValue("sdottype",returnDatum.getDynamicObject("nckd_sdottype"),row);
+        model.setValue("sdottype",returnDatum.getDynamicObject("nckd_sdottype").getPkValue(),row);
         // 值班类型
-        model.setValue("nckd_dutytype",returnDatum.getDynamicObject("nckd_dutytype"),row);
-        //加班日期
-        model.setValue("otdutydate",returnDatum.getDate("nckd_otdutydate"),row);
+        model.setValue("nckd_dutytype",returnDatum.getDynamicObject("nckd_dutytype").getPkValue(),row);
+
         //开始日期
         model.setValue("otstartdate",returnDatum.getDate("nckd_otstartdate"),row);
         // 获取值班天数，重新计算结束日期
@@ -178,10 +190,14 @@ public class OtApplyBillSelfPPlugin extends ApBaseEdit {
         }
         //结束日期
         model.setValue("otenddate",returnDatum.getDate("nckd_otenddate"),row);
+
+        //加班日期
+//        model.setValue("otdutydate",returnDatum.getDate("nckd_otdutydate"),row);
         // 补偿方式
-        model.setValue("compentyped",returnDatum.get("nckd_compentyped"),row);
+        model.setValue("compentyped",returnDatum.getDynamicObject("nckd_compentyped").getPkValue(),row);
         // 加班原因
         model.setValue("otresond",returnDatum.getString("nckd_otresond"),row);
+        model.setValue("avoidsddelete","avoidsddelete",row);
 
     }
 
