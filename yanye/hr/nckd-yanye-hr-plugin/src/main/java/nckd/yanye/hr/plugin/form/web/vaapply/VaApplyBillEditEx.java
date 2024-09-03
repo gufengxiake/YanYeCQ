@@ -51,8 +51,9 @@ public class VaApplyBillEditEx  extends HRCoreBaseBillEdit {
                     DynamicObjectCollection entryRows = this.getModel().getEntryEntity("entryentity"); // “休假信息”分录
                     for (DynamicObject entryObj : entryRows) {
                         DynamicObject typeobj =  (DynamicObject)entryObj.get("entryvacationtype"); // 休假类型
-                        // 1030_S : 年假
-                        if ("1030_S".equals(typeobj.getString("number"))) {
+                        // 1030_S : 年假， 1088_S : 仓储中心年休假
+                        if ("1030_S".equals(typeobj.getString("number")) ||
+                                "1088_S".equals(typeobj.getString("number"))) {
                             startList.add(entryObj.getString("entrystarttimetext")); // 开始日期
                             if (startList.size() > 0) {
                                 // 1)开始日期取最小的日期
