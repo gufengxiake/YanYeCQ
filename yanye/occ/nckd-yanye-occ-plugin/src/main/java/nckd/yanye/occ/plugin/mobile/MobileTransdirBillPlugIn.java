@@ -2,6 +2,7 @@ package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.bill.BillShowParameter;
 import kd.bos.bill.MobileFormPosition;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -55,20 +56,35 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
         this.getModel().setItemValueByID("billtype","1980435141796826112");
 
         //设置业务员
-        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
-        if(user!=null){
-            String number=user.getString("number");
-            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
-            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
-                    .and("opergrptype", QCP.equals, "XSZ");
-            //查找业务员
-            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+        Long orgId = RequestContext.get().getOrgId();
+        if (orgId != 0) {
+            // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                    .and("operatorgrouptype", QCP.equals, "XSZ");
+            //查找业务组
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operatorgroup",
                     "id", qFilter.toArray(), "");
-            if(!collections.isEmpty()){
-                DynamicObject operatorItem = collections.get(0);
-                String operatorId = operatorItem.getString("id");
-                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            if (!collections.isEmpty()) {
+                DynamicObject operatorGroupItem = collections.get(0);
+                long operatorGroupId = (long) operatorGroupItem.get("id");
+                //this.getModel().setItemValueByID("nckd_operatorgroup", operatorGroupId);
+                DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+                if (user != null && operatorGroupId != 0) {
+                    String number = user.getString("number");
+                    // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
+                    QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
+                            .and("operatorgrpid", QCP.equals, operatorGroupId);
+                    //查找业务员
+                    DynamicObjectCollection opreatorColl = QueryServiceHelper.query("bd_operator",
+                            "id", Filter.toArray(), "");
+                    if (!opreatorColl.isEmpty()) {
+                        DynamicObject operatorItem = opreatorColl.get(0);
+                        String operatorId = operatorItem.getString("id");
+                        this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+                }
             }
+
         }
     }
 
@@ -160,7 +176,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                 Object orgId = org.getPkValue();
                 //获取基础资料的单据参数
                 //BillParam billParam = ParameterHelper.getBillParam("nckd_xsyjhyebf_mob");
-                ListShowParameter listPara = createShowMobileF7ListForm("nckd_xsyjhyebf", true);//第二个参数为是否支持多选;
+                MobileListShowParameter listPara = createShowMobileF7ListForm("nckd_xsyjhyebf", true);//第二个参数为是否支持多选;
                 ListFilterParameter listFilterParameter = new ListFilterParameter();
                 listFilterParameter.setFilter(new QFilter("nckd_qty", QCP.not_equals, 0)
                         .and("nckd_fapplyuserid.id", QCP.equals, ywyId)
@@ -244,7 +260,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
     /*
     创建移动列表
      */
-    private static ListShowParameter createShowMobileF7ListForm(String formId, boolean isMultiSelect) {
+    private static MobileListShowParameter createShowMobileF7ListForm(String formId, boolean isMultiSelect) {
         MobileListShowParameter para = new MobileListShowParameter();
         FormConfig formConfig = FormMetadataCache.getMobListFormConfig(formId);
         para.setCaption(formConfig.getCaption().toString());
@@ -257,9 +273,9 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
             showType = ShowType.Modal;
             para.setPosition(MobileFormPosition.Bottom);
         }
-
         para.getOpenStyle().setShowType(showType);
         para.setMultiSelect(isMultiSelect);
+
         String f7ListFormId = formConfig.getF7ListFormId();
         if (StringUtils.isNotBlank(f7ListFormId)) {
             para.setFormId(f7ListFormId);

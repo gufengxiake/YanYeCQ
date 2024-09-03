@@ -43,6 +43,7 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
             DynamicObject salOrg = (DynamicObject) this.getModel().getValue("saleorgid", 0);
             if (salOrg == null) {
                 this.getView().showErrorNotification("请先选择销售组织！");
+                evt.setCancel(true);
                 return;
             }
             Object orgId = salOrg.getPkValue();
@@ -55,6 +56,7 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
             DynamicObject operatorGroup = (DynamicObject) this.getModel().getValue("nckd_operatorgroup", 0);
             if (operatorGroup == null) {
                 this.getView().showErrorNotification("请先选择业务组！");
+                evt.setCancel(true);
                 return;
             }
             Object operatorGroupId = operatorGroup.getPkValue();
@@ -69,6 +71,40 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
     @Override
     public void afterCreateNewData(EventObject e) {
 
+        Long orgId = RequestContext.get().getOrgId();
+        if (orgId != 0) {
+            // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                    .and("operatorgrouptype", QCP.equals, "XSZ");
+            //查找业务组
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operatorgroup",
+                    "id", qFilter.toArray(), "");
+            if (!collections.isEmpty()) {
+                DynamicObject operatorGroupItem = collections.get(0);
+                long operatorGroupId = (long) operatorGroupItem.get("id");
+                this.getModel().setItemValueByID("nckd_operatorgroup", operatorGroupId);
+                DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+                if (user != null && operatorGroupId != 0) {
+                    String number = user.getString("number");
+                    // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
+                    QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
+                            .and("operatorgrpid", QCP.equals, operatorGroupId);
+                    //查找业务员
+                    DynamicObjectCollection opreatorColl = QueryServiceHelper.query("bd_operator",
+                            "id", Filter.toArray(), "");
+                    if (!opreatorColl.isEmpty()) {
+                        DynamicObject operatorItem = opreatorColl.get(0);
+                        String operatorId = operatorItem.getString("id");
+                        this.getModel().setItemValueByID("nckd_salerid", operatorId);
+                    }
+                }
+            }
+
+        }
+    }
+
+    @Override
+    public void afterCopyData(EventObject e) {
         Long orgId = RequestContext.get().getOrgId();
         if (orgId != 0) {
             // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
