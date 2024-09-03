@@ -69,10 +69,10 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
             throw new KDBizException("社保开始期间不能为空");
         }
 
-        // 实际参保单位或理论参保单位至少录入一项
-        if (sjcbdw.getValue() == null && llcbdw.getValue() == null) {
-            throw new KDBizException("实际参保单位或理论参保单位至少录入一项");
-        }
+//        // 实际参保单位或理论参保单位至少录入一项
+//        if (sjcbdw.getValue() == null && llcbdw.getValue() == null) {
+//            throw new KDBizException("实际参保单位或理论参保单位至少录入一项");
+//        }
 
         // 过滤
         // 社保开始期间

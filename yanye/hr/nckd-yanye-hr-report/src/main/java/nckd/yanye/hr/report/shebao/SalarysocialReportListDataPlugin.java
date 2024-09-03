@@ -32,9 +32,11 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
      */
     private final String[] PROJECTS = {
             "养老保险",
-            "失业保险",
             "医疗保险",
             "大病医疗保险",
+            "失业保险",
+            "工伤保险",
+            "补充工伤保险",
             "住房公积金",
             "企业年金",
     };
@@ -46,6 +48,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
             "sbb4", "gzb4", "pzjl4",
             "sbb5", "gzb5", "pzjl5",
             "sbb6", "gzb6", "pzjl6",
+            "sbb7", "gzb7", "pzjl7",
+            "sbb8", "gzb8", "pzjl8",
     };
 
 
@@ -126,6 +130,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                         "sbb4", "gzb4",
                         "sbb5", "gzb5",
                         "sbb6", "gzb6",
+                        "sbb7", "gzb7",
+                        "sbb8", "gzb8",
                 })
                 .finish()
                 .leftJoin(pzjlDataSet)
@@ -222,7 +228,7 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         for (int i = 0; i < PROJECTS.length; i++) {
             String project = PROJECTS[i];
             sb
-//                    .append("(CASE WHEN g.fname = '").append(name).append("个人缴费金额' THEN (" + "case when c.ftextvalue = ' ' then (case when c.fcalamountvalue = 0 then c.fnumvalue || '' else c.fcalamountvalue || '' end) else c.ftextvalue end" + ") END)")
+//                    .append("(CASE WHEN g.fname = '").append(project).append("个人缴费金额' THEN (" + "case when c.ftextvalue = ' ' then (case when c.fcalamountvalue = 0 then c.fnumvalue || '' else c.fcalamountvalue || '' end) else c.ftextvalue end" + ") END)")
                     .append("(CASE WHEN g.fname = '").append(project).append("个人缴费金额' THEN 0 ELSE 0 END)")
                     .append(" as " + "gzb").append(i + 1);
             if (i != (PROJECTS.length - 1)) {
@@ -248,7 +254,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 "         inner join t_haos_adminorg e on e.fid = a.fadminorgid -- hr行政组织\n" +
                 "         inner join t_hsas_calpayrolltask f on f.fid = a.fcaltaskid -- 薪资核算任务\n" +
                 "         inner join t_hsbs_salaryitem g on g.fid = c.fsalaryitemid -- 薪酬项目\n" +
-                ";");
+                ";"
+        );
 
         DataSet gzbDataSet = DB.queryDataSet(this.getClass().getName(), DBRoute.of("hr"), sql);
 
@@ -322,7 +329,9 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                         "CAST(pzjl3 AS DOUBLE) pzjl3",
                         "CAST(pzjl4 AS DOUBLE) pzjl4",
                         "CAST(pzjl5 AS DOUBLE) pzjl5",
-                        "CAST(pzjl6 AS DOUBLE) pzjl6"
+                        "CAST(pzjl6 AS DOUBLE) pzjl6",
+                        "CAST(pzjl7 AS DOUBLE) pzjl7",
+                        "CAST(pzjl8 AS DOUBLE) pzjl8"
                 })
                 .finish().groupBy(new String[]{"ygbh", "ygxm", "qj"})
                 .max("pzjl1")
@@ -331,6 +340,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 .max("pzjl4")
                 .max("pzjl5")
                 .max("pzjl6")
+                .max("pzjl7")
+                .max("pzjl8")
                 .finish();
 
 
@@ -344,8 +355,7 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         column.setCaption(new LocaleString(caption));
         if (fieldType.equals(ReportColumn.TYPE_DECIMAL)) {
             column.setScale(2);
-//            column.setZeroShow(true);
-            column.setZeroShow(false);
+            column.setZeroShow(true);
         }
 
         return column;
