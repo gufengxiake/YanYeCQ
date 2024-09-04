@@ -170,10 +170,10 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
 
 
         // 分组后，进行合计
-        DataSet sumDataSet = finish.groupBy(new String[]{"ygbh", "ygxm", "qj"}).sum("sbb1").finish();
-        sumDataSet = sumDataSet.select("concat(ygxm +'的金额合计') as ygxm, sbb1");
+        DataSet sumDataSet = finish.groupBy(new String[]{"ygbh", "ygxm"}).sum("sbb1").finish();
+        sumDataSet = sumDataSet.select("ygbh, concat(ygxm +'的金额合计') as ygxm, sbb1");
         // 由于分组计算之后，Dataset的字段少了一个，需要通过addField加回来，为之后union做准备
-        sumDataSet = sumDataSet.addNullField(new String[]{"ygbh", "qj", "gzb1", "pzjl1",
+        sumDataSet = sumDataSet.addNullField(new String[]{"qj", "gzb1", "pzjl1",
                 "sbb2", "gzb2", "pzjl2",
                 "sbb3", "gzb3", "pzjl3",
                 "sbb4", "gzb4", "pzjl4",
@@ -183,19 +183,27 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 "sbb8", "gzb8", "pzjl8",
         });
 
-        // 添加高亮字段，高亮字段将在界面规则里面生效
-//        finish = finish.addField("1", "kdec_light");
-//        sumDataSet = sumDataSet.addField("2", "kdec_light");
+        // 添加高亮字段
+        finish = finish.addField("0", "nckd_iflight");
+        sumDataSet = sumDataSet.addField("1", "nckd_iflight");
 
         // union前，需要保证两个dataSet的字段序列一致，因此这里对sumDataSet对象重新排列字段序列
-        sumDataSet = sumDataSet.select(FIELDS);
+        sumDataSet = sumDataSet.select(new String[]{"ygbh", "ygxm", "qj",
+                "sbb1", "gzb1", "pzjl1",
+                "sbb2", "gzb2", "pzjl2",
+                "sbb3", "gzb3", "pzjl3",
+                "sbb4", "gzb4", "pzjl4",
+                "sbb5", "gzb5", "pzjl5",
+                "sbb6", "gzb6", "pzjl6",
+                "sbb7", "gzb7", "pzjl7",
+                "sbb8", "gzb8", "pzjl8", "nckd_iflight"
+        });
         // union，此时sumDataSet会续在dataSet的底部
         DataSet unionDataSet = finish.union(sumDataSet);
         // 按组织名称排序，这样，底部的合计数据，就会与上面的组织名称排在一起
         DataSet orderByDataSet = unionDataSet.orderBy(new String[]{"ygxm"});
 
         return orderByDataSet;
-
 
 //        return finish;
     }
