@@ -3,6 +3,7 @@ package nckd.yanye.scm.plugin.report;
 import java.util.stream.Collectors;
 
 import kd.bos.algo.DataSet;
+import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.AbstractReportListDataPlugin;
 import kd.bos.entity.report.FilterInfo;
@@ -51,6 +52,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         FilterItemInfo mulmaterial = filter.getFilterItem("nckd_mulmaterial");
         // 物料至
         FilterItemInfo materialto = filter.getFilterItem("nckd_materialto");
+        // 单据类型
+        FilterItemInfo mulbilltype = filter.getFilterItem("nckd_mulbilltype");
 
         // ======================一级========================
         // 核算成本记录
@@ -66,6 +69,13 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 成本账簿
         if (mulcostaccount.getValue() != null) {
             qFilter.and(new QFilter("costaccount", QCP.in, ((DynamicObjectCollection) mulcostaccount.getValue())
+                    .stream()
+                    .map(obj -> obj.getLong("id"))
+                    .collect(Collectors.toList())));
+        }
+        // 单据类型
+        if(mulbilltype.getValue() != null){
+            qFilter.and(new QFilter("billtype", QCP.in, ((DynamicObjectCollection) mulbilltype.getValue())
                     .stream()
                     .map(obj -> obj.getLong("id"))
                     .collect(Collectors.toList())));
@@ -120,7 +130,21 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         }
 
         // 物料
-        DataSet bdMaterial = QueryServiceHelper.queryDataSet(this.getClass().getName(), "bd_material", "masterid,modelnum nckd_modelnum,nckd_model,createorg", null, null);
+        QFilter qFilter4 = QFilter.of("1 = 1", new Object[0]);
+        if (mulmaterial.getValue() != null) {
+            DynamicObjectCollection mulmaterialValue = (DynamicObjectCollection) mulmaterial.getValue();
+            if (mulmaterialValue.size() > 1) {
+                qFilter4.and(new QFilter("id", QCP.in, mulmaterialValue.stream().map(obj -> obj.getLong("id"))
+                        .collect(Collectors.toList())));
+            } else {
+                qFilter4.and(new QFilter("number", QCP.large_equals, mulmaterialValue.get(0).getString("number")));
+            }
+        }
+        if (materialto.getValue() != null) {
+            qFilter4.and(new QFilter("number", QCP.less_equals, ((DynamicObject) materialto.getValue()).getString("number")));
+        }
+        DataSet bdMaterial = QueryServiceHelper.queryDataSet(this.getClass().getName(), "bd_material", "masterid,modelnum nckd_modelnum,nckd_model,createorg", qFilter4.toArray(), null);
+
         // 物料分类标准页签
         QFilter qFilter3 = QFilter.of("1 = 1", new Object[0]);
         if (mulmaterialgroup.getValue() != null) {

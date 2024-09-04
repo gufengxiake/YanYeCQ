@@ -8,12 +8,14 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Date;
+import java.util.Objects;
 
 
 /**
@@ -65,7 +67,7 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
         // 社保开始期间：默认当月
         filter.addFilterItem("nckd_sbksqj", dynamicObject);
         // 薪酬开始日期：默认当月
-        filter.addFilterItem("nckd_xcksrq", Date.from(lastDayOfMonth.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        filter.addFilterItem("nckd_xcksrq", new Date());
     }
 
     @Override
@@ -89,6 +91,9 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
         total.set("qj", "合计");
 
         for (DynamicObject data : rowData) {
+            if (StringUtils.isEmpty(data.getString("qj"))) {
+                continue;
+            }
             for (String field : amountFields) {
                 BigDecimal value = data.getBigDecimal(field);
                 BigDecimal sum = total.getBigDecimal(field).add(value);

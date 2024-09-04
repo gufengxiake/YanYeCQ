@@ -28,7 +28,6 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
         List<FilterItemInfo> filterItems = reportQueryParam.getFilter().getFilterItems();
-        Long materialClass = null;
         for (FilterItemInfo filterItem : filterItems) {
             switch (filterItem.getPropName()){
                 //公司
@@ -41,7 +40,8 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
                 //物料分类
                 case "nckd_materialclass_q":
                     if (filterItem.getValue() != null){
-                        materialClass = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("billentry.material.masterid.group", QCP.equals , pkValue));
                     }
                     break;
                 //根据物料库存信息的masterid过滤物料
@@ -61,10 +61,10 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
                 case "end":
                     if (filterItem.getValue() != null){
                         qFilters.add(new QFilter("biztime", QCP.less_equals , DateUtils.endOfDay(filterItem.getDate())));
-
                     }
                     break;
             }
+
         }
 
 
@@ -82,11 +82,9 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
         //汇总计算基本数量和金额
         imPurinbill = imPurinbill.groupBy(new String[]{"nckd_bizorg","nckd_material"}).sum("baseqty","sumbaseqty").sum("amount","sumamount").finish();
 
+        //关联物料信息获取物料默认税率
         imPurinbill = this.getMaterialInfo(imPurinbill);
 
-        if (materialClass != null){
-            imPurinbill = imPurinbill.filter("group = " + materialClass);
-        }
         return imPurinbill.orderBy(imPurinbill.getRowMeta().getFieldNames());
     }
 
@@ -116,7 +114,6 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-//        ReportColumn nckd_entrytelephone = createReportColumn("nckd_entrytelephone", ReportColumn.TYPE_TEXT, "电话");
         ReportColumn sumbaseqty = createReportColumn("sumbaseqty", ReportColumn.TYPE_DECIMAL, "累计结算数量");
         ReportColumn sumamount = createReportColumn("sumamount", ReportColumn.TYPE_DECIMAL, "累计本位币结算金额");
         ReportColumn notaxprice = createReportColumn("notaxprice", ReportColumn.TYPE_DECIMAL, "结算无税价");

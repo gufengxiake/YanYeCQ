@@ -1,5 +1,6 @@
 package nckd.yanye.scm.plugin.form;
 
+import com.icbc.api.internal.apache.http.nio.protocol.D;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -7,13 +8,23 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.TextProp;
+import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.ComboEdit;
 import kd.bos.form.field.TextEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.list.ListShowParameter;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.EventObject;
+import java.util.List;
 
 
 /**
@@ -22,7 +33,7 @@ import java.util.EventObject;
  * author：xiaoxiaopeng
  * date：2024-08-29
  */
-public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
+public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
 
     //调整信息单据体字段
     private String[] ENTRYFIELD = {"nckd_changetype", "nckd_changeafter",
@@ -32,12 +43,17 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             "nckd_accountname", "nckd_bank", "nckd_currency", "nckd_taxpayertype", "nckd_invoicename","nckd_banknumber",
             "nckd_invoicetype","nckd_addressorphone","nckd_invoicephone","nckd_enterpriseemail","nckd_customeremail","nckd_myemail"};
 
+    private String[] NUMBERS = {"1","2","26","27","5"};
+
 
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
         //监听调整信息分录工具栏
         this.addItemClickListeners("advcontoolbarap");
+        //监听bef7
+        BasedataEdit fieldEdit = this.getView().getControl("nckd_invoicetype");
+        fieldEdit.addBeforeF7SelectListener(this);
     }
 
 
@@ -152,6 +168,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
     private void setAddMaintenanceType() {
         DynamicObjectCollection entry = this.getModel().getEntryEntity("nckd_entry");
         String maintenanceType = this.getModel().getValue("nckd_maintenancetype").toString();
+        DynamicObject creator = (DynamicObject) this.getModel().getValue("creator");
         switch (maintenanceType) {
             //新增
             case "save":
@@ -159,6 +176,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
                 this.getView().setEnable(false,"nckd_maintenancetype");
                 for (int i = 0; i < entry.size(); i++) {
                     this.getModel().setValue("nckd_changetype", maintenanceType, i);
+                    this.getModel().setValue("nckd_buyer", creator, i);
                 }
                 break;
             //修改
@@ -167,6 +185,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
                 this.getView().setEnable(false,"nckd_maintenancetype");
                 for (int i = 0; i < entry.size(); i++) {
                     this.getModel().setValue("nckd_changetype", maintenanceType, i);
+                    this.getModel().setValue("nckd_buyer", creator, i);
                 }
                 break;
         }
@@ -202,7 +221,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_spname",customer.get("name"),index);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),index);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),index);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),index);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),index);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),index);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),index);
             this.getModel().setValue("nckd_basedatafield",customer,index);
@@ -236,7 +255,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_spname",customer.get("name"),newIndex);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),newIndex);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),newIndex);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),newIndex);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),newIndex);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),newIndex);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),newIndex);
             this.getModel().setValue("nckd_basedatafield",customer,newIndex);
@@ -267,7 +286,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_spname",customer.get("name"),index);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),index);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),index);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),index);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),index);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),index);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),index);
             this.getModel().setValue("nckd_basedatafield",customer,index);
@@ -311,4 +330,14 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
         return result;
     }
 
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
+        String name = beforeF7SelectEvent.getProperty().getName();
+        ListShowParameter formShowParameter = (ListShowParameter) beforeF7SelectEvent.getFormShowParameter();
+        if ("nckd_invoicetype".equals(name)){
+            List<QFilter> qFilters = new ArrayList<>();
+            qFilters.add(new QFilter("number", QCP.in, NUMBERS));
+            formShowParameter.getListFilterParameter().setQFilters(qFilters);
+        }
+    }
 }
