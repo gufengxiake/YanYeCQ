@@ -74,7 +74,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("bizpartner_phone", entity.get("nckd_phone"));//联系电话
                         bdSupplier.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdSupplier.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
+                        //bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
                         bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
@@ -127,7 +127,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("bizpartner_phone", entity.get("nckd_phone"));//联系电话
                         bdSupplier.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdSupplier.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
+                        //bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
                         bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
