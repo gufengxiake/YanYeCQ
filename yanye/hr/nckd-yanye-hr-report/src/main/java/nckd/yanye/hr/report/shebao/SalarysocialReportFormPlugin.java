@@ -67,7 +67,7 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
         // 社保开始期间：默认当月
         filter.addFilterItem("nckd_sbksqj", dynamicObject);
         // 薪酬开始日期：默认当月
-        filter.addFilterItem("nckd_xcksrq", Date.from(lastDayOfMonth.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+        filter.addFilterItem("nckd_xcksrq", new Date());
     }
 
     @Override
