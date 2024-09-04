@@ -297,13 +297,13 @@ public class GetTransactionStatementTask extends AbstractTask {
         // 目标单据标识，必填
         pushArgs.setTargetEntityNumber("cas_recbill");
         // 生成转换结果报告，必填
-        pushArgs.setBuildConvReport(true);
+        pushArgs.setBuildConvReport(false);
         //不检查目标单新增权限,非必填
         pushArgs.setHasRight(true);
         //传入下推使用的转换规则id，不填则使用默认规则
         //pushArgs.setRuleId(loadRuleIds.get(0));
         //下推默认保存，必填
-        pushArgs.setAutoSave(true);
+        //pushArgs.setAutoSave(true);
         // 设置源单选中的数据包，必填
         pushArgs.setSelectedRows(selectedRows);
         //（4）执行下推操作，并确认是否执行成功
