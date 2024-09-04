@@ -10,14 +10,14 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * Module           :供应链云-采购管理-采购订单
- * Description      :采购订单如果招采成交价和价税合计不一致，不允许提交
- * 单据标识：nckd_pm_purorderbill_ext
+ * Module           :供应链云-采购管理-采购合同
+ * Description      :采购合同如果招采成交价和价税合计不一致，不允许提交
+ * 单据标识：nckd_conm_purcontract_ext
  *
  * @author : liuxiao
  * @since : 2024/9/4
  */
-public class PurorderbillSubmitOpPlugin2 extends AbstractOperationServicePlugIn {
+public class PurcontractbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
