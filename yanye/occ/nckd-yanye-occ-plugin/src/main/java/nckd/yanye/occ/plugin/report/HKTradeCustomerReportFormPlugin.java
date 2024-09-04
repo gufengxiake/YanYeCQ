@@ -5,32 +5,27 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
-import kd.bos.exception.KDBizException;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
+import java.math.RoundingMode;
 import java.util.Iterator;
 
 /**
- * 盐类产品内部销售对账表-界面处理插件
- * 表单标识：nckd_ylcpnbxsdz_rpt
+ * 华康交易客户大表-报表界面插件
+ * 表单标识：nckd_hktradecustomer_rpt
  * author:zzl
- * date:2024/08/27
+ * date:2024/09/03
  */
-public class YanYeSaleDZReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
+public class HKTradeCustomerReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
     @Override
     public void initDefaultQueryParam(ReportQueryParam queryParam) {
         super.initDefaultQueryParam(queryParam);
         FilterInfo filter = queryParam.getFilter();
         Long curLoginOrg = RequestContext.get().getOrgId();
-        //给发货组织默认值
-        filter.addFilterItem("nckd_saleorgid_q", curLoginOrg);
+        //给组织默认值
+        filter.addFilterItem("nckd_bizorg_q", curLoginOrg);
     }
 
     @Override
@@ -39,12 +34,14 @@ public class YanYeSaleDZReportFormPlugin extends AbstractReportFormPlugin implem
         Iterator<DynamicObject> iterator = rowData.iterator();
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
-            //获取数量
-            BigDecimal nckdSaleqty = next.getBigDecimal("nckd_saleqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_saleqty") ;
-            //获取收货数量
-            BigDecimal nckdPurqty = next.getBigDecimal("nckd_purqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_purqty") ;
-            //差异数量
-            next.set("nckd_cyqty",nckdSaleqty.subtract(nckdPurqty));
+            //深井盐销量
+            BigDecimal sumsjybaseqty = next.getBigDecimal("sumsjybaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("sumsjybaseqty");
+            //深井盐交易金额
+            BigDecimal sumsjyamountandtax = next.getBigDecimal("sumsjyamountandtax") == null ? BigDecimal.ZERO : next.getBigDecimal("sumsjyamountandtax");
+            if(sumsjybaseqty.compareTo(BigDecimal.ZERO) == 0) continue;
+            //计算深井盐均价 = 深井盐交易金额 / 深井盐销量
+            BigDecimal sjyavgprice = sumsjyamountandtax.divide(sumsjybaseqty, RoundingMode.CEILING);
+            next.set("sjyavgprice",sjyavgprice);
         }
     }
 }

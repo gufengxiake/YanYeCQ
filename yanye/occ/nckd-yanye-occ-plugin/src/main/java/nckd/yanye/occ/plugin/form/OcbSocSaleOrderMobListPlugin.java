@@ -77,7 +77,7 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
                 customParams.put("saleorgid", saleOrderbill.getDynamicObject("saleorgid"));
                 customParams.put("orderdate", saleOrderbill.getDate("orderdate"));
 
-                //还有一些要货订单的数据传过去用于生成支付日志记录单和支付流水记录单 TODO
+                //还有一些要货订单的数据传过去用于生成支付日志记录单和支付流水记录单
                 showParameter.setCustomParams(customParams);
                 this.getView().showForm(showParameter);
             }

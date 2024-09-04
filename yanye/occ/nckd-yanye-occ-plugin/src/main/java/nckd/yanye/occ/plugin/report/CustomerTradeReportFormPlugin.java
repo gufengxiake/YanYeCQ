@@ -1,8 +1,10 @@
 package nckd.yanye.occ.plugin.report;
 
 import cn.hutool.core.date.DateUtil;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
@@ -19,6 +21,15 @@ import java.util.Iterator;
  * date:2024/09/02
  */
 public class CustomerTradeReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
+    @Override
+    public void initDefaultQueryParam(ReportQueryParam queryParam) {
+        super.initDefaultQueryParam(queryParam);
+        FilterInfo filter = queryParam.getFilter();
+        Long curLoginOrg = RequestContext.get().getOrgId();
+        //给组织默认值
+        filter.addFilterItem("nckd_org_q", curLoginOrg);
+    }
+
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
