@@ -9,6 +9,8 @@ import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -42,7 +44,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
         DynamicObject[] dataEntities = e.getDataEntities();
         for (int i = 0; i < dataEntities.length; i++) {
             DynamicObject date = dataEntities[i];
-            date = BusinessDataServiceHelper.loadSingle(date.getPkValue(),"nckd_bd_customer_change");
+            date = BusinessDataServiceHelper.loadSingle(date.getPkValue(), "nckd_bd_customer_change");
             DynamicObjectCollection entry = date.getDynamicObjectCollection("nckd_entry");
             String maintenanceType = date.getString("nckd_maintenancetype");
             switch (maintenanceType) {
@@ -56,7 +58,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         String number = CodeRuleServiceHelper.getNumber(codeRule, bdCustomer);
 
                         bdCustomer.set("number", number);//编码
-                        bdCustomer.set("name", entity.get("nckd_spname"));//名称
+                        bdCustomer.set("name", entity.get("nckd_addcustomer"));//名称
                         bdCustomer.set("createorg", date.getDynamicObject("org"));//创建组织
                         bdCustomer.set("org", date.getDynamicObject("org"));//管理组织
                         bdCustomer.set("createtime", date.get("nckd_date"));//创建日期
@@ -68,7 +70,8 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("admindivision", entity.get("nckd_province"));//区域划分
                         bdCustomer.set("nckd_customertype", entity.getDynamicObject("nckd_customerrange"));//客户范围
                         bdCustomer.set("societycreditcode", entity.get("nckd_societycreditcode"));//统一社会信用代码
-                        bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
+                        //bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
+                        bdCustomer.set("nckd_group", entity.getDynamicObject("nckd_businesstype"));//分类
                         bdCustomer.set("nckd_customerxz", entity.getDynamicObject("nckd_quality"));//客户性质
                         bdCustomer.set("bloccustomer", entity.getDynamicObject("nckd_basedatafield"));//归属集团客户名称（实际控制人）
                         bdCustomer.set("salerid", entity.getDynamicObject("nckd_buyer"));//业务员
@@ -77,10 +80,10 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdCustomer.set("nckd_nashuitype", entity.getDynamicObject("nckd_taxpayertype"));//纳税人类型
                         //bdCustomer.set("", entity.get("nckd_invoicename"));//开票单位名称
-                        bdCustomer.set("invoicecategory", entity.getString("nckd_invoicetype") == null ? null : BusinessDataServiceHelper.loadSingle("bd_invoicetype","id,number",new QFilter[]{new QFilter("number", QCP.equals,entity.getString("nckd_invoicetype"))}));//发票类型
-                        bdCustomer.set("nckd_yhzh",entity.getString("nckd_banknumber"));//银行账号
-                        bdCustomer.set("nckd_telnumber",entity.getString("nckd_invoicephone"));//客户收票手机号码
-                        bdCustomer.set("nckd_mail",entity.getString("nckd_enterpriseemail"));//客户企业邮箱
+                        bdCustomer.set("invoicecategory", entity.getDynamicObject("nckd_invoicetype"));//发票类型
+                        bdCustomer.set("nckd_yhzh", entity.getString("nckd_banknumber"));//银行账号
+                        bdCustomer.set("nckd_telnumber", entity.getString("nckd_invoicephone"));//客户收票手机号码
+                        bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
 
                         //联系人分录
                         DynamicObjectCollection entryLinkman = bdCustomer.getDynamicObjectCollection("entry_linkman");
@@ -88,7 +91,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         linkman.set("contactperson", entity.get("nckd_linkman"));//客户联系人姓名
                         linkman.set("phone", entity.get("nckd_phone"));//联系电话
                         linkman.set("isdefault_linkman", true);//默认
-                        linkman.set("email",entity.getString("nckd_customeremail"));//客户业务员邮箱
+                        linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
 
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdCustomer.getDynamicObjectCollection("entry_bank");
@@ -102,18 +105,17 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         //客户分类
                         DynamicObjectCollection groupStandard = bdCustomer.getDynamicObjectCollection("entry_groupstandard");
                         DynamicObject group = groupStandard.addNew();
-                        DynamicObject customerGroup = BusinessDataServiceHelper.loadSingle("bd_customergroup", "id", new QFilter[]{new QFilter("number", QCP.equals, entity.getDynamicObject("nckd_businesstype").get("number"))});
                         DynamicObject customerGroupStandard = BusinessDataServiceHelper.loadSingle("712984405228187648", "bd_customergroupstandard");
-                        group.set("groupid",customerGroup);
-                        group.set("standardid",customerGroupStandard);
+                        group.set("groupid", entity.getDynamicObject("nckd_businesstype"));
+                        group.set("standardid", customerGroupStandard);
 
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
-                            if (!result.isSuccess()){
+                            if (!result.isSuccess()) {
                                 throw new KDBizException("保存信息到客户失败：" + result.getMessage());
                             }
-                        }catch (Exception ex){
+                        } catch (Exception ex) {
                             throw new RuntimeException("保存信息客户失败：" + ex);
                         }
                     }
@@ -124,7 +126,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         DynamicObject entity = entry.get(t);
                         //变更前后，只保存变更后的数据
                         String changeAfter = entity.getString("nckd_changeafter");
-                        if ("1".equals(changeAfter)){
+                        if ("1".equals(changeAfter)) {
                             continue;
                         }
                         //查出更改前数据
@@ -135,7 +137,8 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("admindivision", entity.get("nckd_province"));//区域划分
                         bdCustomer.set("nckd_customertype", entity.getDynamicObject("nckd_customerrange"));//客户范围
                         bdCustomer.set("societycreditcode", entity.get("nckd_societycreditcode"));//统一社会信用代码
-                        bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
+                        //bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
+                        bdCustomer.set("nckd_group", entity.getDynamicObject("nckd_businesstype"));//分类
                         bdCustomer.set("nckd_customerxz", entity.getDynamicObject("nckd_quality"));//客户性质
                         bdCustomer.set("bloccustomer", entity.getDynamicObject("nckd_basedatafield"));//归属集团客户名称（实际控制人）
                         bdCustomer.set("salerid", entity.getDynamicObject("nckd_buyer"));//业务员
@@ -144,24 +147,24 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdCustomer.set("nckd_nashuitype", entity.getDynamicObject("nckd_taxpayertype"));//纳税人类型
                         //bdCustomer.set("", entity.get("nckd_invoicename"));//开票单位名称
-                        bdCustomer.set("invoicecategory", entity.getString("nckd_invoicetype") == null ? null : BusinessDataServiceHelper.loadSingle("bd_invoicetype","id,number",new QFilter[]{new QFilter("number", QCP.equals,entity.getString("nckd_invoicetype"))}));//发票类型
-                        bdCustomer.set("nckd_yhzh",entity.getString("nckd_banknumber"));//银行账号
-                        bdCustomer.set("nckd_telnumber",entity.getString("nckd_invoicephone"));//客户收票手机号码
-                        bdCustomer.set("nckd_mail",entity.getString("nckd_enterpriseemail"));//客户企业邮箱
+                        bdCustomer.set("invoicecategory", entity.getDynamicObject("nckd_invoicetype"));//发票类型
+                        bdCustomer.set("nckd_yhzh", entity.getString("nckd_banknumber"));//银行账号
+                        bdCustomer.set("nckd_telnumber", entity.getString("nckd_invoicephone"));//客户收票手机号码
+                        bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
 
                         //联系人分录
                         DynamicObjectCollection entryLinkman = bdCustomer.getDynamicObjectCollection("entry_linkman");
-                        if (entryLinkman.size() > 0){
+                        if (entryLinkman.size() > 0) {
                             DynamicObject linkman = entryLinkman.get(0);
                             linkman.set("contactperson", entity.get("nckd_linkman"));//客户联系人姓名
                             linkman.set("phone", entity.get("nckd_phone"));//联系电话
                             linkman.set("isdefault_linkman", true);//默认
-                            linkman.set("email",entity.getString("nckd_customeremail"));//客户业务员邮箱
+                            linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
                         }
 
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdCustomer.getDynamicObjectCollection("entry_bank");
-                        if (entryBank.size() > 0){
+                        if (entryBank.size() > 0) {
                             DynamicObject bank = entryBank.get(0);
                             bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
                             bank.set("accountname", entity.get("nckd_accountname"));//账户名称
@@ -172,15 +175,15 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         //客户分类
                         DynamicObjectCollection groupStandard = bdCustomer.getDynamicObjectCollection("entry_groupstandard");
-                        if (groupStandard.size() > 0){
-                            DynamicObject group = groupStandard.get(0);
-                            DynamicObject customerGroup = BusinessDataServiceHelper.loadSingle("bd_customergroup", "id", new QFilter[]{new QFilter("number", QCP.equals, entity.getDynamicObject("nckd_businesstype").get("number"))});
-                            group.set("groupid",customerGroup);
-                        }
+                        groupStandard.clear();
+                        DynamicObject group = groupStandard.addNew();
+                        DynamicObject customerGroupStandard = BusinessDataServiceHelper.loadSingle("712984405228187648", "bd_customergroupstandard");
+                        group.set("groupid", entity.getDynamicObject("nckd_businesstype"));
+                        group.set("standardid", customerGroupStandard);
 
-                        if (!entity.get("nckd_spname").equals(bdCustomer.getString("name"))){
+                        if (!entity.get("nckd_spname").equals(bdCustomer.getString("name"))) {
                             DynamicObjectCollection nameVersionCol = bdCustomer.getDynamicObjectCollection("name$version");
-                            if (nameVersionCol.size() > 0){
+                            if (nameVersionCol.size() > 0) {
                                 DynamicObject col = nameVersionCol.addNew();
                                 col.set("name$version$name", entity.get("nckd_spname"));
                                 col.set("name$version$startdate", new Date());
@@ -190,7 +193,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 col.set("name$version$createtime", new Date());
                                 DynamicObject oldCol = nameVersionCol.get(nameVersionCol.size() - 2);
                                 oldCol.set("name$version$enddate", new Date());
-                            }else {
+                            } else {
                                 DynamicObject col = nameVersionCol.addNew();
                                 col.set("name$version$name", entity.get("nckd_spname"));
                                 col.set("name$version$startdate", new Date());
@@ -203,11 +206,11 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
-                            if (!result.isSuccess()){
-                                throw new KDBizException("更新信息到供应商失败：" + result.getMessage());
+                            if (!result.isSuccess()) {
+                                throw new KDBizException("更新信息到客户失败：" + result.getMessage());
                             }
-                        }catch (Exception ex){
-                            throw new RuntimeException("保存信息到供应商失败：" + ex);
+                        } catch (Exception ex) {
+                            throw new RuntimeException("保存信息到客户失败：" + ex);
                         }
                     }
             }
@@ -216,11 +219,11 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
     }
 
-    private String getCooperateStatus(String result){
-        if (StringUtils.isEmpty(result)){
+    private String getCooperateStatus(String result) {
+        if (StringUtils.isEmpty(result)) {
             return null;
         }
-        switch (result){
+        switch (result) {
             case "4":
             case "5":
                 result = "A";
