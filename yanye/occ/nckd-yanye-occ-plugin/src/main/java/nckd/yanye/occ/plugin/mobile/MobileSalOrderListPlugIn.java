@@ -23,10 +23,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
-import kd.occ.ocbase.common.util.CommonUtils;
-import kd.occ.ocbase.common.util.DateUtil;
-import kd.occ.ocbase.common.util.DynamicObjectUtils;
-import kd.occ.ocbase.common.util.MobileControlUtils;
+import kd.occ.ocbase.common.util.*;
 import kd.occ.ocdma.business.order.SaleOrderHelper;
 import kd.occ.ocdma.formplugin.OcdmaFormMobPlugin;
 
@@ -88,7 +85,38 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
         }
     }
 
+    public void afterBindData(EventObject e) {
+        super.afterBindData(e);
+        String formid = this.getView().getParentView().getFormShowParameter().getFormId();
+        if ("ocsaa_home".equals(formid)) {
+            this.setVisible(new String[]{"btnclose"});
+        } 
+    }
+    public void afterCreateNewData(EventObject e) {
+        //父页面标识
+        String formid = this.getView().getParentView().getFormShowParameter().getFormId();
+        //父页面为销售助手首页
+        if ("ocsaa_home".equals(formid)) {
+            //标记
+            String lable= (String)this.getView().getFormShowParameter().getCustomParam("lable");
+            if(lable!=null){
+                //日期
+                String orderDateSpan = (String)this.getView().getFormShowParameter().getCustomParam("orderDateSpan");
+                this.getModel().setValue("orderdatespan", orderDateSpan);
+                //状态
+                String tabap = (String)this.getView().getFormShowParameter().getCustomParam("tabap");
+                String supplierIdStr;
+                if (StringUtils.isNotNull(tabap)) {
+                    Tab tab = (Tab)this.getControl("tabap");
+                    supplierIdStr = tabap;
+                    tab.selectTab(supplierIdStr);
+                    tab.activeTab(supplierIdStr);
+                }
+                this.refreshBillList();
+            }
 
+        }
+    }
 
     public void tabSelected(TabSelectEvent tabSelectEvent) {
         switch (((Control)tabSelectEvent.getSource()).getKey().toLowerCase()) {

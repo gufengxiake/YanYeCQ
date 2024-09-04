@@ -91,15 +91,21 @@ public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
                             //调出仓库
                             entryRow.set("outwarehouse", stockDyObj);
                         }
+                        DynamicObject warehouse=entryRow.getDynamicObject("warehouse");
+                        if(warehouse==null){
+                            //调入仓库
+                            entryRow.set("warehouse", depStock);
+                        }
 
                     } else if (id.equals("1980435041267748864") || nameq.equalsIgnoreCase("借货单")) {
                         DynamicObject warehouse=entryRow.getDynamicObject("warehouse");
                         if(warehouse==null){
-                            //调出仓库
+                            //调入仓库
                             entryRow.set("warehouse", stockDyObj);
                         }
                     }
-                    if (!id.equals("1980435141796826112") || !nameq.equalsIgnoreCase("借货归还单")) {
+
+                    if (!id.toString().equals("1980435141796826112") && !nameq.equalsIgnoreCase("借货归还单")) {
                         DynamicObject outwarehouse=entryRow.getDynamicObject("outwarehouse");
                         if(outwarehouse==null){
                             //调出仓库

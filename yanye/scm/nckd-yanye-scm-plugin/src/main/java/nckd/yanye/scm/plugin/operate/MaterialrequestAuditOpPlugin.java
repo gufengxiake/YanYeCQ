@@ -194,7 +194,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         materialObject.set("createorg",mainDynamicObject.get("nckd_createorg"));//创建组织
         materialObject.set("name",dynamicObject.get("nckd_materialname"));//物料名称
         materialObject.set("modelnum",dynamicObject.get("nckd_specifications"));//规格
-        materialObject.set("modelnum",dynamicObject.get("nckd_model"));//型号
+        materialObject.set("nckd_model",dynamicObject.get("nckd_model"));//型号
         materialObject.set("baseunit",dynamicObject.get("nckd_baseunit"));//基本单位
         materialObject.set("creator",RequestContext.get().getCurrUserId());//创建人
         materialObject.set("modifier",RequestContext.get().getCurrUserId());//修改人

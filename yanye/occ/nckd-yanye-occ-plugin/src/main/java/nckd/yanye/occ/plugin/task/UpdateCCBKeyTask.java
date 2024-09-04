@@ -1,9 +1,11 @@
 package nckd.yanye.occ.plugin.task;
 
 import cn.hutool.core.util.ObjectUtil;
+import com.ccb.CCBMisSdk;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.exception.KDBizException;
 import kd.bos.exception.KDException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -13,8 +15,11 @@ import kd.bos.schedule.api.MessageHandler;
 import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import nckd.yanye.occ.plugin.mis.api.MisApiResponseVo;
 import nckd.yanye.occ.plugin.mis.sdk.AU012SDK;
 import nckd.yanye.occ.plugin.mis.sdk.AU013SDK;
+import nckd.yanye.occ.plugin.mis.util.CCBMisSdkUtils;
+import nckd.yanye.occ.plugin.mis.util.KeyUtilsBean;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Map;
@@ -38,34 +43,35 @@ public class UpdateCCBKeyTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         if (ObjectUtil.isNotEmpty(map)) {
+            //TODO 获取传入的支付参数配置编码
             Object payparamNumber = map.get("");
-            logger.info("根据支付参数的编码" + payparamNumber + "去更新支付参数配置的建行密钥");
+            logger.info("UpdateCCBKeyTask 根据支付参数的编码" + payparamNumber + "去更新支付参数配置的建行密钥");
             QFilter qFilter = new QFilter("number", QCP.equals, payparamNumber);
-            qFilter.and("nckd_paybank", QCP.equals, "B").and("status",QCP.equals,"C").and("enable",QCP.equals,"1");
-            DynamicObject payparamconfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", qFilter.toArray());
+            qFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
+            DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", qFilter.toArray());
             //拿到建行下载的密钥
-            if (ObjectUtil.isNotEmpty(payparamconfig)) {
+            if (ObjectUtil.isNotEmpty(payParamConfig)) {
                 logger.info("UpdateCCBKeyTask 获取到支付参数配置");
-                UpdateCCBKey(payparamconfig);
+                UpdateCCBKey(payParamConfig);
             } else {
                 logger.info("UpdateCCBKeyTask 没有获取到支付参数配置");
             }
         } else {
-            logger.info("全量更新支付参数配置的建行密钥start");
+            logger.info("UpdateCCBKeyTask 全量更新支付参数配置的建行密钥start");
             QFilter qFilter = new QFilter("nckd_paybank", QCP.equals, "B")
-            .and("status",QCP.equals,"C").and("enable",QCP.equals,"1");
+                    .and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
             DynamicObject[] payparamconfigArr = BusinessDataServiceHelper.load("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", qFilter.toArray());
             for (DynamicObject dynamicObject : payparamconfigArr) {
                 UpdateCCBKey(dynamicObject);
             }
-            logger.info("全量更新支付参数配置的建行密钥end");
+            logger.info("UpdateCCBKeyTask 全量更新支付参数配置的建行密钥end");
         }
     }
 
     /**
      * @param payparamconfig
      */
-    private static void UpdateCCBKey(DynamicObject payparamconfig) {
+    public static void UpdateCCBKey(DynamicObject payparamconfig) {
         DynamicObjectCollection nckdEntryentity = payparamconfig.getDynamicObjectCollection("nckd_entryentity");
         Map<String, String> nckdEntryentityMap = nckdEntryentity.stream().collect(Collectors.toMap(k -> k.getString("nckd_payparamnbr"), v -> v.getString("nckd_payparamvalue")));
         String oldKey = nckdEntryentityMap.get("key");
@@ -73,26 +79,40 @@ public class UpdateCCBKeyTask extends AbstractTask {
         String terminalId = nckdEntryentityMap.get("terminalId");
         String url = nckdEntryentityMap.get("url");
         String apiVer = nckdEntryentityMap.get("apiVer");
-        if (StringUtils.isNotEmpty(oldKey)
-                && StringUtils.isNotEmpty(merchantCode)
-                && StringUtils.isNotEmpty(terminalId)
-                && StringUtils.isNotEmpty(url)
-                && StringUtils.isNotEmpty(apiVer)) {
-            //在支付参数配置界面的建行密钥下载时初始key，需要拿初始key取获取待确认的key，待确认的key激活后才能使用
-            String key = AU012SDK.au012(oldKey, merchantCode, terminalId, url, apiVer);
+        boolean paramConfigResult = StringUtils.isNotEmpty(oldKey) && StringUtils.isNotEmpty(merchantCode) && StringUtils.isNotEmpty(terminalId) && StringUtils.isNotEmpty(url) && StringUtils.isNotEmpty(apiVer);
+        if (!paramConfigResult) {
+            logger.info("UpdateCCBKeyTask 请检查支付参数授权码，商户号，终端号，请求地址，版本号是否为空");
+            throw new KDBizException("UpdateCCBKeyTask 请检查支付参数授权码，商户号，终端号，请求地址，版本号是否为空");
+        }
+        //在支付参数配置界面的建行密钥下载时初始key，需要拿初始key取获取待确认的key，待确认的key激活后才能使用
+        MisApiResponseVo misApiResponse = AU012SDK.au012(oldKey, merchantCode, terminalId, url, apiVer);
+        if ("00".equals(misApiResponse.getRetCode())) {
+            //解密数据
+            KeyUtilsBean misBankKey = CCBMisSdkUtils.getKeyUtilsBean();
+            logger.info("UpdateCCBKeyTask 建行交易密钥 " + CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey()));
+            String key = CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
             //获取到待确认的key
-            if (StringUtils.isNotEmpty(key)) {
-                //确认激活
-                boolean result = AU013SDK.confirmKey(key, merchantCode, terminalId, url, apiVer);
-                if (result) {
-                    //更新支付参数配置表
-                    DynamicObjectCollection nckd_entryentity = payparamconfig.getDynamicObjectCollection("nckd_entryentity");
-                    DynamicObject dy = nckd_entryentity.get(0);
-                    dy.set("nckd_payparamvalue", key);
-                    SaveServiceHelper.update(payparamconfig);
-                    logger.info("UpdateCCBKeyTask====================" + payparamconfig.getString("number") + "建行密钥更新并确认成功");
-                }
+            if (StringUtils.isEmpty(key)) {
+                logger.info("UpdateCCBKeyTask 未获取建行交易密钥");
+                throw new KDBizException("UpdateCCBKeyTask 未获取建行交易密钥");
             }
+            //确认激活
+            boolean result = AU013SDK.confirmKey(key, merchantCode, terminalId, url, apiVer);
+            if (result) {
+                //更新支付参数配置表
+                DynamicObject dy = nckdEntryentity.get(0);
+                dy.set("nckd_payparamvalue", key);
+                SaveServiceHelper.update(payparamconfig);
+                logger.info("UpdateCCBKeyTask " + payparamconfig.getString("number") + " 建行密钥确认成功");
+            } else {
+                logger.info("UpdateCCBKeyTask " + payparamconfig.getString("number") + " 建行密钥确认失败");
+                throw new KDBizException("UpdateCCBKeyTask " + payparamconfig.getString("number") + " 建行密钥确认失败");
+            }
+
+        } else {
+            //请求失败
+            logger.info("UpdateCCBKeyTask 建行密钥更新失败" + misApiResponse.getRetErrMsg());
+            throw new KDBizException("UpdateCCBKeyTask 建行密钥更新失败" + misApiResponse.getRetErrMsg());
         }
     }
 

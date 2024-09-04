@@ -12,7 +12,7 @@ import kd.sdk.plugin.Plugin;
  * author:zzl
  * date:2024/08/28
  */
-public class saleLoanBalanceReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
+public class SaleLoanBalanceReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
     @Override
     public void initDefaultQueryParam(ReportQueryParam queryParam) {
         super.initDefaultQueryParam(queryParam);

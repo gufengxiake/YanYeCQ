@@ -4,11 +4,14 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
@@ -49,6 +52,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
      * 操作校验执行完毕，开启事务保存单据之前，触发此事件
      * 可以在此事件，对单据数据包进行整理、取消操作
      */
+
     @Override
     public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
         super.beforeExecuteOperationTransaction(e);
@@ -73,7 +77,6 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             //商品明细单据体
             DynamicObjectCollection itemEntry = dataEntity.getDynamicObjectCollection("itementry");
             if (!orderEntryIdList.isEmpty()) {
-
                 //遍历分录Id集合
                 for (HashSet<Object> entryIds : orderEntryIdList.values()) {
                     if (!entryIds.isEmpty()) {
@@ -115,9 +118,9 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             }
             //计算分摊金额-----结束
 
-            //携带分录物料对应的税率----开始
+            //携带赠品分录物料对应的税率----开始
             this.setTaxrate(itemEntry);
-            //携带分录物料对应的税率----结束
+            //携带赠品分录物料对应的税率----结束
 
             //携带订货渠道地址联系信息--开始
             this.setAddresSpane(dataEntity, itemEntry);
@@ -132,9 +135,11 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             this.setAutoSign(dataEntity);
             //设置是否发货记录自动签收--结束
 
-        }
+            //SaveServiceHelper.update(dataEntity);
 
+        }
     }
+
 
     private void setAddresSpane(DynamicObject dataEntity, DynamicObjectCollection itemEntry) {
         DynamicObject orderchannelid = dataEntity.getDynamicObject("orderchannelid");
@@ -148,10 +153,18 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             //联系人电话
             String contactphone = orderchannelid.getString("contactphone");
             for (DynamicObject itemEntryRow : itemEntry) {
-                itemEntryRow.set("entryaddressid", area);
-                itemEntryRow.set("entrydetailaddress", address);
-                itemEntryRow.set("entrycontactname", contact);
-                itemEntryRow.set("entrytelephone", contactphone);
+                if (Objects.equals(itemEntryRow.getString("entryaddressid"), "")) {
+                    itemEntryRow.set("entryaddressid", area);
+                }
+                if (Objects.equals(itemEntryRow.get("entrydetailaddress").toString(), "")) {
+                    itemEntryRow.set("entrydetailaddress", address);
+                }
+                if (Objects.equals(itemEntryRow.get("entrycontactname").toString(), "")) {
+                    itemEntryRow.set("entrycontactname", contact);
+                }
+                if (Objects.equals(itemEntryRow.get("entrytelephone").toString(), "")) {
+                    itemEntryRow.set("entrytelephone", contactphone);
+                }
             }
 
         }
@@ -159,17 +172,20 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
 
     private void setTaxrate(DynamicObjectCollection itemEntry) {
         for (DynamicObject entryRow : itemEntry) {
-            DynamicObject item = entryRow.getDynamicObject("itemid");//商品
-            Object materialId = item.get("material.id");//物料Id
-            DynamicObject material = BusinessDataServiceHelper.loadSingle(materialId, "bd_material");
-            DynamicObject taxrate = material.getDynamicObject("taxrate");
-            BigDecimal taxratede = BigDecimal.ZERO;
-            if (taxrate != null) {
-                taxratede = taxrate.getBigDecimal("taxrate");
+            //是否赠品
+            boolean ispresent = entryRow.getBoolean("ispresent");
+            if (ispresent) {
+                DynamicObject item = entryRow.getDynamicObject("itemid");//商品
+                Object materialId = item.get("material.id");//物料Id
+                DynamicObject material = BusinessDataServiceHelper.loadSingle(materialId, "bd_material");
+                DynamicObject taxrate = material.getDynamicObject("taxrate");
+                BigDecimal taxratede = BigDecimal.ZERO;
+                if (taxrate != null) {
+                    taxratede = taxrate.getBigDecimal("taxrate");
+                }
+                entryRow.set("taxrateid", taxrate);
+                entryRow.set("taxrate", taxratede);
             }
-            entryRow.set("taxrateid", taxrate);
-            entryRow.set("taxrate", taxratede);
-
         }
     }
 

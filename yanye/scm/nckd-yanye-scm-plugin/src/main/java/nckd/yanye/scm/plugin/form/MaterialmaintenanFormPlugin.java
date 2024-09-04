@@ -20,6 +20,7 @@ import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
@@ -81,8 +82,21 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         } else if ("add".equals(materialmaintunit)) {
             String nckdDocumenttype = (String) this.getModel().getValue("nckd_documenttype");
             if ("1".equals(nckdDocumenttype)) {
+                // 生产信息创建组织
                 this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
+                // 供货库存组织
                 this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
+                // 物料属性
+                String materialattribute = (String) this.getModel().getValue("nckd_materialattribute");
+                String materialattri = null;
+                if("1".equals(materialattribute)){
+                    materialattri = "10030";
+                }else if ("2".equals(materialattribute)){
+                    materialattri = "10040";
+                }
+                this.getModel().setValue("nckd_materialattri", materialattri);
+                // BOM版本规则
+                this.getModel().setValue("nckd_bomversionrule", MaterialAttributeInformationUtils.getDefaultBOMRuleVer());
             } else if ("2".equals(nckdDocumenttype)) {
                 this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
             } else if ("4".equals(nckdDocumenttype)) {

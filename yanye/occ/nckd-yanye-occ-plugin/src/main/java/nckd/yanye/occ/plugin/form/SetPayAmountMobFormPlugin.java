@@ -105,28 +105,26 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
             Date orderdate = Convert.toDate(customParams.get("orderdate"));
             BigDecimal payamount = (BigDecimal) this.getModel().getValue("nckd_payamount");
             getPayQrCode(payamount, saleorgid, orderNo, billNo, sumunrecamount, orderdate);
-            //this.getView().showSuccessNotification("confirm call back success");
         }
     }
 
     private void getPayQrCode(BigDecimal payamount, JSONObject saleorgid, String orderNo, String billNo, BigDecimal sumunrecamount, Date orderdate) {
         Money money = new Money(payamount);
-        // 加上10分钟过期限制
+        // 二维码加上10分钟过期限制
         DateTime dateTime = DateUtil.offsetMinute(DateUtil.date(), 10);
         String effectiveTime = DateUtil.format(dateTime, DatePattern.PURE_DATETIME_FORMAT);
-        logger.info("SetPayAmountMobFormPlugin 开始调PY002SDK");
         DynamicObject nckdPaylogRecord = BusinessDataServiceHelper.newDynamicObject("nckd_paylogrecord");
-        //TODO 通过销售组织+有效性 进行匹配
+        //通过销售组织+有效性 进行匹配
         QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, saleorgid.get("id"));
         payparamconfigFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
-        DynamicObject payparamconfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", payparamconfigFilter.toArray());
-        if (ObjectUtil.isEmpty(payparamconfig)) {
+        DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", payparamconfigFilter.toArray());
+        if (ObjectUtil.isEmpty(payParamConfig)) {
             cn.hutool.json.JSONObject name = JSONUtil.parseObj(saleorgid.getString("name"));
-            logger.info("SetPayAmountMobFormPlugin" + "没有获取到销售组织" + name.getStr("zh_CN") + "对应的支付参数配置");
-            this.getView().showErrorNotification("没有获取到销售组织" + name.getStr("zh_CN") + "对应的支付参数配置");
+            logger.info("SetPayAmountMobFormPlugin " + "没有获取到销售组织 " + name.getStr("zh_CN") + " 对应的支付参数配置");
+            this.getView().showErrorNotification("没有获取到销售组织 " + name.getStr("zh_CN") + " 对应的支付参数配置");
             return;
         }
-        DynamicObjectCollection nckdEntryentity = payparamconfig.getDynamicObjectCollection("nckd_entryentity");
+        DynamicObjectCollection nckdEntryentity = payParamConfig.getDynamicObjectCollection("nckd_entryentity");
         Map<String, String> nckdEntryentityMap = nckdEntryentity.stream().collect(Collectors.toMap(k -> k.getString("nckd_payparamnbr"), v -> v.getString("nckd_payparamvalue")));
         String key = nckdEntryentityMap.get("key");
         String merchantCode = nckdEntryentityMap.get("merchantCode");
@@ -135,71 +133,105 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
         String apiVer = nckdEntryentityMap.get("apiVer");
         String address = nckdEntryentityMap.get("address");
         String gps = nckdEntryentityMap.get("gps");
-        if (StringUtils.isNotEmpty(key)
-                && StringUtils.isNotEmpty(merchantCode)
-                && StringUtils.isNotEmpty(terminalId)
-                && StringUtils.isNotEmpty(url)
-                && StringUtils.isNotEmpty(apiVer)
-                && StringUtils.isNotEmpty(gps)) {
-            MisApiResponseVo misApiResponse = PY002SDK.py002(money.toString(), orderNo, effectiveTime, nckdPaylogRecord, key, merchantCode, terminalId, url, apiVer, address, gps);
-            logger.info("SetPayAmountMobFormPlugin 结束调PY002SDK");
-            if ("00".equals(misApiResponse.getRetCode())) {
-                //解密数据
-                String transResultStr = CCBMisSdk.CCBMisSdk_DataDecrypt(misApiResponse.getData(), key);
-                logger.info("SetPayAmountMobFormPlugin" + transResultStr);
-                cn.hutool.json.JSONObject transResultJson = JSONUtil.parseObj(transResultStr);
-                if (ObjectUtil.isNotEmpty(transResultJson)) {
-                    //生成交易操作记录
-                    long currUserId = RequestContext.get().getCurrUserId();
-                    long userDefaultOrgID = UserServiceHelper.getUserDefaultOrgID(currUserId);
-                    Date date = new Date();
-                    nckdPaylogRecord.set("creator", currUserId);
-                    nckdPaylogRecord.set("createtime", date);
-                    nckdPaylogRecord.set("modifier", currUserId);
-                    nckdPaylogRecord.set("modifytime", date);
-                    nckdPaylogRecord.set("billstatus", "C");
-                    nckdPaylogRecord.set("org", userDefaultOrgID);
-                    nckdPaylogRecord.set("nckd_respmsg", transResultStr);
-
-                    OperationResult paylogRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
-                    if (paylogRecordresult.isSuccess()) {
-                        //生成交易流水记录
-                        DynamicObject nckdPaytranRecord = BusinessDataServiceHelper.newDynamicObject("nckd_paytranrecord");
-                        nckdPaytranRecord.set("creator", currUserId);
-                        nckdPaytranRecord.set("createtime", date);
-                        nckdPaytranRecord.set("modifier", currUserId);
-                        nckdPaytranRecord.set("modifytime", date);
-                        nckdPaytranRecord.set("billstatus", "C");
-                        nckdPaytranRecord.set("org", userDefaultOrgID);
-                        nckdPaytranRecord.set("nckd_orderno", orderNo);
-                        nckdPaytranRecord.set("nckd_saleorderno", billNo);
-                        nckdPaytranRecord.set("nckd_payamount", payamount);
-                        nckdPaytranRecord.set("nckd_paystatus", "D");
-                        OperationResult paytranRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paytranrecord", new DynamicObject[]{nckdPaytranRecord}, OperateOption.create());
-                        if (paytranRecordresult.isSuccess()) {
-                            //弹框
-                            MobileFormShowParameter showParameter = new MobileFormShowParameter();
-                            showParameter.setFormId("nckd_qrcode");
-                            showParameter.setCaption("支付二维码");
-                            showParameter.setPosition(MobileFormPosition.Middle);
-                            showParameter.getOpenStyle().setShowType(ShowType.Floating);
-                            Map<String, Object> qrcode = new HashMap<>();
-                            qrcode.put("transResultJson", transResultJson);
-                            qrcode.put("sumunrecamount", sumunrecamount);
-                            qrcode.put("orderNo", orderNo);
-                            qrcode.put("billNo", billNo);
-                            qrcode.put("saleorgid", saleorgid);
-                            qrcode.put("orderdate", orderdate);
-                            qrcode.put("payamount", payamount);
-                            showParameter.setCustomParams(qrcode);
-                            this.getView().showForm(showParameter);
-                        }
+        boolean paramConfigResult = StringUtils.isNotEmpty(key) && StringUtils.isNotEmpty(merchantCode) && StringUtils.isNotEmpty(terminalId) && StringUtils.isNotEmpty(url) && StringUtils.isNotEmpty(apiVer) && StringUtils.isNotEmpty(gps);
+        if (!paramConfigResult) {
+            this.getView().showErrorNotification("请检查支付参数交易密钥，授权码，商户号，终端号，请求地址，版本号，gps是否为空");
+            return;
+        }
+        logger.info("SetPayAmountMobFormPlugin 开始调PY002SDK");
+        MisApiResponseVo misApiResponse = PY002SDK.py002(money.toString(), orderNo, effectiveTime, nckdPaylogRecord, key, merchantCode, terminalId, url, apiVer, address, gps);
+        logger.info("SetPayAmountMobFormPlugin 结束调PY002SDK");
+        if ("00".equals(misApiResponse.getRetCode())) {
+            //解密数据
+            String transResultStr = CCBMisSdk.CCBMisSdk_DataDecrypt(misApiResponse.getData(), key);
+            logger.info("SetPayAmountMobFormPlugin" + transResultStr);
+            cn.hutool.json.JSONObject transResultJson = JSONUtil.parseObj(transResultStr);
+            if (ObjectUtil.isNotEmpty(transResultJson)) {
+                //生成交易操作记录
+                long currUserId = RequestContext.get().getCurrUserId();
+                long userDefaultOrgID = UserServiceHelper.getUserDefaultOrgID(currUserId);
+                Date date = new Date();
+                OperationResult paylogRecordresult = createPayLogRecord(nckdPaylogRecord, currUserId, date, userDefaultOrgID, transResultStr);
+                if (paylogRecordresult.isSuccess()) {
+                    //生成交易流水记录
+                    OperationResult paytranRecordresult = createPayTranRecord(payamount, orderNo, billNo, currUserId, date, userDefaultOrgID,saleorgid);
+                    if (paytranRecordresult.isSuccess()) {
+                        //弹框
+                        MobileFormShowParameter showParameter = new MobileFormShowParameter();
+                        showParameter.setFormId("nckd_qrcode");
+                        showParameter.setCaption("支付二维码");
+                        showParameter.setPosition(MobileFormPosition.Middle);
+                        showParameter.getOpenStyle().setShowType(ShowType.Floating);
+                        Map<String, Object> qrcode = new HashMap<>();
+                        qrcode.put("transResultJson", transResultJson);
+                        qrcode.put("sumunrecamount", sumunrecamount);
+                        qrcode.put("orderNo", orderNo);
+                        qrcode.put("billNo", billNo);
+                        qrcode.put("saleorgid", saleorgid);
+                        qrcode.put("orderdate", orderdate);
+                        qrcode.put("payamount", payamount);
+                        showParameter.setCustomParams(qrcode);
+                        this.getView().showForm(showParameter);
                     }
                 }
-            } else {
-                //请求失败
-                logger.info("SetPayAmountMobFormPlugin 请求失败" + misApiResponse.getRetErrMsg());
             }
+        } else {
+            //请求失败
+            logger.info("SetPayAmountMobFormPlugin 获取二维码路径失败" + misApiResponse.getRetErrMsg());
+            this.getView().showErrorNotification("获取二维码路径失败 " + misApiResponse.getRetErrMsg());
         }
+    }
+
+    /**
+     * 生成交易流水记录
+     *
+     * @param payamount
+     * @param orderNo
+     * @param billNo
+     * @param currUserId
+     * @param date
+     * @param userDefaultOrgID
+     * @param saleorgid
+     * @return
+     */
+    private static OperationResult createPayTranRecord(BigDecimal payamount, String orderNo, String billNo, long currUserId, Date date, long userDefaultOrgID, JSONObject saleorgid) {
+        DynamicObject nckdPaytranRecord = BusinessDataServiceHelper.newDynamicObject("nckd_paytranrecord");
+        nckdPaytranRecord.set("creator", currUserId);
+        nckdPaytranRecord.set("createtime", date);
+        nckdPaytranRecord.set("modifier", currUserId);
+        nckdPaytranRecord.set("modifytime", date);
+        nckdPaytranRecord.set("billstatus", "C");
+        nckdPaytranRecord.set("org", userDefaultOrgID);
+        nckdPaytranRecord.set("nckd_orderno", orderNo);
+        nckdPaytranRecord.set("nckd_saleorderno", billNo);
+        nckdPaytranRecord.set("nckd_payamount", payamount);
+        nckdPaytranRecord.set("nckd_paystatus", "D");
+        nckdPaytranRecord.set("nckd_querycount", 0);
+        nckdPaytranRecord.set("nckd_querydate", DateUtil.offsetMinute(date, 1));
+        nckdPaytranRecord.set("nckd_saleorg", saleorgid.get("id"));
+        OperationResult paytranRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paytranrecord", new DynamicObject[]{nckdPaytranRecord}, OperateOption.create());
+        return paytranRecordresult;
+    }
+
+    /**
+     * 创建操作日志记录
+     *
+     * @param nckdPaylogRecord
+     * @param currUserId
+     * @param date
+     * @param userDefaultOrgID
+     * @param transResultStr
+     * @return
+     */
+    private static OperationResult createPayLogRecord(DynamicObject nckdPaylogRecord, long currUserId, Date date, long userDefaultOrgID, String transResultStr) {
+        nckdPaylogRecord.set("creator", currUserId);
+        nckdPaylogRecord.set("createtime", date);
+        nckdPaylogRecord.set("modifier", currUserId);
+        nckdPaylogRecord.set("modifytime", date);
+        nckdPaylogRecord.set("billstatus", "C");
+        nckdPaylogRecord.set("org", userDefaultOrgID);
+        nckdPaylogRecord.set("nckd_respmsg", transResultStr);
+        OperationResult paylogRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
+        return paylogRecordresult;
     }
 }

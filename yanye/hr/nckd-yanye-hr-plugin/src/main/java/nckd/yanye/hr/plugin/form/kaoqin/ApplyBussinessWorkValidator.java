@@ -1,6 +1,7 @@
 package nckd.yanye.hr.plugin.form.kaoqin;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.MainEntityType;
@@ -18,7 +19,7 @@ import java.util.Map;
 
 
 /**
- * Module           :工时假勤云-加班管理-为他人申请加班,为他人申请休假,为他人申请加班,为他人申请补签校验插件
+ * Module           :工时假勤云-加班管理-为他人申请加班校验插件
  * Description      :为他人申请加班校验插件
  *
  * @author guozhiwei
@@ -54,12 +55,34 @@ public class ApplyBussinessWorkValidator extends AbstractOperationServicePlugIn 
                 ExtendedDataEntity[] dataEntities = this.getDataEntities();
                 for (ExtendedDataEntity dataEntity : dataEntities) {
                     DynamicObject dataEntityObj = dataEntity.getDataEntity();
-                    // 获取
-                    Date createtime = dataEntityObj.getDate("createtime");
+
+                    // 判断类型 在去获取分录，循环分录，获取分录的开始时间，判断是否在本周内
+                    String otapplytype = dataEntityObj.getString("otapplytype");
                     // 获取本周一的日期
                     Date monday = getMonday();
+                    // 如果存在
+                    boolean flag = false;
+                    if("1".equals(otapplytype)){
+                        // 按时段申请sdentry
+                        DynamicObjectCollection dynamicObjectCollection = dataEntityObj.getDynamicObjectCollection("sdentry");
+                        for (DynamicObject dynamicObject : dynamicObjectCollection) {
+                            if(dynamicObject.getDate("otstartdate").before(monday)){
+                                flag = true;
+                                break;
+                            }
+                        }
+                    }else{
+                        // 按时长申请scentry
+                        DynamicObjectCollection dynamicObjectCollection = dataEntityObj.getDynamicObjectCollection("scentry");
+                        for (DynamicObject dynamicObject : dynamicObjectCollection) {
+                            if(dynamicObject.getDate("otdstarttime").before(monday)){
+                                flag = true;
+                                break;
+                            }
+                        }
+                    }
                     // 判断是否在本周内
-                    if (createtime.before(monday)) {
+                    if (flag) {
                         this.addErrorMessage(dataEntity, "单据" + dataEntityObj.getString("billno") + "为上周单据，不允许上报！");
                     }
                 }
@@ -72,7 +95,9 @@ public class ApplyBussinessWorkValidator extends AbstractOperationServicePlugIn 
 
         LocalDate today = LocalDate.now();
         LocalDate monday = today.with(DayOfWeek.MONDAY);
-        if (today.getDayOfWeek().compareTo(DayOfWeek.MONDAY) > 0) {
+        if (today.getDayOfWeek() == DayOfWeek.MONDAY) {
+            monday = today;
+        } else if (today.getDayOfWeek().compareTo(DayOfWeek.MONDAY) > 0) {
             monday = today.with(DayOfWeek.MONDAY);
         } else {
             monday = today.minusWeeks(1).with(DayOfWeek.MONDAY);

@@ -296,6 +296,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         JSONObject cancelJsonObject;
         // 招采平台id
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
+        orderId = orderId.substring(3);
         // 采购方式
         String procurementType = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         if ("pricecomparison".equals(procurementType) || "singlebrand".equals(procurementType)) {
@@ -328,6 +329,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         }
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
+        orderId = orderId.substring(3);
         String url = ZcPlatformApiUtil.getViewNoticeUrl(procurements, orderId);
         // 跳转页面
         getView().openUrl(url);

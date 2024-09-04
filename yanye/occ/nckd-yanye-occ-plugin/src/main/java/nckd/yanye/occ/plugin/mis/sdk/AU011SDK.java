@@ -1,6 +1,5 @@
 package nckd.yanye.occ.plugin.mis.sdk;
 
-import com.ccb.CCBMisSdk;
 import com.fasterxml.jackson.core.type.TypeReference;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -19,7 +18,7 @@ import nckd.yanye.occ.plugin.mis.util.RequestService;
 public class AU011SDK {
     private static final Log logger = LogFactory.getLog(AU011SDK.class);
 
-    public static String au011(String authCode, String merchantCode, String terminalId, String url, String apiVer) {
+    public static MisApiResponseVo au011(String authCode, String merchantCode, String terminalId, String url, String apiVer) {
         logger.info("交易码：" + TransRequestEnum.AU011);
         //构建请求参数
         MisApiHttpVo misApiHttpVo = new MisApiHttpVo(TransRequestEnum.AU011, merchantCode, terminalId, "", apiVer);
@@ -38,15 +37,6 @@ public class AU011SDK {
         //json转对象
         MisApiResponseVo misApiResponse = JsonUtil.jsonStringToObject(result, new TypeReference<MisApiResponseVo>() {
         });
-        if ("00".equals(misApiResponse.getRetCode())) {
-            //解密数据
-            String key = CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
-            logger.info(key);
-            return key;
-        } else {
-            //请求失败
-            logger.info(misApiResponse.getRetErrMsg());
-            return null;
-        }
+        return misApiResponse;
     }
 }

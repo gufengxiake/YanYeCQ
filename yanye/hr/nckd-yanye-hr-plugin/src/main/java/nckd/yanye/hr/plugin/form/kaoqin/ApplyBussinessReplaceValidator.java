@@ -1,6 +1,7 @@
 package nckd.yanye.hr.plugin.form.kaoqin;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.MainEntityType;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 
 /**
- * Module           :工时假勤云-日期考勤-为他人申请补签校验插件
+ * Module           :工时假勤云-日常考勤-为他人申请补签校验插件
  * Description      :为他人申请补签校验插件
  *
  * @author guozhiwei
@@ -55,8 +56,19 @@ public class ApplyBussinessReplaceValidator extends AbstractOperationServicePlug
                     Date createtime = dataEntityObj.getDate("createtime");
                     // 获取本周一的日期
                     Date monday = ApplyBussinessWorkValidator.getMonday();
+                    boolean flag = false;
+                    // 获取分录开始时间，判断是否在本周内
+                    DynamicObjectCollection entryentity = dataEntityObj.getDynamicObjectCollection("entryentity");
+                    for (DynamicObject dynamicObject : entryentity) {
+                        // 获取补签日期
+                        Date entrytime = dynamicObject.getDate("signdate");
+                        if(entrytime.before(monday)){
+                            flag = true;
+                            break;
+                        }
+                    }
                     // 判断是否在本周内
-                    if (createtime.before(monday)) {
+                    if (flag) {
                         this.addErrorMessage(dataEntity, "单据" + dataEntityObj.getString("billno") + "为上周单据，不允许上报！");
                     }
                 }

@@ -9,6 +9,7 @@ import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.EventObject;
 import java.util.Iterator;
@@ -39,7 +40,7 @@ public class JHSaleReportFormPlugin extends AbstractReportFormPlugin implements 
             if (nckd_priceyf.compareTo(BigDecimal.ZERO) != 0){
                 //计算不含税单价 = 含税单价/(1+(税率/100))
                 BigDecimal nckdFtaxrateid = (row.getBigDecimal("nckd_ftaxrateid").divide(BigDecimal.valueOf(100))).add(BigDecimal.ONE);
-                BigDecimal nckd_priceyfnotax = nckd_priceyf.divide(nckdFtaxrateid,BigDecimal.ROUND_CEILING);
+                BigDecimal nckd_priceyfnotax = nckd_priceyf.divide(nckdFtaxrateid, RoundingMode.CEILING);
                 row.set("nckd_priceyfnotax",nckd_priceyfnotax);
             }
 

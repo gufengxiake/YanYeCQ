@@ -17,7 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 外贸管理报表-报表取数插件
+ * 销售管理报表-报表取数插件
  * 表单标识：nckd_salemanage_rpt
  * author:zzl
  * date:2024/08/28
@@ -94,18 +94,11 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 
     //获取签收单  nckd_signaturebill
     public DataSet linkSignAtureBill(DataSet ds) {
-        DataSet copy = ds.copy();
-        List<Long> mainbillentryid = new ArrayList<>();
-        while (copy.hasNext()) {
-            Row next = copy.next();
-            if (next.getLong("mainbillentryid") != null) {
-                mainbillentryid.add(next.getLong("mainbillentryid"));
-            }
-        }
-        if (mainbillentryid.isEmpty()) return ds;
+        List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
+        if (mainbillentryidToList.isEmpty()) return ds;
 
         //关联销售订单
-        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryid.toArray(new Long[0]));
+        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryidToList.toArray(new Long[0]));
         DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder"
                 //      销售合同号
                 ,"nckd_salecontractno as nckd_salecontractno," +
@@ -117,7 +110,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         ds = ds.leftJoin(sm_salorder).on("mainbillentryid","orderbodyid").select(ds.getRowMeta().getFieldNames(),sm_salorder.getRowMeta().getFieldNames()).finish();
 
 //        关联签收单
-        QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryid.toArray(new Long[0]));
+        QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryidToList.toArray(new Long[0]));
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
 //                发货日期
                 "nckd_signdate as nckd_fhdate," +
@@ -142,7 +135,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                 .select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
 
         //关联开票申请单
-        QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryid.toArray(new Long[0]));
+        QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryidToList.toArray(new Long[0]));
         DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sim_original_bill",
                 //查询开票申请单核心单据行id，

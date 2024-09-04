@@ -6,12 +6,18 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.form.field.events.BeforeFilterF7SelectEvent;
+import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 /**
@@ -21,8 +27,8 @@ import java.util.*;
  * date:2024/08/21
  *  */
 
-public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
-    private static String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
+public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin implements Plugin, BeforeF7SelectListener {
+    private static final String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
             "nckd_materialmodelnum","nckd_unit","nckd_jhqty",
             "nckd_xsqty","nckd_jchhqty","nckd_jhyeqty"};
 
@@ -38,12 +44,34 @@ public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin imp
         Iterator<DynamicObject> iterator = rowData.iterator();
         while (iterator.hasNext()) {
             DynamicObject row = iterator.next();
-            long jhyeqty = 0L;
             //计算借货余额数量 = 借货数量-销售数量-借出还回数量
-            jhyeqty = row.getLong(FIELDS[6]) - row.getLong(FIELDS[7]) - row.getLong(FIELDS[8]);
+            BigDecimal jhyeqty = row.getBigDecimal(FIELDS[6]).subtract( row.getBigDecimal(FIELDS[7])) ;
+            jhyeqty = jhyeqty.subtract(row.getBigDecimal(FIELDS[8]));
             row.set(FIELDS[9], jhyeqty);
         }
 
     }
 
+    @Override
+    public void registerListener(EventObject e) {
+        super.registerListener(e);
+        BasedataEdit baseData = this.getControl("nckd_ywy_q");
+        baseData.addBeforeF7SelectListener(this);
+    }
+
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
+        String name = beforeF7SelectEvent.getProperty().getName();
+        if ("nckd_ywy_q".equals(name)) {
+            // 获取当前登录业务单元id
+            long orgId = RequestContext.get().getOrgId();
+            QFilter orgFilter = new QFilter("opergrptype", QCP.equals, "XSZ");
+            ListShowParameter showParameter = (ListShowParameter) beforeF7SelectEvent.getFormShowParameter();
+            // 基础资料添加列表过滤条件
+//            showParameter.getListFilterParameter().getQFilters().add(orgFilter);
+            showParameter.getListFilterParameter().setFilter(orgFilter);
+            // 基础资料左树添加过滤条件
+            showParameter.getTreeFilterParameter().getQFilters().add(orgFilter);
+        }
+    }
 }

@@ -82,15 +82,25 @@ public class TransApplyOperatePlugIn extends AbstractOperationServicePlugIn {
                             //调出仓库
                             entryRow.set("warehouse", stockDyObj);
                         }
+                        DynamicObject inwarehouse =entryRow.getDynamicObject("inwarehouse");
+                        if(inwarehouse==null){
+                            //调入仓库
+                            entryRow.set("inwarehouse", depStock);
+                        }
 
                     } else if (id.equals("1994937113375673344") || nameq.equalsIgnoreCase("借货申请")) {
                         DynamicObject inwarehouse =entryRow.getDynamicObject("inwarehouse");
                         if(inwarehouse==null){
-                            //调出仓库
+                            //调入仓库
                             entryRow.set("inwarehouse", stockDyObj);
                         }
+                        DynamicObject warehouse =entryRow.getDynamicObject("warehouse");
+                        if(warehouse==null){
+                            //调出仓库
+                            entryRow.set("warehouse", depStock);
+                        }
                     }
-                    if (!id.equals("1994937462568258560") || !nameq.equalsIgnoreCase("借货归还申请")) {
+                    if (!id.toString().equals("1994937462568258560") && !nameq.equalsIgnoreCase("借货归还申请")) {
                         DynamicObject warehouse =entryRow.getDynamicObject("warehouse");
                         if(warehouse==null){
                             //调出仓库

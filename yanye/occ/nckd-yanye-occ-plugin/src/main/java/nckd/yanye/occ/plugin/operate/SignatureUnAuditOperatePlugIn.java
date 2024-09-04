@@ -42,7 +42,7 @@ public class SignatureUnAuditOperatePlugIn extends AbstractOperationServicePlugI
 }
 
 /**
- * 自定义操作校验器：校验送货日期
+ * 自定义操作校验器
  *
  * @author rd_JohnnyDing
  */
@@ -117,7 +117,7 @@ class DelivaryDateValidator extends AbstractValidator {
                     "id", depqFilter.toArray(), "");
             if(!depcollections.isEmpty()){
                 // 校验不通过，输出一条错误提示
-                this.addErrorMessage(this.getDataEntities()[0], "上游销售出库单存在下游单据，不允许反审核。");
+                this.addErrorMessage(this.getDataEntities()[0], "上游销售出库单存在下游销售出库单据，不允许反审核。");
             }
         }
 

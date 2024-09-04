@@ -13,13 +13,14 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
 import static com.ibm.db2.jcc.am.ao.ds;
 
 /**
- * 销售情况明细表界面插件
+ * 销售情况明细表-报表界面插件
  * 表单标识：nckd_saledetailrpt
  * author:zzl
  * date:2024/08/22
@@ -45,7 +46,7 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
                 //计算毛利率 = 金额-结算成本/金额
                 nckd_mll = nckd_amount.subtract(row.getBigDecimal("nckd_cbj") == null
                         ? BigDecimal.ZERO : row.getBigDecimal("nckd_cbj"))  ;
-                nckd_mll = nckd_mll.divide(nckd_amount);
+                nckd_mll = nckd_mll.divide(nckd_amount, RoundingMode.CEILING);
                 DecimalFormat df = new DecimalFormat("0.00%");
                 String percent=df.format(nckd_mll);
                 row.set("nckd_mll", percent);
@@ -77,7 +78,9 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
         List<Long> mainbillentryid = new ArrayList<>();
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
-            mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
+            if ( next.getLong("nckd_mainbillentryid")!= 0L) {
+                mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
+            }
 
         }
         QFilter qFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryid.toArray(new Long[0]));
