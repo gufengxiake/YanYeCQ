@@ -18,6 +18,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.*;
 import kd.bos.form.control.Control;
+import kd.bos.form.control.QRCode;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -46,6 +47,14 @@ import java.util.stream.Collectors;
  */
 public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
     private static final Log logger = LogFactory.getLog(SetPayAmountMobFormPlugin.class);
+
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        super.afterCreateNewData(e);
+        FormShowParameter formShowParameter = this.getView().getFormShowParameter();
+        Map<String, Object> customParams = formShowParameter.getCustomParams();
+        this.getModel().setValue("nckd_payamount", Convert.toBigDecimal(customParams.get("sumunrecamount")));
+    }
 
     @Override
     public void registerListener(EventObject e) {

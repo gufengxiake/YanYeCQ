@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * Module           :系统服务云-调度中心-调度执行程序
- * Description      :定时更新建设银行交易的密钥并确认
+ * Description      :定时更新建设银行交易的密钥并确认 updateCCBKey	定时更新建设银行交易的密钥	小时	2024-08-23 10:23:03	2099-12-31 23:59:59	禁用	朱锦涛	2024-08-23 13:38:10
  *
  * @author : zhujintao
  * @date : 2024/8/23
@@ -44,7 +44,7 @@ public class UpdateCCBKeyTask extends AbstractTask {
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         if (ObjectUtil.isNotEmpty(map)) {
             //TODO 获取传入的支付参数配置编码
-            Object payparamNumber = map.get("");
+            Object payparamNumber = map.get("payParamNumber");
             logger.info("UpdateCCBKeyTask 根据支付参数的编码" + payparamNumber + "去更新支付参数配置的建行密钥");
             QFilter qFilter = new QFilter("number", QCP.equals, payparamNumber);
             qFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
