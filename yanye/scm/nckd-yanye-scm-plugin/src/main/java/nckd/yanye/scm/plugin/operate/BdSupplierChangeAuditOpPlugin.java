@@ -94,6 +94,13 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
 
+                        //供应商分类
+                        DynamicObjectCollection groupStandard = bdSupplier.getDynamicObjectCollection("entry_groupstandard");
+                        DynamicObject group = groupStandard.addNew();
+                        DynamicObject bdSupplierGroupStandard = BusinessDataServiceHelper.loadSingle("716529547008326656", "bd_suppliergroupstandard");
+                        group.set("groupid", entity.getDynamicObject("nckd_group"));
+                        group.set("standardid", bdSupplierGroupStandard);
+
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
                             if (!result.isSuccess()){
@@ -146,6 +153,14 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
+
+                        //供应商分类
+                        DynamicObjectCollection groupStandard = bdSupplier.getDynamicObjectCollection("entry_groupstandard");
+                        groupStandard.clear();
+                        DynamicObject group = groupStandard.addNew();
+                        DynamicObject bdSupplierGroupStandard = BusinessDataServiceHelper.loadSingle("716529547008326656", "bd_suppliergroupstandard");
+                        group.set("groupid", entity.getDynamicObject("nckd_group"));
+                        group.set("standardid", bdSupplierGroupStandard);
 
                         if (!entity.get("nckd_spname").equals(bdSupplier.getString("name"))){
                             DynamicObjectCollection nameVersionCol = bdSupplier.getDynamicObjectCollection("name$version");
