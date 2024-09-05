@@ -216,7 +216,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
         nckdPaytranRecord.set("nckd_payamount", payamount);
         nckdPaytranRecord.set("nckd_paystatus", "D");
         nckdPaytranRecord.set("nckd_querycount", 0);
-        nckdPaytranRecord.set("nckd_querydate", DateUtil.offsetMinute(date, 1));
+        //nckdPaytranRecord.set("nckd_querydate", DateUtil.offsetMinute(date, 1));
         nckdPaytranRecord.set("nckd_saleorg", saleorgid.get("id"));
         OperationResult paytranRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paytranrecord", new DynamicObject[]{nckdPaytranRecord}, OperateOption.create());
         return paytranRecordresult;

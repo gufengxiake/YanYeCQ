@@ -146,9 +146,9 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                 if (ObjectUtil.isNotEmpty(paytranrecord)) {
                     int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                     paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                    Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                    Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                    paytranrecord.set("nckd_querydate", queryDate);
+                    //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                    //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                    //paytranrecord.set("nckd_querydate", queryDate);
                 }
                 //更新支付流水的查询次数和下一次轮询时间
                 SaveServiceHelper.update(paytranrecord);
@@ -160,9 +160,9 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                 paytranrecord.set("nckd_paystatus", "A");
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的支付状态为成功
             SaveServiceHelper.update(paytranrecord);
@@ -219,9 +219,9 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
             if (ObjectUtil.isNotEmpty(paytranrecord)) {
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的查询次数和下一次轮询时间
             SaveServiceHelper.update(paytranrecord);
