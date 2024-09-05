@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * 发票出库差额全表-报表界面插件
  * 表单标识：nckd_saleinvoutdif_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/30
  */
 public class SaleInvOutDifReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

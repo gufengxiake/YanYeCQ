@@ -19,7 +19,7 @@ import java.util.Set;
 /**
  * 采购结算价格（不含税）-报表取数插件
  * 表单标识：nckd_pursettlenotax_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/03
  */
 public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

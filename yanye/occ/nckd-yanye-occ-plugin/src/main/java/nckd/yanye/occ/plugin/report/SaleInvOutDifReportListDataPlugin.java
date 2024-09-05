@@ -2,7 +2,6 @@ package nckd.yanye.occ.plugin.report;
 
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
@@ -17,7 +16,7 @@ import java.util.List;
 /**
  * 发票出库差额全表-报表取数插件
  * 表单标识：nckd_saleinvoutdif_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/30
  */
 public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

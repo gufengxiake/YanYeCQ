@@ -9,7 +9,7 @@ import kd.sdk.plugin.Plugin;
 /**
  * 业务员借货余额表-报表界面插件
  * 表单标识：nckd_xsjhyeb_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/28
  */
 public class SaleLoanBalanceReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

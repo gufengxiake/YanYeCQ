@@ -3,23 +3,19 @@ package nckd.yanye.occ.plugin.report;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * 盐类产品内部销售对账表-报表取数插件
  * 表单标识：nckd_ylcpnbxsdz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/27
  */
 public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
