@@ -289,7 +289,7 @@ public class ClockInApiUtil {
      * 钉钉-获取打卡结果
      */
     public static JSONArray getDingDingClockInList() {
-        String url = "https://oapi.dingtalk.com/attendance/list?access_token=" + ClockInApiUtil.getDingDingAccessToken();
+        String url = "https://oapi.dingtalk.com/attendance/listRecord?access_token=" + ClockInApiUtil.getDingDingAccessToken();
 
         // 查询时间
         LocalDateTime today = LocalDate.now().atStartOfDay();
