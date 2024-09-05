@@ -76,7 +76,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("bloccustomer", entity.getDynamicObject("nckd_basedatafield"));//归属集团客户名称（实际控制人）
                         bdCustomer.set("salerid", entity.getDynamicObject("nckd_buyer"));//业务员
                         bdCustomer.set("nckd_cooperationstatus", getCooperateStatus(entity.getString("nckd_cooperatestatus")));//合作状态
-                        bdCustomer.set("duns", entity.get("nckd_postalcode"));//邮政编码
+                        //bdCustomer.set("duns", entity.get("nckd_postalcode"));//邮政编码
                         bdCustomer.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdCustomer.set("nckd_nashuitype", entity.getDynamicObject("nckd_taxpayertype"));//纳税人类型
                         //bdCustomer.set("", entity.get("nckd_invoicename"));//开票单位名称
@@ -91,6 +91,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         linkman.set("contactperson", entity.get("nckd_linkman"));//客户联系人姓名
                         linkman.set("phone", entity.get("nckd_phone"));//联系电话
                         linkman.set("isdefault_linkman", true);//默认
+                        linkman.set("postalcode", entity.get("nckd_postalcode"));//邮政编码
                         linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
 
                         //银行分录信息保存
@@ -159,6 +160,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                             linkman.set("contactperson", entity.get("nckd_linkman"));//客户联系人姓名
                             linkman.set("phone", entity.get("nckd_phone"));//联系电话
                             linkman.set("isdefault_linkman", true);//默认
+                            linkman.set("postalcode", entity.get("nckd_postalcode"));//邮政编码
                             linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
                         }
 

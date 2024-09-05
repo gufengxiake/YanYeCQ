@@ -42,10 +42,10 @@ public class UpdateCCBKeyTask extends AbstractTask {
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
-        if (ObjectUtil.isNotEmpty(map)) {
-            //TODO 获取传入的支付参数配置编码
-            Object payparamNumber = map.get("payParamNumber");
-            logger.info("UpdateCCBKeyTask 根据支付参数的编码" + payparamNumber + "去更新支付参数配置的建行密钥");
+        //获取传入的支付参数配置编码
+        Object payparamNumber = map.get("payParamNumber");
+        if (ObjectUtil.isNotEmpty(payparamNumber)) {
+            logger.info("UpdateCCBKeyTask 根据支付参数的编码 " + payparamNumber + " 去更新支付参数配置的建行密钥");
             QFilter qFilter = new QFilter("number", QCP.equals, payparamNumber);
             qFilter.and("nckd_paybank", QCP.equals, "B").and("status", QCP.equals, "C").and("enable", QCP.equals, "1");
             DynamicObject payParamConfig = BusinessDataServiceHelper.loadSingle("nckd_payparamconfig", "id,number,nckd_paybank,nckd_entryentity.nckd_payparamname,nckd_entryentity.nckd_payparamnbr,nckd_entryentity.nckd_payparamvalue", qFilter.toArray());

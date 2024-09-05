@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
@@ -18,9 +19,11 @@ import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.StringUtils;
 import nckd.yanye.scm.common.PurapplybillConst;
+import nckd.yanye.scm.common.ZcPlatformConst;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 import nckd.yanye.scm.common.utils.ZcPlatformJsonUtil;
 
+import java.util.ArrayList;
 import java.util.EventObject;
 import java.util.HashMap;
 import java.util.Objects;
@@ -123,7 +126,6 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         return biddingMethod;
     }
 
-
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
         FormOperate formOperate = (FormOperate) args.getSource();
@@ -214,7 +216,7 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         super.closedCallBack(closedCallBackEvent);
         if ("cancelOrderListener".equals(closedCallBackEvent.getActionId())) {
             //子页面数据回调
-            HashMap<String, String> cancelMap = (HashMap<String, String>) closedCallBackEvent.getReturnData();
+            HashMap<String, Object> cancelMap = (HashMap<String, Object>) closedCallBackEvent.getReturnData();
             if (cancelMap == null || cancelMap.isEmpty()) {
                 return;
             }
@@ -249,6 +251,13 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("该采购申请单未勾选“是否推送招采平台”!");
         }
 
+        DynamicObject org = (DynamicObject) model.getValue("org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (!zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
         // 初始化结果json
         JSONObject resultJson = null;
 
@@ -257,20 +266,20 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 获取采购方式
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
-            JSONObject xbJson = ZcPlatformJsonUtil.getXbJson(model);
-            resultJson = ZcPlatformApiUtil.addOrder(xbJson, "XB");
+            JSONObject xbJson = ZcPlatformJsonUtil.getXbJson(zcPlatformConst, model);
+            resultJson = ZcPlatformApiUtil.addOrder(zcPlatformConst, xbJson, "XB");
             orderIdPre = "XB-";
         } else if ("competitive".equals(procurements)) {
-            JSONObject tpJson = ZcPlatformJsonUtil.getTpJson(model);
-            resultJson = ZcPlatformApiUtil.addOrder(tpJson, "TP");
+            JSONObject tpJson = ZcPlatformJsonUtil.getTpJson(zcPlatformConst, model);
+            resultJson = ZcPlatformApiUtil.addOrder(zcPlatformConst, tpJson, "TP");
             orderIdPre = "TP-";
         } else if ("singlesupplier".equals(procurements)) {
-            JSONObject dyJson = ZcPlatformJsonUtil.getDyJson(model);
-            resultJson = ZcPlatformApiUtil.addOrder(dyJson, "ZB");
+            JSONObject dyJson = ZcPlatformJsonUtil.getDyJson(zcPlatformConst, model);
+            resultJson = ZcPlatformApiUtil.addOrder(zcPlatformConst, dyJson, "ZB");
             orderIdPre = "ZB-";
         } else if ("bidprocurement".equals(procurements)) {
-            JSONObject zbJson = ZcPlatformJsonUtil.getZbJson(model);
-            resultJson = ZcPlatformApiUtil.addOrder(zbJson, "ZB");
+            JSONObject zbJson = ZcPlatformJsonUtil.getZbJson(zcPlatformConst, model);
+            resultJson = ZcPlatformApiUtil.addOrder(zcPlatformConst, zbJson, "ZB");
             orderIdPre = "ZB-";
         } else {
             throw new KDBizException("该单据不可推送!");
@@ -286,13 +295,25 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         }
     }
 
-    private void cancelOrder(IDataModel model, HashMap<String, String> cancelMap) {
+    private void cancelOrder(IDataModel model, HashMap<String, Object> cancelMap) {
         if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
         if (Objects.equals(model.getValue(PurapplybillConst.NCKD_CLOSED), true)) {
             throw new KDBizException("该采购申请单已作废!");
         }
+
+        DynamicObject org = (DynamicObject) model.getValue("org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (!zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
+        DynamicObjectCollection attachments = (DynamicObjectCollection) cancelMap.get("attachments");
+        ArrayList<Integer> closeAttachmentIds = ZcPlatformJsonUtil.getAttIdList(zcPlatformConst, attachments);
+        cancelMap.put("closeAttachmentIds", closeAttachmentIds);
+
         JSONObject cancelJsonObject;
         // 招采平台id
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
@@ -300,11 +321,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         // 采购方式
         String procurementType = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         if ("pricecomparison".equals(procurementType) || "singlebrand".equals(procurementType)) {
-            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(cancelMap, orderId, "XB");
+            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(zcPlatformConst, cancelMap, orderId, "XB");
         } else if ("competitive".equals(procurementType)) {
-            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(cancelMap, orderId, "TP");
+            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(zcPlatformConst, cancelMap, orderId, "TP");
         } else if ("singlesupplier".equals(procurementType) || "bidprocurement".equals(procurementType)) {
-            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(cancelMap, orderId, "ZB");
+            cancelJsonObject = ZcPlatformApiUtil.cancelOrder(zcPlatformConst, cancelMap, orderId, "ZB");
         } else {
             throw new KDBizException("该单据不可作废!");
         }
@@ -327,10 +348,17 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), false)) {
             throw new KDBizException("该采购申请单未推送至招采平台!");
         }
+        DynamicObject org = (DynamicObject) model.getValue("org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (!zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
         String procurements = (String) model.getValue(PurapplybillConst.NCKD_PROCUREMENTS);
         String orderId = (String) model.getValue(PurapplybillConst.NCKD_PURCHASEID);
         orderId = orderId.substring(3);
-        String url = ZcPlatformApiUtil.getViewNoticeUrl(procurements, orderId);
+        String url = ZcPlatformApiUtil.getViewNoticeUrl(zcPlatformConst, procurements, orderId);
         // 跳转页面
         getView().openUrl(url);
     }
@@ -345,20 +373,27 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             throw new KDBizException("请选择采购方式!");
         }
 
+        DynamicObject org = (DynamicObject) model.getValue("org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
         if ("bidprocurement".equals(procurements)) {
-            Integer reviewId = ZcPlatformApiUtil.getBiddingFiles();
+            Integer reviewId = ZcPlatformApiUtil.getBiddingFiles(zcPlatformConst);
             // 赋值线上评审id
             model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
             String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
-            String url = ZcPlatformApiUtil.getOnlineReviewUrl(procurements, reviewId, reviewMode);
+            String url = ZcPlatformApiUtil.getOnlineReviewUrl(zcPlatformConst, procurements, reviewId, reviewMode);
             // 跳转页面
             getView().openUrl(url);
         } else {
             String reviewMode = (String) model.getValue(PurapplybillConst.NCKD_REVIEWMETHOD);
-            Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(reviewMode);
+            Integer reviewId = ZcPlatformApiUtil.getPurchaseReviews(zcPlatformConst, reviewMode);
             // 赋值线上评审id
             model.setValue(PurapplybillConst.NCKD_REVIEWID, reviewId);
-            String url = ZcPlatformApiUtil.getOnlineReviewUrl(procurements, reviewId, reviewMode);
+            String url = ZcPlatformApiUtil.getOnlineReviewUrl(zcPlatformConst, procurements, reviewId, reviewMode);
             // 跳转页面
             getView().openUrl(url);
         }

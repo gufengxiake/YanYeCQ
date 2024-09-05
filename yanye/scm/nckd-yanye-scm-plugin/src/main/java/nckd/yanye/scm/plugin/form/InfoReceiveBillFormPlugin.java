@@ -9,6 +9,7 @@ import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
+import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
@@ -74,7 +75,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
         switch (evt.getItemKey()) {
             // 生成供应商
             case ADDSUPPLIER:
-                addSup();
+                addSup(this.getModel());
                 break;
             // 生成采购订单/合同
             case ADDORDERORCONT:
@@ -84,7 +85,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                 break;
             // 查看成交通知书
             case VIEWNOTICE:
-                viewNotice();
+                viewNotice(this.getModel());
                 break;
             default:
                 break;
@@ -155,7 +156,7 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
                     if (purbillentry_pay.isEmpty()) {
                         DynamicObject addNew = purbillentry_pay.addNew();
                         addNew.set("payamount", tgtObj.getBigDecimal("totalallamount"));
-                    }else {
+                    } else {
                         purbillentry_pay.get(0).set("payamount", tgtObj.getBigDecimal("totalallamount"));
                     }
                 }
@@ -275,9 +276,16 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
      * 生成供应商
      */
-    private void addSup() {
+    private void addSup(IDataModel model) {
+        DynamicObject org = (DynamicObject) model.getValue("nckd_org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (!zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
         String supplierId = (String) this.getModel().getValue("nckd_supplierid");
-        OperationResult result = addSupplier(supplierId);
+        OperationResult result = addSupplier(zcPlatformConst,supplierId);
         if (result.isSuccess()) {
             this.getView().showSuccessNotification("生成成功!");
         } else {
@@ -288,12 +296,19 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
      * 查看成交通知书
      */
-    private void viewNotice() {
+    private void viewNotice(IDataModel model) {
+        DynamicObject org = (DynamicObject) model.getValue("nckd_org");
+        Long orgId = org.getLong("id");
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(orgId);
+        if (!zcPlatformConst.isExist()) {
+            throw new KDBizException("未找到对应该申请组织的招采平台应用信息,请在基础资料【招采平台参数】中维护");
+        }
+
         // 采购方式
         String procurements = (String) this.getModel().getValue(InforeceivebillConst.NCKD_PROCUREMENTS);
         // 采购单id
         String orderId = (String) this.getModel().getValue(InforeceivebillConst.NCKD_ORDERID);
-        String url = ZcPlatformApiUtil.getViewWinNoticeUrl(procurements, orderId);
+        String url = ZcPlatformApiUtil.getViewWinNoticeUrl(zcPlatformConst, procurements, orderId);
         getView().openUrl(url);
     }
 
@@ -301,12 +316,13 @@ public class InfoReceiveBillFormPlugin extends AbstractFormPlugin {
     /**
      * 新增供应商
      *
+     * @param zcPlatformConst
      * @param supplierId
      * @return
      */
-    public static OperationResult addSupplier(String supplierId) {
+    public static OperationResult addSupplier(ZcPlatformConst zcPlatformConst, String supplierId) {
         // 查询成交公司数据
-        JSONObject companyData = ZcPlatformApiUtil.getCompanyDataById(supplierId);
+        JSONObject companyData = ZcPlatformApiUtil.getCompanyDataById(zcPlatformConst,supplierId);
         // 成交公司统一社会信用代码
         String uscc = companyData.getString("socialCreditCode");
 
