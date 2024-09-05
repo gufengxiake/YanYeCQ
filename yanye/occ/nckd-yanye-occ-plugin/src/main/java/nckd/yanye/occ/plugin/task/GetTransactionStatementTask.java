@@ -309,7 +309,9 @@ public class GetTransactionStatementTask extends AbstractTask {
         //（4）执行下推操作，并确认是否执行成功
 
         // 执行下推操作
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave start");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave end");
         return result;
     }
 
