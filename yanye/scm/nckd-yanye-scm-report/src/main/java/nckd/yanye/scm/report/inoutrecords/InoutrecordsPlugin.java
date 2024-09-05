@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.report;
+package nckd.yanye.scm.report.inoutrecords;
 
 import java.util.stream.Collectors;
 
