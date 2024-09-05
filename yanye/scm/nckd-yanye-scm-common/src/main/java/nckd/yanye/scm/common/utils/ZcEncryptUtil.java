@@ -25,10 +25,11 @@ public class ZcEncryptUtil {
      * @param nonce
      * @return true-校验成功，false-校验失败
      */
-    public static boolean checkSignature(String signature,
+    public static boolean checkSignature(ZcPlatformConst zcPlatformConst,
+                                         String signature,
                                          String timestamp,
                                          String nonce) {
-        String rawString = Stream.of(nonce, timestamp, ZcPlatformConst.ZC_MSG_SECRET)
+        String rawString = Stream.of(nonce, timestamp, zcPlatformConst.getMsgSecret())
                 .sorted(String::compareTo)
                 .collect(Collectors.joining());
         return Objects.equals(signature, SecureUtil.sha1(rawString));
@@ -40,13 +41,13 @@ public class ZcEncryptUtil {
      * @param body
      * @return
      */
-    public static String encryptBody(Object body) {
+    public static String encryptBody(ZcPlatformConst zcPlatformConst, Object body) {
         String rawJson = JSONUtil.parseObj(body)
                 .setDateFormat(DatePattern.NORM_DATETIME_PATTERN)
                 .toString();
 
         String encryptBody = SecureUtil.aes(
-                        SecureUtil.md5(ZcPlatformConst.ZC_MSG_SECRET).toLowerCase()
+                        SecureUtil.md5(zcPlatformConst.getMsgSecret()).toLowerCase()
                                 .getBytes())
                 .encryptBase64(rawJson);
         return encryptBody;
@@ -58,9 +59,9 @@ public class ZcEncryptUtil {
      * @param encryptBody
      * @return
      */
-    public static String decryptBody(String encryptBody) {
+    public static String decryptBody(ZcPlatformConst zcPlatformConst,String encryptBody) {
         String decryptStr = SecureUtil.aes(
-                        SecureUtil.md5(ZcPlatformConst.ZC_MSG_SECRET).toLowerCase()
+                        SecureUtil.md5(zcPlatformConst.getMsgSecret()).toLowerCase()
                                 .getBytes())
                 .decryptStr(encryptBody);
         return decryptStr;

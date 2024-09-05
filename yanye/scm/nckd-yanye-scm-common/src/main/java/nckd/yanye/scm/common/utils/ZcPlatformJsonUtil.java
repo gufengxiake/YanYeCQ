@@ -17,6 +17,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.url.UrlService;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.SupplierConst;
+import nckd.yanye.scm.common.ZcPlatformConst;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -40,7 +41,7 @@ public class ZcPlatformJsonUtil {
      * @param model
      * @return
      */
-    public static JSONObject getXbJson(IDataModel model) {
+    public static JSONObject getXbJson(ZcPlatformConst zcPlatformConst, IDataModel model) {
         //组装json
         JSONObject xbJson = new JSONObject();
         //询比价单信息-order
@@ -170,7 +171,7 @@ public class ZcPlatformJsonUtil {
 
                 // 询比文件-GroupId
                 DynamicObjectCollection xbAtts = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INQUIRYDOCUMENT);
-                Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup("XB", "XBWJ");
+                Integer attGroupId = ZcPlatformApiUtil.addAttachmentGroup(zcPlatformConst, "XB", "XBWJ");
                 for (DynamicObject obj : xbAtts) {
                     DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
                     String name = fbasedataId.getString("name");
@@ -179,12 +180,13 @@ public class ZcPlatformJsonUtil {
                     realPath = UrlService.getAttachmentFullUrl(realPath);
                     realPath = convertToFullPath(realPath, name);
 
-                    ZcPlatformApiUtil.uploadFile(name, realPath, attGroupId);
+                    ZcPlatformApiUtil.uploadFile(zcPlatformConst, name, realPath, attGroupId);
                 }
                 put("inquiryFileGroupId", attGroupId);
 
                 //内部文件
-                put("internalAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS));
+                DynamicObjectCollection attachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALDOCUMENTS);
+                put("internalAttachmentIds", getAttIdList(zcPlatformConst, attachments));
 
                 //物料明细
                 DynamicObjectCollection materielEntry = model.getEntryEntity(PurapplybillConst.ENTRYENTITYID_BILLENTRY);
@@ -224,7 +226,7 @@ public class ZcPlatformJsonUtil {
      * @param model
      * @return
      */
-    public static JSONObject getTpJson(IDataModel model) {
+    public static JSONObject getTpJson(ZcPlatformConst zcPlatformConst, IDataModel model) {
         // 组装json
         JSONObject tpJson = new JSONObject() {
             {
@@ -289,10 +291,12 @@ public class ZcPlatformJsonUtil {
                 }
 
                 // 谈判文件
-                put("negotiateFileIds", getAttIdList(model, PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS));
+                DynamicObjectCollection tpAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_NEGOTIATINGDOCUMENTS);
+                put("negotiateFileIds", getAttIdList(zcPlatformConst, tpAttachments));
 
                 // 内部附件
-                put("internalAttachments", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS1));
+                DynamicObjectCollection nbAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALDOCUMENTS1);
+                put("internalAttachments", getAttIdList(zcPlatformConst, nbAttachments));
 
                 // 标书费
                 put("fileFee", model.getValue(PurapplybillConst.NCKD_TENDERFEE));
@@ -345,7 +349,7 @@ public class ZcPlatformJsonUtil {
      * @param model
      * @return
      */
-    public static JSONObject getZbJson(IDataModel model) {
+    public static JSONObject getZbJson(ZcPlatformConst zcPlatformConst, IDataModel model) {
         String biddingMethod = (String) model.getValue(PurapplybillConst.NCKD_BIDDINGMETHOD);
 
         //组装json
@@ -439,11 +443,14 @@ public class ZcPlatformJsonUtil {
             }
         });
         // 内部文件
-        zbJson.put("internalAttachments", getAttIdList(model, PurapplybillConst.NCKD_INTERNALATTACHMENTS));
+        DynamicObjectCollection nbAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALATTACHMENTS);
+        zbJson.put("internalAttachments", getAttIdList(zcPlatformConst, nbAttachments));
         // 上传文件
-        zbJson.put("biddingAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_UPLOADFILE));
+        DynamicObjectCollection scAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_UPLOADFILE);
+        zbJson.put("biddingAttachmentIds", getAttIdList(zcPlatformConst, scAttachments));
         // 其他附件
-        zbJson.put("otherAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_OTHERANNEXES));
+        DynamicObjectCollection qtAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_OTHERANNEXES);
+        zbJson.put("otherAttachmentIds", getAttIdList(zcPlatformConst, qtAttachments));
 
         // 公告标题
         zbJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
@@ -463,7 +470,7 @@ public class ZcPlatformJsonUtil {
      * @param model
      * @return
      */
-    public static JSONObject getDyJson(IDataModel model) {
+    public static JSONObject getDyJson(ZcPlatformConst zcPlatformConst, IDataModel model) {
         JSONObject dyJson = new JSONObject() {
             {
                 // 招标方式-邀请招标，2
@@ -515,11 +522,14 @@ public class ZcPlatformJsonUtil {
             }
         });
         // 采购范围-附件
-        dyJson.put("biddingAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_PROCUREMENTSCOPEATT));
+        DynamicObjectCollection cgAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_PROCUREMENTSCOPEATT);
+        dyJson.put("biddingAttachmentIds", getAttIdList(zcPlatformConst, cgAttachments));
         // 内部文件-附件
-        dyJson.put("internalAttachments", getAttIdList(model, PurapplybillConst.NCKD_INTERNALDOCUMENTS2));
+        DynamicObjectCollection nbAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_INTERNALDOCUMENTS2);
+        dyJson.put("internalAttachments", getAttIdList(zcPlatformConst, nbAttachments));
         // 项目文件-附件
-        dyJson.put("otherAttachmentIds", getAttIdList(model, PurapplybillConst.NCKD_PROJECTFILES));
+        DynamicObjectCollection xmAttachments = (DynamicObjectCollection) model.getValue(PurapplybillConst.NCKD_PROJECTFILES);
+        dyJson.put("otherAttachmentIds", getAttIdList(zcPlatformConst, xmAttachments));
 
         // 公告标题
         dyJson.put("title", model.getValue(PurapplybillConst.NCKD_ANNOUNCEMENTTITLE));
@@ -537,7 +547,7 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-询比采购单
      */
-    public static JSONObject getXbCancelJson(HashMap<String, String> cancelMap) {
+    public static JSONObject getXbCancelJson(HashMap<String, Object> cancelMap) {
         JSONObject xbCancelJson = new JSONObject() {
             {
                 // 是否对外网公示 1：是 0：否
@@ -565,7 +575,7 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-谈判采购单
      */
-    public static JSONObject getTpCancelJson(HashMap<String, String> cancelMap) {
+    public static JSONObject getTpCancelJson(HashMap<String, Object> cancelMap) {
         JSONObject tPCancelJson = new JSONObject() {
             {
                 // 是否对外网公示 1：是 0：否
@@ -594,7 +604,7 @@ public class ZcPlatformJsonUtil {
     /**
      * 公告作废-招标采购单
      */
-    public static JSONObject getZbCancelJson(HashMap<String, String> cancelMap) {
+    public static JSONObject getZbCancelJson(HashMap<String, Object> cancelMap) {
         JSONObject zbCancelJson = new JSONObject() {
             {
                 // 是否对外网发布 1：是 2：否
@@ -738,14 +748,13 @@ public class ZcPlatformJsonUtil {
     /**
      * 获取附件id集合
      *
-     * @param model
-     * @param attachmentName
+     * @param zcPlatformConst
+     * @param attachments
      * @return
      */
-    public static ArrayList<Integer> getAttIdList(IDataModel model, String attachmentName) {
+    public static ArrayList<Integer> getAttIdList(ZcPlatformConst zcPlatformConst, DynamicObjectCollection attachments) {
         ArrayList<Integer> attList = new ArrayList<>();
-        DynamicObjectCollection atts = (DynamicObjectCollection) model.getValue(attachmentName);
-        for (DynamicObject obj : atts) {
+        for (DynamicObject obj : attachments) {
             DynamicObject fbasedataId = obj.getDynamicObject("fbasedataId");
             String name = fbasedataId.getString("name");
             String url = (String) fbasedataId.get("url");
@@ -753,7 +762,7 @@ public class ZcPlatformJsonUtil {
             realPath = UrlService.getAttachmentFullUrl(realPath);
             realPath = convertToFullPath(realPath, name);
 
-            Integer attachmentId = ZcPlatformApiUtil.uploadFile(name, realPath, null);
+            Integer attachmentId = ZcPlatformApiUtil.uploadFile(zcPlatformConst, name, realPath, null);
 
             attList.add(attachmentId);
         }

@@ -2,10 +2,14 @@ package nckd.yanye.scm.plugin.form;
 
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
+import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.scm.common.SupplierConst;
+import nckd.yanye.scm.common.ZcPlatformConst;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.util.HashMap;
@@ -29,7 +33,15 @@ public class SupplierFromPlugin extends AbstractFormPlugin {
             try {
                 String societycreditcode = (String) this.getModel().getValue(SupplierConst.SOCIETYCREDITCODE);
                 //获取招采平台供应商列表
-                JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier();
+                ZcPlatformConst zcPlatformConst = new ZcPlatformConst();
+                DynamicObject zcConfig = BusinessDataServiceHelper.loadSingle(
+                        "nckd_zcconfig",
+                        new QFilter[]{null}
+                );
+                zcPlatformConst.setClientId(zcConfig.getString("client_id"));
+                zcPlatformConst.setClientSecret(zcConfig.getString("client_secret"));
+                zcPlatformConst.setMsgSecret(zcConfig.getString("msg_secret"));
+                JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier(zcPlatformConst);
                 //遍历招采平台供应商列表，对应社会统一代码与id
                 HashMap<String, String> supplierMap = new HashMap<>();
                 for (int i = 0; i < allSuppliers.size(); i++) {

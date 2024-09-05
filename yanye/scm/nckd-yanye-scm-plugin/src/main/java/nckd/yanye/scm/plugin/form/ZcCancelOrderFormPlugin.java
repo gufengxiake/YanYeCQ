@@ -54,9 +54,7 @@ public class ZcCancelOrderFormPlugin extends AbstractFormPlugin {
         hashMap.put("title", String.valueOf(this.getModel().getValue("nckd_title")));
         hashMap.put("content", String.valueOf(this.getModel().getValue("nckd_content")));
         // 附件
-        ArrayList<Integer> nckdCloseattachmentids = ZcPlatformJsonUtil.getAttIdList(this.getModel(), "nckd_closeattachmentids");
-        hashMap.put("closeAttachmentIds", nckdCloseattachmentids);
-
+        hashMap.put("attachments", this.getModel().getValue("nckd_closeattachmentids"));
 
         //监听确定按钮
         if ("btnok".equals(sourceKey)) {
