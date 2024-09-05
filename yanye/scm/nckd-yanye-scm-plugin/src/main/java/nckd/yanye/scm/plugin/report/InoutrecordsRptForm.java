@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.form;
+package nckd.yanye.scm.plugin.report;
 
 import java.util.*;
 
@@ -12,25 +12,18 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.GroupProp;
 import kd.bos.entity.property.ParentBasedataProp;
 import kd.bos.form.IFormView;
-import kd.bos.form.events.HyperLinkClickEvent;
-import kd.bos.form.events.HyperLinkClickListener;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
-import kd.bos.report.ReportList;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.fi.cal.common.helper.OrgHelper;
-import kd.fi.cal.common.helper.PeriodHelper;
 import kd.fi.cal.common.helper.PermissionHelper;
 import kd.fi.cal.common.helper.ReportF7Helper;
-import kd.fi.cal.common.util.ReportUtil;
-import kd.fi.cal.report.newreport.estimatesumrpt.formplugin.SaleEstimateSumRptForm;
 
 /**
  * @author husheng
@@ -52,7 +45,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
 
         for (int var6 = 0; var6 < var5; ++var6) {
             String f7Name = var4[var6];
-            f7 = (BasedataEdit) this.getControl(f7Name);
+            f7 = this.getControl(f7Name);
             if (f7 != null) {
                 f7.addBeforeF7SelectListener(form);
             }

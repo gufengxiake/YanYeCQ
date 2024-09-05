@@ -137,7 +137,7 @@ public class GetTransactionStatementTask extends AbstractTask {
 
             JSONObject transResultJson = JSONUtil.parseObj(transResultStr);
             JSONObject transData = transResultJson.getJSONObject("transData");
-            logger.info("QrCodeMobFormPlugin 更新交易流水记录start");
+            logger.info("GetTransactionStatementTask 更新交易流水记录start");
             /**
              * 原交易成功	retCode=="00" 且 transData.statusCode=="00"	提示成功
              * 原交易失败	retCode=="01" 或 (retCode=="00" 且transData.statusCode=="01")	提示失败，建议收银机屏幕打印txnTraceNo字段
@@ -148,7 +148,7 @@ public class GetTransactionStatementTask extends AbstractTask {
             DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
             //这个表示要查询的那个订单的交易状态成功与否
             if (!"00".equals(transData.getStr("statusCode"))) {
-                logger.info("QrCodeMobFormPlugin 聚合主扫结果查询到的原交易结果" + misApiResponse.getRetErrMsg());
+                logger.info("GetTransactionStatementTask 聚合主扫结果查询到的原交易结果" + misApiResponse.getRetErrMsg());
                 if (ObjectUtil.isNotEmpty(paytranrecord)) {
                     int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                     paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
@@ -158,7 +158,7 @@ public class GetTransactionStatementTask extends AbstractTask {
                 }
                 //更新支付流水的查询次数和下一次轮询时间
                 SaveServiceHelper.update(paytranrecord);
-                logger.info("QrCodeMobFormPlugin 更新交易流水记录end");
+                logger.info("GetTransactionStatementTask 更新交易流水记录的下一次轮询时间和次数");
                 return;
             }
 
@@ -217,6 +217,21 @@ public class GetTransactionStatementTask extends AbstractTask {
             logger.info("GetTransactionStatementTask 收款单审核成功");
 
         } else {
+            //成功获取交易数据则更新交易流水记录 成功、失败、异常、不支持的交易状态
+            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, nckdOrderno).and("nckd_paystatus", QCP.equals, "D");
+            DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
+            //这个表示要查询的那个订单的交易状态成功与否
+            logger.info("GetTransactionStatementTask 聚合主扫结果查询失败" + misApiResponse.getRetErrMsg());
+            if (ObjectUtil.isNotEmpty(paytranrecord)) {
+                int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
+                paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
+                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                paytranrecord.set("nckd_querydate", queryDate);
+            }
+            //更新支付流水的查询次数和下一次轮询时间
+            SaveServiceHelper.update(paytranrecord);
+            logger.info("GetTransactionStatementTask 聚合主扫结果查询失败但需要更新交易流水记录的下一次轮询时间和次数");
             //请求失败
             logger.info("GetTransactionStatementTask " + misApiResponse.getRetErrMsg());
             nckdPaylogRecord.set("nckd_respmsg", misApiResponse.getRetErrMsg());
@@ -282,19 +297,21 @@ public class GetTransactionStatementTask extends AbstractTask {
         // 目标单据标识，必填
         pushArgs.setTargetEntityNumber("cas_recbill");
         // 生成转换结果报告，必填
-        pushArgs.setBuildConvReport(true);
+        pushArgs.setBuildConvReport(false);
         //不检查目标单新增权限,非必填
         pushArgs.setHasRight(true);
         //传入下推使用的转换规则id，不填则使用默认规则
         //pushArgs.setRuleId(loadRuleIds.get(0));
         //下推默认保存，必填
-        pushArgs.setAutoSave(true);
+        //pushArgs.setAutoSave(true);
         // 设置源单选中的数据包，必填
         pushArgs.setSelectedRows(selectedRows);
         //（4）执行下推操作，并确认是否执行成功
 
         // 执行下推操作
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave start");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave end");
         return result;
     }
 

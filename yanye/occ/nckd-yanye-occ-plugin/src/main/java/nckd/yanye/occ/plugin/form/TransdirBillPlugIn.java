@@ -39,14 +39,21 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
     public void registerListener(EventObject e) {
         super.registerListener(e);
         BasedataEdit inWareHouseEdit = this.getView().getControl("warehouse");
-        inWareHouseEdit.addBeforeF7SelectListener(this);
+        if(inWareHouseEdit!=null){
+            inWareHouseEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit wareHoseEdit = this.getView().getControl("outwarehouse");
-        wareHoseEdit.addBeforeF7SelectListener(this);
-        wareHoseEdit.addBeforeF7SelectListener(this);
+        if(wareHoseEdit!=null){
+            wareHoseEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit salerIdEdit = this.getView().getControl("nckd_ywy");
-        salerIdEdit.addBeforeF7SelectListener(this);
+        if(salerIdEdit!=null){
+            salerIdEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit operatorEdit = this.getView().getControl("nckd_operatorgroup");
-        operatorEdit.addBeforeF7SelectListener(this);
+        if(operatorEdit!=null){
+            operatorEdit.addBeforeF7SelectListener(this);
+        }
     }
 
     @Override
@@ -94,6 +101,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             DynamicObject salOrg = (DynamicObject) this.getModel().getValue("org", 0);
             if (salOrg == null) {
                 this.getView().showErrorNotification("请先选择申请组织！");
+                evt.setCancel(true);
                 return;
             }
             Object orgId = salOrg.getPkValue();
@@ -106,6 +114,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             DynamicObject operatorGroup = (DynamicObject) this.getModel().getValue("nckd_operatorgroup", 0);
             if (operatorGroup == null) {
                 this.getView().showErrorNotification("请先选择业务组！");
+                evt.setCancel(true);
                 return;
             }
             Object operatorGroupId = operatorGroup.getPkValue();

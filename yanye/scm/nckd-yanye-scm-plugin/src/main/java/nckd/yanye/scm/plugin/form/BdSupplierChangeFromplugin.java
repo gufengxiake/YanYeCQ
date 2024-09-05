@@ -223,7 +223,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),index);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),index);
             this.getModel().setValue("nckd_postalcode",supplier.get("duns"),index);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
             this.getModel().setValue("nckd_suppliertype","factory",index);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),index);
             this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),index);
@@ -255,7 +255,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),newIndex);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),newIndex);
             this.getModel().setValue("nckd_postalcode",supplier.get("duns"),newIndex);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),newIndex);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),newIndex);
             this.getModel().setValue("nckd_suppliertype","factory",newIndex);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),newIndex);
             this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),newIndex);
@@ -285,7 +285,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),index);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),index);
             this.getModel().setValue("nckd_postalcode",supplier.get("duns"),index);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
             this.getModel().setValue("nckd_suppliertype","factory",index);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
@@ -309,8 +309,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getView().setVisible(true, "nckd_rate");
             return;
         }
-        UserEdit buyerEdit = this.getControl("nckd_buyer");
-        UserProp buyerProp = (UserProp) buyerEdit.getProperty();
+        //UserEdit buyerEdit = this.getControl("nckd_buyer");
+        //UserProp buyerProp = (UserProp) buyerEdit.getProperty();
         ComboEdit supplierTypeEdit = this.getControl("nckd_suppliertype");
         ComboProp supplierTypeProp = (ComboProp) supplierTypeEdit.getProperty();
         TextEdit licenseNumberEdit = this.getControl("nckd_licensenumber");
@@ -328,8 +328,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 this.getView().setVisible(false, "nckd_rate");
 
                 //设置供应商相关字段必录
-                buyerEdit.setMustInput(true);
-                buyerProp.setMustInput(true);
+                //buyerEdit.setMustInput(true);
+                //buyerProp.setMustInput(true);
                 supplierTypeEdit.setMustInput(true);
                 supplierTypeProp.setMustInput(true);
 
@@ -348,8 +348,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 this.getView().setVisible(true, "nckd_rate");
 
                 //取消供应商相关字段必录
-                buyerEdit.setMustInput(false);
-                buyerProp.setMustInput(false);
+                //buyerEdit.setMustInput(false);
+                //buyerProp.setMustInput(false);
                 supplierTypeEdit.setMustInput(false);
                 supplierTypeProp.setMustInput(false);
 

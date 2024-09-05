@@ -74,7 +74,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("bizpartner_phone", entity.get("nckd_phone"));//联系电话
                         bdSupplier.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdSupplier.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
+                        //bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
                         bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
@@ -93,6 +93,13 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
+
+                        //供应商分类
+                        DynamicObjectCollection groupStandard = bdSupplier.getDynamicObjectCollection("entry_groupstandard");
+                        DynamicObject group = groupStandard.addNew();
+                        DynamicObject bdSupplierGroupStandard = BusinessDataServiceHelper.loadSingle("716529547008326656", "bd_suppliergroupstandard");
+                        group.set("groupid", entity.getDynamicObject("nckd_group"));
+                        group.set("standardid", bdSupplierGroupStandard);
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
@@ -127,7 +134,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdSupplier.set("bizpartner_phone", entity.get("nckd_phone"));//联系电话
                         bdSupplier.set("bizpartner_address", entity.get("nckd_address"));//联系地址
                         bdSupplier.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
+                        //bdSupplier.set("purchaserid", entity.getDynamicObject("nckd_buyer"));//负责采购员
                         bdSupplier.set("nckd_unittype", entity.get("nckd_risk"));//风险属性
                         bdSupplier.set("nckd_suppliertype", entity.get("nckd_suppliertype"));//供应商类型
                         bdSupplier.set("nckd_cooperatestatus", entity.get("nckd_cooperatestatus"));//合作状态
@@ -146,6 +153,14 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bank.set("bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
                         bank.set("nckd_acceptingbank", entity.getDynamicObject("nckd_acceptingbank"));//承兑银行
+
+                        //供应商分类
+                        DynamicObjectCollection groupStandard = bdSupplier.getDynamicObjectCollection("entry_groupstandard");
+                        groupStandard.clear();
+                        DynamicObject group = groupStandard.addNew();
+                        DynamicObject bdSupplierGroupStandard = BusinessDataServiceHelper.loadSingle("716529547008326656", "bd_suppliergroupstandard");
+                        group.set("groupid", entity.getDynamicObject("nckd_group"));
+                        group.set("standardid", bdSupplierGroupStandard);
 
                         if (!entity.get("nckd_spname").equals(bdSupplier.getString("name"))){
                             DynamicObjectCollection nameVersionCol = bdSupplier.getDynamicObjectCollection("name$version");

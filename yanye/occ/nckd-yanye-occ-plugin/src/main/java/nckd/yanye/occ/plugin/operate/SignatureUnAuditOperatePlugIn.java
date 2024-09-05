@@ -25,8 +25,8 @@ public class SignatureUnAuditOperatePlugIn extends AbstractOperationServicePlugI
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         // 要求加载预计送货日期、最迟送货日期字段
-        e.getFieldKeys().add(DelivaryDateValidator.KEY_DELIVERYDATE);
-        e.getFieldKeys().add(DelivaryDateValidator.KEY_SRCBILLENTITY);
+        e.getFieldKeys().add(UnAuditValidator.KEY_DELIVERYDATE);
+        e.getFieldKeys().add(UnAuditValidator.KEY_SRCBILLENTITY);
     }
 
     /**
@@ -37,7 +37,7 @@ public class SignatureUnAuditOperatePlugIn extends AbstractOperationServicePlugI
     @Override
     public void onAddValidators(AddValidatorsEventArgs e) {
         // 添加自定义的校验器
-        e.addValidator(new DelivaryDateValidator());
+        e.addValidator(new UnAuditValidator());
     }
 }
 
@@ -46,7 +46,7 @@ public class SignatureUnAuditOperatePlugIn extends AbstractOperationServicePlugI
  *
  * @author rd_JohnnyDing
  */
-class DelivaryDateValidator extends AbstractValidator {
+class UnAuditValidator extends AbstractValidator {
 
     /** 来源分类Id */
     public final static String KEY_DELIVERYDATE = "nckd_sourceentryid";
