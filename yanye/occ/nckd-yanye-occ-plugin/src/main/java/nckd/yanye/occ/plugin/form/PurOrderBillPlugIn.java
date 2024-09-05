@@ -28,8 +28,11 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
         super.registerListener(e);
         // 工具栏注册监听（注意这里是把整个工具栏注册监听，工具栏项是没有运行时控件模型的）
         Toolbar toolbar = this.getControl("tbmainentry");
-        // 注意itemClick和click的区别
-        toolbar.addItemClickListener(this);
+        if(toolbar!=null){
+            // 注意itemClick和click的区别
+            toolbar.addItemClickListener(this);
+        }
+
     }
 
 
