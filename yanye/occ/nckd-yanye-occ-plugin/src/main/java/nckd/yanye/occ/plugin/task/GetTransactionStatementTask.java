@@ -62,10 +62,10 @@ public class GetTransactionStatementTask extends AbstractTask {
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
-        if (ObjectUtil.isNotEmpty(map)) {
-            //TODO 获取传入的支付参数配置编码
-            Object orderNo = map.get("orderNo");
-            logger.info("GetTransactionStatementTask 根据交易订单号" + orderNo + "去查询交易流水记录");
+        //获取传入的支付参数配置编码
+        Object orderNo = map.get("orderNo");
+        if (ObjectUtil.isNotEmpty(orderNo)) {
+            logger.info("GetTransactionStatementTask 根据交易订单号 " + orderNo + " 去查询交易流水记录");
             QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, orderNo);
             paytranrecordFilter.and("billstatus", QCP.equals, "C").and("nckd_paystatus", QCP.equals, "D");
             DynamicObject payTranRecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", paytranrecordFilter.toArray());
