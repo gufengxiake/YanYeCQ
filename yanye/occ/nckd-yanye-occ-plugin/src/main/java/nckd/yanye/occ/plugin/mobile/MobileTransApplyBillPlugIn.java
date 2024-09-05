@@ -147,6 +147,36 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                     }
 
                 }
+                break;
+            case "mobileaudit":
+                if (e.getOperationResult().isSuccess()) {
+                    Long pkId = this.getPkId();
+                    if (pkId == 0) {
+                        this.getView().showErrorNotification("请先保存单据！");
+                        return;
+                    }
+                    String status=this.getModel().getValue("billstatus").toString();
+                    if(!status.equals("B")){
+                        this.getView().showErrorNotification("单据未提交，不允许审核！");
+                        return;
+                    }
+                    OperateOption submitOption = OperateOption.create();
+                    submitOption.setVariableValue("ignorewarn", String.valueOf(true));
+                    OperationResult result = OperationServiceHelper.executeOperate("audit", targetBill, new Long[]{pkId}, submitOption);
+                    if (!result.isSuccess()) {
+                        List<IOperateInfo> errInfo = result.getAllErrorOrValidateInfo();
+                        StringBuilder errMessage = new StringBuilder();
+                        for (IOperateInfo err : errInfo) {
+                            errMessage.append(err.getMessage());
+                        }
+                        this.getView().showErrorNotification(errMessage.toString());
+                        return;
+                    }
+                    this.getModel().setValue("billstatus", "C");
+                    //this.getView().setEnable(false, "nckd_combofield", "nckd_applyuser", "nckd_dirver", "nckd_car", "nckd_cartype", "nckd_material", "nckd_materialname", "nckd_unit", "nckd_qty", "nckd_warehouse", "nckd_inwarehouse");//锁定字段
+                    this.getView().setEnable(false, "nckd_audit");//锁定按钮
+                    this.getView().showSuccessNotification("审核成功！");
+                }
         }
 
     }
