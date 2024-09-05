@@ -229,7 +229,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),index);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),index);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
             this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
@@ -263,7 +263,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),newIndex);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),newIndex);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),newIndex);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),newIndex);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),newIndex);
             this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),newIndex);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),newIndex);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),newIndex);
@@ -294,7 +294,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),index);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),index);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
             this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
