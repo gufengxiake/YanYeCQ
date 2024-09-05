@@ -1,5 +1,6 @@
 package nckd.yanye.occ.plugin.report;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
 import kd.bos.algo.Row;
@@ -29,32 +30,24 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
 
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        Long nckd_purorg = null;
+        Long nckd_saleorgid = null, nckd_purorg = null;
+        DateTime salebizdate_start = null, salebizdate_end = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
                 // 查询条件销售组织,标识如不一致,请修改
                 case "nckd_saleorgid_q":
-                    if(!(filterItem.getValue() == null)){
-                        Long bizOrg = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("org", QCP.equals, bizOrg);
-                    }
+                    nckd_saleorgid = filterItem.getValue() == null ? null :  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "salebizdate_start":
-                    if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("bizdate", QCP.large_equals,
-                                DateUtil.beginOfDay(filterItem.getDate()));
-                    }
+                    salebizdate_start = filterItem.getDate() == null ? null : DateUtil.beginOfDay(filterItem.getDate());
                     break;
                 case "salebizdate_end":
-                    if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("bizdate", QCP.less_equals,
-                                DateUtil.endOfDay(filterItem.getDate()));
-                    }
+                    salebizdate_end = filterItem.getDate() == null ? null : DateUtil.endOfDay(filterItem.getDate());
                     break;
                 // 查询条件收货组织,标识如不一致,请修改
                 case "nckd_purorg_q":
-                    nckd_purorg =  filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    nckd_purorg = filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                     break;
             }
         }
@@ -85,9 +78,22 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                 new QFilter[]{qFilter}, null);
         delivernotice = this.linkEleWeighing(delivernotice);
         delivernotice = this.linkPurReceiveBill(delivernotice);
-//        根据收货日组织过滤
-        if(nckd_purorg != null){
-            delivernotice = delivernotice.filter("nckd_purorg = "+ nckd_purorg );
+
+//        根据发货组织过滤
+        if (nckd_saleorgid != null) {
+            delivernotice = delivernotice.filter("nckd_saleorgid = " + nckd_saleorgid);
+        }
+//        根据收货开始日期过滤
+        if (salebizdate_start != null) {
+            delivernotice = delivernotice.filter("nckd_salebizdate >= to_date('" + salebizdate_start + "','yyyy-MM-dd hh:mm:ss')");
+        }
+//        根据收货开始日期过滤
+        if (salebizdate_end != null) {
+            delivernotice = delivernotice.filter("nckd_salebizdate <= to_date('" + salebizdate_end + "','yyyy-MM-dd hh:mm:ss')");
+        }
+//        根据收货组织过滤
+        if (nckd_purorg != null) {
+            delivernotice = delivernotice.filter("nckd_purorg = " + nckd_purorg);
         }
 
         return delivernotice.orderBy(delivernotice.getRowMeta().getFieldNames());
@@ -150,11 +156,11 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                         "billno as nckd_saleoutbillno",
                 new QFilter[]{outFilter}, null);
         //电子磅单关联销售出库单
-        nckd_eleweighing = nckd_eleweighing.leftJoin(im_saloutbill).on("eleweighingentryid","outsrcbillentryid")
-                .select(new String[]{"nckd_srcbillentryid","nckd_saleqty","nckd_saleoutbillno"}).finish();
+        nckd_eleweighing = nckd_eleweighing.leftJoin(im_saloutbill).on("eleweighingentryid", "outsrcbillentryid")
+                .select(new String[]{"nckd_srcbillentryid", "nckd_saleqty", "nckd_saleoutbillno"}).finish();
 
         //发货通知单关联电子磅单
-        ds = ds.leftJoin(nckd_eleweighing).on("billentryid","nckd_srcbillentryid")
+        ds = ds.leftJoin(nckd_eleweighing).on("billentryid", "nckd_srcbillentryid")
                 .select(ds.getRowMeta().getFieldNames(), nckd_eleweighing.getRowMeta().getFieldNames()).finish();
         return ds;
     }
