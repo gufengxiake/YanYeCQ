@@ -12,14 +12,13 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * 销售情况明细表-报表取数插件
  * 表单标识：nckd_saledetailrpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/22
  */
 public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

@@ -1,20 +1,17 @@
 package nckd.yanye.occ.plugin.report;
 
-import kd.bos.algo.DataSet;
+
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
-import kd.bos.form.field.events.BeforeFilterF7SelectEvent;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
@@ -23,7 +20,7 @@ import java.util.*;
 /**
  * 业务员借货汇总表界面插件
  * 表单标识：nckd_ywyjhhz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/21
  *  */
 

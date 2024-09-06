@@ -5,6 +5,10 @@ import java.util.List;
 import kd.bos.algo.DataSet;
 import kd.bos.algo.Row;
 
+/**
+ * author:zhangzhilong
+ * date:2024/09/04
+ */
 public class DataSetToList {
     public static List<Long> getOneToList(DataSet ds , String key){
         DataSet copy = ds.copy();

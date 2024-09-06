@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * 华康交易客户大表-报表界面插件
  * 表单标识：nckd_hktradecustomer_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/03
  */
 public class HKTradeCustomerReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

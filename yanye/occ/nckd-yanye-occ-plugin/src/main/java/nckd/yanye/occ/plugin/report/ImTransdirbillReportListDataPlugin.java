@@ -1,13 +1,7 @@
 package nckd.yanye.occ.plugin.report;
 
 import kd.bos.algo.DataSet;
-import kd.bos.algo.DataType;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.db.DB;
-import kd.bos.db.DBRoute;
-import kd.bos.db.SqlBuilder;
 import kd.bos.entity.report.AbstractReportListDataPlugin;
 import kd.bos.entity.report.FilterItemInfo;
 import kd.bos.entity.report.ReportQueryParam;
@@ -15,14 +9,13 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
  * 业务员借货汇总表表取数插件
  * 表单标识：nckd_ywyjhhz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/21
  *  */
 
@@ -102,7 +95,7 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
                 //业务员
                 "nckd_ywy AS nckd_ywy," +
                 //物料编码
-                "billentry.material AS nckd_material," +
+                "billentry.material.masterid AS nckd_material," +
                 //批号
                 "billentry.lotnumber as nckd_lotnum," +
                 //单位
@@ -128,7 +121,7 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
                 //业务员
                 "bizoperator AS nckd_ywy," +
                 //物料编码
-                "billentry.material AS nckd_material," +
+                "billentry.material.masterid AS nckd_material," +
                 //批号
                 "billentry.lotnumber as nckd_lotnum," +
                 //单位
