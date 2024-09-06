@@ -137,7 +137,8 @@ public class SyncDingDingClockInTask extends AbstractTask {
             // 打卡时间
             signCard.set("signpoint", clockInfo.getString("userCheckTime"));
 
-            // todo 打卡地点
+            // 打卡地点
+            signCard.set("nckd_position", clockInfo.getString("userAddress"));
 
             // 打卡来源
             signCard.set("source", source);
