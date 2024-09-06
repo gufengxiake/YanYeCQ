@@ -299,8 +299,8 @@ public class ClockInApiUtil {
         LocalDateTime yesterday = today.minusDays(2);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String todayStr = today.format(formatter);
-        String yesterdayStr = yesterday.format(formatter);
+        String workDateTo = today.format(formatter);
+        String workDateFrom = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         QFilter qFilter = new QFilter("nckd_dingdingid", QCP.not_equals, null);
@@ -318,14 +318,14 @@ public class ClockInApiUtil {
         for (DynamicObject user : users) {
             userIds.add(user.getString("nckd_dingdingid"));
             if (userIds.size() == 50) {
-                JSONObject responseObj = getDingDingClockInlist(userIds, url, yesterdayStr, todayStr);
+                JSONObject responseObj = getDingDingClockInlist(userIds, url, workDateFrom, workDateTo);
                 usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
                 userIds.clear();
             }
         }
 
         if (!userIds.isEmpty()) {
-            JSONObject responseObj = getDingDingClockInlist(userIds, url, yesterdayStr, todayStr);
+            JSONObject responseObj = getDingDingClockInlist(userIds, url, workDateFrom, workDateTo);
             usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
 
             userIds.clear();
@@ -334,16 +334,16 @@ public class ClockInApiUtil {
         return usersClockInList;
     }
 
-    private static JSONObject getDingDingClockInlist(ArrayList<String> userIds, String url, String yesterdayStr, String todayStr) {
+    private static JSONObject getDingDingClockInlist(ArrayList<String> userIds, String url, String workDateFrom, String workDateTo) {
         JSONObject body = new JSONObject()
                 // 企业内的员工ID列表，最大值50。
                 .fluentPut("userIds", userIds)
                 // 查询考勤打卡记录的起始工作日。格式为：yyyy-MM-dd hh:mm:ss。
                 // 例如，参数传"2021-12-01 10:00:00"，员工在09:00的打卡信息获取不到。
-                .fluentPut("checkDateFrom", yesterdayStr)
+                .fluentPut("checkDateFrom", workDateFrom)
                 // 查询考勤打卡记录的结束工作日。格式为：yyyy-MM-dd hh:mm:ss。
                 // 例如，参数传"2021-12-01 18:00:00"，员工在19:00的打卡信息获取不到。
-                .fluentPut("checkDateTo", todayStr);
+                .fluentPut("checkDateTo", workDateTo);
 
 
         HttpRequest httpRequest = HttpRequest.of(url);
