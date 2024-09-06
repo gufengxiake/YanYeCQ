@@ -257,6 +257,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             negainventoryOrder.set("nckd_inventoryclosedate", inventoryclosedate);
             negainventoryOrder.set("nckd_invcountschemeno", schemenumber);
             negainventoryOrder.set("billstatus", "A");
+            negainventoryOrder.set("nckd_datasources", bussProcessOrder.getString("nckd_datasources"));
             long currUserId = RequestContext.get().getCurrUserId();
             negainventoryOrder.set("creator", currUserId);
             negainventoryOrder.set("createtime", date);
@@ -315,21 +316,23 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             } else {
                 //提交审批
                 OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
-                if(!submit.isSuccess()){
+                if (!submit.isSuccess()) {
                     OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单提交失败");
                     return;
                 }
                 OperationResult audit = OperationServiceHelper.executeOperate("audit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
-                if(!audit.isSuccess()){
+                if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
                     OperationServiceHelper.executeOperate("unsubmit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单发起审核失败");
                     return;
                 }
-                this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增成功");
-                this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单下推成功");
+                if (StringUtils.isNotEmpty(msg.toString())) {
+                    this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                }
             }
         }
     }

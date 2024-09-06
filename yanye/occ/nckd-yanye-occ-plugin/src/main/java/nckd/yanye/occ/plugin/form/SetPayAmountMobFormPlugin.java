@@ -18,7 +18,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.*;
 import kd.bos.form.control.Control;
-import kd.bos.form.control.QRCode;
+import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -163,7 +163,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                 OperationResult paylogRecordresult = createPayLogRecord(nckdPaylogRecord, currUserId, date, userDefaultOrgID, transResultStr);
                 if (paylogRecordresult.isSuccess()) {
                     //生成交易流水记录
-                    OperationResult paytranRecordresult = createPayTranRecord(payamount, orderNo, billNo, currUserId, date, userDefaultOrgID,saleorgid);
+                    OperationResult paytranRecordresult = createPayTranRecord(payamount, orderNo, billNo, currUserId, date, userDefaultOrgID, saleorgid);
                     if (paytranRecordresult.isSuccess()) {
                         //弹框
                         MobileFormShowParameter showParameter = new MobileFormShowParameter();
@@ -180,6 +180,8 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                         qrcode.put("orderdate", orderdate);
                         qrcode.put("payamount", payamount);
                         showParameter.setCustomParams(qrcode);
+                        // 设置回调
+                        showParameter.setCloseCallBack(new CloseCallBack(this, "paydone"));
                         this.getView().showForm(showParameter);
                     }
                 }
@@ -188,6 +190,19 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
             //请求失败
             logger.info("SetPayAmountMobFormPlugin 获取二维码路径失败" + misApiResponse.getRetErrMsg());
             this.getView().showErrorNotification("获取二维码路径失败 " + misApiResponse.getRetErrMsg());
+        }
+    }
+
+    /**
+     * 点击支付完成，设置支付金额的地方也完成
+     * @param closedCallBackEvent
+     */
+    @Override
+    public void closedCallBack(ClosedCallBackEvent closedCallBackEvent) {
+        super.closedCallBack(closedCallBackEvent);
+        String key = closedCallBackEvent.getActionId();
+        if (StringUtils.equals("paydone", key)) {
+            this.getView().close();
         }
     }
 
