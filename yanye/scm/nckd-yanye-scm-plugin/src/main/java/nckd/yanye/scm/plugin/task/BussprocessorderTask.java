@@ -99,9 +99,12 @@ public class BussprocessorderTask extends AbstractTask {
 //                        +","+getMap().get(dynamic.getString("nckd_teamsgroups")));
             }
             //昨天的日期，用于调用5G工厂接口昨天晚班的数据
-
-            Date dateTime = DateUtil.offsetDay(new Date(),-3);
-            Date yesterday = DateUtil.offsetDay(new Date(),-4);
+            Date datefield = dynamicObject.getDate("nckd_datefield");
+            if (null == datefield){
+                datefield = new Date();
+            }
+            Date dateTime = DateUtil.offsetDay(datefield,-1);
+            Date yesterday = DateUtil.offsetDay(datefield,-2);
             //调用5G工厂接口：所有物料
             JSONObject resultJson = FactoryApiUtil.getFactoryInfo(stringList,dateTime);
             JSONArray jsonArray = resultJson.getJSONArray("data");
