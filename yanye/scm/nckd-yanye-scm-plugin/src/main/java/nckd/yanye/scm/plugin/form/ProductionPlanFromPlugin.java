@@ -345,7 +345,9 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             for (DynamicObject pom : pom_mftorder) {
                 stringBuilder.append(pom.getString("billno") + "/");
             }
-            this.getModel().setValue("nckd_pom", stringBuilder.toString(), i);
+            oldEntity.set("nckd_pom", stringBuilder.toString());
+            SaveServiceHelper.update(dataEntity);
+            this.getView().invokeOperation("refresh");
 
         }
         //判断是否需要合并
@@ -459,6 +461,12 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 if (pdm == null) {
                     continue;
                 } else {
+                    DynamicObjectCollection entry = dataEntity.getDynamicObjectCollection("pom_planning_entry");
+                    ArrayList<Object> ids= new ArrayList<>();
+                    entry.forEach(d -> ids.add(d.getDynamicObject("material").getPkValue()));
+                    if (ids.contains(entrymaterial.getPkValue())){
+                        continue;
+                    }
                     entrymaterial = BusinessDataServiceHelper.loadSingle(entrymaterial.getPkValue(), "bd_materialmftinfo");
                     BigDecimal qty = ((oldEntity.getBigDecimal("nckd_yield")).multiply(b.getBigDecimal("entryqtynumerator"))).divide(b.getBigDecimal("entryqtydenominator"));
                     pdm = BusinessDataServiceHelper.loadSingle(pdm.getPkValue(), "pdm_mftbom");
