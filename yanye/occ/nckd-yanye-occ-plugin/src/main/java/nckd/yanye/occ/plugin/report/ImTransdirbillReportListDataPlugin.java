@@ -1,13 +1,7 @@
 package nckd.yanye.occ.plugin.report;
 
 import kd.bos.algo.DataSet;
-import kd.bos.algo.DataType;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.db.DB;
-import kd.bos.db.DBRoute;
-import kd.bos.db.SqlBuilder;
 import kd.bos.entity.report.AbstractReportListDataPlugin;
 import kd.bos.entity.report.FilterItemInfo;
 import kd.bos.entity.report.ReportQueryParam;
@@ -15,39 +9,22 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
  * 业务员借货汇总表表取数插件
  * 表单标识：nckd_ywyjhhz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/21
  *  */
 
 public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
-//    String algoKey = "nckd.yanye.occ.plugin.report.ImTransdirbillReportListDataPlugin";
-//    DBRoute faRoute = DBRoute.of("scm");
-
-    private static final String [] FIELDS ={"nckd_forg","nckd_ywy","nckd_material","nckd_materialname",
-            "nckd_materialmodelnum","nckd_unit","nckd_jhqty",
-            "nckd_xsqty","nckd_jchhqty","nckd_jhyeqty"};
-    private static final DataType[] DATATYPES = {DataType.LongType, DataType.LongType,
-            DataType.LongType,DataType.StringType,DataType.StringType,DataType.LongType,
-            DataType.LongType, DataType.LongType,DataType.LongType, DataType.LongType
-    };
-
-
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
+        //联合直接调拨单和销售出库单的数据
         DataSet im = this.getImTransDirBill().union(this.getImSaleOutBill());
-
-        //关联物料库存信息取物料masterid
-        im = im.leftJoin(this.getMaterial(im)).on("material","fid")
-                .select(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_unit","fqty","fbilltypeid","fbiztime"})
-                .finish();
 
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
@@ -101,20 +78,34 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
         }
 
 
-        im = im.groupBy(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_unit"})
+        //根据组织，业务员，物料，批号，单位汇总不同单据类型的数量
+        im = im.groupBy(new String[]{"nckd_forg","nckd_ywy","nckd_material","nckd_lotnum","nckd_unit"})
                 .sum("CASE WHEN fbilltypeid = 1980435041267748864L THEN fqty ELSE 0 END ","nckd_jhqty")
                 .sum("CASE WHEN fbilltypeid = 1980511903113284608L THEN fqty ELSE 0 END ","nckd_xsqty")
                 .sum("CASE WHEN fbilltypeid = 1980435141796826112L THEN fqty ELSE 0 END ","nckd_jchhqty")
                 .finish();
 
-        im.select("nckd_forg","nckd_ywy","nckd_material","nckd_unit","nckd_jhqty","nckd_xsqty","nckd_jchhqty");
-
         return im;
     }
 
+    //获取直接调拨单
     public DataSet getImTransDirBill(){
-        String selectFields = "outorg AS nckd_forg,nckd_ywy AS nckd_ywy,billentry.material AS material," +
-                "billentry.unit AS nckd_unit,billentry.qty AS fqty,billtype AS fbilltypeid,biztime as fbiztime";
+        //库存组织
+        String selectFields = "outorg AS nckd_forg," +
+                //业务员
+                "nckd_ywy AS nckd_ywy," +
+                //物料编码
+                "billentry.material.masterid AS nckd_material," +
+                //批号
+                "billentry.lotnumber as nckd_lotnum," +
+                //单位
+                "billentry.unit AS nckd_unit," +
+                //数量
+                "billentry.qty AS fqty," +
+                //单据类型
+                "billtype AS fbilltypeid," +
+                //业务日期
+                "biztime as fbiztime";
 //        默认查询借出和借出还回的直接调拨单
         QFilter qFilter = new QFilter("billtype", QCP.in,new Long[]{1980435141796826112L,1980435041267748864L});
         qFilter.and("billstatus", QCP.equals ,"C");
@@ -123,9 +114,24 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
         return im_transdirbill;
     }
 
+    //获取销售出库单
     public DataSet getImSaleOutBill(){
-        String selectFields = "org AS nckd_forg,bizoperator AS nckd_ywy,billentry.material AS material," +
-                "billentry.unit AS nckd_unit,billentry.qty AS fqty,billtype AS fbilltypeid,biztime as fbiztime";
+                //库存组织
+        String selectFields = "org AS nckd_forg," +
+                //业务员
+                "bizoperator AS nckd_ywy," +
+                //物料编码
+                "billentry.material.masterid AS nckd_material," +
+                //批号
+                "billentry.lotnumber as nckd_lotnum," +
+                //单位
+                "billentry.unit AS nckd_unit," +
+                //数量
+                "billentry.qty AS fqty," +
+                //单据类型
+                "billtype AS fbilltypeid," +
+                //业务日期
+                "biztime as fbiztime";
 //        默认查询车销出库单据类型和已审核的销售出库单
         QFilter qFilter = new QFilter("billtype", QCP.equals,1980511903113284608L);
         qFilter.and("billstatus", QCP.equals ,"C");
@@ -133,19 +139,5 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
                 "im_saloutbill", selectFields, new QFilter[]{qFilter},null);
         return im_saloutbill;
     }
-
-    public DataSet getMaterial(DataSet im){
-        DataSet copy = im.copy();
-        List<Long> bill_materialId = new ArrayList<>();
-        while (copy.hasNext()){
-            Row row = copy.next();
-            bill_materialId.add( row.getLong("material"));
-        }
-        QFilter qFilter = new QFilter("id", QCP.in,bill_materialId.toArray(new Long[0]));
-        DataSet bd_materialinven = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "bd_materialinventoryinfo", "id AS fid,masterid as nckd_material", new QFilter[]{qFilter},null);
-        return bd_materialinven;
-    }
-
 
 }

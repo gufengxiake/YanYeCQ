@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * Module           :总账-账表-科目余额表、核算维度余额表、辅助核算维度余额
+ * Module           :总账-账表-科目余额表、核算维度余额表
  * Description      :数量合计
  *
  * @author 梁秦刚

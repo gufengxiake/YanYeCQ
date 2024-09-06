@@ -18,6 +18,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.*;
 import kd.bos.form.control.Control;
+import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -46,6 +47,14 @@ import java.util.stream.Collectors;
  */
 public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
     private static final Log logger = LogFactory.getLog(SetPayAmountMobFormPlugin.class);
+
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        super.afterCreateNewData(e);
+        FormShowParameter formShowParameter = this.getView().getFormShowParameter();
+        Map<String, Object> customParams = formShowParameter.getCustomParams();
+        this.getModel().setValue("nckd_payamount", Convert.toBigDecimal(customParams.get("sumunrecamount")));
+    }
 
     @Override
     public void registerListener(EventObject e) {
@@ -154,7 +163,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                 OperationResult paylogRecordresult = createPayLogRecord(nckdPaylogRecord, currUserId, date, userDefaultOrgID, transResultStr);
                 if (paylogRecordresult.isSuccess()) {
                     //生成交易流水记录
-                    OperationResult paytranRecordresult = createPayTranRecord(payamount, orderNo, billNo, currUserId, date, userDefaultOrgID,saleorgid);
+                    OperationResult paytranRecordresult = createPayTranRecord(payamount, orderNo, billNo, currUserId, date, userDefaultOrgID, saleorgid);
                     if (paytranRecordresult.isSuccess()) {
                         //弹框
                         MobileFormShowParameter showParameter = new MobileFormShowParameter();
@@ -171,6 +180,8 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                         qrcode.put("orderdate", orderdate);
                         qrcode.put("payamount", payamount);
                         showParameter.setCustomParams(qrcode);
+                        // 设置回调
+                        showParameter.setCloseCallBack(new CloseCallBack(this, "paydone"));
                         this.getView().showForm(showParameter);
                     }
                 }
@@ -179,6 +190,19 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
             //请求失败
             logger.info("SetPayAmountMobFormPlugin 获取二维码路径失败" + misApiResponse.getRetErrMsg());
             this.getView().showErrorNotification("获取二维码路径失败 " + misApiResponse.getRetErrMsg());
+        }
+    }
+
+    /**
+     * 点击支付完成，设置支付金额的地方也完成
+     * @param closedCallBackEvent
+     */
+    @Override
+    public void closedCallBack(ClosedCallBackEvent closedCallBackEvent) {
+        super.closedCallBack(closedCallBackEvent);
+        String key = closedCallBackEvent.getActionId();
+        if (StringUtils.equals("paydone", key)) {
+            this.getView().close();
         }
     }
 
@@ -207,7 +231,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
         nckdPaytranRecord.set("nckd_payamount", payamount);
         nckdPaytranRecord.set("nckd_paystatus", "D");
         nckdPaytranRecord.set("nckd_querycount", 0);
-        nckdPaytranRecord.set("nckd_querydate", DateUtil.offsetMinute(date, 1));
+        //nckdPaytranRecord.set("nckd_querydate", DateUtil.offsetMinute(date, 1));
         nckdPaytranRecord.set("nckd_saleorg", saleorgid.get("id"));
         OperationResult paytranRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paytranrecord", new DynamicObject[]{nckdPaytranRecord}, OperateOption.create());
         return paytranRecordresult;

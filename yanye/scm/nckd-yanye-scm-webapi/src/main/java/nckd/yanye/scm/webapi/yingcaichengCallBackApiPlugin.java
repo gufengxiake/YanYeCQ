@@ -73,13 +73,16 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             return CustomApiResult.success("success");
         }
 
+        // 根据应用id获取平台
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst(openAppKey);
+
         // 签名校验
-        if (!ZcEncryptUtil.checkSignature(signature, timestamp, nonce)) {
+        if (!ZcEncryptUtil.checkSignature(zcPlatformConst, signature, timestamp, nonce)) {
             return CustomApiResult.success("failed");
         }
 
         // 解密消息体
-        String decryptMsg = ZcEncryptUtil.decryptBody(encryptBody);
+        String decryptMsg = ZcEncryptUtil.decryptBody(zcPlatformConst, encryptBody);
         JSONObject msgObj = JSON.parseObject(decryptMsg);
 
         // 采购单id
@@ -123,14 +126,14 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 生成信息接收单
         // 成交通知书data
-        JSONObject winData = ZcPlatformApiUtil.getWinData(msgObj.getInteger("purchaseType"),
+        JSONObject winData = ZcPlatformApiUtil.getWinData(zcPlatformConst, msgObj.getInteger("purchaseType"),
                 orderId,
                 msgObj.getString("winId")
         );
         String msg = "生成失败!";
 
         // 对应采购单data
-        JSONObject orderData = ZcPlatformApiUtil.getOrderData(orderId, msgObj.getInteger("purchaseType"));
+        JSONObject orderData = ZcPlatformApiUtil.getOrderData(zcPlatformConst, orderId, msgObj.getInteger("purchaseType"));
 
         DynamicObject receiveObject = BusinessDataServiceHelper.newDynamicObject(InforeceivebillConst.FORMBILLID);
 
@@ -197,11 +200,11 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         // 先查成交授标，获取成交品目信息。再根据itemId查品目列表，获取品目信息。对应起来。再根据品目编号，赋值分录
         // 询比才有物料
         if ("XBJ".equals(businessType)) {
-            JSONObject awardData = ZcPlatformApiUtil.getAwardData(msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
+            JSONObject awardData = ZcPlatformApiUtil.getAwardData(zcPlatformConst, msgObj.getInteger("purchaseType"), orderId, winData.getString("awardId"));
             JSONArray items = awardData.getJSONArray("items");
 
             // 品目列表
-            JSONArray orderItemsData = ZcPlatformApiUtil.getOrderItemsData(msgObj.getInteger("purchaseType"), orderId);
+            JSONArray orderItemsData = ZcPlatformApiUtil.getOrderItemsData(zcPlatformConst, msgObj.getInteger("purchaseType"), orderId);
             HashMap<Integer, HashMap<String, String>> itemMap = new HashMap<>();
             for (Object orderItemsDatum : orderItemsData) {
                 HashMap<String, String> map = new HashMap<>();
@@ -412,66 +415,66 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
     }
 
 
-    /**
-     * 新增成交供应商
-     *
-     * @param supplierId
-     */
-    private static void saveSupplier(String supplierId) {
-        // 查询成交公司数据
-        JSONObject companyData = ZcPlatformApiUtil.getCompanyDataById(supplierId);
-        // 成交公司统一社会信用代码
-        String uscc = companyData.getString("socialCreditCode");
-
-        //根据招采平台供应商id查询供应商信息
-        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
-                SupplierConst.FORMBILLID,
-                SupplierConst.ALLPROPERTY,
-                new QFilter[]{new QFilter(SupplierConst.NCKD_PLATFORMSUPID, QCP.equals, supplierId)}
-        );
-
-        // 供应商不存在，则新增
-        if (dynamicObjects.length == 0) {
-            //根据社会统一信用代码再次查询，如果存在则更新已有供应商信息，不存在则新建
-            DynamicObject[] load = BusinessDataServiceHelper.load(
-                    SupplierConst.FORMBILLID,
-                    SupplierConst.ALLPROPERTY,
-                    new QFilter[]{new QFilter(SupplierConst.SOCIETYCREDITCODE, QCP.equals, uscc)}
-            );
-            if (load.length != 0) {
-                DynamicObject supplier = load[0];
-                supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
-                supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
-                SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
-            }
-
-            //不存在，则新增保存至金蝶供应商
-            DynamicObject supplier = BusinessDataServiceHelper.newDynamicObject(SupplierConst.FORMBILLID);
-            DynamicObject org = BusinessDataServiceHelper.loadSingle(
-                    "100000",
-                    "bos_org"
-            );
-
-            //名称
-            supplier.set(SupplierConst.NAME, companyData.getString("companyName"));
-            //创建组织
-            supplier.set(SupplierConst.CREATEORG, org);
-            //业务组织
-            supplier.set(SupplierConst.USEORG, org);
-            //统一社会信用代码
-            supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
-            //招采平台id
-            supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
-            //控制策略：自由分配
-            supplier.set(SupplierConst.CTRLSTRATEGY, "5");
-            //数据状态
-            supplier.set(SupplierConst.STATUS, "C");
-            //使用状态
-            supplier.set(SupplierConst.ENABLE, "1");
-
-            SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
-        }
-    }
+//    /**
+//     * 新增成交供应商
+//     *
+//     * @param supplierId
+//     */
+//    private static void saveSupplier(String supplierId) {
+//        // 查询成交公司数据
+//        JSONObject companyData = ZcPlatformApiUtil.getCompanyDataById(supplierId);
+//        // 成交公司统一社会信用代码
+//        String uscc = companyData.getString("socialCreditCode");
+//
+//        //根据招采平台供应商id查询供应商信息
+//        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(
+//                SupplierConst.FORMBILLID,
+//                SupplierConst.ALLPROPERTY,
+//                new QFilter[]{new QFilter(SupplierConst.NCKD_PLATFORMSUPID, QCP.equals, supplierId)}
+//        );
+//
+//        // 供应商不存在，则新增
+//        if (dynamicObjects.length == 0) {
+//            //根据社会统一信用代码再次查询，如果存在则更新已有供应商信息，不存在则新建
+//            DynamicObject[] load = BusinessDataServiceHelper.load(
+//                    SupplierConst.FORMBILLID,
+//                    SupplierConst.ALLPROPERTY,
+//                    new QFilter[]{new QFilter(SupplierConst.SOCIETYCREDITCODE, QCP.equals, uscc)}
+//            );
+//            if (load.length != 0) {
+//                DynamicObject supplier = load[0];
+//                supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
+//                supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
+//                SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
+//            }
+//
+//            //不存在，则新增保存至金蝶供应商
+//            DynamicObject supplier = BusinessDataServiceHelper.newDynamicObject(SupplierConst.FORMBILLID);
+//            DynamicObject org = BusinessDataServiceHelper.loadSingle(
+//                    "100000",
+//                    "bos_org"
+//            );
+//
+//            //名称
+//            supplier.set(SupplierConst.NAME, companyData.getString("companyName"));
+//            //创建组织
+//            supplier.set(SupplierConst.CREATEORG, org);
+//            //业务组织
+//            supplier.set(SupplierConst.USEORG, org);
+//            //统一社会信用代码
+//            supplier.set(SupplierConst.SOCIETYCREDITCODE, uscc);
+//            //招采平台id
+//            supplier.set(SupplierConst.NCKD_PLATFORMSUPID, supplierId);
+//            //控制策略：自由分配
+//            supplier.set(SupplierConst.CTRLSTRATEGY, "5");
+//            //数据状态
+//            supplier.set(SupplierConst.STATUS, "C");
+//            //使用状态
+//            supplier.set(SupplierConst.ENABLE, "1");
+//
+//            SaveServiceHelper.saveOperate(SupplierConst.FORMBILLID, new DynamicObject[]{supplier});
+//        }
+//    }
 
     private PushArgs getPushArgs(DynamicObject srcObj, String formbillid) {
         Long pkid = (long) srcObj.getPkValue();

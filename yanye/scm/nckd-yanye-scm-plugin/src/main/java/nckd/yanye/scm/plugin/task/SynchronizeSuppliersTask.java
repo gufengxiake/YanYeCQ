@@ -12,6 +12,7 @@ import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.SupplierConst;
+import nckd.yanye.scm.common.ZcPlatformConst;
 import nckd.yanye.scm.common.utils.ZcPlatformApiUtil;
 
 import java.util.HashMap;
@@ -35,7 +36,15 @@ public class SynchronizeSuppliersTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         //获取招采平台供应商列表
-        JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier();
+        ZcPlatformConst zcPlatformConst = new ZcPlatformConst();
+        DynamicObject zcConfig = BusinessDataServiceHelper.loadSingle(
+                "nckd_zcconfig",
+                new QFilter[]{null}
+        );
+        zcPlatformConst.setClientId(zcConfig.getString("client_id"));
+        zcPlatformConst.setClientSecret(zcConfig.getString("client_secret"));
+        zcPlatformConst.setMsgSecret(zcConfig.getString("msg_secret"));
+        JSONArray allSuppliers = ZcPlatformApiUtil.getAllZcSupplier(zcPlatformConst);
         //遍历招采平台供应商列表，对应社会统一代码与id
         HashMap<String, String> supplierMap = new HashMap<>();
         for (int i = 0; i < allSuppliers.size(); i++) {

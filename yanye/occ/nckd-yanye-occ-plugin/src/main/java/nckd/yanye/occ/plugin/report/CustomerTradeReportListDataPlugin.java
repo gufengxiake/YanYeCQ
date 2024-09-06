@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 客户交易情况表-报表取数插件
  * 表单标识：nckd_customertrade_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/02
  */
 public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

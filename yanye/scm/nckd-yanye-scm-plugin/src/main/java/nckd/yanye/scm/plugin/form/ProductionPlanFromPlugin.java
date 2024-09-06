@@ -94,7 +94,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             subentryentity.clear();
             this.getView().updateView("nckd_subentryentity");
         }
-        DynamicObject nckdBomid = entry.getDynamicObject("nckd_bomid");
+        DynamicObject nckdBomid = entry.getDynamicObject("nckd_bomid");//1
         if (nckdBomid == null){
             return;
         }
@@ -109,6 +109,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             if (pBom == null) {
                 continue;
             }
+            pBom = BusinessDataServiceHelper.loadSingle(pBom.getPkValue(), "pdm_mftbom");
             DynamicObjectCollection newBomEntry = pBom.getDynamicObjectCollection("entry");
             if (newBomEntry.size() > 0) {
                 DynamicObject subentry = subentryentity.addNew();
@@ -121,11 +122,39 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 subentry.set("producedept", entrymaterial.getDynamicObject("departmentorgid"));
                 subentry.set("yiel", result);
                 subentry.set("unit", b.getDynamicObject("entryunit"));
+                setSubentry(pBom,subentryentity,nckdYield);
             }
 
         }
         SaveServiceHelper.save(new DynamicObject[]{data});
         this.getView().updateView("nckd_subentryentity");
+    }
+
+    private void setSubentry(DynamicObject nckdBomid, DynamicObjectCollection subentryentity, BigDecimal nckdYield) {
+        DynamicObjectCollection bomEntry = nckdBomid.getDynamicObjectCollection("entry");
+        for (DynamicObject b : bomEntry) {
+            DynamicObject entrymaterial = b.getDynamicObject("entrymaterial");
+            DynamicObject pBom = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,entry", new QFilter[]{new QFilter("material.id", QCP.equals, entrymaterial.getPkValue())});
+            if (pBom == null) {
+                return;
+            }
+            pBom = BusinessDataServiceHelper.loadSingle(pBom.getPkValue(), "pdm_mftbom");
+            DynamicObjectCollection newBomEntry = pBom.getDynamicObjectCollection("entry");
+            if (newBomEntry.size() > 0) {
+                DynamicObject subentry = subentryentity.addNew();
+                entrymaterial = BusinessDataServiceHelper.loadSingle(entrymaterial.getPkValue(), "bd_materialmftinfo");
+                BigDecimal entryqtynumerator = b.getBigDecimal("entryqtynumerator");
+                BigDecimal entryqtydenominator = b.getBigDecimal("entryqtydenominator");
+                BigDecimal result = (nckdYield.multiply(entryqtynumerator).divide(entryqtydenominator)).setScale(2, BigDecimal.ROUND_HALF_UP);
+                subentry.set("nckd_material", entrymaterial);
+                subentry.set("nckd_mname", entrymaterial.getDynamicObject("masterid").get("name"));
+                subentry.set("producedept", entrymaterial.getDynamicObject("departmentorgid"));
+                subentry.set("yiel", result);
+                subentry.set("unit", b.getDynamicObject("entryunit"));
+                setSubentry(pBom,subentryentity,nckdYield);
+            }
+
+        }
     }
 
     @Override
@@ -1013,7 +1042,6 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
 
     @Override
     public void afterCreateNewData(EventObject e) {
-        ;
         super.afterCreateNewData(e);
 
     }

@@ -17,12 +17,10 @@ import java.math.RoundingMode;
 import java.text.DecimalFormat;
 import java.util.*;
 
-import static com.ibm.db2.jcc.am.ao.ds;
-
 /**
  * 销售情况明细表-报表界面插件
  * 表单标识：nckd_saledetailrpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/22
  */
 public class SaledetailReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

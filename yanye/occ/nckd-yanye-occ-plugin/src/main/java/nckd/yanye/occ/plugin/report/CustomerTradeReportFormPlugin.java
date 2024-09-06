@@ -17,7 +17,7 @@ import java.util.Iterator;
 /**
  * 客户交易情况表-报表界面插件
  * 表单标识：nckd_customertrade_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/02
  */
 public class CustomerTradeReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

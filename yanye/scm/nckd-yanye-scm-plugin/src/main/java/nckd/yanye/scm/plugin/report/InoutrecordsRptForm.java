@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.form;
+package nckd.yanye.scm.plugin.report;
 
 import java.util.*;
 
@@ -12,36 +12,30 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.GroupProp;
 import kd.bos.entity.property.ParentBasedataProp;
 import kd.bos.form.IFormView;
-import kd.bos.form.events.HyperLinkClickEvent;
-import kd.bos.form.events.HyperLinkClickListener;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
+import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
-import kd.bos.report.ReportList;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.fi.cal.common.helper.OrgHelper;
-import kd.fi.cal.common.helper.PeriodHelper;
 import kd.fi.cal.common.helper.PermissionHelper;
 import kd.fi.cal.common.helper.ReportF7Helper;
-import kd.fi.cal.common.util.ReportUtil;
-import kd.fi.cal.report.newreport.estimatesumrpt.formplugin.SaleEstimateSumRptForm;
 
 /**
  * @author husheng
  * @date 2024-09-03 14:54
- * @description
+ * @description 出入库流水账（nckd_inoutrecords）报表界面插件
  */
 public class InoutrecordsRptForm extends AbstractReportFormPlugin implements BeforeF7SelectListener {
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
 
-        this.addF7Listener(this, "nckd_mulcalorg", "nckd_mulcostaccount", "nckd_mulmaterialgroup", "nckd_mulmaterial", "nckd_materialto");
+        this.addF7Listener(this, "nckd_mulcalorg", "nckd_mulcostaccount", "nckd_mulmaterialgroup", "nckd_mulmaterial", "nckd_materialto","nckd_mulbilltype");
     }
 
     private void addF7Listener(BeforeF7SelectListener form, String... f7Names) {
@@ -51,7 +45,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
 
         for (int var6 = 0; var6 < var5; ++var6) {
             String f7Name = var4[var6];
-            f7 = (BasedataEdit) this.getControl(f7Name);
+            f7 = this.getControl(f7Name);
             if (f7 != null) {
                 f7.addBeforeF7SelectListener(form);
             }
@@ -192,7 +186,39 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
             this.beforeF7SelectMaterialGroup(beforeF7SelectEvent);
         } else if ("nckd_mulmaterial".equals(key) || "nckd_materialto".equals(key)) {
             this.beforeF7Select4Mulmaterial(this.getModel(), beforeF7SelectEvent);
+        } else if ("nckd_mulbilltype".equals(key)){
+            this.beforeF7Select4Billtype(beforeF7SelectEvent);
         }
+    }
+
+    private void beforeF7Select4Billtype(BeforeF7SelectEvent e) {
+         /*
+            领料出库单	im_MaterialReqOutBill_STD_BT_S	标准领料出库单
+            其他入库单	im_OtherInBill_STD_BT_S	标准其他入库单
+            其他出库单	im_OtherOutBill_STD_BT_S	标准其他出库单
+            生产入库单	im_ProductInbill_STD_BT_S	生产入库单
+            采购入库单	im_PurInBill_STD_BT_S	标准采购入库单
+            销售出库单	im_SalOutBill_STD_BT_S	标准销售出库单
+            完工入库单	im_mdc_mftmanuinbill_BT_S	完工入库单
+            完工退库单	im_mdc_mftreturnbill_BT_S	完工退库单
+            生产领料单	im_mdc_mftproorder_BT_S	生产领料单
+            生产补料单	im_mdc_mftfeedorder_BT_R	生产补料单
+            生产退料单	im_mdc_mftreturnorder_BT_S_R	生产退料单
+        */
+        List<String> numbers = new ArrayList<>();
+        numbers.add("im_materialreqoutbill");
+        numbers.add("im_otherinbill");
+        numbers.add("im_otheroutbill");
+        numbers.add("im_productinbill");
+        numbers.add("im_purinbill");
+        numbers.add("im_saloutbill");
+        numbers.add("im_mdc_mftmanuinbill");
+        numbers.add("im_mdc_mftreturnbill");
+        numbers.add("im_mdc_mftproorder");
+        numbers.add("im_mdc_mftfeedorder");
+        numbers.add("im_mdc_mftreturnorder");
+        QFilter q = new QFilter("billformid", QCP.in, numbers);
+        ((ListShowParameter) e.getFormShowParameter()).getListFilterParameter().setFilter(q);
     }
 
     private void beforeF7Select4Mulmaterial(IDataModel model, BeforeF7SelectEvent e) {

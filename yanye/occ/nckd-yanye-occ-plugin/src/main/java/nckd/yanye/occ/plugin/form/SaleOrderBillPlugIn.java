@@ -34,10 +34,14 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
         super.registerListener(e);
         //销售合同
         TextEdit salecontractno = getControl("nckd_salecontractno");
-        salecontractno.addClickListener(this);
+        if(salecontractno!=null){
+            salecontractno.addClickListener(this);
+        }
         //运输合同
         TextEdit trancon = getControl("nckd_trancontractno");
-        trancon.addClickListener(this);
+        if(trancon!=null){
+            trancon.addClickListener(this);
+        }
     }
 
     @Override

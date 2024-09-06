@@ -226,7 +226,7 @@ public class PurInBillAuditOperatePlugIn extends AbstractOperationServicePlugIn 
 
                                 formView.getModel().createNewData();
 
-                                formView.updateView();
+                                //formView.updateView();
 
                             }
                             BillModel mode = (BillModel) formView.getModel();

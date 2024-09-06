@@ -146,13 +146,13 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                 if (ObjectUtil.isNotEmpty(paytranrecord)) {
                     int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                     paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                    Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                    Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                    paytranrecord.set("nckd_querydate", queryDate);
+                    //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                    //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                    //paytranrecord.set("nckd_querydate", queryDate);
                 }
                 //更新支付流水的查询次数和下一次轮询时间
                 SaveServiceHelper.update(paytranrecord);
-                logger.info("QrCodeMobFormPlugin 更新交易流水记录end");
+                logger.info("QrCodeMobFormPlugin 更新交易流水记录的下一次轮询时间和次数");
                 return;
             }
 
@@ -160,9 +160,9 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
                 paytranrecord.set("nckd_paystatus", "A");
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的支付状态为成功
             SaveServiceHelper.update(paytranrecord);
@@ -211,8 +211,22 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
             logger.info("QrCodeMobFormPlugin 收款单审核成功");
 
         } else {
+            //成功获取交易数据则更新交易流水记录 成功、失败、异常、不支持的交易状态
+            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, orderNo).and("nckd_paystatus", QCP.equals, "D");
+            DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
+            //这个表示要查询的那个订单的交易状态成功与否
+            logger.info("QrCodeMobFormPlugin 聚合主扫结果查询失败" + misApiResponse.getRetErrMsg());
+            if (ObjectUtil.isNotEmpty(paytranrecord)) {
+                int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
+                paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
+            }
+            //更新支付流水的查询次数和下一次轮询时间
+            SaveServiceHelper.update(paytranrecord);
+            logger.info("QrCodeMobFormPlugin 聚合主扫结果查询失败但需要更新交易流水记录的下一次轮询时间和次数");
             //请求失败
-            logger.info("QrCodeMobFormPlugin 聚合主扫结果查询请求失败" + misApiResponse.getRetErrMsg());
             nckdPaylogRecord.set("nckd_respmsg", misApiResponse.getRetErrMsg());
             OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
         }

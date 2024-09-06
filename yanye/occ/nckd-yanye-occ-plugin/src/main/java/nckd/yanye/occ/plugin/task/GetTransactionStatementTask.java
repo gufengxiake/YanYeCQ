@@ -47,6 +47,7 @@ import java.util.stream.Collectors;
  * Module           :系统服务云-调度中心-调度执行程序
  * Description      :全渠道聚合支付功能，如果客户从要货订单移动端发起支付，建行不会主动返回交易状态，如果客户在支付二维码nckd_qrcode界面没有手动
  * 点击“支付完成”，或者点击了，但是银行尚未处理完这笔交易，则需要定时任务去轮询银行的接口获取交易
+ * 如果客户再聚合支付扫码结束没有手动点击“支付完成”或者点击后但银行没有处理完，这个时候需要定时任务循环获取交易状态
  *
  * @author : zhujintao
  * @date : 2024/9/3
@@ -61,10 +62,10 @@ public class GetTransactionStatementTask extends AbstractTask {
 
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
-        if (ObjectUtil.isNotEmpty(map)) {
-            //TODO 获取传入的支付参数配置编码
-            Object orderNo = map.get("orderNo");
-            logger.info("GetTransactionStatementTask 根据交易订单号" + orderNo + "去查询交易流水记录");
+        //获取传入的支付参数配置编码
+        Object orderNo = map.get("orderNo");
+        if (ObjectUtil.isNotEmpty(orderNo)) {
+            logger.info("GetTransactionStatementTask 根据交易订单号 " + orderNo + " 去查询交易流水记录");
             QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, orderNo);
             paytranrecordFilter.and("billstatus", QCP.equals, "C").and("nckd_paystatus", QCP.equals, "D");
             DynamicObject payTranRecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", paytranrecordFilter.toArray());
@@ -81,7 +82,7 @@ public class GetTransactionStatementTask extends AbstractTask {
         } else {
             logger.info("GetTransactionStatementTask 全量获取符合条件的交易流水记录进行银行接口调用start");
             QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
-            qFilter.and("nckd_paystatus", QCP.equals, "D");
+            qFilter.and("nckd_paystatus", QCP.equals, "D").and("nckd_querycount",QCP.less_than,20);
             DynamicObject[] payTranRecordArr = BusinessDataServiceHelper.load("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", qFilter.toArray());
             for (DynamicObject dynamicObject : payTranRecordArr) {
                 QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("nckd_saleorg").getPkValue());
@@ -136,7 +137,7 @@ public class GetTransactionStatementTask extends AbstractTask {
 
             JSONObject transResultJson = JSONUtil.parseObj(transResultStr);
             JSONObject transData = transResultJson.getJSONObject("transData");
-            logger.info("QrCodeMobFormPlugin 更新交易流水记录start");
+            logger.info("GetTransactionStatementTask 更新交易流水记录start");
             /**
              * 原交易成功	retCode=="00" 且 transData.statusCode=="00"	提示成功
              * 原交易失败	retCode=="01" 或 (retCode=="00" 且transData.statusCode=="01")	提示失败，建议收银机屏幕打印txnTraceNo字段
@@ -147,17 +148,17 @@ public class GetTransactionStatementTask extends AbstractTask {
             DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
             //这个表示要查询的那个订单的交易状态成功与否
             if (!"00".equals(transData.getStr("statusCode"))) {
-                logger.info("QrCodeMobFormPlugin 聚合主扫结果查询到的原交易结果" + misApiResponse.getRetErrMsg());
+                logger.info("GetTransactionStatementTask 聚合主扫结果查询到的原交易结果" + misApiResponse.getRetErrMsg());
                 if (ObjectUtil.isNotEmpty(paytranrecord)) {
                     int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                     paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                    Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                    Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                    paytranrecord.set("nckd_querydate", queryDate);
+                    //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                    //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                    //paytranrecord.set("nckd_querydate", queryDate);
                 }
                 //更新支付流水的查询次数和下一次轮询时间
                 SaveServiceHelper.update(paytranrecord);
-                logger.info("QrCodeMobFormPlugin 更新交易流水记录end");
+                logger.info("GetTransactionStatementTask 更新交易流水记录的下一次轮询时间和次数");
                 return;
             }
 
@@ -165,9 +166,9 @@ public class GetTransactionStatementTask extends AbstractTask {
                 paytranrecord.set("nckd_paystatus", "A");
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的支付状态为成功
             SaveServiceHelper.update(paytranrecord);
@@ -216,6 +217,21 @@ public class GetTransactionStatementTask extends AbstractTask {
             logger.info("GetTransactionStatementTask 收款单审核成功");
 
         } else {
+            //成功获取交易数据则更新交易流水记录 成功、失败、异常、不支持的交易状态
+            QFilter paytranrecordFilter = new QFilter("nckd_orderno", QCP.equals, nckdOrderno).and("nckd_paystatus", QCP.equals, "D");
+            DynamicObject paytranrecord = BusinessDataServiceHelper.loadSingle("nckd_paytranrecord", "id,nckd_paystatus,nckd_querycount,nckd_querydate", paytranrecordFilter.toArray());
+            //这个表示要查询的那个订单的交易状态成功与否
+            logger.info("GetTransactionStatementTask 聚合主扫结果查询失败" + misApiResponse.getRetErrMsg());
+            if (ObjectUtil.isNotEmpty(paytranrecord)) {
+                int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
+                paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
+            }
+            //更新支付流水的查询次数和下一次轮询时间
+            SaveServiceHelper.update(paytranrecord);
+            logger.info("GetTransactionStatementTask 聚合主扫结果查询失败但需要更新交易流水记录的下一次轮询时间和次数");
             //请求失败
             logger.info("GetTransactionStatementTask " + misApiResponse.getRetErrMsg());
             nckdPaylogRecord.set("nckd_respmsg", misApiResponse.getRetErrMsg());
@@ -281,19 +297,21 @@ public class GetTransactionStatementTask extends AbstractTask {
         // 目标单据标识，必填
         pushArgs.setTargetEntityNumber("cas_recbill");
         // 生成转换结果报告，必填
-        pushArgs.setBuildConvReport(true);
+        pushArgs.setBuildConvReport(false);
         //不检查目标单新增权限,非必填
         pushArgs.setHasRight(true);
         //传入下推使用的转换规则id，不填则使用默认规则
         //pushArgs.setRuleId(loadRuleIds.get(0));
         //下推默认保存，必填
-        pushArgs.setAutoSave(true);
+        //pushArgs.setAutoSave(true);
         // 设置源单选中的数据包，必填
         pushArgs.setSelectedRows(selectedRows);
         //（4）执行下推操作，并确认是否执行成功
 
         // 执行下推操作
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave start");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
+        logger.info("GetTransactionStatementTask ConvertServiceHelper.pushAndSave end");
         return result;
     }
 

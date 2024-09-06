@@ -5,22 +5,16 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
-import kd.bos.exception.KDBizException;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.temporal.TemporalAdjusters;
 import java.util.Iterator;
 
 /**
  * 盐类产品内部销售对账表-界面处理插件
  * 表单标识：nckd_ylcpnbxsdz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/27
  */
 public class YanYeSaleDZReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

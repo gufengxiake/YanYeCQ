@@ -30,9 +30,13 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
     public void registerListener(EventObject e) {
         super.registerListener(e);
         BasedataEdit salerIdEdit = this.getView().getControl("nckd_salerid");
-        salerIdEdit.addBeforeF7SelectListener(this);
+        if(salerIdEdit!=null){
+            salerIdEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit operatorEdit = this.getView().getControl("nckd_operatorgroup");
-        operatorEdit.addBeforeF7SelectListener(this);
+        if(operatorEdit!=null){
+            operatorEdit.addBeforeF7SelectListener(this);
+        }
     }
 
     @Override

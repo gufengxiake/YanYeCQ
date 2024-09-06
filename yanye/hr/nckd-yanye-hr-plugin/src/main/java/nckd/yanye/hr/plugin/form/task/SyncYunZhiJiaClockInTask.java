@@ -44,23 +44,23 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
         HashMap<String, String> failedUserMap = new HashMap<>();
 
         // 时区
-        DynamicObject timezone = BusinessDataServiceHelper.load(
+        DynamicObject timezone = BusinessDataServiceHelper.loadSingle(
                 "inte_timezone",
                 "id,name,number",
                 new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
-        )[0];
+        );
         // 打卡设备
-        DynamicObject device = BusinessDataServiceHelper.load(
+        DynamicObject device = BusinessDataServiceHelper.loadSingle(
                 "wtpm_punchcardequip",
                 "id,name",
                 new QFilter[]{new QFilter("name", QCP.equals, "默认云之家打卡")}
-        )[0];
+        );
         // 打卡来源
-        DynamicObject source = BusinessDataServiceHelper.load(
+        DynamicObject source = BusinessDataServiceHelper.loadSingle(
                 "wtbd_signsource",
                 "id,name",
                 new QFilter[]{new QFilter("name", QCP.equals, "云之家")}
-        )[0];
+        );
 
         // 预先加载所有原始卡记录信息
         DynamicObject[] signcards = BusinessDataServiceHelper.load(
@@ -84,12 +84,40 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             attFileMap.put(attFile.getString("personnum"), attFile);
         }
 
+        // 预先加载所有云之家用户信息
+        DynamicObject[] allUsers = BusinessDataServiceHelper.load(
+                "bos_user",
+                "id,number,useropenid",
+                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
+        );
+        HashMap<String, DynamicObject> userMap = new HashMap<>();
+        for (DynamicObject user : allUsers) {
+            userMap.put(user.getString("useropenid"), user);
+        }
+
         // 遍历打卡流水
         for (Object o : yunZhiJiaClockInList) {
-            JSONObject obj = (JSONObject) o;
+            JSONObject clockInfo = (JSONObject) o;
+
+            // 此条打卡数据的对应用户id
+            String userId = clockInfo.getString("openId");
+            DynamicObject user = userMap.get(userId);
+
+            if (user == null) {
+                log.error("未找到对应的用户信息: " + userId);
+                continue;
+            }
+
+            // 该员工是否有对应考勤档案
+            DynamicObject attFile = attFileMap.get(user.getString("number"));
+            if (attFile == null) {
+                failedUserMap.put(user.getString("number"), user.getString("name"));
+                log.error("未找到该员工工号的考勤档案: " + user.getString("name"));
+                continue;
+            }
 
             // 查原始卡记录，该条打卡记录是否存在
-            if (signCardSet.contains("YZJ" + obj.getString("id"))) {
+            if (signCardSet.contains("YZJ" + clockInfo.getString("id"))) {
                 continue;
             }
 
@@ -97,19 +125,22 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             DynamicObject signCard = BusinessDataServiceHelper.newDynamicObject("wtpd_signcard");
 
             // 考勤卡号
-            signCard.set("attcard", "YZJ" + obj.getString("id"));
+            signCard.set("attcard", "YZJ" + clockInfo.getString("id"));
 
             // 考勤档案
-            signCard.set("attfilebo", attFileMap.get(obj.getString("workNum")));
+            signCard.set("attfilebo", attFileMap.get(clockInfo.getString("workNum")));
 
             // 考勤档案版本
-            signCard.set("attfile", attFileMap.get(obj.getString("workNum")));
+            signCard.set("attfile", attFileMap.get(clockInfo.getString("workNum")));
 
             // 考勤管理组织
-            signCard.set("org", attFileMap.get(obj.getString("workNum")).get("org"));
+            signCard.set("org", attFileMap.get(clockInfo.getString("workNum")).get("org"));
 
             // 打卡时间
-            signCard.set("signpoint", obj.getString("clockInTime"));
+            signCard.set("signpoint", clockInfo.getString("clockInTime"));
+
+            // 打卡地点
+            signCard.set("nckd_position", clockInfo.getString("positionName"));
 
             // 打卡来源
             signCard.set("source", source);

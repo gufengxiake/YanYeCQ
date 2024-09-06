@@ -43,23 +43,24 @@ public class SyncDingDingClockInTask extends AbstractTask {
         HashMap<String, String> failedUserMap = new HashMap<>();
 
         // 打卡设备
-        DynamicObject device = BusinessDataServiceHelper.load(
+        DynamicObject device = BusinessDataServiceHelper.loadSingle(
                 "wtpm_punchcardequip",
                 "id,name",
                 new QFilter[]{new QFilter("name", QCP.equals, "默认钉钉打卡")}
-        )[0];
+        );
         // 打卡来源
-        DynamicObject source = BusinessDataServiceHelper.load(
+        DynamicObject source = BusinessDataServiceHelper.loadSingle(
                 "wtbd_signsource",
                 "id,name",
                 new QFilter[]{new QFilter("name", QCP.equals, "钉钉")}
-        )[0];
+        );
         // 时区
-        DynamicObject timezone = BusinessDataServiceHelper.load(
+        DynamicObject timezone = BusinessDataServiceHelper.loadSingle(
                 "inte_timezone",
                 "id,name,number",
                 new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
-        )[0];
+        );
+
         // 预先加载所有钉钉用户信息
         DynamicObject[] allUsers = BusinessDataServiceHelper.load(
                 "bos_user",
@@ -135,6 +136,9 @@ public class SyncDingDingClockInTask extends AbstractTask {
 
             // 打卡时间
             signCard.set("signpoint", clockInfo.getString("userCheckTime"));
+
+            // 打卡地点
+            signCard.set("nckd_position", clockInfo.getString("userAddress"));
 
             // 打卡来源
             signCard.set("source", source);

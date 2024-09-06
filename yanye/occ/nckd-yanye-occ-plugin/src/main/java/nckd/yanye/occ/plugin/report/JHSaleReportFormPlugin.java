@@ -4,21 +4,18 @@ import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.ReportQueryParam;
-import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.text.DecimalFormat;
 import java.util.EventObject;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * 晶昊销售统计表界面插件
  * 表单标识：nckd_jhxstj_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/24
  */
 public class JHSaleReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

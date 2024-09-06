@@ -1,14 +1,13 @@
 package nckd.yanye.occ.plugin.report;
 
+import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
-import kd.scm.bid.common.util.DateUtils;
 import kd.sdk.plugin.Plugin;
 
 import java.util.ArrayList;
@@ -17,7 +16,7 @@ import java.util.List;
 /**
  * 华康交易客户大表-报表取数插件
  * 表单标识：nckd_hktradecustomer_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/03
  */
 public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
@@ -47,13 +46,13 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
                 //开始时间
                 case "start":
                     if (filterItem.getValue() != null) {
-                        qFilters.add(new QFilter("biztime", QCP.large_equals, DateUtils.startOfDay(filterItem.getDate())));
+                        qFilters.add(new QFilter("biztime", QCP.large_equals, DateUtil.beginOfDay(filterItem.getDate())));
                     }
                     break;
                 //结束时间
                 case "end":
                     if (filterItem.getValue() != null) {
-                        qFilters.add(new QFilter("biztime", QCP.less_equals, DateUtils.endOfDay(filterItem.getDate())));
+                        qFilters.add(new QFilter("biztime", QCP.less_equals, DateUtil.endOfDay(filterItem.getDate())));
 
                     }
                     break;
