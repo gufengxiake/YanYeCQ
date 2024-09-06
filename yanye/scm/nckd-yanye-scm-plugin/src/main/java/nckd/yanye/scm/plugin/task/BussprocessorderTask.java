@@ -54,7 +54,7 @@ public class BussprocessorderTask extends AbstractTask {
                 ",nckd_bussinessentries.nckd_quantity,nckd_bussinessentries.nckd_parameter,nckd_bussinessentries.nckd_isinventory," +
                 "nckd_bussinessentries.nckd_inventoryorg,nckd_bussinessentries.nckd_warehouse,nckd_bussinessentries.nckd_businessdocument," +
                 "nckd_bussinessentries.nckd_sideproduct,nckd_bussinessentries.nckd_mainproduce,nckd_bussinessentries.nckd_useworkshop," +
-                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate", new QFilter[]{qFilter});
+                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield", new QFilter[]{qFilter});
         //构建map,key:物料生产信息id，value:5G工厂返回数量
 //        Map<Object,BigDecimal> bigDecimalMap = new HashMap<>();
         for (DynamicObject dynamicObject : dynamicObjects){
