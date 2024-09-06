@@ -124,7 +124,8 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
         super.closedCallBack(closedCallBackEvent);
         String key = closedCallBackEvent.getActionId();
         if (StringUtils.equals("refreshlist", key)) {
-            this.getView().invokeOperation("refresh");
+            // 刷新列表
+            ((BillList) this.getControl("billlistap")).refresh();
         }
     }
 }
