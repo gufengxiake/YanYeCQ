@@ -9,7 +9,7 @@ import java.util.EventObject;
 /**
  * 订单流程查询表界面插件
  * 表单标识：nckd_orderprocessquery
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/26
  */
 public class OrderProcessQueryReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

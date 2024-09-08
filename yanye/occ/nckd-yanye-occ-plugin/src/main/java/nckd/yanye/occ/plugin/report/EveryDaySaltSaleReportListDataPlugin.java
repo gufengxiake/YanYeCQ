@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * 每日小包装盐销量-报表取数插件
  * 表单标识：nckd_everydaysaltsale_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/29
  */
 public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

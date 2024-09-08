@@ -3,7 +3,6 @@ package nckd.yanye.occ.plugin.report;
 import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.report.AbstractReportListDataPlugin;
 import kd.bos.entity.report.FilterItemInfo;
@@ -19,7 +18,7 @@ import java.util.List;
 /**
  * 销售管理报表-报表取数插件
  * 表单标识：nckd_salemanage_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/28
  */
 public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {

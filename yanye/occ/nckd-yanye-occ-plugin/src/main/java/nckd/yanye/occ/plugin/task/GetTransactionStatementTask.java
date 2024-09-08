@@ -82,7 +82,7 @@ public class GetTransactionStatementTask extends AbstractTask {
         } else {
             logger.info("GetTransactionStatementTask 全量获取符合条件的交易流水记录进行银行接口调用start");
             QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
-            qFilter.and("nckd_paystatus", QCP.equals, "D");
+            qFilter.and("nckd_paystatus", QCP.equals, "D").and("nckd_querycount",QCP.less_than,20);
             DynamicObject[] payTranRecordArr = BusinessDataServiceHelper.load("nckd_paytranrecord", "id,number,billstatus,org,nckd_orderno,nckd_saleorderno,nckd_payamount,nckd_paystatus,nckd_querycount,nckd_querydate,nckd_saleorg", qFilter.toArray());
             for (DynamicObject dynamicObject : payTranRecordArr) {
                 QFilter payparamconfigFilter = new QFilter("createorg", QCP.equals, dynamicObject.getDynamicObject("nckd_saleorg").getPkValue());
@@ -152,9 +152,9 @@ public class GetTransactionStatementTask extends AbstractTask {
                 if (ObjectUtil.isNotEmpty(paytranrecord)) {
                     int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                     paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                    Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                    Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                    paytranrecord.set("nckd_querydate", queryDate);
+                    //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                    //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                    //paytranrecord.set("nckd_querydate", queryDate);
                 }
                 //更新支付流水的查询次数和下一次轮询时间
                 SaveServiceHelper.update(paytranrecord);
@@ -166,9 +166,9 @@ public class GetTransactionStatementTask extends AbstractTask {
                 paytranrecord.set("nckd_paystatus", "A");
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的支付状态为成功
             SaveServiceHelper.update(paytranrecord);
@@ -225,9 +225,9 @@ public class GetTransactionStatementTask extends AbstractTask {
             if (ObjectUtil.isNotEmpty(paytranrecord)) {
                 int nckdQuerycount = paytranrecord.getInt("nckd_querycount");
                 paytranrecord.set("nckd_querycount", nckdQuerycount + 1);
-                Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
-                Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
-                paytranrecord.set("nckd_querydate", queryDate);
+                //Date nckdQuerydate = paytranrecord.getDate("nckd_querydate");
+                //Date queryDate = getLastQueryDate(nckdQuerydate, nckdQuerycount + 1);
+                //paytranrecord.set("nckd_querydate", queryDate);
             }
             //更新支付流水的查询次数和下一次轮询时间
             SaveServiceHelper.update(paytranrecord);

@@ -12,7 +12,7 @@ import java.util.Iterator;
 /**
  * 销售管理报表-报表界面插件
  * 表单标识：nckd_salemanage_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/29
  */
 public class FtManageReportFormPlugin extends AbstractReportFormPlugin implements Plugin {

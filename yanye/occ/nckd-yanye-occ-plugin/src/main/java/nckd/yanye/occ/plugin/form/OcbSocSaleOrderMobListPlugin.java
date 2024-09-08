@@ -6,15 +6,18 @@ import kd.bos.bill.MobileFormPosition;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.EntityType;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.form.CloseCallBack;
 import kd.bos.form.MobileFormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeClickEvent;
+import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.list.BillList;
 import kd.bos.list.plugin.AbstractMobListPlugin;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -107,11 +110,22 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
                 customParams.put("billNo", saleOrderbill.getString("billno"));
                 customParams.put("saleorgid", saleOrderbill.getDynamicObject("saleorgid"));
                 customParams.put("orderdate", saleOrderbill.getDate("orderdate"));
-
+                // 设置回调
+                showParameter.setCloseCallBack(new CloseCallBack(this, "refreshlist"));
                 //还有一些要货订单的数据传过去用于生成支付日志记录单和支付流水记录单
                 showParameter.setCustomParams(customParams);
                 this.getView().showForm(showParameter);
             }
+        }
+    }
+
+    @Override
+    public void closedCallBack(ClosedCallBackEvent closedCallBackEvent) {
+        super.closedCallBack(closedCallBackEvent);
+        String key = closedCallBackEvent.getActionId();
+        if (StringUtils.equals("refreshlist", key)) {
+            // 刷新列表
+            ((BillList) this.getControl("billlistap")).refresh();
         }
     }
 }
