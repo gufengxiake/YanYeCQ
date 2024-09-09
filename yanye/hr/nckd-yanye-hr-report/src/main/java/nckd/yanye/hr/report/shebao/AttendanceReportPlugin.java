@@ -26,6 +26,7 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) {
+        boolean flag = false;
         Collection<Object[]> coll = new ArrayList<>();
         String[] fields = new String[]{"key1"};
         DataType[] dataTypes = new DataType[]{DataType.StringType};
@@ -71,7 +72,7 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
         }
 
         //异常记录
-        DataSet wtteexrecord = Algo.create(this.getClass().getName()).createDataSet(inputs);;
+//        DataSet wtteexrecord = Algo.create(this.getClass().getName()).createDataSet(inputs);;
         if (exceptiontype.indexOf("4") != -1){
             QFilter wtteexrecordQFilter = new QFilter("org.id", QCP.equals, orgId);
             if (startDate != null && endDate != null) {
@@ -82,12 +83,13 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
                     "companyvid.name nckd_companyname,adminorgvid.name nckd_adminorgname,shiftdate nckd_startdate," +
                     "shiftdate nckd_enddate,4 nckd_excepclassify,null nckd_signaturedate," +
                     "attitemvalue nckd_exceptionduration,attitemvid.unit nckd_unit,exattributeid.name nckd_exceptype";
-            wtteexrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "wtte_exrecord", wtteexrecordSql, wtteexrecordQFilter.toArray(), null);
+            DataSet wtteexrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "wtte_exrecord", wtteexrecordSql, wtteexrecordQFilter.toArray(), null);
             wtteexrecord = wtteexrecord.select("billno,nckd_name,nckd_number,nckd_orgname," +
                     "nckd_companyname,nckd_adminorgname,nckd_startdate," +
                     "nckd_enddate,nckd_excepclassify,nckd_signaturedate," +
                     "CAST(nckd_exceptionduration AS STRING) nckd_exceptionduration,nckd_unit,nckd_exceptype");
             returnDataSet = wtteexrecord;
+            flag = true;
         }
 
         // 为他人申请补签wtpm_supsigninfo
@@ -107,10 +109,11 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
                     "nckd_companyname,nckd_adminorgname,nckd_startdate," +
                     "nckd_enddate,nckd_excepclassify,nckd_signaturedate," +
                     "CAST(nckd_exceptionduration AS STRING) nckd_exceptionduration,nckd_unit,nckd_exceptype");
-            if (getSize(wtpmsupsignpcquery) > 1){
+            if (flag){
                 returnDataSet = returnDataSet.union(wtpmsupsignpcquery);
             }else {
                 returnDataSet = wtpmsupsignpcquery;
+                flag = true;
             }
         }
 
@@ -148,10 +151,11 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
                     "nckd_enddate,nckd_excepclassify,nckd_signaturedate," +
                     "CAST(nckd_exceptionduration AS STRING) nckd_exceptionduration,nckd_unit,nckd_exceptype");
 
-            if (getSize(vaapplyDataSet) > 1){
+            if (flag){
                 returnDataSet = returnDataSet.union(vaapplyDataSet);
             }else {
                 returnDataSet = vaapplyDataSet;
+                flag = true;
             }
         }
 
@@ -189,19 +193,12 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
                     "nckd_enddate,nckd_excepclassify,nckd_signaturedate," +
                     "CAST(nckd_exceptionduration AS STRING) nckd_exceptionduration,nckd_unit,nckd_exceptype");
 
-            if (getSize(rewtambudataSet) > 1){
+            if (flag){
                 returnDataSet = returnDataSet.union(rewtambudataSet);
             }else {
                 returnDataSet = rewtambudataSet;
             }
         }
         return returnDataSet;
-    }
-    public int getSize(DataSet dataSet){
-        int size = 0;
-        if (dataSet.hasNext()){
-            size ++;
-        }
-        return size;
     }
 }
