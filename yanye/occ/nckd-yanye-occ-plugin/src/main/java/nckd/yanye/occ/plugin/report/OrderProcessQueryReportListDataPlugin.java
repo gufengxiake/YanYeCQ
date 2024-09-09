@@ -171,7 +171,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 //订单号,
                 "billno as nckd_billno," +
                 //交付计划主键
-                "itementry.subentryentity.id as orderdetailid";
+                "itementry.id as orderdetailid";
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
                 qFilters.toArray(new QFilter[0]), null);

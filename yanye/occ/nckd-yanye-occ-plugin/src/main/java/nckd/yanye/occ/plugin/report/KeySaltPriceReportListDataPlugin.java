@@ -16,7 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * 订单流程查询表-报表取数插件
+ * 重点盐种价格情况表-报表取数插件
  * 表单标识：nckd_keysaltprice_rpt
  * author:zhangzhilong
  * date:2024/09/04
@@ -31,8 +31,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         //限定源头是要货订单的销售出库单
         QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.equals, "ocbsoc_saleorder");
         //限定组织为华康及其分公司
-        QFilter orgFilter = new QFilter("bizorg.structure.viewparent.number", QCP.equals, "114")
-                .or("bizorg.number", QCP.equals, "114");
+        QFilter orgFilter = new QFilter("bizorg.name",  QCP.like,"%华康%");
         //限定物料为重点物料
         QFilter materialFilter = new QFilter("billentry.material.masterid.nckd_iskey", QCP.equals, "1");
         qFilters.add(mainFilter);

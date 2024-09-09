@@ -107,7 +107,7 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
         if (mainbillentryidToList.isEmpty()) return ds;
 
         //取要货订单交付明细主键，
-        String sFields = "itementry.subentryentity.id as fdetailid," +
+        String sFields = "itementry.id as fdetailid," +
                 //省市区，
                 "itementry.entryaddressid as nckd_entryaddressid ," +
                 //详细地址，
@@ -116,7 +116,7 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
                 "itementry.entrytelephone as nckd_entrytelephone," +
                 //收货人
                 "itementry.entrycontactname as nckd_entrycontactname";
-        QFilter qFilter = new QFilter("itementry.subentryentity.id" ,QCP.in , mainbillentryidToList.toArray(new Long[0]));
+        QFilter qFilter = new QFilter("itementry.id" ,QCP.in , mainbillentryidToList.toArray(new Long[0]));
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
                 new QFilter[]{qFilter},null);

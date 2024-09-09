@@ -28,8 +28,8 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         List<QFilter> qFilters = new ArrayList<>();
-        //限定源头为销售订单或是采购订单的销售出库单
-        QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.in, new String[]{"sm_salorder", "pm_purorderbill","ocbsoc_saleorde"});
+        //限定源头为销售订单或是采购订单要货订单并且上游必须为电子磅单的销售出库单
+        QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.in, new String[]{"sm_salorder", "pm_purorderbill","ocbsoc_saleorder"});
         mainFilter.and("billentry.srcbillentity", QCP.equals, "nckd_eleweighing");
         qFilters.add(mainFilter);
         //公司
@@ -200,10 +200,6 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
         if (outBillentryid.isEmpty()){
             return ds;
         }
-        List<String> outBillentryidString = new ArrayList<>();
-        for (Long l : outBillentryid) {
-            outBillentryidString.add(l.toString());
-        }
         //签收单通过来源销售出库单行id
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_signaturebill",
@@ -213,7 +209,7 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "nckd_customsno as sign_customsno," +
                         //来源单据体id
                         "entryentity.nckd_sourceentryid as sign_sourceentryid ",
-                new QFilter[]{new QFilter("entryentity.nckd_sourceentryid" ,QCP.in,outBillentryidString.toArray(new String[0]))}, null);
+                new QFilter[]{new QFilter("entryentity.nckd_sourceentryid" ,QCP.in,outBillentryid.toArray(new Long[0]))}, null);
 
         ds = ds.leftJoin(nckd_signaturebill).on("out_billentryid","sign_sourceentryid").select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
 
