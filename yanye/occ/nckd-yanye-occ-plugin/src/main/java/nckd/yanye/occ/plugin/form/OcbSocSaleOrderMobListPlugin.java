@@ -53,11 +53,11 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
             //获取列表选中数据
             BillList billlistap = this.getView().getControl("billlistap");
             ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
-            if (selectedRows.size() > 1) {
+            /*if (selectedRows.size() > 1) {
                 this.getView().showErrorNotification("只能选中一条记录进行结算");
                 evt.setCancel(true);
                 return;
-            }
+            }*/
             EntityType entityType = billlistap.getEntityType();
             //获取选中行pkid
             Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
