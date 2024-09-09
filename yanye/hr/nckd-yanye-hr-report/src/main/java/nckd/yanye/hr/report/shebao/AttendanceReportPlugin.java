@@ -1,7 +1,6 @@
 package nckd.yanye.hr.report.shebao;
 
 import cn.hutool.core.date.DateUtil;
-import com.kingdee.util.StringUtils;
 import kd.bos.algo.*;
 import kd.bos.algo.input.CollectionInput;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -160,7 +159,7 @@ public class AttendanceReportPlugin extends AbstractReportListDataPlugin {
         }
 
         // 部门出差申请
-        if (StringUtils.isEmpty(exceptiontype) || Objects.equals("2",exceptiontype)){
+        if (Objects.equals("2",exceptiontype)){
             QFilter wtambusitripbillQFilter = new QFilter("org.id", QCP.equals, orgId).and("billstatus",QCP.equals,"C");;
             if (startDate != null && endDate != null) {
                 wtambusitripbillQFilter
