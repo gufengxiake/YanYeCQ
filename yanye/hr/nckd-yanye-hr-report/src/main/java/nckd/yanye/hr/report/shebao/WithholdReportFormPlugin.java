@@ -2,6 +2,7 @@ package nckd.yanye.hr.report.shebao;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.datamodel.events.PackageDataEvent;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.orm.query.QCP;
@@ -11,8 +12,10 @@ import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 
 import java.math.BigDecimal;
+import java.sql.Array;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -61,53 +64,53 @@ public class WithholdReportFormPlugin extends AbstractReportFormPlugin {
 
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
-        // 实际缴纳单位金额总和
-        Map<String, Map<String, BigDecimal>> sjAmountMap = new HashMap<>();
-        // 理论缴纳单位金额总和
-        Map<String, Map<String, BigDecimal>> llAmountMap = new HashMap<>();
+//        // 实际缴纳单位金额总和
+//        Map<String, Map<String, BigDecimal>> sjAmountMap = new HashMap<>();
+//        // 理论缴纳单位金额总和
+//        Map<String, Map<String, BigDecimal>> llAmountMap = new HashMap<>();
+//
+//        for (DynamicObject data : rowData) {
+//            String sjjndw = data.getString("sjjndw");
+//            String lljndw = data.getString("lljndw");
+//
+//            // 初始化单位对应的金额总和
+//            llAmountMap.putIfAbsent(lljndw, new HashMap<String, BigDecimal>());
+//            sjAmountMap.putIfAbsent(sjjndw, new HashMap<String, BigDecimal>());
+//
+//            // 遍历金额字段，按单位名进行求和
+//            for (String amountField : amountFields) {
+//                BigDecimal amount = data.getBigDecimal(amountField);
+//                sjAmountMap.get(sjjndw).merge(amountField, amount, BigDecimal::add);
+//                llAmountMap.get(lljndw).merge(amountField, amount, BigDecimal::add);
+//            }
+//        }
+//
+//        // 根据Map中的数据动态生成合计数据
+//        for (Map.Entry<String, Map<String, BigDecimal>> entry : llAmountMap.entrySet()) {
+//            String unitName = entry.getKey();
+//            Map<String, BigDecimal> amountMap = entry.getValue();
+//
+//            // 添加理论缴纳单位合计数据
+//            DynamicObject newRecord = new DynamicObject(rowData.getDynamicObjectType());
+//            newRecord.set("lljndw", "理论缴纳单位合计(" + unitName + ")");
+//            for (String amountField : amountFields) {
+//                newRecord.set(amountField, amountMap.get(amountField));
+//            }
+//            rowData.add(newRecord);
+//        }
 
-        for (DynamicObject data : rowData) {
-            String sjjndw = data.getString("sjjndw");
-            String lljndw = data.getString("lljndw");
-
-            // 初始化单位对应的金额总和
-            sjAmountMap.putIfAbsent(sjjndw, new HashMap<>());
-            llAmountMap.putIfAbsent(lljndw, new HashMap<>());
-
-            // 遍历金额字段，按单位名进行求和
-            for (String amountField : amountFields) {
-                BigDecimal amount = data.getBigDecimal(amountField);
-                sjAmountMap.get(sjjndw).merge(amountField, amount, BigDecimal::add);
-                llAmountMap.get(lljndw).merge(amountField, amount, BigDecimal::add);
-            }
-        }
-
-        // 根据Map中的数据动态生成合计数据
-        for (Map.Entry<String, Map<String, BigDecimal>> entry : sjAmountMap.entrySet()) {
-            String unitName = entry.getKey();
-            Map<String, BigDecimal> amountMap = entry.getValue();
-
-            // 添加实际缴纳单位合计数据
-            DynamicObject newRecord = new DynamicObject(rowData.getDynamicObjectType());
-            newRecord.set("lljndw", "实际缴纳单位合计(" + unitName + ")");
-            for (String amountField : amountFields) {
-                newRecord.set(amountField, amountMap.getOrDefault(amountField, BigDecimal.ZERO));
-            }
-            rowData.add(newRecord);
-        }
-
-        for (Map.Entry<String, Map<String, BigDecimal>> entry : llAmountMap.entrySet()) {
-            String unitName = entry.getKey();
-            Map<String, BigDecimal> amountMap = entry.getValue();
-
-            // 添加理论缴纳单位合计数据
-            DynamicObject newRecord = new DynamicObject(rowData.getDynamicObjectType());
-            newRecord.set("lljndw", "理论缴纳单位合计(" + unitName + ")");
-            for (String amountField : amountFields) {
-                newRecord.set(amountField, amountMap.getOrDefault(amountField, BigDecimal.ZERO));
-            }
-            rowData.add(newRecord);
-        }
+//        for (Map.Entry<String, Map<String, BigDecimal>> entry : sjAmountMap.entrySet()) {
+//            String unitName = entry.getKey();
+//            Map<String, BigDecimal> amountMap = entry.getValue();
+//
+//            // 添加实际缴纳单位合计数据
+//            DynamicObject newRecord = new DynamicObject(rowData.getDynamicObjectType());
+//            newRecord.set("lljndw", "实际缴纳单位合计(" + unitName + ")");
+//            for (String amountField : amountFields) {
+//                newRecord.set(amountField, amountMap.get(amountField));
+//            }
+//            rowData.add(newRecord);
+//        }
     }
 }
 

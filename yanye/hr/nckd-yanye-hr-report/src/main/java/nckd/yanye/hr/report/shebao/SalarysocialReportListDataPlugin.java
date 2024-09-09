@@ -41,15 +41,16 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
             "企业年金",
     };
 
-    private final String[] FIELDS = {"ygbh", "ygxm", "qj",
-            "sbb1", "gzb1", "pzjl1",
-            "sbb2", "gzb2", "pzjl2",
-            "sbb3", "gzb3", "pzjl3",
-            "sbb4", "gzb4", "pzjl4",
-            "sbb5", "gzb5", "pzjl5",
-            "sbb6", "gzb6", "pzjl6",
-            "sbb7", "gzb7", "pzjl7",
-            "sbb8", "gzb8", "pzjl8",
+    private final String[] FIELDS = {
+            "ygbh", "ygxm", "qj",
+            "sbb1", "gzb1", "pzjl1", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce1",
+            "sbb2", "gzb2", "pzjl2", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce2",
+            "sbb3", "gzb3", "pzjl3", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce3",
+            "sbb4", "gzb4", "pzjl4", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce4",
+            "sbb5", "gzb5", "pzjl5", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce5",
+            "sbb6", "gzb6", "pzjl6", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce6",
+            "sbb7", "gzb7", "pzjl7", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce7",
+            "sbb8", "gzb8", "pzjl8", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce8",
     };
 
 
@@ -168,44 +169,77 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 .on("qj", "qj").select(FIELDS)
                 .finish();
 
+        DataSet groupSumRow = addGroupSumRow(finish);
+        DataSet onlySumRow = addSumRow(finish);
+        DataSet union = groupSumRow.union(onlySumRow);
 
+
+        return union;
+    }
+
+    private DataSet addSumRow(DataSet finish) {
+        GroupbyDataSet groupbyDataSet = finish.groupBy();
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet
+                    .sum("sbb" + (i + 1))
+                    .sum("gzb" + (i + 1))
+                    .sum("pzjl" + (i + 1))
+                    .sum("ce" + (i + 1));
+        }
+        DataSet sumDataSet = groupbyDataSet.finish().select(new String[]{
+                        "null ygbh", "null ygxm", "'合计' qj",
+                        "sbb1", "gzb1", "pzjl1", "ce1",
+                        "sbb2", "gzb2", "pzjl2", "ce2",
+                        "sbb3", "gzb3", "pzjl3", "ce3",
+                        "sbb4", "gzb4", "pzjl4", "ce4",
+                        "sbb5", "gzb5", "pzjl5", "ce5",
+                        "sbb6", "gzb6", "pzjl6", "ce6",
+                        "sbb7", "gzb7", "pzjl7", "ce7",
+                        "sbb8", "gzb8", "pzjl8", "ce8",
+                        "0 nckd_iflight"
+                }
+        );
+
+        return sumDataSet;
+    }
+
+    /**
+     * 添加分组合计行
+     *
+     * @param finish
+     * @return
+     */
+    private DataSet addGroupSumRow(DataSet finish) {
         // 分组后，进行合计
-        DataSet sumDataSet = finish.groupBy(new String[]{"ygbh", "ygxm"}).sum("sbb1").finish();
-        sumDataSet = sumDataSet.select("ygbh, concat(ygxm +'的金额合计') as ygxm, sbb1");
-        // 由于分组计算之后，Dataset的字段少了一个，需要通过addField加回来，为之后union做准备
-        sumDataSet = sumDataSet.addNullField(new String[]{"qj", "gzb1", "pzjl1",
-                "sbb2", "gzb2", "pzjl2",
-                "sbb3", "gzb3", "pzjl3",
-                "sbb4", "gzb4", "pzjl4",
-                "sbb5", "gzb5", "pzjl5",
-                "sbb6", "gzb6", "pzjl6",
-                "sbb7", "gzb7", "pzjl7",
-                "sbb8", "gzb8", "pzjl8",
-        });
+        GroupbyDataSet groupbyDataSet = finish.groupBy(new String[]{"ygbh", "ygxm"});
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet
+                    .sum("sbb" + (i + 1))
+                    .sum("gzb" + (i + 1))
+                    .sum("pzjl" + (i + 1))
+                    .sum("ce" + (i + 1));
+        }
+        DataSet sumDataSet = groupbyDataSet.finish();
 
         // 添加高亮字段
         finish = finish.addField("0", "nckd_iflight");
-        sumDataSet = sumDataSet.addField("1", "nckd_iflight");
 
         // union前，需要保证两个dataSet的字段序列一致，因此这里对sumDataSet对象重新排列字段序列
-        sumDataSet = sumDataSet.select(new String[]{"ygbh", "ygxm", "qj",
-                "sbb1", "gzb1", "pzjl1",
-                "sbb2", "gzb2", "pzjl2",
-                "sbb3", "gzb3", "pzjl3",
-                "sbb4", "gzb4", "pzjl4",
-                "sbb5", "gzb5", "pzjl5",
-                "sbb6", "gzb6", "pzjl6",
-                "sbb7", "gzb7", "pzjl7",
-                "sbb8", "gzb8", "pzjl8", "nckd_iflight"
+        sumDataSet = sumDataSet.select(new String[]{
+                "ygbh", "ygxm +'的金额合计' ygxm", "null qj",
+                "sbb1", "gzb1", "pzjl1", "ce1",
+                "sbb2", "gzb2", "pzjl2", "ce2",
+                "sbb3", "gzb3", "pzjl3", "ce3",
+                "sbb4", "gzb4", "pzjl4", "ce4",
+                "sbb5", "gzb5", "pzjl5", "ce5",
+                "sbb6", "gzb6", "pzjl6", "ce6",
+                "sbb7", "gzb7", "pzjl7", "ce7",
+                "sbb8", "gzb8", "pzjl8", "ce8",
+                "1 nckd_iflight"
         });
-        // union，此时sumDataSet会续在dataSet的底部
-        DataSet unionDataSet = finish.union(sumDataSet);
-        // 按组织名称排序，这样，底部的合计数据，就会与上面的组织名称排在一起
-        DataSet orderByDataSet = unionDataSet.orderBy(new String[]{"ygxm"});
+        DataSet unionDataSet = finish.union(sumDataSet).orderBy(new String[]{"ygxm"});
 
-        return orderByDataSet;
-
-//        return finish;
+        return unionDataSet;
     }
 
 
@@ -428,8 +462,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         if (fieldType.equals(ReportColumn.TYPE_DECIMAL)) {
             column.setScale(2);
             column.setZeroShow(true);
+//            column.setNoDisplayScaleZero(true);
         }
-
         return column;
     }
 
