@@ -1,6 +1,7 @@
 package nckd.yanye.occ.plugin.form;
 
 import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.util.ObjectUtil;
 import cn.hutool.core.util.RandomUtil;
 import kd.bos.bill.MobileFormPosition;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -52,19 +53,11 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
         if ("nckd_settlement".equals(key)) {
             //获取列表选中数据
             BillList billlistap = this.getView().getControl("billlistap");
-            ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
-            /*if (selectedRows.size() > 1) {
-                this.getView().showErrorNotification("只能选中一条记录进行结算");
-                evt.setCancel(true);
-                return;
-            }*/
+            Object id = billlistap.getCurrentSelectedRowInfo().getPrimaryKeyValue();
             EntityType entityType = billlistap.getEntityType();
-            //获取选中行pkid
-            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
-            DynamicObject[] saleOrderbillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
-            if (saleOrderbillArr.length > 0) {
-                DynamicObject saleOrderbill = saleOrderbillArr[0];
+            DynamicObject saleOrderbill = BusinessDataServiceHelper.loadSingle(id, entityType);
+            if (ObjectUtil.isNotEmpty(saleOrderbill)) {
                 if (!"C".equals(saleOrderbill.getString("billstatus"))) {
                     this.getView().showErrorNotification("只有审核状态的要货订单才能发起结算");
                     evt.setCancel(true);
@@ -88,14 +81,11 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
         if ("nckd_settlement".equals(key)) {
             //获取列表选中数据
             BillList billlistap = this.getView().getControl("billlistap");
-            ListSelectedRowCollection selectedRows = billlistap.getSelectedRows();
+            Object id = billlistap.getCurrentSelectedRowInfo().getPrimaryKeyValue();
             EntityType entityType = billlistap.getEntityType();
-            //获取选中行pkid
-            Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
-            DynamicObject[] saleOrderbillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
-            if (saleOrderbillArr.length > 0) {
-                DynamicObject saleOrderbill = saleOrderbillArr[0];
+            DynamicObject saleOrderbill = BusinessDataServiceHelper.loadSingle(id, entityType);
+            if (ObjectUtil.isNotEmpty(saleOrderbill)) {
                 //获取待收金额 sumunrecamount 应收金额 sumreceivableamount
                 BigDecimal sumunrecamount = saleOrderbill.getBigDecimal("sumunrecamount");
                 //弹框 设置支付金额
