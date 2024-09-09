@@ -26,8 +26,7 @@ public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListData
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         //限定源头是要货订单的销售出库单
         QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"ocbsoc_saleorder");
-        QFilter filterOrg = new QFilter("bizorg.structure.viewparent",QCP.equals,1956460866287191043L)
-                .or("bizorg.id",QCP.equals,1956460866287191043L);
+        QFilter filterOrg = new QFilter("bizorg.name",  QCP.like,"%华康%");
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {

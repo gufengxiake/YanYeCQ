@@ -104,7 +104,7 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
             mainbillentryid.add(im_saloutbill.next().getLong("mainbillentryid"));
         }
 
-        QFilter orderFilter = new QFilter("itementry.subentryentity.id",QCP.in,mainbillentryid.toArray(new Long[0]));
+        QFilter orderFilter = new QFilter("itementry.id",QCP.in,mainbillentryid.toArray(new Long[0]));
         //取要货订单业务员，
         String sFields = "nckd_salerid.operatornumber as nckd_salerid , " +
                 //销售部门，

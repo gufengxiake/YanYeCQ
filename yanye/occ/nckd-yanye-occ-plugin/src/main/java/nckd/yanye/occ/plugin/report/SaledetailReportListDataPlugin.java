@@ -132,10 +132,10 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
             return ds;
 
         //取要货订单交付明细主键，省市区，详细地址，电话，收货人
-        String sFields = "itementry.subentryentity.id as fdetailid,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
+        String sFields = "itementry.id as fdetailid,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +
                 "itementry.entrytelephone as nckd_entrytelephone,itementry.entrycontactname as nckd_entrycontactname," +
                 "itementry.joinreturnbaseqty as nckd_thsl";
-        QFilter qFilter = new QFilter("itementry.subentryentity.id" ,QCP.in , mainbillentryid.toArray(new Long[0]));
+        QFilter qFilter = new QFilter("itementry.id" ,QCP.in , mainbillentryid.toArray(new Long[0]));
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
                 new QFilter[]{qFilter},null);
