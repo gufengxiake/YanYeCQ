@@ -78,7 +78,6 @@ public class ZcPlatformConst {
         return isExist;
     }
 
-
     /**
      * 招采平台接口授权类型，固定值: client_credentials
      */

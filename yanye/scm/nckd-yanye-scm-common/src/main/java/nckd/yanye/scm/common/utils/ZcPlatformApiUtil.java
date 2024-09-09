@@ -7,6 +7,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import nckd.yanye.scm.common.ZcPlatformConst;
 
@@ -19,6 +21,7 @@ import java.util.HashMap;
  * @author liuxiao
  */
 public class ZcPlatformApiUtil {
+    private static final Log log = LogFactory.getLog(ZcPlatformApiUtil.class);
 
     /**
      * 获取 Access token
@@ -32,11 +35,16 @@ public class ZcPlatformApiUtil {
         httpRequest.form("client_id", zcPlatformConst.getClientId());
         httpRequest.form("client_secret", zcPlatformConst.getClientSecret());
         httpRequest.form("grant_type", ZcPlatformConst.GRANT_TYPE);
+        log.info("发送招采平台请求。获取 Access_token。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         String token = null;
         // 输出响应内容
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取 Access_token。招采平台返回结果:{}", responseObj);
         if ((boolean) responseObj.get("success")) {
             token = (String) ((JSONObject) responseObj.get("data")).get("token");
         } else {
@@ -65,10 +73,15 @@ public class ZcPlatformApiUtil {
         httpRequest.form("mobile", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。获取用户访问凭证。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         // 输出响应内容
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取用户访问凭证。招采平台返回结果:{}", responseObj);
         if ((boolean) responseObj.get("success")) {
             JSONObject dataObject = responseObj.getJSONObject("data");
             token = dataObject.getString("accessToken");
@@ -97,9 +110,14 @@ public class ZcPlatformApiUtil {
         httpRequest.form("keyword", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。获取当前登录员工的招采平台id。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取当前登录员工的招采平台id。招采平台返回结果:{}", responseObj);
         JSONObject data = responseObj.getJSONObject("data");
         JSONArray record = data.getJSONArray("records");
         if (!(boolean) responseObj.get("success")) {
@@ -132,9 +150,14 @@ public class ZcPlatformApiUtil {
             httpRequest.form("isSupplier", 1);
             httpRequest.header("Authorization", "Bearer " + accessToken);
             httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+            log.info("发送招采平台请求。获取所有供应商。\r\n请求地址:{}。\r\n请求参数:{}",
+                    httpRequest.getUrl(),
+                    httpRequest.form()
+            );
             HttpResponse execute = httpRequest.execute();
 
             JSONObject responseObj = JSON.parseObject(execute.body());
+            log.info("获取所有供应商。招采平台返回结果:{}", responseObj);
             if (!responseObj.getBooleanValue("success")) {
                 break;
             }
@@ -169,9 +192,14 @@ public class ZcPlatformApiUtil {
         httpRequest.form("socialCreditCode", socialCreditCode);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。根据公司名称或者社会信用代码查询公司id。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("根据公司名称或者社会信用代码查询公司id。招采平台返回结果:{}", responseObj);
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
@@ -195,9 +223,14 @@ public class ZcPlatformApiUtil {
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。根据公司id查询公司信息。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("根据公司id查询公司信息。招采平台返回结果:{}", responseObj);
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
@@ -240,6 +273,10 @@ public class ZcPlatformApiUtil {
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.header("identity", "purchaser");
+        log.info("发送招采平台请求。采购单发布。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                string
+        );
         HttpResponse execute = httpRequest.execute();
 
         // 输出响应内容
@@ -281,6 +318,10 @@ public class ZcPlatformApiUtil {
         httpRequest.header("identity", "purchaser");
         httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.body(cancelJson.toString());
+        log.info("发送招采平台请求。采购单流标。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                cancelJson
+        );
         HttpResponse execute = httpRequest.execute();
 
         return JSON.parseObject(execute.body());
@@ -355,9 +396,14 @@ public class ZcPlatformApiUtil {
         httpRequest.form("file", file);
         httpRequest.form("name", name);
         httpRequest.form("groupId", attGroupId);
+        log.info("发送招采平台请求。上传附件。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("发送招采平台请求。招采平台返回结果:{}", responseObj);
 
         Integer attachmentId;
         if ((boolean) responseObj.get("success")) {
@@ -393,9 +439,14 @@ public class ZcPlatformApiUtil {
                 put("attachmentType", attachmentType);
             }
         }.toString());
+        log.info("发送招采平台请求。新增附件组。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("新增附件组。招采平台返回结果:{}", responseObj);
 
         Integer groupId;
         if ((boolean) responseObj.get("success")) {
@@ -424,11 +475,14 @@ public class ZcPlatformApiUtil {
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
-
+        log.info("发送招采平台请求。查询成交通知书。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
-
+        log.info("查询成交通知书。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
@@ -452,10 +506,15 @@ public class ZcPlatformApiUtil {
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询采购单。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
+
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
-
+        log.info("查询采购单。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
@@ -480,6 +539,10 @@ public class ZcPlatformApiUtil {
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询成交授标。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
@@ -554,10 +617,15 @@ public class ZcPlatformApiUtil {
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询采购单-品目列表。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
-        JSONObject responseObj = JSON.parseObject(execute.body());
 
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("查询采购单-品目列表。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONArray("data");
         } else {
@@ -595,9 +663,14 @@ public class ZcPlatformApiUtil {
 //                .fluentPut("isReviewerScore", 1);
 
         httpRequest.body(jsonObject.toString());
+        log.info("发送招采平台请求。预先生成评审单。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                jsonObject
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("预先生成评审单。招采平台返回结果:{}", responseObj);
 
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data").getInteger("reviewId");
@@ -636,9 +709,14 @@ public class ZcPlatformApiUtil {
 //                .fluentPut("openBidAddress", 1);
 
         httpRequest.body(jsonObject.toString());
+        log.info("发送招采平台请求。预先生成标书。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                jsonObject
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("预先生成标书。招采平台返回结果:{}", responseObj);
 
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getInteger("data");
