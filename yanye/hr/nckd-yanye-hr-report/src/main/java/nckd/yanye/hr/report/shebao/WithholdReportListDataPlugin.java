@@ -94,9 +94,9 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         // 人员
         if (users.getValue() != null) {
             qFilter = qFilter.and(
-                    new QFilter("employee.person", QCP.in, ((DynamicObjectCollection) users.getValue())
+                    new QFilter("employee.empnumber", QCP.in, ((DynamicObjectCollection) users.getValue())
                             .stream()
-                            .map(obj -> obj.getLong("id"))
+                            .map(obj -> obj.getString("empnumber"))
                             .collect(Collectors.toList()))
             );
         }

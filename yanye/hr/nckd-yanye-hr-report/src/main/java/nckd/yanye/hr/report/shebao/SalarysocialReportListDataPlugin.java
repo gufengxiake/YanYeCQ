@@ -43,14 +43,14 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
 
     private final String[] FIELDS = {
             "ygbh", "ygxm", "qj",
-            "sbb1", "gzb1", "pzjl1", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce1",
-            "sbb2", "gzb2", "pzjl2", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce2",
-            "sbb3", "gzb3", "pzjl3", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce3",
-            "sbb4", "gzb4", "pzjl4", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce4",
-            "sbb5", "gzb5", "pzjl5", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce5",
-            "sbb6", "gzb6", "pzjl6", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce6",
-            "sbb7", "gzb7", "pzjl7", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce7",
-            "sbb8", "gzb8", "pzjl8", "NullToZero(sbb1) - NullToZero(sbb2) - NullToZero(pzjl1) ce8",
+            "sbb1", "gzb1", "pzjl1", "NullToZero(sbb1) - NullToZero(gzb1) - NullToZero(pzjl1) ce1",
+            "sbb2", "gzb2", "pzjl2", "NullToZero(sbb2) - NullToZero(gzb2) - NullToZero(pzjl2) ce2",
+            "sbb3", "gzb3", "pzjl3", "NullToZero(sbb3) - NullToZero(gzb3) - NullToZero(pzjl3) ce3",
+            "sbb4", "gzb4", "pzjl4", "NullToZero(sbb4) - NullToZero(gzb4) - NullToZero(pzjl4) ce4",
+            "sbb5", "gzb5", "pzjl5", "NullToZero(sbb5) - NullToZero(gzb5) - NullToZero(pzjl5) ce5",
+            "sbb6", "gzb6", "pzjl6", "NullToZero(sbb6) - NullToZero(gzb6) - NullToZero(pzjl6) ce6",
+            "sbb7", "gzb7", "pzjl7", "NullToZero(sbb7) - NullToZero(gzb7) - NullToZero(pzjl7) ce7",
+            "sbb8", "gzb8", "pzjl8", "NullToZero(sbb8) - NullToZero(gzb8) - NullToZero(pzjl8) ce8",
     };
 
 
@@ -88,11 +88,11 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         // 选择人员
         QFilter userQfilter = null;
         if (users.getValue() != null) {
-            userQfilter = new QFilter("employee.person",
+            userQfilter = new QFilter("employee.empnumber",
                     QCP.in,
                     ((DynamicObjectCollection) users.getValue())
                             .stream()
-                            .map(obj -> obj.getLong("id"))
+                            .map(obj -> obj.getString("empnumber"))
                             .collect(Collectors.toList())
             );
         }
@@ -359,10 +359,14 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         DataSet gzbDataSet = DB.queryDataSet(this.getClass().getName(), DBRoute.of("hr"), sql);
 
         gzbDataSet = gzbDataSet.select(new String[]{"ygbh", "ygxm", "to_char(qj,'yyyy-MM') qj",
-                        "CAST(gzb1 AS DECIMAL) gzb1", "CAST(gzb2 AS DECIMAL) gzb2",
-                        "CAST(gzb3 AS DECIMAL) gzb3", "CAST(gzb4 AS DECIMAL) gzb4",
-                        "CAST(gzb5 AS DECIMAL) gzb5", "CAST(gzb6 AS DECIMAL) gzb6",
-                        "CAST(gzb7 AS DECIMAL) gzb7", "CAST(gzb8 AS DECIMAL) gzb8",
+                        "CAST(gzb1 AS DECIMAL) gzb1",
+                        "CAST(gzb2 AS DECIMAL) gzb2",
+                        "CAST(gzb3 AS DECIMAL) gzb3",
+                        "CAST(gzb4 AS DECIMAL) gzb4",
+                        "CAST(gzb5 AS DECIMAL) gzb5",
+                        "CAST(gzb6 AS DECIMAL) gzb6",
+                        "CAST(gzb7 AS DECIMAL) gzb7",
+                        "CAST(gzb8 AS DECIMAL) gzb8",
                 }
         );
 
