@@ -17,6 +17,11 @@ import kd.bos.servicehelper.QueryServiceHelper;
 
 import java.math.BigDecimal;
 
+/**
+ * 直接调拨单单审核校验销售员余额表是否负库存
+ * 表单标识：nckd_im_transdirbill_ext
+ * author:吴国强 2024-08-12
+ */
 public class TransdirNegativeCheckOperatePlugIn extends AbstractOperationServicePlugIn {
     /**
      * 操作执行前，准备加载单据数据之前，触发此事件
