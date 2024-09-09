@@ -20,6 +20,7 @@ public class DataSetToList {
                 arrayListlist.add(next.getLong(key));
             }
         }
+        copy.close();
         return arrayListlist;
     }
 

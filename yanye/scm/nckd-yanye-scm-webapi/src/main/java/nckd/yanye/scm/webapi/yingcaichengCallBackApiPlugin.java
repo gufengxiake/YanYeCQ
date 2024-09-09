@@ -55,6 +55,13 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             @ApiParam(value = "业务节点编号", required = true) String businessNode,
             @ApiParam(value = "内容", required = true) Content content
     ) {
+        log.info("收到招采平台回调信息:\r\n回调编号:{}\r\n应用id:{}\r\n业务类型编号:{}\r\n业务节点编号:{}\r\n内容:{}",
+                callbackCode,
+                openAppKey,
+                businessType,
+                businessNode,
+                content
+        );
         Map<String, String> repHeader = new HashMap<>(2);
         repHeader.put("Accept", "text/plain");
         ServiceApiContext.getResponse().setResponseHeaders(repHeader);
@@ -70,6 +77,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 判断节点编号-非成交业务不做处理
         if (!"win-release".equals(businessNode)) {
+            log.warn("招采平台回调结束。非成交业务不做处理，返回参数:{}", "success");
             return CustomApiResult.success("success");
         }
 
@@ -78,6 +86,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
 
         // 签名校验
         if (!ZcEncryptUtil.checkSignature(zcPlatformConst, signature, timestamp, nonce)) {
+            log.error("招采平台回调结束。签名校验失败，返回参数:{}", "failed");
             return CustomApiResult.success("failed");
         }
 
@@ -110,6 +119,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         );
 
         if (purapplyBillObj.length == 0) {
+            log.warn("招采平台回调结束。无苍穹对应申请单，返回参数:{}", "success");
             return CustomApiResult.success("success");
         }
 
@@ -121,6 +131,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
         );
 
         if (receiveBillObj.length > 0) {
+            log.warn("招采平台回调结束。有重复信息接收单，返回参数:{}", "success");
             return CustomApiResult.success("success");
         }
 
@@ -332,12 +343,14 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
             // 保存信息接收单
             receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, e.getMessage());
             SaveServiceHelper.save(new DynamicObject[]{receiveObject});
+            log.error("招采平台回调结束。生成采购订单/合同失败:{}。返回参数:{}", e.getMessage(), "success");
             return CustomApiResult.success("success");
         }
 
         // 保存信息接收单
         receiveObject.set(InforeceivebillConst.NCKD_FAILINFO, msg);
         SaveServiceHelper.save(new DynamicObject[]{receiveObject});
+        log.info("招采平台回调结束，保存信息接收单成功。返回参数:{}", "success");
         return CustomApiResult.success("success");
     }
 

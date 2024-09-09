@@ -15,6 +15,11 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 
+/**
+ * 签收单反审核校验上游销售出库单是否已下推销售出库
+ * 表单标识：nckd_signaturebill
+ * author:吴国强 2024-07-12
+ */
 public class SignatureUnAuditOperatePlugIn extends AbstractOperationServicePlugIn {
 
     /**

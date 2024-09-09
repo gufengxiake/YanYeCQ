@@ -73,15 +73,15 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 "orderdate as nckd_orderdate , " +
                 //订单号,
                 "billno as nckd_billno," +
-                //交付计划主键
-                "itementry.subentryentity.id as orderdetailid";
+                //商品明显主键
+                "itementry.id as orderdetailid";
         DataSet saleOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", sFields,
 //                qFilters.toArray(new QFilter[0])
                 new QFilter[0]
                 , null);
-        saleOrder = this.linkOtherBills(saleOrder);
 
+        saleOrder = this.linkOtherBills(saleOrder);
 
         //根据组织过滤
         if (bizOrg != null) {
@@ -207,7 +207,6 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 .groupBy(new String[]{"nckd_outdate", "nckd_outbillno", "nckd_outauditdate", "nckd_operatorgroup", "mainbillentryid", "saleoutid"})
                 .sum("nckd_qtyout", "nckd_qtyout").sum("nckd_qty", "nckd_qty").finish();
 
-
         //查询财务应付单
         QFilter arFilter = new QFilter("entry.corebillentryid", QCP.in, orderdetailid.toArray(new Long[0]));
         DataSet finarBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
@@ -252,7 +251,6 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                                 "actrecamt as nckd_amountrec", new QFilter[]{casFilter}, null)
                 .groupBy(new String[]{"e_corebillentryid", "nckd_recbillno"}).sum("nckd_amountrec", "nckd_amountrec").finish();
 
-
         //销售出库关联财务应收 返回字段 销售出库日期，销售出库单据号，销售出库应发数量，销售出库实发数量，销售出库签字日期，销售出库库存组，销售出库核心单据行id
         //财务应收单据号，财务应收金额
         im_saloutbill = im_saloutbill.leftJoin(finarBill).on("mainbillentryid", "ar_corebillentryid").on("saleoutid", "e_srcid")
@@ -270,6 +268,11 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
         //关联收款单单据号，收款金额
         ds = ds.leftJoin(recBill).on("orderdetailid", "e_corebillentryid")
                 .select(ds.getRowMeta().getFieldNames(), recBill.getRowMeta().getFieldNames()).finish();
+
+        im_saloutbill.close();
+        finarBill.close();
+        originalBill.close();
+        recBill.close();
 
         return ds;
     }

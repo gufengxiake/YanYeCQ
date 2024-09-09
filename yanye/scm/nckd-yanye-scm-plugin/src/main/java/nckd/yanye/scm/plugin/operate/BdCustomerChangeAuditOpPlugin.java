@@ -1,9 +1,12 @@
 package nckd.yanye.scm.plugin.operate;
 
+import kd.bd.assistant.service.BaseDataService;
+import kd.bos.bd.service.AssignService;
 import kd.bos.coderule.api.CodeRuleInfo;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.basedata.BaseDataResponse;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
@@ -14,12 +17,15 @@ import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 主数据-客商信息维护单审核操作插件
@@ -65,7 +71,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("useorg", date.getDynamicObject("org"));//业务组织
                         bdCustomer.set("status", "C");//单据状态
                         bdCustomer.set("enable", "1");//使用状态
-                        bdCustomer.set("ctrlstrategy", "5");//控制策略
+                        bdCustomer.set("ctrlstrategy", "2");//控制策略
                         bdCustomer.set("creator", date.getDynamicObject("creator"));//创建人
                         bdCustomer.set("admindivision", entity.get("nckd_province"));//区域划分
                         bdCustomer.set("nckd_customertype", entity.getDynamicObject("nckd_customerrange"));//客户范围
@@ -113,6 +119,16 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
+                            if (date.getDynamicObject("org").getLong("id") != 100000){
+                                Set<Long> dataIdsTemp = new HashSet<>();
+                                dataIdsTemp.add(bdCustomer.getLong("id"));
+                                Set<Long> orgIds = new HashSet<>();
+                                orgIds.add(100000L);
+                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", date.getDynamicObject("org").getLong("id"), "basedata", dataIdsTemp, orgIds);
+                                if (!assign.isSuccess()){
+                                    throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
+                                }
+                            }
                             if (!result.isSuccess()) {
                                 throw new KDBizException("保存信息到客户失败：" + result.getMessage());
                             }

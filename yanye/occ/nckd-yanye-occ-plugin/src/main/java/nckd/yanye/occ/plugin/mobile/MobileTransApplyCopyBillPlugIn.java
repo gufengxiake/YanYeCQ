@@ -32,6 +32,12 @@ import java.util.EventObject;
 import java.util.List;
 import java.util.Map;
 
+/*
+(外仓转运)调拨申请单移动表单插件
+标识：nckd_transapply_mobile
+author:wgl
+date:2024/09/06
+ */
 public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
     private static final String targetBill = "im_transapply";
 

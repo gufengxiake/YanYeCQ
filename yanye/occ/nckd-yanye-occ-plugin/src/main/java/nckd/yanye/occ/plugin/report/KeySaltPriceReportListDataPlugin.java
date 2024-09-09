@@ -4,6 +4,7 @@ import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.*;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
 import kd.bos.orm.query.QCP;
@@ -27,7 +28,6 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
-        List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         //限定源头是要货订单的销售出库单
         QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.equals, "ocbsoc_saleorder");
         //限定组织为华康及其分公司
@@ -39,39 +39,43 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         qFilters.add(orgFilter);
         qFilters.add(materialFilter);
 
-        //默认今年
+        //多选组织
+        FilterInfo dFilters = reportQueryParam.getFilter();
+        DynamicObjectCollection nckdBizorgQd = dFilters.getDynamicObjectCollection("nckd_bizorg_qd");
+        List<Long> orgIds = new ArrayList<>();
+        if(nckdBizorgQd!=null ){
+            nckdBizorgQd.forEach((e)->{
+                orgIds.add(e.getLong("id"));
+            });
+        }
+        if(!orgIds.isEmpty()){
+            qFilters.add(new QFilter("bizorg", QCP.in, orgIds.toArray(new Long[0])));
+        }
+
+        //多选物料
+        DynamicObjectCollection nckdMaterielQd = dFilters.getDynamicObjectCollection("nckd_materiel_qd");
+        List<Long> materialIds = new ArrayList<>();
+        if(nckdMaterielQd!=null ){
+            nckdMaterielQd.forEach((e)->{
+                materialIds.add(e.getLong("id"));
+            });
+        }
+        if(!materialIds.isEmpty()){
+            qFilters.add(new QFilter("billentry.material.masterid", QCP.in, materialIds.toArray(new Long[0])));
+        }
+
+        //获取年份
         int year = DateUtil.year(new Date());
-        for (FilterItemInfo filterItem : filters) {
-            switch (filterItem.getPropName()) {
-                // 查询条件销售组织,标识如不一致,请修改
-                case "nckd_bizorg_q":
-                    if (filterItem.getValue() != null) {
-                        QFilter qFilter = new QFilter("bizorg", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
-                        qFilters.add(qFilter);
-                    }
-                    break;
-                // 查询条件物料,标识如不一致,请修改
-                case "nckd_materiel_q":
-                    if (filterItem.getValue() != null) {
-                        QFilter qFilter = new QFilter("billentry.material.masterid", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
-                        qFilters.add(qFilter);
-                    }
-                    break;
-                // 查询条件单据日期,标识如不一致,请修改
-                case "nckd_date_q":
-                    if (filterItem.getDate() != null) {
-                        QFilter qFilter = new QFilter("biztime", QCP.large_equals, DateUtil.beginOfYear(filterItem.getDate()))
-                                .and("biztime", QCP.less_equals, DateUtil.endOfYear(filterItem.getDate()));
-                        qFilters.add(qFilter);
-                        year = DateUtil.year(filterItem.getDate());
-                    } else {
-                        //不选默认今年
-                        QFilter qFilter = new QFilter("biztime", QCP.large_equals, DateUtil.beginOfYear(new Date()))
-                                .and("biztime", QCP.less_equals, DateUtil.endOfYear(new Date()));
-                        qFilters.add(qFilter);
-                    }
-                    break;
-            }
+        if(dFilters.getDate("nckd_date_q")!=null){
+            QFilter qFilter = new QFilter("biztime", QCP.large_equals, DateUtil.beginOfYear(dFilters.getDate("nckd_date_q")))
+                    .and("biztime", QCP.less_equals, DateUtil.endOfYear(dFilters.getDate("nckd_date_q")));
+            qFilters.add(qFilter);
+            year = DateUtil.year(dFilters.getDate("nckd_date_q"));
+        }else {
+            //不选默认今年
+            QFilter qFilter = new QFilter("biztime", QCP.large_equals, DateUtil.beginOfYear(new Date()))
+                    .and("biztime", QCP.less_equals, DateUtil.endOfYear(new Date()));
+            qFilters.add(qFilter);
         }
         //公司
         String sFields = "bizorg AS nckd_bizorg," +
@@ -184,30 +188,38 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         ReportColumn nckd_qj = createReportColumn("nckd_qj", ReportColumn.TYPE_TEXT, "期间");
         columns.add(nckd_qj);
 
-        //创建数量分组
-        ReportColumnGroup qtyReportColumnGroup = new ReportColumnGroup();
-        qtyReportColumnGroup.setFieldKey("qty");
-        qtyReportColumnGroup.setCaption(new LocaleString("数量"));
-        //创建金额分组（后续会替换成含税单价）
-        ReportColumnGroup amountReportColumnGroup = new ReportColumnGroup();
-        amountReportColumnGroup.setFieldKey("amount");
-        amountReportColumnGroup.setCaption(new LocaleString("含税单价"));
+
 
 
         Long[] id = material.keySet().toArray(new Long[0]);
         String[] array = material.values().toArray(new String[0]);
-        for (int i = 0; i < array.length; i++) {
-            ReportColumn materialnameqty = createReportColumn(id[i]  + "qty", ReportColumn.TYPE_DECIMAL, array[i]);
-            qtyReportColumnGroup.getChildren().add(materialnameqty);
-            ReportColumn materialnameamount = createReportColumn(id[i]  + "amount", ReportColumn.TYPE_DECIMAL, array[i]);
-            amountReportColumnGroup.getChildren().add(materialnameamount);
+        if(id.length == 1){
+            ReportColumn materialnameqty = createReportColumn(id[0]  + "qty", ReportColumn.TYPE_DECIMAL, array[0]+"的数量");
+            ReportColumn materialnameamount = createReportColumn(id[0]  + "amount", ReportColumn.TYPE_DECIMAL, array[0]+"的单价");
+            columns.add(materialnameqty);
+            columns.add(materialnameamount);
+
+        }else{
+            //创建数量分组
+            ReportColumnGroup qtyReportColumnGroup = new ReportColumnGroup();
+            qtyReportColumnGroup.setFieldKey("qty");
+            qtyReportColumnGroup.setCaption(new LocaleString("数量"));
+            //创建金额分组（后续会替换成含税单价）
+            ReportColumnGroup amountReportColumnGroup = new ReportColumnGroup();
+            amountReportColumnGroup.setFieldKey("amount");
+            amountReportColumnGroup.setCaption(new LocaleString("含税单价"));
+            for (int i = 0; i < array.length; i++) {
+                ReportColumn materialnameqty = createReportColumn(id[i]  + "qty", ReportColumn.TYPE_DECIMAL, array[i]);
+                qtyReportColumnGroup.getChildren().add(materialnameqty);
+                ReportColumn materialnameamount = createReportColumn(id[i]  + "amount", ReportColumn.TYPE_DECIMAL, array[i]);
+                amountReportColumnGroup.getChildren().add(materialnameamount);
+            }
+            columns.add(qtyReportColumnGroup);
+            columns.add(amountReportColumnGroup);
         }
-        columns.add(qtyReportColumnGroup);
-        columns.add(amountReportColumnGroup);
 
         //清空防止误用
         material.clear();
-
 
         ReportColumn sumQty = createReportColumn("sumqty", ReportColumn.TYPE_DECIMAL, "数量合计");
         columns.add(sumQty);

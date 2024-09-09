@@ -1,7 +1,7 @@
 package nckd.yanye.occ.plugin.form;
 
-import com.ccb.CCBMisSdk;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.form.MessageBoxOptions;
@@ -9,14 +9,12 @@ import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-import nckd.yanye.occ.plugin.mis.api.MisApiResponseVo;
 import nckd.yanye.occ.plugin.mis.sdk.AU011SDK;
-import nckd.yanye.occ.plugin.mis.util.CCBMisSdkUtils;
-import nckd.yanye.occ.plugin.mis.util.KeyUtilsBean;
 import nckd.yanye.occ.plugin.task.UpdateCCBKeyTask;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.EventObject;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -86,11 +84,8 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
                 return;
             }
             //调银行获取初始密钥接口
-            MisApiResponseVo misApiResponse = AU011SDK.au011(authCode, merchantCode, terminalId, url, apiVer);
-            if ("00".equals(misApiResponse.getRetCode())) {
-                //解密数据
-                KeyUtilsBean misBankKey = CCBMisSdkUtils.getKeyUtilsBean();
-                String key = CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
+            String key = AU011SDK.au011(authCode, merchantCode, terminalId, url, apiVer);
+            if (StringUtils.isNotEmpty(key)) {
                 logger.info("PayParamConfigBillPlugin 建行初始密钥 " + key);
                 if (StringUtils.isNotEmpty(key)) {
                     DynamicObject dataEntity = this.getModel().getDataEntity();
@@ -110,9 +105,15 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
                 }
             } else {
                 //请求失败
-                logger.info("PayParamConfigBillPlugin 建行密钥下载失败 " + misApiResponse.getRetErrMsg());
-                this.getView().showConfirm("建行密钥下载失败 " + misApiResponse.getRetErrMsg(), MessageBoxOptions.OK);
+                logger.info("PayParamConfigBillPlugin 建行密钥下载失败 ");
+                this.getView().showConfirm("建行密钥下载失败 ", MessageBoxOptions.OK);
             }
+        }
+        if ("nckd_updateccbkey".equals(itemKey)) {
+            UpdateCCBKeyTask updateCCBKeyTask = new UpdateCCBKeyTask();
+            RequestContext requestContext = RequestContext.get();
+            Map<String, Object> map = new HashMap<>();
+            updateCCBKeyTask.execute(requestContext, map);
         }
     }
 }

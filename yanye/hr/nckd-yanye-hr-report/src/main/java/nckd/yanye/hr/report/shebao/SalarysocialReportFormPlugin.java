@@ -77,30 +77,30 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
 
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
-        super.processRowData(gridPK, rowData, queryParam);
-        for (DynamicObject data : rowData) {
-            for (int i = 1; i <= PROJECTS.length; i++) {
-                BigDecimal sbb = data.getBigDecimal("sbb" + i);
-                BigDecimal gzb = data.getBigDecimal("gzb" + i);
-                BigDecimal pzjl = data.getBigDecimal("pzjl" + i);
-                data.set("ce" + i, sbb.subtract(gzb).subtract(pzjl));
-            }
-        }
-
-        DynamicObject total = new DynamicObject(rowData.getDynamicObjectType());
-        total.set("qj", "合计");
-
-        for (DynamicObject data : rowData) {
-            if (StringUtils.isEmpty(data.getString("qj"))) {
-                continue;
-            }
-            for (String field : amountFields) {
-                BigDecimal value = data.getBigDecimal(field);
-                BigDecimal sum = total.getBigDecimal(field).add(value);
-                total.set(field, sum);
-            }
-        }
-
-        rowData.add(total);
+//        super.processRowData(gridPK, rowData, queryParam);
+//        for (DynamicObject data : rowData) {
+//            for (int i = 1; i <= PROJECTS.length; i++) {
+//                BigDecimal sbb = data.getBigDecimal("sbb" + i);
+//                BigDecimal gzb = data.getBigDecimal("gzb" + i);
+//                BigDecimal pzjl = data.getBigDecimal("pzjl" + i);
+//                data.set("ce" + i, sbb.subtract(gzb).subtract(pzjl));
+//            }
+//        }
+//
+//        DynamicObject total = new DynamicObject(rowData.getDynamicObjectType());
+//        total.set("qj", "合计");
+//
+//        for (DynamicObject data : rowData) {
+//            if (StringUtils.isEmpty(data.getString("qj"))) {
+//                continue;
+//            }
+//            for (String field : amountFields) {
+//                BigDecimal value = data.getBigDecimal(field);
+//                BigDecimal sum = total.getBigDecimal(field).add(value);
+//                total.set(field, sum);
+//            }
+//        }
+//
+//        rowData.add(total);
     }
 }
