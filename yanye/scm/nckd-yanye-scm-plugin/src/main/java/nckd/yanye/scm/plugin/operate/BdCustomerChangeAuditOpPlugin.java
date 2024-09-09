@@ -119,13 +119,15 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
-                            Set<Long> dataIdsTemp = new HashSet<>();
-                            dataIdsTemp.add(bdCustomer.getLong("id"));
-                            Set<Long> orgIds = new HashSet<>();
-                            orgIds.add(100000L);
-                            BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", date.getDynamicObject("org").getLong("id"), "basedata", dataIdsTemp, orgIds);
-                            if (!assign.isSuccess()){
-                                throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
+                            if (date.getDynamicObject("org").getLong("id") != 100000){
+                                Set<Long> dataIdsTemp = new HashSet<>();
+                                dataIdsTemp.add(bdCustomer.getLong("id"));
+                                Set<Long> orgIds = new HashSet<>();
+                                orgIds.add(100000L);
+                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", date.getDynamicObject("org").getLong("id"), "basedata", dataIdsTemp, orgIds);
+                                if (!assign.isSuccess()){
+                                    throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
+                                }
                             }
                             if (!result.isSuccess()) {
                                 throw new KDBizException("保存信息到客户失败：" + result.getMessage());
