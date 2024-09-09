@@ -18,6 +18,11 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import java.math.BigDecimal;
 import java.util.HashSet;
 
+/**
+ * 车销销售出库单审核校验销售员余额
+ * 表单标识：nckd_im_saloutbill_ext
+ * author:吴国强 2024-07-12
+ */
 public class SaloutNegativeCheckOperatePlugIn extends AbstractOperationServicePlugIn {
     /**
      * 操作执行前，准备加载单据数据之前，触发此事件
