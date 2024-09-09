@@ -1,6 +1,8 @@
 package nckd.yanye.scm.plugin.check;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 import kd.bos.algo.DataSet;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -14,10 +16,10 @@ import kd.fi.cal.business.datacheck.item.DataEntityDataCheck;
 
 /**
  * @author husheng
- * @date 2024-07-24 18:02
- * @description 关账-检查项插件-校验是否存在未审核的月末调价单
+ * @date 2024-09-09 10:18
+ * @description 关账-检查项插件-校验是否存在未审核的财务应付单
  */
-public class CloseAccountCheck extends DataEntityDataCheck {
+public class ApFinapbillCheck extends DataEntityDataCheck {
     @Override
     protected String getDataEntityType() {
         return "im_closeaccount";
@@ -40,14 +42,15 @@ public class CloseAccountCheck extends DataEntityDataCheck {
         DynamicObject currentperiod = sysctrlentityEntry.get(0).getDynamicObject("currentperiod");
 
         // 查询对应期间未审核的月末调价单
-        QFilter qFilter = new QFilter("nckd_adjustaccountsorg", QCP.in, ownerIds)
-                .and("nckd_accountingperiod",QCP.equals,currentperiod.getPkValue())
-                .and("billstatus",QCP.not_equals,"C");
-        DynamicObject[] endpriceadjusts = BusinessDataServiceHelper.load("nckd_endpriceadjust", "id,billno", qFilter.toArray());
-        if(endpriceadjusts.length > 0){
-            for (DynamicObject endpriceadjust : endpriceadjusts) {
-                ExceptionObj exceptionObj = new ExceptionObj((Long) endpriceadjust.getPkValue(), this.getDataEntityType());
-                exceptionObj.setDescription("存在未审核的月末调价单:" + endpriceadjust.getString("billno"));
+        QFilter qFilter = new QFilter("org", QCP.in, ownerIds)
+                .and("billstatus",QCP.not_equals,"C")
+                .and("bizdate",QCP.large_equals,currentperiod.getDate("begindate"))
+                .and("bizdate",QCP.less_equals,currentperiod.getDate("enddate"));
+        DynamicObject[] apFinapbills = BusinessDataServiceHelper.load("ap_finapbill", "id,billno", qFilter.toArray());
+        if(apFinapbills.length > 0){
+            for (DynamicObject dynamicObject : apFinapbills) {
+                ExceptionObj exceptionObj = new ExceptionObj((Long) dynamicObject.getPkValue(), this.getDataEntityType());
+                exceptionObj.setDescription("存在未审核的财务应付单:" + dynamicObject.getString("billno"));
                 exceptionObjs.add(exceptionObj);
             }
         }
