@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * 单据标识：hom_infogroupdataadd  名称：新增多行信息组数据页面
  * 菜单：玩美入职-》信息采集
- * 需求：根据学历字段的值来控制其它字段的默认值
+ * 需求：根据学历字段的值来控制其它字段的默认值,可新增多笔记录的信息组
  * author: chengchaohua
  * date: 2024-09-03
  */
