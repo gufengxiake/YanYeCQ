@@ -55,6 +55,7 @@ public class SyncPostTask extends AbstractTask {
                 bos_position.set("orgstructure", object);//组织结构
                 bos_position.set("superiorposition", position.get("parent"));//上级岗位
                 bos_position.set("remarks", position.get("description"));//备注
+                bos_position.set("status", 'C');//数据状态
                 SaveServiceHelper.save(new DynamicObject[]{bos_position});
             } else {
                 // 更新
@@ -66,6 +67,7 @@ public class SyncPostTask extends AbstractTask {
                 bosPosition.set("orgstructure", object);//组织结构
                 bosPosition.set("superiorposition", position.get("parent"));//上级岗位
                 bosPosition.set("remarks", position.get("description"));//备注
+                bosPosition.set("status", 'C');//数据状态
                 SaveServiceHelper.update(bosPosition);
             }
         }

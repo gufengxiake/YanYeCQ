@@ -23,10 +23,11 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         //默认发货通知单为审核态并且源头是采购订单
-        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
+        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").
+                and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
 
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        Long nckd_saleorgid = null, nckd_purorg = null;
+        Long nckd_saleorgid = null, nckd_purorg = null,nckd_material = null;
         DateTime salebizdate_start = null, salebizdate_end = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
@@ -45,6 +46,10 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                 case "nckd_purorg_q":
                     nckd_purorg = filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                     break;
+                //查询条件为物料
+                case "nckd_material_q":
+                    nckd_material = filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    break;
             }
         }
 
@@ -59,6 +64,8 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                         "nckd_vehicle as nckd_vehicle ," +
 //                        司机
                         "nckd_driver as nckd_driver," +
+//                        物料
+                        "billentry.material.masterid as nckd_material," +
 //                        单位
                         "billentry.unit as nckd_unit," +
 //                        销售单价
@@ -91,6 +98,9 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         if (nckd_purorg != null) {
             delivernotice = delivernotice.filter("nckd_purorg = " + nckd_purorg);
         }
+        if(nckd_material != null){
+            delivernotice = delivernotice.filter("nckd_material = " + nckd_material);
+        }
 
         return delivernotice.orderBy(delivernotice.getRowMeta().getFieldNames());
     }
@@ -101,8 +111,9 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         if (mainbillentryidToList.isEmpty())
             return ds;
 
-        //根据发货单核心单据行id查询来源于采购订单的采购发货单
+        //根据发货单核心单据行id查询来源于采购订单的采购收货单
         QFilter purFilter = new QFilter("billentry.srcbillentryid", QCP.in, mainbillentryidToList.toArray(new Long[0]));
+        purFilter.and("billstatus",QCP.equals,"C");
         DataSet purReceiveBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_purreceivebill",
                 "billentry.srcbillentryid as srcbillentryid," +//来源行id
@@ -132,6 +143,7 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
 
         //根据发货单单据行id查询来源于发货单的电子磅单
         QFilter eleFilter = new QFilter("entryentity.nckd_srcbillentryid", QCP.in, billentryid.toArray(new Long[0]));
+        eleFilter.and("billstatus",QCP.equals,"C");
         DataSet nckd_eleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_eleweighing",
                 "entryentity.nckd_srcbillentryid as nckd_srcbillentryid," +
@@ -144,6 +156,7 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         //获取电子磅单中的分录行id
         List<Long> eleweighingentryid = DataSetToList.getOneToList(nckd_eleweighing, "eleweighingentryid");
         QFilter outFilter = new QFilter("billentry.srcbillentryid", QCP.in, eleweighingentryid.toArray(new Long[0]));
+        outFilter.and("billstatus",QCP.equals,"C");
         //根据来源行id查询销售出库单
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill",

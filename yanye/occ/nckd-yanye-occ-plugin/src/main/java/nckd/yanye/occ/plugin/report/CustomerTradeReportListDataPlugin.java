@@ -77,6 +77,7 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
                         //金额
                         "sumtaxamount as nckd_sumtaxamount";
 
+        //过滤累计出库基本单位数量-累计退货基本单位数量不大于0的数据
         DataSet orderDS = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                         "ocbsoc_saleorder", sFields, new QFilter[]{qFilter}, null).filter("complete > 0");
 

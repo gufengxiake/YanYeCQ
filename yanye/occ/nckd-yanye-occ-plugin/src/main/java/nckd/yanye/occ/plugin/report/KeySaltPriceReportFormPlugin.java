@@ -18,7 +18,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- * 订单流程查询表-报表界面插件
+ * 重点盐种价格情况表-报表界面插件
  * 表单标识：nckd_keysaltprice_rpt
  * author:zhangzhilong
  * date:2024/09/05
