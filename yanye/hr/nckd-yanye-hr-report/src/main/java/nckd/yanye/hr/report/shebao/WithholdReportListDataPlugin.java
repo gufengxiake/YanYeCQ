@@ -182,6 +182,7 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
 
         // 添加合计行
         DataSet finish = addSumRow(dataSet);
+        dataSet.close();
         return finish;
     }
 
@@ -245,6 +246,8 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                 ).orderBy(new String[]{"sjjndw"});
 
         DataSet union = dataSet.union(copy).union(copy2);
+        copy.close();
+        copy2.close();
         return union;
     }
 
