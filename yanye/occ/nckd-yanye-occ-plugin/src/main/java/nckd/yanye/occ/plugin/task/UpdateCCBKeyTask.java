@@ -75,10 +75,12 @@ public class UpdateCCBKeyTask extends AbstractTask {
         String terminalId = nckdEntryentityMap.get("terminalId");
         String url = nckdEntryentityMap.get("url");
         String apiVer = nckdEntryentityMap.get("apiVer");
-        boolean paramConfigResult = StringUtils.isNotEmpty(oldKey) && StringUtils.isNotEmpty(merchantCode) && StringUtils.isNotEmpty(terminalId) && StringUtils.isNotEmpty(url) && StringUtils.isNotEmpty(apiVer);
+        boolean paramConfigResult = StringUtils.isNotEmpty(oldKey) && StringUtils.isNotEmpty(merchantCode)
+                && StringUtils.isNotEmpty(terminalId) && StringUtils.isNotEmpty(url)
+                && StringUtils.isNotEmpty(apiVer);
         if (!paramConfigResult) {
-            logger.info("UpdateCCBKeyTask 请检查支付参数授权码，商户号，终端号，请求地址，版本号是否为空");
-            throw new KDBizException("UpdateCCBKeyTask 请检查支付参数授权码，商户号，终端号，请求地址，版本号是否为空");
+            logger.info("UpdateCCBKeyTask 请检查支付参数交易密钥，商户号，终端号，请求地址，版本号是否为空");
+            throw new KDBizException("UpdateCCBKeyTask 请检查支付参数交易密钥，商户号，终端号，请求地址，版本号是否为空");
         }
         //在支付参数配置界面的建行密钥下载时初始key，需要拿初始key取获取待确认的key，待确认的key激活后才能使用
         String newKey = AU012SDK.au012(oldKey, merchantCode, terminalId, url, apiVer);
