@@ -879,6 +879,10 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         FilterItemInfo mulcostaccount = filter.getFilterItem("nckd_mulcostaccount");
         // 单据类型
         FilterItemInfo mulbilltype = filter.getFilterItem("nckd_mulbilltype");
+        // 开始日期
+        FilterItemInfo startdate = filter.getFilterItem("nckd_startdate");
+        // 结束日期
+        FilterItemInfo enddate = filter.getFilterItem("nckd_enddate");
 
         QFilter qFilter = new QFilter("entry.costpricesource", QCP.not_equals, " ")
                 .and(new QFilter("bizentityobject", QCP.equals, key));
@@ -902,6 +906,14 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                     .stream()
                     .map(obj -> obj.getLong("id"))
                     .collect(Collectors.toList())));
+        }
+        // 开始日期
+        if (startdate.getValue() != null) {
+            qFilter.and(new QFilter("bookdate", QCP.large_equals, startdate.getDate()));
+        }
+        // 结束日期
+        if (enddate.getValue() != null) {
+            qFilter.and(new QFilter("bookdate", QCP.less_equals, enddate.getDate()));
         }
 
         return qFilter;
