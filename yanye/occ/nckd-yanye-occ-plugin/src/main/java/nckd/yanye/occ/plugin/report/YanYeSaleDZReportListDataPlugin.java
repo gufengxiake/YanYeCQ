@@ -148,9 +148,7 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                 "nckd_eleweighing",
                 "entryentity.nckd_srcbillentryid as nckd_srcbillentryid," +
                         //分录id
-                        "entryentity.id as eleweighingentryid," +
-                        //发货数量
-                        "entryentity.nckd_qty as nckd_saleqty",
+                        "entryentity.id as eleweighingentryid",
                 new QFilter[]{eleFilter}, null);
 
         //获取电子磅单中的分录行id
@@ -161,6 +159,8 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill",
                 "billentry.srcbillentryid as outsrcbillentryid," +
+                        //发货数量
+                        "billentry.qty as nckd_saleqty,"+
                         //销售出库单编号
                         "billno as nckd_saleoutbillno",
                 new QFilter[]{outFilter}, null);

@@ -42,9 +42,16 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet imSaloutbillDataSet = this.getImSaloutbillDataSet(filter);
         // 生产领料单
         DataSet imMdcMftproorderDataSet = this.getImMdcMftproorder(filter);
+        // 生产退料单
+        DataSet imMdcMftreturnorder = this.getImMdcMftreturnorder(filter);
+        // 生产补料单
+        DataSet imMdcMftfeedorder = this.getImMdcMftfeedorder(filter);
 
         DataSet dataSet = imPurinbillDataSet.union(imOtherinbillDataSet, imProductinbillDataSet, imMdcMftmanuinDataSet,
-                imMdcMftreturnbillDataSet, imMaterialreqouDataSet, imOtheroutbilllDataSet, imSaloutbillDataSet, imMdcMftproorderDataSet);
+                imMdcMftreturnbillDataSet, imMaterialreqouDataSet, imOtheroutbilllDataSet, imSaloutbillDataSet,
+                imMdcMftproorderDataSet, imMdcMftreturnorder, imMdcMftfeedorder)
+                .orderBy(new String[]{"nckd_bookdate desc", "nckd_billno"});
+
         return dataSet;
     }
 
@@ -60,18 +67,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_purinbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost in_amount,null out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是入库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("A");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(in_amount + adjustamount) nckd_in_amount", "out_amount nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_purinbill", "A");
 
         // =====================二级=========================
         // 采购入库单
@@ -88,14 +84,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imPurinbill, filter);
 
         // 核算成本和采购入库关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         DataSet finish4Copy1 = finish4.copy();
@@ -109,19 +98,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet pmPurorderbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "pm_purorderbill", pmPurorderbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4Copy1.join(pmPurorderbill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'pm_purorderbill'");
+        DataSet finish5 = this.secondUnionThree(finish4Copy1, pmPurorderbill);
 
         // 采购收货单
         String imPurreceivebillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
@@ -131,19 +108,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode, billentry.id billentry_id";
         DataSet imPurreceivebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_purreceivebill", imPurreceivebillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish6 = finish4Copy2.join(imPurreceivebill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'im_purreceivebill'");
+        DataSet finish6 = this.secondUnionThree(finish4Copy2, imPurreceivebill);
 
         // 采购入库单
         String purorderbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
@@ -152,19 +117,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "comment nckd_comment,billentry.materialmasterid materialmasterid,billentry.qty nckd_qty,billentry.joinpriceqty nckd_payablepriceqty,billentry.entrycomment nckd_entrycomment," +
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet purinbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_purinbill", purorderbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
-        DataSet finish7 = finish4.join(purinbill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'im_purinbill'");
+
+        DataSet finish7 = this.secondUnionThree(finish4, purinbill);
 
         DataSet dataSet = finish5.union(finish6, finish7).distinct();
 
@@ -188,18 +142,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_otherinbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost in_amount,null out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是入库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("A");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(in_amount + adjustamount) nckd_in_amount", "out_amount nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_otherinbill", "A");
 
         // =====================二级=========================
         // 其他入库单
@@ -216,14 +159,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imOtherinbill, filter);
 
         // 核算成本和其他入库关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         DataSet finish4Copy1 = finish4.copy();
@@ -248,19 +184,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode", "billentry_id"},
                         new String[]{"nckd_wagon_number"}).finish();
 
-        DataSet finish6 = finish4Copy1.join(finish5).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'im_saloutbill'");
+        DataSet finish6 = this.secondUnionThree(finish4Copy1, finish5);
 
         // 盘点表
         String imInvcountbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
@@ -270,18 +194,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imInvcountbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_invcountbill", imInvcountbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish7 = finish4.join(imInvcountbill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish7 = this.secondUnionThree(finish4, imInvcountbill);
 
         DataSet dataSet = finish6.union(finish7).distinct();
 
@@ -307,18 +220,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_productinbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost in_amount,null out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是入库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("A");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(in_amount + adjustamount) nckd_in_amount", "out_amount nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_productinbill", "A");
 
         // =====================二级=========================
         // 生产入库单
@@ -377,18 +279,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_mdc_mftmanuinbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost in_amount,null out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是入库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("A");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(in_amount + adjustamount) nckd_in_amount", "out_amount nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftmanuinbill", "A");
 
         // =====================二级=========================
         // 完工入库单
@@ -405,14 +296,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imPurinbill, filter);
 
         // 核算成本和完工入库单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         // 生产工单
@@ -423,18 +307,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,treeentryentity.id billentry_id";
         DataSet pomMftorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "pom_mftorder", pomMftorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4.join(pomMftorder).on("srcbillnumber", "nckd_sourcebillno").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish5 = this.secondUnionThree(finish4, pomMftorder);
 
         DataSet dataSet = finish5.distinct();
 
@@ -464,18 +337,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_mdc_mftreturnbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost in_amount,null out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是入库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("A");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(in_amount + adjustamount) nckd_in_amount", "out_amount nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftreturnbill", "A");
 
         // =====================二级=========================
         // 完工退库单
@@ -492,14 +354,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imMdcMftreturnbill, filter);
 
         // 核算成本和完工退库单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         // 完工入库单
@@ -510,18 +365,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMdcMftintpl = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftintpl", imMdcMftintplSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4.join(imMdcMftintpl).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish5 = this.secondUnionThree(finish4, imMdcMftintpl);
 
         DataSet dataSet = finish5.distinct();
 
@@ -552,18 +396,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_materialreqoutbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,null in_amount,entry.actualcost out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是出库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("B");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount nckd_in_amount", "(out_amount + adjustamount) nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_materialreqoutbill", "B");
 
         // =====================二级=========================
         // 领料出库单
@@ -580,14 +413,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imMaterialreqoutbill, filter);
 
         // 核算成本和领料出库单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         DataSet finish4Copy1 = finish4.copy();
@@ -601,19 +427,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMaterialreqbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_materialreqbill", imMaterialreqbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4Copy1.join(imMaterialreqbill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'im_materialreqbill'");
+        DataSet finish5 = this.secondUnionThree(finish4Copy1, imMaterialreqbill);
 
         // 领料出库单
         String imMaterialreqouSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
@@ -623,19 +437,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMaterialreqou = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_materialreqoutbill", imMaterialreqouSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish6 = finish4.join(imMaterialreqou).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
-//                .where("srcbillentity = 'im_materialreqoutbill'");
+        DataSet finish6 = this.secondUnionThree(finish4Copy2, imMaterialreqou);
 
         // 发货通知单
         String smDelivernoticeSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
@@ -645,18 +447,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,customer.name nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet smDelivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_delivernotice", smDelivernoticeSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish7 = finish4Copy2.join(smDelivernotice).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish7 = this.secondUnionThree(finish4, smDelivernotice);
 
         DataSet dataSet = finish5.union(finish6, finish7).distinct();
 
@@ -684,18 +475,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_otheroutbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,null in_amount,entry.actualcost out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是出库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("B");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount nckd_in_amount", "(out_amount + adjustamount) nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_otheroutbill", "B");
 
         // =====================二级=========================
         // 其他出库单
@@ -712,14 +492,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imOtheroutbill, filter);
 
         // 核算成本和其他出库单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         // 上游单据是盘点表或手动新增
@@ -730,18 +503,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imInvcountbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_invcountbill", imInvcountbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4.leftJoin(imInvcountbill).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish5 = this.secondUnionThree(finish4, imInvcountbill);
 
         DataSet dataSet = finish5.distinct();
 
@@ -765,18 +527,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_saloutbill");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,null in_amount,entry.actualcost out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是出库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("B");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount nckd_in_amount", "(out_amount + adjustamount) nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_saloutbill", "B");
 
         // =====================二级=========================
         // 销售出库单
@@ -793,14 +544,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imSaloutbill, filter);
 
         // 核算成本和销售出库单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         // 销售订单
@@ -811,18 +555,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,customer.name nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet smSalorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder", smSalorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4.join(smSalorder).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity"},
-                        new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_xm_name",
-                                "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
-                                "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
-                                "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        DataSet finish5 = this.secondUnionThree(finish4, smSalorder);
 
         DataSet dataSet = finish5.distinct();
 
@@ -841,27 +574,20 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
      * @return
      */
     private DataSet getImMdcMftproorder(FilterInfo filter) {
+        // 客户
+        FilterItemInfo mulcustomer = filter.getFilterItem("nckd_mulcustomer");
         // 供应商
         FilterItemInfo mulsupplier = filter.getFilterItem("nckd_mulsupplier");
 
         // ======================一级========================
         // 核算成本记录
-        QFilter qFilter = this.buildCalCostrecordFilter(filter, "im_mdc_mftproorder");
-        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,null in_amount,entry.actualcost out_amount," +
-                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
-
-        // 获取核算单类型是出库且已审核的成本调整单
-        DataSet calCostadjustbill = this.getCalCostadjustbill("B");
-
-        // 核算成本记录与成本调整单关联
-        DataSet finish1 = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
-                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount", "out_amount", "bizbillentryid"},
-                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
-        finish1 = finish1.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "in_amount nckd_in_amount", "(out_amount + adjustamount) nckd_out_amount", "bizbillentryid");
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftproorder", "B");
 
         // =====================二级=========================
         // 生产领料单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
+        // 单据实体
+        qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftproorder"));
         String imMdcMftproorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
@@ -874,14 +600,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imMdcMftproorder, filter);
 
         // 核算成本和生产领料单关联
-        DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
-                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
-                                "nckd_seq", "nckd_modelnum", "nckd_model",
-                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group"}).finish();
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
 
         // ==================三级=========================
         // 生产组件清单
@@ -892,7 +611,151 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,nckd_customer.name nckd_customermnemoniccode,null nckd_suppliermnemoniccode,stockentry.id billentry_id";
         DataSet pomMftstock = QueryServiceHelper.queryDataSet(this.getClass().getName(), "pom_mftstock", pomMftstockSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = finish4.join(pomMftstock).on("srcbillnumber", "nckd_sourcebillno").on("nckd_masterid", "materialmasterid").on("srcbillentryid", "billentry_id")
+        DataSet finish5 = this.secondUnionThree(finish4, pomMftstock);
+
+        DataSet dataSet = finish5.distinct();
+
+        // 客户
+        if (mulcustomer.getValue() != null) {
+            dataSet = dataSet.where("nckd_bp_name is not null");
+        }
+        // 供应商
+        if (mulsupplier.getValue() != null) {
+            dataSet = dataSet.where("nckd_supplier_name is not null");
+        }
+
+        return dataSet;
+    }
+
+    /**
+     * 生产退料单
+     *
+     * @param filter
+     * @return
+     */
+    private DataSet getImMdcMftreturnorder(FilterInfo filter) {
+        // 客户
+        FilterItemInfo mulcustomer = filter.getFilterItem("nckd_mulcustomer");
+        // 供应商
+        FilterItemInfo mulsupplier = filter.getFilterItem("nckd_mulsupplier");
+
+        // ======================一级========================
+        // 核算成本记录
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftreturnorder", "B");
+
+        // =====================二级=========================
+        // 生产退料单
+        QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
+        // 单据实体
+        qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftreturnorder"));
+        String imMdcMftreturnorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+                "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
+                "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
+                "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,billentry.isrework nckd_rework,billentry.unit nckd_unit," +
+                "null nckd_baseqty,billentry.unit2nd nckd_unit2nd,null nckd_qtyunit2nd,billentry.baseqty nckd_unit3nd,billentry.qtyunit2nd nckd_qtyunit3nd,billentry.price nckd_price," +
+                "billentry.srcbillentity srcbillentity,billentry.srcbillentryid srcbillentryid,billentry.srcbillnumber srcbillnumber,id,billentry.id billentry_id";
+        DataSet imMdcMftreturnorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftproorder", imMdcMftreturnorderSql, qFilter2.toArray(), null);
+
+        // 生产退料单关联物料
+        DataSet finish3 = this.relevancyMaterial(imMdcMftreturnorder, filter);
+
+        // 核算成本和生产退料单关联
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
+
+        // ==================三级=========================
+        // 生产领料单/生产补料单
+        String imMdcMftproorderSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
+                "null nckd_shippingordernumber,null nckd_cass,null nckd_shipping_address,null nckd_order_serial_number,null nckd_loss_quantity,null nckd_damaged_quantity," +
+                "null nckd_wagon_number, null nckd_direct_mode,null nckd_carrier,null nckd_carrier_phone,null nckd_phone,null nckd_carnumber," +
+                "comment nckd_comment,billentry.materialmasterid materialmasterid,null nckd_qty,billentry.baseqty nckd_payablepriceqty,billentry.entrycomment nckd_entrycomment," +
+                "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
+        DataSet imMdcMftproorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftproorder", imMdcMftproorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C").and("billentity", QCP.in, new String[]{"im_mdc_mftproorder", "im_mdc_mftfeedorder"})}, null);
+
+        DataSet finish5 = this.secondUnionThree(finish4, imMdcMftproorder);
+
+        DataSet dataSet = finish5.distinct();
+
+        // 客户
+        if (mulcustomer.getValue() != null) {
+            dataSet = dataSet.where("nckd_bp_name is not null");
+        }
+        // 供应商
+        if (mulsupplier.getValue() != null) {
+            dataSet = dataSet.where("nckd_supplier_name is not null");
+        }
+
+        return dataSet;
+    }
+
+    /**
+     * 生产补料单
+     *
+     * @param filter
+     * @return
+     */
+    private DataSet getImMdcMftfeedorder(FilterInfo filter) {
+        // 客户
+        FilterItemInfo mulcustomer = filter.getFilterItem("nckd_mulcustomer");
+        // 供应商
+        FilterItemInfo mulsupplier = filter.getFilterItem("nckd_mulsupplier");
+
+        // ======================一级========================
+        // 核算成本记录
+        DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftfeedorder", "B");
+
+        // =====================二级=========================
+        // 生产补料单
+        QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
+        // 单据实体
+        qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftfeedorder"));
+        String imMdcMftfeedorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+                "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
+                "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
+                "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,billentry.isrework nckd_rework,billentry.unit nckd_unit," +
+                "null nckd_baseqty,billentry.unit2nd nckd_unit2nd,null nckd_qtyunit2nd,billentry.baseqty nckd_unit3nd,billentry.qtyunit2nd nckd_qtyunit3nd,billentry.price nckd_price," +
+                "billentry.srcbillentity srcbillentity,billentry.srcbillentryid srcbillentryid,billentry.srcbillnumber srcbillnumber,id,billentry.id billentry_id";
+        DataSet imMdcMftfeedorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftproorder", imMdcMftfeedorderSql, qFilter2.toArray(), null);
+
+        // 生产补料单关联物料
+        DataSet finish3 = this.relevancyMaterial(imMdcMftfeedorder, filter);
+
+        // 核算成本和生产补料单关联
+        DataSet finish4 = this.firstUnionSecond(finish1, finish3);
+
+        // ==================三级=========================
+        // 生产退料单
+        String imMdcMftreturnorderSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project.name nckd_xm_name," +
+                "null nckd_shippingordernumber,null nckd_cass,null nckd_shipping_address,null nckd_order_serial_number,null nckd_loss_quantity,null nckd_damaged_quantity," +
+                "null nckd_wagon_number, null nckd_direct_mode,null nckd_carrier,null nckd_carrier_phone,null nckd_phone,null nckd_carnumber," +
+                "comment nckd_comment,billentry.materialmasterid materialmasterid,null nckd_qty,billentry.baseqty nckd_payablepriceqty,billentry.entrycomment nckd_entrycomment," +
+                "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
+        DataSet imMdcMftreturnorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftproorder", imMdcMftreturnorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C").and("billentity", QCP.equals, "im_mdc_mftreturnorder")}, null);
+
+        DataSet finish5 = this.secondUnionThree(finish4, imMdcMftreturnorder);
+
+        DataSet dataSet = finish5.distinct();
+
+        // 客户
+        if (mulcustomer.getValue() != null) {
+            dataSet = dataSet.where("nckd_bp_name is not null");
+        }
+        // 供应商
+        if (mulsupplier.getValue() != null) {
+            dataSet = dataSet.where("nckd_supplier_name is not null");
+        }
+
+        return dataSet;
+    }
+
+    /**
+     * 二级关联三级
+     *
+     * @param secondDataSet
+     * @param ThreeDataSet
+     * @return
+     */
+    private DataSet secondUnionThree(DataSet secondDataSet, DataSet ThreeDataSet) {
+        DataSet finish = secondDataSet.join(ThreeDataSet).on("srcbillnumber", "nckd_sourcebillno").on("srcbillentryid", "billentry_id")
                 .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
                                 "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
@@ -904,15 +767,56 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
                                 "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
                                 "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode"}).finish();
+        return finish;
+    }
 
-        DataSet dataSet = finish5.distinct();
+    /**
+     * 一级关联二级
+     *
+     * @param firstDataSet
+     * @param secondDataSet
+     * @return
+     */
+    private DataSet firstUnionSecond(DataSet firstDataSet, DataSet secondDataSet) {
+        DataSet finish = firstDataSet.join(secondDataSet).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
+                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
+                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
+                                "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
+                                "nckd_seq", "nckd_modelnum", "nckd_model",
+                                "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
+                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
+                                "nckd_group"}).finish();
+        return finish;
+    }
 
-        // 供应商
-        if (mulsupplier.getValue() != null) {
-            dataSet = dataSet.where("nckd_supplier_name is not null");
+    /**
+     * 获取核算成本记录
+     *
+     * @param filter 查询条件
+     * @param formId 业务对象
+     * @param type   类型  A 入库  B 出库
+     * @return
+     */
+    private DataSet getCalCcostrecord(FilterInfo filter, String formId, String type) {
+        QFilter qFilter = this.buildCalCostrecordFilter(filter, formId);
+        // 核算成本记录
+        DataSet calCostrecord = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cal_costrecord", "bookdate,billnumber,calorg nckd_org,costaccount nckd_costaccount,entry.material nckd_masterid,entry.actualcost actualcost," +
+                "id,entry.id entry_id,entry.bizbillentryid bizbillentryid", qFilter.toArray(), null);
+        // 获取已审核的成本调整单
+        DataSet calCostadjustbill = this.getCalCostadjustbill(type);
+
+        // 核算成本记录与成本调整单关联
+        DataSet finish = calCostrecord.leftJoin(calCostadjustbill).on("nckd_masterid", "masterid").on("id", "invbillid").on("entry_id", "invbillentryid")
+                .select(new String[]{"billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "actualcost", "bizbillentryid"},
+                        new String[]{"( CASE WHEN adjustamt IS NULL THEN 0 ELSE adjustamt END )adjustamount"}).finish();
+
+        if ("A".equals(type)) {
+            finish = finish.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "(actualcost + adjustamount) nckd_in_amount", "null nckd_out_amount", "bizbillentryid");
+        } else if ("B".equals(type)) {
+            finish = finish.select("billnumber", "nckd_org", "nckd_costaccount", "nckd_masterid", "null nckd_in_amount", "(actualcost + adjustamount) nckd_out_amount", "bizbillentryid");
         }
 
-        return dataSet;
+        return finish;
     }
 
     /**
@@ -975,10 +879,13 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         FilterItemInfo mulcostaccount = filter.getFilterItem("nckd_mulcostaccount");
         // 单据类型
         FilterItemInfo mulbilltype = filter.getFilterItem("nckd_mulbilltype");
+        // 开始日期
+        FilterItemInfo startdate = filter.getFilterItem("nckd_startdate");
+        // 结束日期
+        FilterItemInfo enddate = filter.getFilterItem("nckd_enddate");
 
         QFilter qFilter = new QFilter("entry.costpricesource", QCP.not_equals, " ")
                 .and(new QFilter("bizentityobject", QCP.equals, key));
-//        QFilter qFilter = new QFilter("bizentityobject", QCP.equals, key);
         // 核算组织
         if (mulcalorg.getValue() != null) {
             qFilter.and(new QFilter("calorg", QCP.in, ((DynamicObjectCollection) mulcalorg.getValue())
@@ -999,6 +906,14 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                     .stream()
                     .map(obj -> obj.getLong("id"))
                     .collect(Collectors.toList())));
+        }
+        // 开始日期
+        if (startdate.getValue() != null) {
+            qFilter.and(new QFilter("bookdate", QCP.large_equals, startdate.getDate()));
+        }
+        // 结束日期
+        if (enddate.getValue() != null) {
+            qFilter.and(new QFilter("bookdate", QCP.less_equals, enddate.getDate()));
         }
 
         return qFilter;

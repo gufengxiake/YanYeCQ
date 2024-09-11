@@ -4,6 +4,8 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.datamodel.events.ChangeData;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.logging.Log;
@@ -13,7 +15,6 @@ import nckd.yanye.occ.plugin.mis.sdk.AU011SDK;
 import nckd.yanye.occ.plugin.task.UpdateCCBKeyTask;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.EventObject;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,9 +30,58 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
     private static final Log logger = LogFactory.getLog(PayParamConfigBillPlugin.class);
 
     @Override
-    public void afterCreateNewData(EventObject e) {
-        super.afterCreateNewData(e);
-        DynamicObjectCollection nckdEntryentity = this.getModel().getEntryEntity("nckd_entryentity");
+    public void propertyChanged(PropertyChangedArgs e) {
+        super.propertyChanged(e);
+        String key = e.getProperty().getName();
+        if ("nckd_paybank".equals(key)) {
+            ChangeData[] changeSet = e.getChangeSet();
+            ChangeData changeData = changeSet[0];
+            Object newValue = changeData.getNewValue();
+            //A 农业银行 B 建设银行
+            if ("A".equals(newValue)) {
+                this.getModel().deleteEntryData("nckd_entryentity");
+                //创建农行分录
+                createABCEntry();
+            }
+            if ("B".equals(newValue)) {
+                this.getModel().deleteEntryData("nckd_entryentity");
+                //创建建行分录
+                createCCBEntry();
+            }
+        }
+    }
+
+    /**
+     * 创建农行分录
+     */
+    private void createABCEntry() {
+        DynamicObjectCollection nckdEntryentity = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_entryentity");
+        DynamicObject dynamicObject1 = nckdEntryentity.addNew();
+        dynamicObject1.set("nckd_payparamname", "商户私钥");
+        dynamicObject1.set("nckd_payparamnbr", "privateKey");
+        DynamicObject dynamicObject2 = nckdEntryentity.addNew();
+        dynamicObject2.set("nckd_payparamname", "平台公钥");
+        dynamicObject2.set("nckd_payparamnbr", "publicKey");
+        DynamicObject dynamicObject3 = nckdEntryentity.addNew();
+        dynamicObject3.set("nckd_payparamname", "店铺编号");
+        dynamicObject3.set("nckd_payparamnbr", "mch_id");
+        DynamicObject dynamicObject4 = nckdEntryentity.addNew();
+        dynamicObject4.set("nckd_payparamname", "请求地址");
+        dynamicObject4.set("nckd_payparamnbr", "url");
+        DynamicObject dynamicObject5 = nckdEntryentity.addNew();
+        dynamicObject5.set("nckd_payparamname", "gps");
+        dynamicObject5.set("nckd_payparamnbr", "gps");
+        DynamicObject dynamicObject6 = nckdEntryentity.addNew();
+        dynamicObject6.set("nckd_payparamname", "终端设备号");
+        dynamicObject6.set("nckd_payparamnbr", "terminal_id");
+        this.getView().updateView("nckd_entryentity");
+    }
+
+    /**
+     * 创建建行分录
+     */
+    private void createCCBEntry() {
+        DynamicObjectCollection nckdEntryentity = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_entryentity");
         DynamicObject dynamicObject1 = nckdEntryentity.addNew();
         dynamicObject1.set("nckd_payparamname", "交易密钥");
         dynamicObject1.set("nckd_payparamnbr", "key");
@@ -57,6 +107,7 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
         DynamicObject dynamicObject8 = nckdEntryentity.addNew();
         dynamicObject8.set("nckd_payparamname", "授权码(仅第一次获取密钥有效)");
         dynamicObject8.set("nckd_payparamnbr", "authCode");
+        this.getView().updateView("nckd_entryentity");
     }
 
     @Override
@@ -113,6 +164,8 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
             UpdateCCBKeyTask updateCCBKeyTask = new UpdateCCBKeyTask();
             RequestContext requestContext = RequestContext.get();
             Map<String, Object> map = new HashMap<>();
+            Object number = this.getModel().getValue("number");
+            map.put("payParamNumber", number);
             updateCCBKeyTask.execute(requestContext, map);
         }
     }

@@ -1,6 +1,7 @@
 package nckd.yanye.occ.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.form.FormShowParameter;
@@ -28,13 +29,18 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
         super.registerListener(e);
         // 工具栏注册监听（注意这里是把整个工具栏注册监听，工具栏项是没有运行时控件模型的）
         Toolbar toolbar = this.getControl("tbmainentry");
-        if(toolbar!=null){
+        if (toolbar != null) {
             // 注意itemClick和click的区别
             toolbar.addItemClickListener(this);
         }
 
     }
 
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        //承运组织
+        this.getModel().setItemValueByNumber("nckd_orgyf", "11401", 0);
+    }
 
     // 注意itemClick和click的区别
     @Override
@@ -68,10 +74,10 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                 DynamicObject mat = (DynamicObject) this.getModel().getValue("material", i);
                 if (mat != null) {
                     //物料分组Id
-                    Object groupId=mat.getString("masterid.group.id");
+                    Object groupId = mat.getString("masterid.group.id");
                     matGroupIds.add(groupId);
                     //物料分组编码
-                    Object groupNum=mat.getString("masterid.group.number");
+                    Object groupNum = mat.getString("masterid.group.number");
                     matGroupNums.add(groupNum);
                 }
             }
@@ -105,7 +111,7 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
 
                 //承运方类型
                 Object yfTepy = this.getModel().getValue("nckd_yunfeity", 0);
-                if (yfTepy == null||yfTepy.equals("")) {
+                if (yfTepy == null || yfTepy.equals("")) {
                     this.getView().showErrorNotification("承运方类型不允许为空");
                     return;
                 } else if (yfTepy.equals("A")) {
@@ -122,7 +128,7 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                         return;
                     }
                     Object supplierId = supplier.getPkValue();
-                    this.setPrices(cyOrgId,supplierId,addressId);
+                    this.setPrices(cyOrgId, supplierId, addressId);
 
                 } else if (yfTepy.equals("B")) {
                     //承运方类型为供应商
@@ -139,12 +145,11 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                         return;
                     }
                     Object supplierId = supplier.getPkValue();
-                    this.setPrices(cyOrgId,supplierId,addressId);
+                    this.setPrices(cyOrgId, supplierId, addressId);
 
                 }
 
-            }
-            else{
+            } else {
                 this.getView().showSuccessNotification("承运方未选择企业,无需获取运费单价!");
             }
 
@@ -152,7 +157,7 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
         }
     }
 
-    private void setPrices(Object cyOrgId,Object supplierId,Object addressId){
+    private void setPrices(Object cyOrgId, Object supplierId, Object addressId) {
         //表单标识(采购合同)
         String number = "conm_purcontract";
         //查询字段

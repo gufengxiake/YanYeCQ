@@ -40,17 +40,6 @@ public class SalarysocialReportFormPlugin extends AbstractReportFormPlugin {
             "企业年金",
     };
 
-    private final String[] amountFields = {
-            "sbb1", "gzb1", "pzjl1", "ce1",
-            "sbb2", "gzb2", "pzjl2", "ce2",
-            "sbb3", "gzb3", "pzjl3", "ce3",
-            "sbb4", "gzb4", "pzjl4", "ce4",
-            "sbb5", "gzb5", "pzjl5", "ce5",
-            "sbb6", "gzb6", "pzjl6", "ce6",
-            "sbb7", "gzb7", "pzjl7", "ce7",
-            "sbb8", "gzb8", "pzjl8", "ce8",
-    };
-
     @Override
     public void initDefaultQueryParam(ReportQueryParam queryParam) {
         super.initDefaultQueryParam(queryParam);

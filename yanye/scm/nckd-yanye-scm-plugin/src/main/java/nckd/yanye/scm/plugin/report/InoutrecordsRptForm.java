@@ -1,16 +1,20 @@
 package nckd.yanye.scm.plugin.report;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.*;
 
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.dynamicobject.DynamicProperty;
+import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.GroupProp;
 import kd.bos.entity.property.ParentBasedataProp;
+import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.form.IFormView;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
@@ -19,11 +23,17 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.fi.cal.common.helper.OrgHelper;
+import kd.fi.cal.common.helper.PeriodHelper;
 import kd.fi.cal.common.helper.PermissionHelper;
 import kd.fi.cal.common.helper.ReportF7Helper;
+import kd.fi.cal.common.util.DateUtils;
+import kd.fi.cal.common.util.ReportUtil;
+import kd.fi.cal.report.newreport.transdtlrpt.TransDtlRptHelper;
+import kd.fi.cal.report.newreport.transdtlrpt.TransDtlRptParam;
 
 /**
  * @author husheng
@@ -35,7 +45,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
     public void registerListener(EventObject e) {
         super.registerListener(e);
 
-        this.addF7Listener(this, "nckd_mulcalorg", "nckd_mulcostaccount", "nckd_mulmaterialgroup", "nckd_mulmaterial", "nckd_materialto","nckd_mulbilltype");
+        this.addF7Listener(this, "nckd_mulcalorg", "nckd_mulcostaccount", "nckd_mulmaterialgroup", "nckd_mulmaterial", "nckd_materialto", "nckd_mulbilltype");
     }
 
     private void addF7Listener(BeforeF7SelectListener form, String... f7Names) {
@@ -66,7 +76,117 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
             DynamicObject costAccount = OrgHelper.getCostAccountByCalOrg(calOrgId);
             if (costAccount != null) {
                 this.getModel().setValue("nckd_mulcostaccount", new Long[]{costAccount.getLong("id")});
+                this.costAccountChanged();
             }
+        }
+    }
+
+    @Override
+    public boolean verifyQuery(ReportQueryParam queryParam) {
+        IDataModel model = this.getModel();
+        DynamicObject dataEntity = this.getModel().getDataEntity(true);
+        Date startdate = (Date) model.getValue("nckd_startdate");
+        Date enddate = (Date) model.getValue("nckd_enddate");
+        DynamicObjectCollection calOrgs = dataEntity.getDynamicObjectCollection("nckd_mulcalorg");
+        DynamicObjectCollection costaccounts = dataEntity.getDynamicObjectCollection("nckd_mulcostaccount");
+        if (calOrgs != null && calOrgs.size() != 0 && costaccounts != null && costaccounts.size() != 0 && startdate != null && enddate != null) {
+            Set<Date> beginDateSet = new HashSet(costaccounts.size());
+            Set<Long> costaccountIdSet = new HashSet(costaccounts.size());
+            Iterator var10 = costaccounts.iterator();
+
+            while (var10.hasNext()) {
+                DynamicObject costaccount = (DynamicObject) var10.next();
+                long costAccountId = costaccount.getDynamicObject("fbasedataid").getLong("id");
+                costaccountIdSet.add(costAccountId);
+            }
+
+            QFilter filter = new QFilter("id", "in", costaccountIdSet);
+            DynamicObjectCollection calAcctDyc = QueryServiceHelper.query("cal_bd_costaccount", "id,calpolicy,calpolicy.periodtype", new QFilter[]{filter});
+            Iterator var23 = calAcctDyc.iterator();
+
+            while (var23.hasNext()) {
+                DynamicObject costAcct = (DynamicObject) var23.next();
+                DynamicObject periodDyc = this.getYearPeriodByDate(costAcct.getLong("id"), startdate);
+                if (periodDyc == null) {
+                    this.getView().showTipNotification(ResManager.loadKDString("开始日期对应的期间不存在。", "StockGatherDetailRptQueryPlugin_10", "fi-cal-report", new Object[0]));
+                    return false;
+                }
+
+                getBeginPeriod(costAcct, beginDateSet);
+            }
+
+            Set<Object> calpolicyPeriodtype = new HashSet(16);
+            DynamicObjectCollection costAccountInfoS = QueryServiceHelper.query("cal_bd_costaccount", "calpolicy.periodtype,calpolicy.currency,calpolicy.currency.amtprecision", new QFilter[]{new QFilter("id", "in", costaccountIdSet)});
+            Map<Integer, Long> currencyAmtprecisionMap = new HashMap(16);
+            Set<Integer> amtprecisionSet = new HashSet(16);
+            Iterator var17 = costAccountInfoS.iterator();
+
+            while (var17.hasNext()) {
+                DynamicObject calpolicy = (DynamicObject) var17.next();
+                calpolicyPeriodtype.add(calpolicy.get("calpolicy.periodtype"));
+                Long currencyId = calpolicy.getLong("calpolicy.currency");
+                int amtprecision = calpolicy.getInt("calpolicy.currency.amtprecision");
+                amtprecisionSet.add(amtprecision);
+                currencyAmtprecisionMap.put(amtprecision, currencyId);
+            }
+
+            if (calpolicyPeriodtype.size() > 1) {
+                this.getView().showTipNotification(ResManager.loadKDString("所选的期间类型不一致，不能同时选择。", "StockGatherRptFormPlugin_9", "fi-cal-report", new Object[0]));
+                return false;
+            } else {
+                Date min = Collections.min(beginDateSet);
+                if (startdate.compareTo(min) < 0) {
+                    this.getView().showTipNotification(ResManager.loadKDString("开始日期对应的期间必须在账簿的启用期间之后。", "StockCostDetailRptFormPlugin_4", "fi-cal-report", new Object[0]));
+                    return false;
+                } else if (enddate.before(startdate)) {
+                    this.getView().showTipNotification(ResManager.loadKDString("结束日期必须大于等于开始日期。", "TransactionDetailRptFormPlugin_3", "fi-cal-report", new Object[0]));
+                    return false;
+                } else {
+                    LocalDateTime startDateTime = startdate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    LocalDateTime endDateTime = enddate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+                    if (startDateTime.plusYears(1L).isBefore(endDateTime)) {
+                        this.getView().showTipNotification(ResManager.loadKDString("结束日期与开始日期间隔超过一年，请修改后再查询。", "TransactionDetailRptFormPlugin_4", "fi-cal-report", new Object[0]));
+                        return false;
+                    } else {
+                        this.getModel().setValue("nckd_startdate", DateUtils.getDayStartTime(startdate));
+                        this.getModel().setValue("nckd_enddate", DateUtils.getDayEndTime(enddate));
+                        return super.verifyQuery(queryParam);
+                    }
+                }
+            }
+        } else {
+            this.getView().showTipNotification(ResManager.loadKDString("请检查必录项", "StockGatherRptFormPlugin_0", "fi-cal-report", new Object[0]));
+            return false;
+        }
+    }
+
+    private DynamicObject getYearPeriodByDate(Object costAccountId, Date date) {
+        DynamicObject periodDyc = null;
+        QFilter filter = new QFilter("id", "=", costAccountId);
+        DynamicObject calAcctDyc = QueryServiceHelper.queryOne("cal_bd_costaccount", "calpolicy,calpolicy.periodtype", new QFilter[]{filter});
+        if (calAcctDyc != null) {
+            QFilter beginDate = new QFilter("begindate", "<=", date);
+            QFilter endDatef = new QFilter("enddate", ">=", date);
+            QFilter periodTypef = new QFilter("periodtype", "=", calAcctDyc.getLong("calpolicy.periodtype"));
+            QFilter notAdjPeriodf = new QFilter("isadjustperiod", "=", Boolean.FALSE);
+            periodDyc = BusinessDataServiceHelper.loadSingle("bd_period", "periodyear,periodnumber,begindate,enddate", new QFilter[]{beginDate, endDatef, periodTypef, notAdjPeriodf});
+        }
+
+        return periodDyc;
+    }
+
+    private static void getBeginPeriod(DynamicObject costAccount, Set<Date> beginDateSet) {
+        if (costAccount != null) {
+            DynamicObject startPeriod = PeriodHelper.getSysCtrlEntity(costAccount.getLong("id"));
+            if (startPeriod != null) {
+                Long startPeriodId = startPeriod.getLong("startperiod.id");
+                DynamicObject period = BusinessDataServiceHelper.loadSingle("bd_period", "periodyear,periodnumber,begindate,enddate", (new QFilter("id", "=", startPeriodId)).toArray());
+                if (period != null) {
+                    Date begindate = period.getDate("begindate");
+                    beginDateSet.add(begindate);
+                }
+            }
+
         }
     }
 
@@ -87,7 +207,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
     }
 
     private void materialGroupChanged(IDataModel model) {
-        model.setValue("nckd_mulmaterial",null);
+        model.setValue("nckd_mulmaterial", null);
         model.setValue("nckd_materialto", null);
     }
 
@@ -112,48 +232,55 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
     }
 
     private void costAccountChanged() {
-//        DynamicObjectCollection costaccounts = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_mulcostaccount");
-//        if (costaccounts != null && costaccounts.size() != 0) {
-//            Set<Long> costaccountIdSet = new HashSet();
-//            Iterator var3 = costaccounts.iterator();
-//
-//            while(var3.hasNext()) {
-//                DynamicObject costaccount = (DynamicObject)var3.next();
-//                costaccountIdSet.add(costaccount.getDynamicObject("fbasedataid").getLong("id"));
-//            }
-//
-//            Map<Long, DynamicObject> periods = PeriodHelper.getCurrentPeriods(costaccountIdSet);
-//            Set<Long> periodIds = new HashSet();
-//            Iterator var5 = costaccountIdSet.iterator();
-//
-//            Long minid;
-//            while(var5.hasNext()) {
-//                minid = (Long)var5.next();
-//                DynamicObject period = (DynamicObject)periods.get(minid);
-//                if (period != null) {
-//                    periodIds.add(period.getLong("id"));
-//                }
-//            }
-//
-//            if (periodIds.isEmpty()) {
-//                this.getModel().setValue("startperiod", (Object)null);
-//                this.getModel().setValue("endperiod", (Object)null);
-//            } else {
-//                Long maxid = (Long)Collections.max(periodIds);
-//                minid = (Long)Collections.min(periodIds);
-//                this.getModel().setValue("startperiod", periodIds.size() == 0 ? null : minid);
-//                this.getModel().setValue("endperiod", periodIds.size() == 0 ? null : maxid);
-//            }
-//        } else {
-//            this.getModel().setValue("startperiod", (Object)null);
-//            this.getModel().setValue("endperiod", (Object)null);
-//        }
+        DynamicObjectCollection costaccounts = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_mulcostaccount");
+        if (costaccounts != null && costaccounts.size() != 0) {
+            int size = costaccounts.size();
+            Set<Long> costaccountIdSet = new HashSet(size);
+            Iterator var4 = costaccounts.iterator();
+
+            while (var4.hasNext()) {
+                DynamicObject costAccount = (DynamicObject) var4.next();
+                costaccountIdSet.add(costAccount.getDynamicObject("fbasedataid").getLong("id"));
+            }
+
+            Map<Long, DynamicObject> periods = PeriodHelper.getCurrentPeriods(costaccountIdSet);
+            if (periods.isEmpty()) {
+                this.getModel().setValue("nckd_startdate", null);
+                this.getModel().setValue("nckd_enddate", null);
+            } else {
+                Set<Date> beginDateSet = new HashSet(periods.size());
+                Set<Date> endDateSet = new HashSet(periods.size());
+                Iterator var7 = costaccountIdSet.iterator();
+
+                while (var7.hasNext()) {
+                    Long costAccountId = (Long) var7.next();
+                    DynamicObject period = periods.get(costAccountId);
+                    if (period != null) {
+                        Date beginDate = period.getDate("begindate");
+                        Date endDate = period.getDate("enddate");
+                        beginDateSet.add(beginDate);
+                        endDateSet.add(endDate);
+                    }
+                }
+
+                if (!beginDateSet.isEmpty() && !endDateSet.isEmpty()) {
+                    Date max = Collections.max(endDateSet);
+                    Date min = Collections.min(beginDateSet);
+                    this.getModel().setValue("nckd_startdate", min);
+                    this.getModel().setValue("nckd_enddate", max);
+                } else {
+                    this.getModel().setValue("nckd_startdate", null);
+                    this.getModel().setValue("nckd_enddate", null);
+                }
+            }
+        } else {
+            this.getModel().setValue("nckd_startdate", null);
+            this.getModel().setValue("nckd_enddate", null);
+        }
     }
 
     private void calOrgChanged() {
         IDataModel model = this.getModel();
-//        model.setValue("mulstorageorg", (Object)null);
-//        model.setValue("mulowner", (Object)null);
         DynamicObjectCollection calOrgList = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_mulcalorg");
         if (calOrgList != null && calOrgList.size() != 0) {
             Set<Long> calOrgIds = new HashSet();
@@ -186,7 +313,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
             this.beforeF7SelectMaterialGroup(beforeF7SelectEvent);
         } else if ("nckd_mulmaterial".equals(key) || "nckd_materialto".equals(key)) {
             this.beforeF7Select4Mulmaterial(this.getModel(), beforeF7SelectEvent);
-        } else if ("nckd_mulbilltype".equals(key)){
+        } else if ("nckd_mulbilltype".equals(key)) {
             this.beforeF7Select4Billtype(beforeF7SelectEvent);
         }
     }
@@ -222,19 +349,19 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
     }
 
     private void beforeF7Select4Mulmaterial(IDataModel model, BeforeF7SelectEvent e) {
-        DynamicObjectCollection materialgroupCol = (DynamicObjectCollection)model.getValue("nckd_mulmaterialgroup");
+        DynamicObjectCollection materialgroupCol = (DynamicObjectCollection) model.getValue("nckd_mulmaterialgroup");
         if (materialgroupCol != null && !materialgroupCol.isEmpty()) {
             QFilter matFilter = QFilter.of("1 = 1", new Object[0]);
             DynamicObjectCollection matgroupdetailCol = QueryServiceHelper.query("bd_materialgroupdetail", "material.id", new QFilter[]{this.getGroupFilter(materialgroupCol, false, "group.longnumber"), matFilter});
             List<Object> materialIds = new ArrayList(4096);
             Iterator var6 = matgroupdetailCol.iterator();
 
-            while(var6.hasNext()) {
-                DynamicObject matgroupdetail = (DynamicObject)var6.next();
+            while (var6.hasNext()) {
+                DynamicObject matgroupdetail = (DynamicObject) var6.next();
                 materialIds.add(matgroupdetail.getLong("material.id"));
             }
 
-            ListShowParameter formShowParameter = (ListShowParameter)e.getFormShowParameter();
+            ListShowParameter formShowParameter = (ListShowParameter) e.getFormShowParameter();
             formShowParameter.setF7ClickByFilter(true);
             formShowParameter.setShowApproved(false);
             formShowParameter.setShowUsed(false);
@@ -248,18 +375,18 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
     private QFilter getGroupFilter(DynamicObjectCollection materialgroupColl, boolean isFromFilteInfo, String fieldName) {
         if (materialgroupColl != null) {
             DynamicProperty property = EntityMetadataCache.getDataEntityType("bd_materialgroup").getProperty("parent");
-            GroupProp group = (GroupProp)property;
+            GroupProp group = (GroupProp) property;
             String longNumberDLM = "";
             if (group instanceof ParentBasedataProp) {
-                longNumberDLM = ((ParentBasedataProp)group).getLongNumberDLM();
+                longNumberDLM = ((ParentBasedataProp) group).getLongNumberDLM();
             }
 
             QFilter groupFilter = QFilter.of("1 != 1", new Object[0]);
             Set<String> groupNumSet = new HashSet(16);
             Iterator var8 = materialgroupColl.iterator();
 
-            while(var8.hasNext()) {
-                DynamicObject matgroup = (DynamicObject)var8.next();
+            while (var8.hasNext()) {
+                DynamicObject matgroup = (DynamicObject) var8.next();
                 String longnumber;
                 if (isFromFilteInfo) {
                     longnumber = matgroup.getString("longnumber");
@@ -287,17 +414,17 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
         QFilter qFilter = new QFilter("status", "=", "C");
         long matgroupstandardId = 730148448254487552L;
 
-        DynamicObjectCollection calOrgList = (DynamicObjectCollection)this.getModel().getValue("nckd_mulcalorg");
+        DynamicObjectCollection calOrgList = (DynamicObjectCollection) this.getModel().getValue("nckd_mulcalorg");
         List<Long> orgIds = new ArrayList(1);
         Iterator var8 = calOrgList.iterator();
 
-        while(var8.hasNext()) {
-            DynamicObject calOrg = (DynamicObject)var8.next();
+        while (var8.hasNext()) {
+            DynamicObject calOrg = (DynamicObject) var8.next();
             orgIds.add(calOrg.getDynamicObject("fbasedataid").getLong("id"));
         }
 
         QFilter serviceResponse = DispatchServiceHelper.invokeBizService("bd", "bd", "IMasterDataStandardService", "getGroupByOrgs", new Object[]{"bd_material", orgIds, matgroupstandardId, Boolean.FALSE});
-        ((ListShowParameter)e.getFormShowParameter()).getListFilterParameter().getQFilters().add(qFilter.and(serviceResponse));
+        ((ListShowParameter) e.getFormShowParameter()).getListFilterParameter().getQFilters().add(qFilter.and(serviceResponse));
     }
 
     private void beforeF7Select4CostAccount(BeforeF7SelectEvent e) {

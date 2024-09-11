@@ -62,11 +62,12 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         //获取编码规则
                         CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(bdCustomer.getDataEntityType().getName(), bdCustomer, null);
                         String number = CodeRuleServiceHelper.getNumber(codeRule, bdCustomer);
+                        DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle(100000L, "bos_org");
 
                         bdCustomer.set("number", number);//编码
                         bdCustomer.set("name", entity.get("nckd_addcustomer"));//名称
-                        bdCustomer.set("createorg", date.getDynamicObject("org"));//创建组织
-                        bdCustomer.set("org", date.getDynamicObject("org"));//管理组织
+                        bdCustomer.set("createorg", bosOrg);//创建组织
+                        bdCustomer.set("org", bosOrg);//管理组织
                         bdCustomer.set("createtime", date.get("nckd_date"));//创建日期
                         bdCustomer.set("useorg", date.getDynamicObject("org"));//业务组织
                         bdCustomer.set("status", "C");//单据状态
@@ -123,8 +124,8 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 Set<Long> dataIdsTemp = new HashSet<>();
                                 dataIdsTemp.add(bdCustomer.getLong("id"));
                                 Set<Long> orgIds = new HashSet<>();
-                                orgIds.add(100000L);
-                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", date.getDynamicObject("org").getLong("id"), "basedata", dataIdsTemp, orgIds);
+                                orgIds.add(date.getDynamicObject("org").getLong("id"));
+                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer",100000L , "basedata", dataIdsTemp, orgIds);
                                 if (!assign.isSuccess()){
                                     throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
                                 }

@@ -4,6 +4,7 @@ package nckd.yanye.occ.plugin.report;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
@@ -12,6 +13,7 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
@@ -59,13 +61,29 @@ public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin imp
     @Override
     public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
         String name = beforeF7SelectEvent.getProperty().getName();
+        FilterInfo filter = this.getQueryParam().getFilter();
+        DynamicObject nckdForgQ = filter.getDynamicObject("nckd_forg_q");
         if ("nckd_ywy_q".equals(name)) {
             // 获取当前登录业务单元id
             long orgId = RequestContext.get().getOrgId();
+            if (nckdForgQ != null) {
+                orgId = (long) nckdForgQ.getPkValue();
+            }
+            QFilter qFilter = new QFilter("createorg", QCP.equals, orgId);
+            DynamicObjectCollection bd_operatorgroup = QueryServiceHelper.query("bd_operatorgroup",
+                    "id", new QFilter[]{qFilter}, "");
+            List<Long> operatorgroupId = new ArrayList<>();
+            if(bd_operatorgroup != null && !bd_operatorgroup.isEmpty()){
+                bd_operatorgroup.forEach((e)->{
+                    operatorgroupId.add(e.getLong("id"));
+                });
+            }
             QFilter orgFilter = new QFilter("opergrptype", QCP.equals, "XSZ");
+            if (!operatorgroupId.isEmpty()){
+                orgFilter.and("operatorgrpid",QCP.in,operatorgroupId.toArray(new Long[0]));
+            }
             ListShowParameter showParameter = (ListShowParameter) beforeF7SelectEvent.getFormShowParameter();
             // 基础资料添加列表过滤条件
-//            showParameter.getListFilterParameter().getQFilters().add(orgFilter);
             showParameter.getListFilterParameter().setFilter(orgFilter);
             // 基础资料左树添加过滤条件
             showParameter.getTreeFilterParameter().getQFilters().add(orgFilter);
