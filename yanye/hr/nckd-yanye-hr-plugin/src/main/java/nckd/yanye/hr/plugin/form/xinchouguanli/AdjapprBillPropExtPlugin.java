@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * 员工定调薪申请单-业务扩展插件
+ * 薪酬标准表-业务扩展插件
  * 单据标识：nckd_hcdm_adjapprbill_ext
  * 业务场景编码：kd.sdk.swc.hcdm.business.extpoint.salarystd.IHcdmContrastPropExtPlugin#loadContrastPropValue
  *
@@ -47,7 +47,6 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                 "nckd_iffulltime",
                 new QFilter[]{new QFilter("name", QCP.equals, "是")}
         ).getLong("id");
-
 
         // 定调薪档案
         DynamicObject[] adjFiles = BusinessDataServiceHelper.load(
