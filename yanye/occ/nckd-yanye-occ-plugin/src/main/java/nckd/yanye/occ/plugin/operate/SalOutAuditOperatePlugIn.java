@@ -99,7 +99,8 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         if (saloutBillIds.isEmpty()) {
             return;
         }
-        //记录销售出库单核心单据行Id 对应的数量，批号，生产日期，到期日期
+        //记录销售出库单核心单据行Id 对应的行Id,数量，批号，生产日期，到期日期
+        Map<String, Object> outEntryId = new HashMap<>();
         Map<String, BigDecimal> outQty = new HashMap<>();
         Map<String, String> outLot = new HashMap<>();
         Map<String, Date> outProduceDate = new HashMap<>();
@@ -109,6 +110,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
             for (DynamicObject entryObj : billentry) {
                 String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
+                Object entryId = entryObj.getPkValue();
                 BigDecimal qty = entryObj.getBigDecimal("qty");//出库数量
                 String lot = entryObj.getString("lotnumber");//批号
                 Date produceDate = entryObj.getDate("producedate");//生产日期
@@ -118,6 +120,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                 } else {
                     outQty.put(mainbillentryid, outQty.get(mainbillentryid).add(qty));
                 }
+                outEntryId.put(mainbillentryid, entryId);
                 outLot.put(mainbillentryid, lot);
                 outProduceDate.put(mainbillentryid, produceDate);
                 outExpiryDate.put(mainbillentryid, expirydate);
@@ -200,7 +203,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                             selectedRows.add(row);
                         }
                     }
-                    if (selectedRows.size() > 0) {
+                    if (!selectedRows.isEmpty()) {
 
                         // 必选，设置需要下推的源单及分录内码
                         pushArgs.setSelectedRows(selectedRows);
@@ -290,11 +293,14 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                     String lot = outLot.get(mainbillentryid);
                                     Date producedate = outProduceDate.get(mainbillentryid);
                                     Date expirydate = outExpiryDate.get(mainbillentryid);
+                                    Object entryId = outEntryId.get(mainbillentryid);
                                     mode.setValue("qty", qty, row);
+                                    mode.setValue("nckd_outqty", qty, row);//出库数量
                                     mode.setValue("lotnumber", lot, row);
                                     mode.setValue("producedate", producedate, row);
                                     mode.setValue("expirydate", expirydate, row);
                                     mode.setValue("warehouse", depStock, row);
+                                    mode.setValue("nckd_outentryid", entryId, row);
                                     row++;
                                 }
                                 OperationResult saveOp = formView.invokeOperation("save");
