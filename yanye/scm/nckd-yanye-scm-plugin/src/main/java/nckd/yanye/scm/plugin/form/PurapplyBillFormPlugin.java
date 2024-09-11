@@ -295,9 +295,9 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             this.getModel().setValue(PurapplybillConst.NCKD_PURCHASEID, orderIdPre + resultJson.getJSONObject("data").getString("orderId"));
             this.getModel().setValue(PurapplybillConst.NCKD_PUSHED, true);
             SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
-            this.getView().showSuccessNotification("公告发布成功!");
+            this.getView().showSuccessNotification("公告发布成功！");
         } else {
-            this.getView().showErrorNotification("公告发布失败!" + resultJson.getString("message"));
+            this.getView().showErrorNotification("公告发布失败！" + resultJson.getString("message"));
         }
     }
 
@@ -341,28 +341,28 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
             this.getModel().setValue(PurapplybillConst.NCKD_CLOSED, true);
             SaveServiceHelper.save(new DynamicObject[]{this.getModel().getDataEntity(true)});
             sb.append("公告作废成功！");
-            // 下游单据关闭
-            // 采购订单关闭
-            DynamicObject orderObj = BusinessDataServiceHelper.loadSingle(
-                    "pm_purorderbill",
-                    new QFilter[]{new QFilter("nckd_upapplybill", QCP.equals, this.getModel().getValue("billno"))}
-            );
-            if (orderObj != null) {
-                OperationResult result = OperationServiceHelper.executeOperate("bizclose", "pm_purorderbill", new DynamicObject[]{orderObj}, OperateOption.create());
-                boolean success = result.isSuccess();
-                sb.append(success ? "\r\n采购订单关闭成功！" : "\r\n采购订单关闭失败！" + result.getMessage());
-            }
-
-            // 采购合同关闭
-            DynamicObject contractObj = BusinessDataServiceHelper.loadSingle(
-                    "conm_purcontract",
-                    new QFilter[]{new QFilter("nckd_upapplybill", QCP.equals, this.getModel().getValue("billno"))}
-            );
-            if (contractObj != null) {
-                OperationResult result = OperationServiceHelper.executeOperate("bizclose", "conm_purcontract", new DynamicObject[]{contractObj}, OperateOption.create());
-                boolean success = result.isSuccess();
-                sb.append(success ? "\r\n采购合同关闭成功！" : "\r\n采购合同关闭失败！" + result.getMessage());
-            }
+//            // 下游单据关闭
+//            // 采购订单关闭
+//            DynamicObject orderObj = BusinessDataServiceHelper.loadSingle(
+//                    "pm_purorderbill",
+//                    new QFilter[]{new QFilter("nckd_upapplybill", QCP.equals, this.getModel().getValue("billno"))}
+//            );
+//            if (orderObj != null) {
+//                OperationResult result = OperationServiceHelper.executeOperate("bizclose", "pm_purorderbill", new DynamicObject[]{orderObj}, OperateOption.create());
+//                boolean success = result.isSuccess();
+//                sb.append(success ? "\r\n采购订单关闭成功！" : "\r\n采购订单关闭失败！" + result.getMessage());
+//            }
+//
+//            // 采购合同关闭
+//            DynamicObject contractObj = BusinessDataServiceHelper.loadSingle(
+//                    "conm_purcontract",
+//                    new QFilter[]{new QFilter("nckd_upapplybill", QCP.equals, this.getModel().getValue("billno"))}
+//            );
+//            if (contractObj != null) {
+//                OperationResult result = OperationServiceHelper.executeOperate("bizclose", "conm_purcontract", new DynamicObject[]{contractObj}, OperateOption.create());
+//                boolean success = result.isSuccess();
+//                sb.append(success ? "\r\n采购合同关闭成功！" : "\r\n采购合同关闭失败！" + result.getMessage());
+//            }
 
             this.getView().showSuccessNotification(String.valueOf(sb));
         } else {
