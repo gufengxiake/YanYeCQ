@@ -18,20 +18,23 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EventObject;
+import java.util.List;
 
 /**
- * Module           :人才供应云-招聘直通车-首页-临时招聘申请
- * Description      :临时招聘申请单据插件
+ * Module           :人才供应云-招聘直通车-首页-年度招聘申请
+ * Description      :年度招聘申请单据插件
  *
  * @author guozhiwei
- * @date  2024/9/10 9：40
- * 标识 nckd_casrecrapply
+ * @date  2024/9/11 17：10
+ * 标识 nckd_yearapply
  */
 
 
 
-public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
+public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
 
     // 公司类型
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"1020_S","1050_S","1060_S","1070_S"});
