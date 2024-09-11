@@ -5,23 +5,17 @@ import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.db.DBRoute;
 import kd.bos.entity.datamodel.AbstractFormDataModel;
 import kd.bos.entity.datamodel.IDataModel;
-import kd.bos.entity.datamodel.IEntryOperate;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.entity.qing.EntryEntity;
 import kd.bos.form.IFormView;
-import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.events.ItemClickEvent;
-import kd.bos.form.control.events.RowClickEventListener;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
-import kd.bos.metadata.entity.SubEntryEntity;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -45,7 +39,6 @@ import java.util.*;
 
 public class PrepareAdjustApplication extends AbstractBillPlugIn implements BeforeF7SelectListener {
 
-    private final List<String> ACCEP_LIST = Arrays.asList(new String[]{"org", "和nckd_haos_staff"});
 
 
     @Override
@@ -217,9 +210,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
     public void registerListener(EventObject e) {
         BasedataEdit fieldEdit = this.getView().getControl("nckd_haos_staff");//基础资料字段标识
         fieldEdit.addBeforeF7SelectListener(this);
-
-
-
     }
 
 
