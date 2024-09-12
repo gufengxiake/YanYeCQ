@@ -20,18 +20,22 @@ public class ChannelMonthDetailReporFormPlugin extends AbstractReportFormPlugin 
         Iterator<DynamicObject> iterator = rowData.iterator();
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
+            //获取各个月份的数量和价税合计
             BigDecimal sum = BigDecimal.ZERO, amountandtax = BigDecimal.ZERO;
             for (int i = 1; i < 13 ; i++) {
                 BigDecimal sumMonth = next.getBigDecimal("sum"+i) == null ? BigDecimal.ZERO : next.getBigDecimal("sum"+i);
                 BigDecimal amountandtaxMonth = next.getBigDecimal("amountandtax"+i) == null ? BigDecimal.ZERO : next.getBigDecimal("amountandtax"+i);
                 if (sumMonth.compareTo(BigDecimal.ZERO) != 0) {
+                    //用价税合计/数量得出月均单价
                     next.set("amountandtax"+i,amountandtaxMonth.divide(sumMonth, RoundingMode.CEILING));
                 }
                 sum = sum.add(sumMonth);
                 amountandtax = amountandtax.add(amountandtaxMonth);
             }
+            //给年度数量设置值
             next.set("yearsum",sum);
             if (sum.compareTo(BigDecimal.ZERO) != 0){
+                //计算年均单价
                 next.set("yearamountandtax",amountandtax.divide(sum, RoundingMode.CEILING));
             }
         }

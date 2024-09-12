@@ -32,6 +32,16 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
         QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.in, new String[]{"sm_salorder", "pm_purorderbill","ocbsoc_saleorder"});
         mainFilter.and("billentry.srcbillentity", QCP.equals, "nckd_eleweighing");
         qFilters.add(mainFilter);
+        //限定单据为已审核
+        qFilters.add(new QFilter("billstatus", QCP.equals, "C"));
+        //数据过滤
+        FilterInfo filter = reportQueryParam.getFilter();
+        //过滤组织
+        DynamicObject nckdOrgQ = filter.getDynamicObject("nckd_org_q");
+        if(nckdOrgQ != null){
+            Long pkValue = (Long) nckdOrgQ.getPkValue();
+            qFilters.add(new QFilter("bizorg", QCP.equals, pkValue));
+        }
         //公司
         String sFields = "bizorg AS out_bizorg," +
                 //公司名称
@@ -91,17 +101,13 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
         //查询销售出库单
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
 
         //关联上游单据
         im_saloutbill = this.linkUpBills(im_saloutbill);
 
-        //数据过滤
-        FilterInfo filter = reportQueryParam.getFilter();
-        //过滤组织
-        DynamicObject nckdOrgQ = filter.getDynamicObject("nckd_org_q");
-        if(nckdOrgQ != null){
-            im_saloutbill = im_saloutbill.filter("out_bizorg = "+nckdOrgQ.getPkValue());
-        }
         //过滤订单日期
         if(filter.getDate("orderdate_start") != null && filter.getDate("orderdate_end") != null){
             DateTime start = DateUtil.beginOfDay(filter.getDate("orderdate_start"));
@@ -200,6 +206,9 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
         if (outBillentryid.isEmpty()){
             return ds;
         }
+        QFilter signFilter = new QFilter("entryentity.nckd_sourceentryid", QCP.in, outBillentryid.toArray(new Long[0]));
+        //限定单据为已审核
+        signFilter.and("billstatus", QCP.equals, "C");
         //签收单通过来源销售出库单行id
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_signaturebill",
@@ -209,11 +218,14 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "nckd_customsno as sign_customsno," +
                         //来源单据体id
                         "entryentity.nckd_sourceentryid as sign_sourceentryid ",
-                new QFilter[]{new QFilter("entryentity.nckd_sourceentryid" ,QCP.in,outBillentryid.toArray(new Long[0]))}, null);
+                new QFilter[]{signFilter}, null);
 
         ds = ds.leftJoin(nckd_signaturebill).on("out_billentryid","sign_sourceentryid").select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
 
 
+        QFilter arFilter = new QFilter("entry.e_srcentryid", QCP.in, outBillentryid.toArray(new Long[0]));
+        //限定单据为已审核
+        arFilter.and("billstatus", QCP.equals, "C");
         //财务应收单通过来源销售出库单行id
         DataSet ar_finarbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ar_finarbill",
@@ -227,7 +239,7 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "entry.id as fin_entryid," +
                         //来源单据体id
                         "entry.e_srcentryid as fin_srcentryid",
-                new QFilter[]{new QFilter("entry.e_srcentryid" ,QCP.in,outBillentryid.toArray(new Long[0]))}, null);
+                new QFilter[]{arFilter}, null);
 
         //获取财务应收单表体id
         List<Long> finentryid = DataSetToList.getOneToList(ar_finarbill, "fin_entryid");

@@ -27,6 +27,8 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         //限定源头是要货订单的销售出库单
         QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"ocbsoc_saleorder");
+        //限定单据为已审核
+        filter.and("billstatus", QCP.equals, "C");
         qFilters.add(filter);
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
@@ -63,7 +65,7 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
                 // 查询条件物料,标识如不一致,请修改
                 case "nckd_material_q":
                     if (!(filterItem.getValue() == null)) {
-                        QFilter qFilter = new QFilter("billentry.material", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
+                        QFilter qFilter = new QFilter("billentry.material.masterid", QCP.equals, ((DynamicObject) filterItem.getValue()).getPkValue());
                         qFilters.add(qFilter);
                     }
                     break;
@@ -74,7 +76,7 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
 //                部门
                 "bizdept AS nckd_bizdept," +
 //                物料编码
-                "billentry.material AS nckd_material," +
+                "billentry.material.masterid AS nckd_material," +
 //                销售出库数
                 "billentry.qty AS nckd_qty," +
 //                销售出库价税合计

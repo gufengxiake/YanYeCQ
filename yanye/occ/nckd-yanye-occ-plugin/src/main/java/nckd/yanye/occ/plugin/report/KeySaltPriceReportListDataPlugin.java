@@ -30,6 +30,8 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定源头是要货订单的销售出库单
         QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.equals, "ocbsoc_saleorder");
+        //限定单据为已审核
+        mainFilter.and("billstatus", QCP.equals, "C");
         //限定组织为华康及其分公司
         QFilter orgFilter = new QFilter("bizorg.name",  QCP.like,"%华康%");
         //限定物料为重点物料
@@ -187,9 +189,6 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         ReportColumn nckd_qj = createReportColumn("nckd_qj", ReportColumn.TYPE_TEXT, "期间");
         columns.add(nckd_qj);
 
-
-
-
         Long[] id = material.keySet().toArray(new Long[0]);
         String[] array = material.values().toArray(new String[0]);
         if(id.length == 1){
@@ -222,9 +221,6 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
 
         ReportColumn sumQty = createReportColumn("sumqty", ReportColumn.TYPE_DECIMAL, "数量合计");
         columns.add(sumQty);
-
-//        ReportColumn nckd_outamount = createReportColumn("nckd_outamount", ReportColumn.TYPE_DECIMAL, "价税合计");
-//        columns.add(nckd_outamount);
 
         return columns;
     }

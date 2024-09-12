@@ -27,6 +27,8 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
         List<FilterItemInfo> filterItems = reportQueryParam.getFilter().getFilterItems();
         //过滤源头不是要货订单的销售出库
         qFilters.add(new QFilter("billentry.mainbillentity", QCP.equals,"ocbsoc_saleorder"));
+        //限定单据为已审核
+        qFilters.add(new QFilter("billstatus", QCP.equals, "C"));
         for (FilterItemInfo filterItem : filterItems) {
             switch (filterItem.getPropName()) {
                 //组织
@@ -78,8 +80,11 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
                 //核心单据行ID
                 "billentry.mainbillentryid as mainbillentryid" ;
         DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", files, qFilters.toArray(new QFilter[0]), null);
-
         imSaloutbill = this.getSaleOrder(imSaloutbill);
+        //判断查询出来的数据是否为空
+        if(imSaloutbill.isEmpty()){
+            return imSaloutbill;
+        }
 
         //根据组织，客户，开票名称，纳税人识别号，省市区，详细地址，电话，联系人进行数量和价税合计的汇总
         imSaloutbill = imSaloutbill.groupBy(new String[]{"nckd_bizorg", "nckd_customer", "nckd_name1", "nckd_nashuitax", "nckd_entrycomment", "nckd_entryaddressid", "nckd_entrydetailaddress", "nckd_entrytelephone", "nckd_entrycontactname"})
@@ -98,7 +103,7 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
 //                .sum("case when nckd_materialgroup = '待分类' then amountandtax else 0 end", "sumfyamountandtax")
 //                .sum("case when nckd_materialgroup = '待分类' then baseqty else 0 end", "sumdbybaseqty")
 //                .finish();
-        return imSaloutbill.orderBy(imSaloutbill.getRowMeta().getFieldNames());
+        return imSaloutbill.orderBy(new String[]{"nckd_bizorg"});
     }
 
     //获取要货订单信息

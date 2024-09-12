@@ -37,6 +37,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 
@@ -258,7 +260,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             newOne.set("producttype", "C");
             newOne.set("material", material);//物料
             newOne.set("materielmasterid", nckdBomid.getDynamicObject("material").get("masterid"));//物料
-            newOne.set("producedept", material.getDynamicObject("departmentorgid"));
+            newOne.set("producedept", oldEntity.getDynamicObject("nckd_producedept"));
             newOne.set("qty", oldEntity.getBigDecimal("nckd_yield"));
             newOne.set("unit", material.getDynamicObject("mftunit"));
             newOne.set("bomid", nckdBomid);
@@ -915,11 +917,24 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         if (data == null) {
             return;
         }
+        //获取所在月份最后一天
+        SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat simpleDateFormat_day = new SimpleDateFormat("yyyy-MM-dd");
+        Calendar cal = Calendar.getInstance();
+        cal.setTime((Date) data);
+        int last = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+        cal.set(Calendar.DAY_OF_MONTH, last);
+        Date formatData = null;
+        try {
+            formatData = simpleDateFormat.parse((simpleDateFormat_day.format(cal.getTime())) + " 23:59:59");
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         int rowCount = this.getModel().getEntryRowCount("pom_planning_entry");
         if (rowCount > 0) {
             for (int i = 0; i < rowCount; i++) {
                 this.getModel().setValue("nckd_planstarttime", data, i);
-                this.getModel().setValue("nckd_planendtime", data, i);
+                this.getModel().setValue("nckd_planendtime", formatData, i);
                 this.getView().updateView();
             }
         }
@@ -983,7 +998,8 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             this.getModel().setValue("nckd_unit", material.getDynamicObject("mftunit"), rowIndex);
             //根据物料查bom
             DynamicObject mftbom = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,copentry,entry,entry.entrymaterial,copentry.copentrymaterial,copentry.copentryunit,copentry.copentrytype,copentry.copentryqty",
-                    new QFilter[]{new QFilter("material.id", QCP.equals, material.getPkValue()).or("entry.entrymaterial", QCP.equals, material.getPkValue())});
+                    new QFilter[]{new QFilter("material.id", QCP.equals, material.getPkValue())});
+            //.or("entry.entrymaterial", QCP.equals, material.getPkValue())
             if (mftbom == null) {
                 if (entrys.size() > 1) {
                     for (int i = entrys.size() - 1; i > -1; i--) {
