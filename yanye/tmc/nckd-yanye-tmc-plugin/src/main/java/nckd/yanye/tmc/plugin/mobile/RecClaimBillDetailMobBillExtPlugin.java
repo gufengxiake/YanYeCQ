@@ -2,30 +2,21 @@ package nckd.yanye.tmc.plugin.mobile;
 
 import kd.bos.bill.AbstractMobBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.metadata.IDataEntityProperty;
 import kd.bos.dataentity.resource.ResManager;
-import kd.bos.dataentity.utils.StringUtils;
-import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
-import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.CloseCallBack;
-import kd.bos.form.IFormView;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.MobileListShowParameter;
 import kd.bos.orm.query.QFilter;
-import kd.bos.orm.util.CollectionUtils;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.fi.cas.formplugin.mobile.recclaim.utils.CasToolKit;
-import kd.fi.cas.formplugin.mobile.recclaim.utils.EmptyUtil;
 
 import java.util.EventObject;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Module           :财务云-出纳-收款认领
