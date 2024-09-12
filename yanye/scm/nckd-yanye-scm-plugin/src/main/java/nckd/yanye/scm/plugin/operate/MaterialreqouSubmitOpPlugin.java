@@ -27,24 +27,21 @@ public class MaterialreqouSubmitOpPlugin extends AbstractOperationServicePlugIn 
                 ExtendedDataEntity[] entities = this.getDataEntities();
                 Arrays.asList(entities).forEach(k -> {
                     DynamicObject dynamicObject = k.getDataEntity();
-                    DynamicObject invscheme = dynamicObject.getDynamicObject("invscheme");
-                    // 库存事务是在建工程领用出库
-                    if("JY-032".equals(invscheme.getString("number"))){
-                        // 在建工程项目
-                        DynamicObject nckdZjgcxm = dynamicObject.getDynamicObject("nckd_zjgcxm");
-                        if(nckdZjgcxm != null){
-                            DynamicObjectCollection billentry = dynamicObject.getDynamicObjectCollection("billentry");
-                            long count = billentry.stream().filter(d -> d.getDynamicObject("project") != null).count();
-                            if(count > 0 && count != billentry.size()){
-                                this.addErrorMessage(k, "物料明细的项目号要全都有值或全都没有值");
-                            }
-                            List<Object> projectList = billentry.stream()
-                                    .filter(d -> d.getDynamicObject("project") != null && d.getDynamicObject("project").getPkValue() != nckdZjgcxm.getPkValue())
-                                    .map(d -> d.getDynamicObject("project").getPkValue())
-                                    .collect(Collectors.toList());
-                            if(projectList.size() > 0){
-                                this.addErrorMessage(k, "物料明细的项目号要与在建工程项目一致");
-                            }
+                    // 在建工程项目
+                    DynamicObject nckdZjgcxm = dynamicObject.getDynamicObject("nckd_zjgcxm");
+                    DynamicObjectCollection billentry = dynamicObject.getDynamicObjectCollection("billentry");
+                    if (nckdZjgcxm != null) {
+                        List<Object> projectList = billentry.stream()
+                                .filter(d -> d.getDynamicObject("project") != null && d.getDynamicObject("project").getPkValue() != nckdZjgcxm.getPkValue())
+                                .map(d -> d.getDynamicObject("project").getPkValue())
+                                .collect(Collectors.toList());
+                        if (projectList.size() > 0) {
+                            this.addErrorMessage(k, "物料明细的项目号要与在建工程项目一致");
+                        }
+                    } else {
+                        long count = billentry.stream().filter(d -> d.getDynamicObject("project") != null).count();
+                        if (count > 0) {
+                            this.addErrorMessage(k, "物料明细的项目号要与在建工程项目一致");
                         }
                     }
                 });
