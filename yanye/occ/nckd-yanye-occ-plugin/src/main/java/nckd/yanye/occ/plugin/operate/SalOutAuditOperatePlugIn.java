@@ -22,6 +22,7 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
+import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.metadata.dao.MetadataDao;
 import kd.bos.orm.query.QCP;
@@ -56,23 +57,17 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         e.getFieldKeys().add("expirydate");//到期日期
     }
 
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        if (e.getValidExtDataEntities().isEmpty()) {
-
-            return;
-
-        }
-
-
+    public void endOperationTransaction(EndOperationTransactionArgs e) {
+        super.endOperationTransaction(e);
         // 获取当前单据的主实体编码、单据内码
 
         String targetEntityNumber = this.billEntityType.getName();
 
         Set<Object> billIds = new HashSet<>();
 
-        for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
+        for (DynamicObject dataEntity : e.getDataEntities()) {
 
-            billIds.add(dataEntity.getBillPkId());
+            billIds.add(dataEntity.getPkValue());
 
         }
         // 调用平台的服务，获取所有源单及其内码

@@ -5,6 +5,11 @@ import kd.bos.form.plugin.AbstractMobFormPlugin;
 
 import java.util.EventObject;
 
+/*
+ * 渠道申请移动单据
+ * 表单标识：nckd_ocsaa_home_ext
+ * author:吴国强 2024-08-28
+ */
 public class MobileChannelReqBillPlugIn extends AbstractMobFormPlugin {
     @Override
     public void afterCreateNewData(EventObject e) {
