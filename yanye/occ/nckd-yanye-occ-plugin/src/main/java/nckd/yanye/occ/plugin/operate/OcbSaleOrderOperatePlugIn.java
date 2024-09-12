@@ -153,7 +153,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             //联系人电话
             String contactphone = orderchannelid.getString("contactphone");
             for (DynamicObject itemEntryRow : itemEntry) {
-                if (Objects.equals(itemEntryRow.getString("entryaddressid"), "")) {
+                if (itemEntryRow.get("entryaddressid")==null) {
                     itemEntryRow.set("entryaddressid", area);
                 }
                 if (Objects.equals(itemEntryRow.get("entrydetailaddress").toString(), "")) {
