@@ -80,7 +80,7 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
 
                         if (eduExp == null) {
                             propValues.get(fileId).putIfAbsent(cfg.getId(), null);
-                            break;
+                            continue;
                         }
 
                         // “是否最高学历”为 true的档案，取“是否全日制最高学历”的值
@@ -110,12 +110,16 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
 
                         if (jobExp == null) {
                             propValues.get(fileId).putIfAbsent(cfg.getId(), null);
-                            break;
+                            continue;
                         }
 
-                        propValues.get(fileId).putIfAbsent(
-                                cfg.getId(),
-                                jobExp.getDynamicObject("nckd_zhiji").getLong("id")
+                        DynamicObject zhiJi = jobExp.getDynamicObject("nckd_zhiji");
+                        if (zhiJi == null) {
+                            propValues.get(fileId).putIfAbsent(cfg.getId(), null);
+                            continue;
+                        }
+
+                        propValues.get(fileId).putIfAbsent(cfg.getId(), zhiJi.getLong("id")
                         );
                     }
                     break;
@@ -135,12 +139,16 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
 
                         if (gangWei == null) {
                             propValues.get(fileId).putIfAbsent(cfg.getId(), null);
-                            break;
+                            continue;
                         }
 
-                        propValues.get(fileId).putIfAbsent(
-                                cfg.getId(),
-                                gangWei.getDynamicObject("nckd_gangji").getLong("id")
+                        DynamicObject gangJi = gangWei.getDynamicObject("nckd_gangji");
+                        if (gangJi == null) {
+                            propValues.get(fileId).putIfAbsent(cfg.getId(), null);
+                            continue;
+                        }
+
+                        propValues.get(fileId).putIfAbsent(cfg.getId(), gangJi.getLong("id")
                         );
                     }
                     break;
