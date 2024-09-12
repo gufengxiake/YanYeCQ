@@ -27,6 +27,8 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
+        //限定单据为已审核
+        qFilters.add(new QFilter("billstatus", QCP.equals, "C"));
         List<FilterItemInfo> filterItems = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filterItems) {
             switch (filterItem.getPropName()){

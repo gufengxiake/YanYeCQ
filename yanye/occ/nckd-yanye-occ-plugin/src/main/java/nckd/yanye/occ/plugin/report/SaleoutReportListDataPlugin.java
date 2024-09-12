@@ -30,7 +30,23 @@ public class SaleoutReportListDataPlugin extends AbstractReportListDataPlugin im
         //限定源头为销售订单或是采购订单要货订单并且上游必须为电子磅单的销售出库单
         QFilter mainFilter = new QFilter("billentry.mainbillentity", QCP.in, new String[]{"sm_salorder", "pm_purorderbill","ocbsoc_saleorder"});
         mainFilter.and("billentry.srcbillentity", QCP.equals, "nckd_eleweighing");
+        //限定单据为已审核
+        mainFilter.and("billstatus", QCP.equals, "C");
         qFilters.add(mainFilter);
+        //数据过滤
+        FilterInfo filter = reportQueryParam.getFilter();
+        //过滤组织
+        DynamicObject nckdOrgQ = filter.getDynamicObject("nckd_org_q");
+        if(nckdOrgQ != null){
+            Long pkValue = (Long) nckdOrgQ.getPkValue();
+            qFilters.add(new QFilter("bizorg",QCP.equals,pkValue));
+        }
+        //过滤出库日期
+        if(filter.getDate("outdate_start") != null && filter.getDate("outdate_end") != null){
+            DateTime start = DateUtil.beginOfDay(filter.getDate("outdate_start"));
+            DateTime end = DateUtil.endOfDay(filter.getDate("outdate_end"));
+            qFilters.add(new QFilter("biztime",QCP.large_equals,start).and("biztime",QCP.less_equals,end));
+        }
                 //公司
         String sFields = "bizorg AS out_bizorg," +
                 //公司名称
@@ -95,23 +111,12 @@ public class SaleoutReportListDataPlugin extends AbstractReportListDataPlugin im
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
 
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
         //关联上游单据
         im_saloutbill = this.linkUpBills(im_saloutbill);
 
-        //数据过滤
-        FilterInfo filter = reportQueryParam.getFilter();
-        //过滤组织
-        DynamicObject nckdOrgQ = filter.getDynamicObject("nckd_org_q");
-        if(nckdOrgQ != null){
-            im_saloutbill = im_saloutbill.filter("out_bizorg = "+nckdOrgQ.getPkValue());
-        }
-        //过滤出库日期
-        if(filter.getDate("outdate_start") != null && filter.getDate("outdate_end") != null){
-            DateTime start = DateUtil.beginOfDay(filter.getDate("outdate_start"));
-            DateTime end = DateUtil.endOfDay(filter.getDate("outdate_end"));
-            im_saloutbill = im_saloutbill.filter("out_biztime >= to_date('" + start + "','yyyy-MM-dd hh:mm:ss')")
-                    .filter("out_biztime <= to_date('" + end + "','yyyy-MM-dd hh:mm:ss')");
-        }
         //过滤销售订单号
         String nckdOrderbillnoQ = filter.getString("nckd_orderbillno_q");
         if(!Objects.equals(nckdOrderbillnoQ, "")){

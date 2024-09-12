@@ -10,6 +10,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -22,25 +23,34 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
+        ArrayList<QFilter> qFilters = new ArrayList<>();
         //默认发货通知单为审核态并且源头是采购订单
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").
                 and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
-
+        qFilters.add(qFilter);
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        Long nckd_saleorgid = null, nckd_purorg = null,nckd_material = null;
-        DateTime salebizdate_start = null, salebizdate_end = null;
+        Long  nckd_purorg = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
                 // 查询条件销售组织,标识如不一致,请修改
                 case "nckd_saleorgid_q":
-                    nckd_saleorgid = filterItem.getValue() == null ? null :  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    if(filterItem.getValue() != null){
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("org",QCP.equals,pkValue));
+                    }
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "salebizdate_start":
-                    salebizdate_start = filterItem.getDate() == null ? null : DateUtil.beginOfDay(filterItem.getDate());
+                    if(filterItem.getDate() != null){
+                        DateTime salebizdate_start = DateUtil.beginOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("bizdate",QCP.large_equals,salebizdate_start));
+                    }
                     break;
                 case "salebizdate_end":
-                    salebizdate_end = filterItem.getDate() == null ? null : DateUtil.endOfDay(filterItem.getDate());
+                    if(filterItem.getDate() != null){
+                        DateTime salebizdate_end = DateUtil.endOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("bizdate",QCP.less_equals,salebizdate_end));
+                    }
                     break;
                 // 查询条件收货组织,标识如不一致,请修改
                 case "nckd_purorg_q":
@@ -48,7 +58,10 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                     break;
                 //查询条件为物料
                 case "nckd_material_q":
-                    nckd_material = filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    if(filterItem.getValue() != null){
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("billentry.material.masterid",QCP.equals,pkValue));
+                    }
                     break;
             }
         }
@@ -78,28 +91,14 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                         "billentry.mainbillentryid as mainbillentryid";
         DataSet delivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_delivernotice", sFields,
-                new QFilter[]{qFilter}, null);
+                qFilters.toArray(new QFilter[0]), null);
         delivernotice = this.linkEleWeighing(delivernotice);
         delivernotice = this.linkPurReceiveBill(delivernotice);
 
-//        根据发货组织过滤
-        if (nckd_saleorgid != null) {
-            delivernotice = delivernotice.filter("nckd_saleorgid = " + nckd_saleorgid);
-        }
-//        根据收货开始日期过滤
-        if (salebizdate_start != null) {
-            delivernotice = delivernotice.filter("nckd_salebizdate >= to_date('" + salebizdate_start + "','yyyy-MM-dd hh:mm:ss')");
-        }
-//        根据收货开始日期过滤
-        if (salebizdate_end != null) {
-            delivernotice = delivernotice.filter("nckd_salebizdate <= to_date('" + salebizdate_end + "','yyyy-MM-dd hh:mm:ss')");
-        }
+
 //        根据收货组织过滤
         if (nckd_purorg != null) {
             delivernotice = delivernotice.filter("nckd_purorg = " + nckd_purorg);
-        }
-        if(nckd_material != null){
-            delivernotice = delivernotice.filter("nckd_material = " + nckd_material);
         }
 
         return delivernotice.orderBy(delivernotice.getRowMeta().getFieldNames());

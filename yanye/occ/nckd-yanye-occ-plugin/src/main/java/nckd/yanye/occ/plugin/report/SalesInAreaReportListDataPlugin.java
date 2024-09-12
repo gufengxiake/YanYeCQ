@@ -79,6 +79,9 @@ public class SalesInAreaReportListDataPlugin extends AbstractReportListDataPlugi
         //查询销售出库单
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
 
         //获取销售出库单的核心单据行id
         List<Long> outMainbillentryid = DataSetToList.getOneToList(im_saloutbill, "out_mainbillentryid");
@@ -123,9 +126,9 @@ public class SalesInAreaReportListDataPlugin extends AbstractReportListDataPlugi
         DataSet imSalOutBill2 = this.getImSalOutBill(queryParam);
         //生成多个sheet页签，并填充DataSet
         List<ReportExportDataResult> list = new ArrayList<>();
-//        list.add(new ReportExportDataResult("sheetA",this.getSumAreaCustomer(imSalOutBill1)));
-//        list.add(new ReportExportDataResult("null",null));//第二个list会被吞掉不显示，我们可以先给第二个list项置空处理
-//        list.add(new ReportExportDataResult("sheetB",imSalOutBill2));
+        list.add(new ReportExportDataResult("sheetA",this.getSumAreaCustomer(imSalOutBill1)));
+        list.add(new ReportExportDataResult("null",null));//第二个list会被吞掉不显示，我们可以先给第二个list项置空处理
+        list.add(new ReportExportDataResult("sheetB",imSalOutBill2));
         return list;
 
     }

@@ -39,8 +39,8 @@ public class ChannelMonthSaleReportListDataPlugin extends AbstractReportListData
         Date nckdDateQ = reportQueryParam.getFilter().getDate("nckd_date_q");
         //根据选择的查询条件进行组织过滤
         if (nckdDateQ != null) {
-            DateTime strat = DateUtil.beginOfDay(nckdDateQ);
-            DateTime end = DateUtil.endOfDay(nckdDateQ);
+            DateTime strat = DateUtil.beginOfYear(nckdDateQ);
+            DateTime end = DateUtil.endOfYear(nckdDateQ);
             QFilter dateFilter = new QFilter("biztime", QCP.large_equals, strat);
             dateFilter.and("biztime", QCP.less_equals, end);
             qFilters.add(dateFilter);
