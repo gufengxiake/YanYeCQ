@@ -200,6 +200,12 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                     if (deliver == null) {
                         return CustomApiResult.fail("false","传入来源单据ID数据错误,系统未查询到相关单据");
                     }
+                    //判断是否重复生成电子磅单
+                    DynamicObject pushEleweigh = BusinessDataServiceHelper.loadSingle("nckd_eleweighing", "id,nckd_orderid",
+                            new QFilter[]{new QFilter("nckd_orderid", QCP.equals, nckd_orderid)});
+                    if (pushEleweigh != null) {
+                        return CustomApiResult.fail("false","传入来源单据ID数据重复,请勿重复下推");
+                    }
                     //构建下推参数，下推电子磅单
                     PushArgs pushArgs = getPushArgs(deliver, "nckd_eleweighing");
                     // 调用下推引擎，下推目标单并保存
