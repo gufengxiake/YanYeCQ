@@ -33,16 +33,16 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
      */
     @Override
     public void onAfterF7PersonSelect(AfterF7PersonSelectEvent e) {
-        // 非调薪不作处理
-        if (!"2".equals(e.getAdjAttributionType())) {
-            return;
-        }
-
-        List<DynamicObject> adjPersonDyObjList = e.getAdjPersonDyObjList();
-        for (DynamicObject obj : adjPersonDyObjList) {
-            Map<String, IDataEntityProperty> allFields = ((BasedataEntityType) obj.getDynamicObjectType()).getAllFields();
-            DynamicObjectCollection entryentity = obj.getDynamicObjectCollection("entryentity");
-            for (DynamicObject entry : entryentity) {
+//        // 非调薪不作处理
+//        if (!"2".equals(e.getAdjAttributionType())) {
+//            return;
+//        }
+//
+//        List<DynamicObject> adjPersonDyObjList = e.getAdjPersonDyObjList();
+//        for (DynamicObject obj : adjPersonDyObjList) {
+//            Map<String, IDataEntityProperty> allFields = ((BasedataEntityType) obj.getDynamicObjectType()).getAllFields();
+//            DynamicObjectCollection entryentity = obj.getDynamicObjectCollection("entryentity");
+//            for (DynamicObject entry : entryentity) {
 //                ArrayList<StdAmountQueryParam> queryParams = Lists.newArrayList();
 //                // 构建查询参数
 //                StdAmountQueryParam queryParam = new StdAmountQueryParam();
@@ -64,7 +64,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
 //                        SalaryStdQueryService.get().queryAmountAndSalaryCount(queryParams);
 //
 //                System.out.println(1);
-            }
-        }
+//            }
+//        }
     }
 }
