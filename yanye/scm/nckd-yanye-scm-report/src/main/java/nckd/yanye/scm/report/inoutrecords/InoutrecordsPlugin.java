@@ -72,7 +72,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 采购入库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "2");
-        String imPurinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imPurinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,supplier.name nckd_supplier_name,supplier.number nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -147,7 +147,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 其他入库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "2");
-        String imOtherinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imOtherinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,supplier.name nckd_supplier_name,supplier.number nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -225,7 +225,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 生产入库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
-        String imProductinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imProductinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,null nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -239,7 +239,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 核算成本和生产入库单关联
         DataSet finish4 = finish1.join(finish3).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
                 .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
+                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
                                 "nckd_seq", "nckd_modelnum", "nckd_model",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
@@ -284,7 +284,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 完工入库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
-        String imPurinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imPurinbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,null nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -342,7 +342,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 完工退库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
-        String imMdcMftreturnbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imMdcMftreturnbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,null nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -401,7 +401,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 领料出库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
-        String imMaterialreqoutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imMaterialreqoutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,billentry.isrework nckd_rework,billentry.unit nckd_unit," +
@@ -480,7 +480,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 其他出库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "1");
-        String imOtheroutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imOtheroutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,customer.number nckd_bp_number,customer.name nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,null nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -532,7 +532,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // =====================二级=========================
         // 销售出库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "1");
-        String imSaloutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imSaloutbillSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,bizoperator.operatorname nckd_salesman,customer.number nckd_bp_number,customer.name nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -588,7 +588,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
         // 单据实体
         qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftproorder"));
-        String imMdcMftproorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imMdcMftproorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,null nckd_rework,billentry.unit nckd_unit," +
@@ -648,7 +648,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
         // 单据实体
         qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftreturnorder"));
-        String imMdcMftreturnorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imMdcMftreturnorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,billentry.isrework nckd_rework,billentry.unit nckd_unit," +
@@ -708,7 +708,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
         // 单据实体
         qFilter2.and(new QFilter("billentity", QCP.equals, "im_mdc_mftfeedorder"));
-        String imMdcMftfeedorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme.name nckd_invscheme_name," +
+        String imMdcMftfeedorderSql = "biztime nckd_biztime,bookdate nckd_bookdate,auditdate nckd_auditdate,billtype.name nckd_billtype_name,billno nckd_billno,invscheme nckd_invscheme," +
                 "billentry.warehouse nckd_warehouse,operator.operatorname nckd_operatorname,dept.name nckd_deptname,null nckd_salesman,null nckd_bp_number,null nckd_bp_name,null nckd_supplier_name,null nckd_supplier_number," +
                 "billentry.seq nckd_seq,billentry.materialmasterid materialmasterid," +
                 "billentry.auxpty nckd_auxpty,billentry.lotnumber nckd_lotnumber,billentry.configuredcode.number nckd_configuredcodenumber,billentry.tracknumber.number nckd_tracknumber_number,billentry.ispresent nckd_ispresent,billentry.isrework nckd_rework,billentry.unit nckd_unit," +
@@ -755,9 +755,9 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
      * @return
      */
     private DataSet secondUnionThree(DataSet secondDataSet, DataSet ThreeDataSet) {
-        DataSet finish = secondDataSet.join(ThreeDataSet).on("srcbillnumber", "nckd_sourcebillno").on("srcbillentryid", "billentry_id")
+        DataSet finish = secondDataSet.leftJoin(ThreeDataSet).on("srcbillnumber", "nckd_sourcebillno").on("srcbillentryid", "billentry_id")
                 .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount",
-                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
+                                "nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
                                 "nckd_seq", "nckd_modelnum", "nckd_model",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
@@ -780,7 +780,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
     private DataSet firstUnionSecond(DataSet firstDataSet, DataSet secondDataSet) {
         DataSet finish = firstDataSet.join(secondDataSet).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
                 .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount"},
-                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
+                        new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
                                 "nckd_seq", "nckd_modelnum", "nckd_model",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
@@ -841,7 +841,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                         new String[]{"nckd_group"}).finish();
 
         DataSet finish3 = dataSet.join(finish2).on("materialmasterid", "masterid")
-                .select(new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme_name",
+                .select(new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
                                 "nckd_seq", "materialmasterid",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcodenumber", "nckd_tracknumber_number", "nckd_ispresent", "nckd_rework", "nckd_unit",
@@ -935,6 +935,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         FilterItemInfo mulcustomer = filter.getFilterItem("nckd_mulcustomer");
         // 供应商
         FilterItemInfo mulsupplier = filter.getFilterItem("nckd_mulsupplier");
+        // 收发类型
+        FilterItemInfo multransceivertype = filter.getFilterItem("nckd_multransceivertype");
 
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
 
@@ -966,6 +968,14 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                     .map(obj -> obj.getLong("id"))
                     .collect(Collectors.toList())));
         }
+        // 收发类型
+        if (multransceivertype.getValue() != null) {
+            qFilter = qFilter.and(new QFilter("invscheme.transceivertype", QCP.in, ((DynamicObjectCollection) multransceivertype.getValue())
+                    .stream()
+                    .map(obj -> obj.getLong("id"))
+                    .collect(Collectors.toList())));
+        }
+
         return qFilter;
     }
 

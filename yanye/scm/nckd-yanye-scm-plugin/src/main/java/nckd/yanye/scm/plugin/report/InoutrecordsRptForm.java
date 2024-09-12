@@ -31,9 +31,6 @@ import kd.fi.cal.common.helper.PeriodHelper;
 import kd.fi.cal.common.helper.PermissionHelper;
 import kd.fi.cal.common.helper.ReportF7Helper;
 import kd.fi.cal.common.util.DateUtils;
-import kd.fi.cal.common.util.ReportUtil;
-import kd.fi.cal.report.newreport.transdtlrpt.TransDtlRptHelper;
-import kd.fi.cal.report.newreport.transdtlrpt.TransDtlRptParam;
 
 /**
  * @author husheng
