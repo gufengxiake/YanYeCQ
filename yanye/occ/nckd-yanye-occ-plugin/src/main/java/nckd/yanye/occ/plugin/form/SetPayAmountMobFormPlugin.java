@@ -221,7 +221,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                     showParameter.setPosition(MobileFormPosition.Middle);
                     showParameter.getOpenStyle().setShowType(ShowType.Floating);
                     Map<String, Object> qrcode = new HashMap<>();
-                    qrcode.put("codeUrl", transResultJson.getStr("qrCodeUrl"));
+                    qrcode.put("codeUrl", transResultJson.getJSONObject("transData").getStr("qrCodeUrl"));
                     qrcode.put("sumunrecamount", sumunrecamount);
                     qrcode.put("orderNo", orderNo);
                     qrcode.put("billNo", billNo);
@@ -320,7 +320,7 @@ public class SetPayAmountMobFormPlugin extends AbstractMobBillPlugIn {
                 showParameter.setPosition(MobileFormPosition.Middle);
                 showParameter.getOpenStyle().setShowType(ShowType.Floating);
                 Map<String, Object> qrcode = new HashMap<>();
-                qrcode.put("codeUrl", jspay.getStr("code_url"));
+                qrcode.put("codeUrl", jspay.getStr("jump_url"));
                 qrcode.put("sumunrecamount", sumunrecamount);
                 qrcode.put("orderNo", orderNo);
                 qrcode.put("billNo", billNo);

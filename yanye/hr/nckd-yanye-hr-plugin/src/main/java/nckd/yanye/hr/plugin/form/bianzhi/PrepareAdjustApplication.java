@@ -1,6 +1,6 @@
 package nckd.yanye.hr.plugin.form.bianzhi;
 
-import com.alibaba.druid.util.StringUtils;
+
 import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -26,9 +26,15 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
+import kd.hr.haos.business.service.staff.externalInterface.bean.StaffBo;
+import kd.hr.haos.business.service.staff.externalInterface.bean.StaffMultiDimensionBo;
+import kd.hr.haos.business.service.staff.externalInterface.bean.StaffUseOrgBo;
 import kd.hr.hbp.common.model.org.staff.StaffResponse;
+import kd.hr.hbp.common.mservice.HRMServiceResult;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -50,13 +56,23 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
     private static final String ADJUSTTYPE_ADD = "A";
     private static final String ADJUSTTYPE_MINUS = "B";
 
+    // 编制信息单
+    private static final String NCKD_HAOS_STAFF = "nckd_haos_staff";
+    // 组织 调整人数
     private static final String NCKD_ADJUSTNUM = "nckd_adjustnum";
+    // 组织 调整类型
     private static final String NCKD_ADJUSTTYPE = "nckd_adjusttype";
+    // 组织 现有编制人数
     private static final String NCKD_BREALNUM = "nckd_brealnum";
+    // 组织 调整后编制人数
     private static final String NCKD_ADJUSTLATENUM = "nckd_adjustlatenum";
+    // 岗位调整类型
     private static final String NCKD_POSTADJUSTTYPE = "nckd_postadjusttype";
+    // 岗位 现有编制人数
     private static final String NCKD_RELCYEARSTAFF = "nckd_relcyearstaff";
+    // 岗位调整人数
     private static final String NCKD_POSTADJUSTNUM = "nckd_postadjustnum";
+    // 岗位调整后编制人数
     private static final String NCKD_POSTADJUSTLATENUM = "nckd_postadjustlatenum";
 
 
@@ -73,7 +89,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         int iRow = changeData[0].getRowIndex();
         IDataModel model = this.getModel();
         switch (key) {
-            case "nckd_haos_staff":
+            case NCKD_HAOS_STAFF:
                 this.getModel().deleteEntryData("nckd_centryentity");
                 this.getModel().deleteEntryData("nckd_bentryentity");
                 this.initEntry(model.getValue("org"),newValue);
@@ -87,11 +103,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 this.adjusttype(newValue,oldValue,iRow);
                 break;
             case NCKD_POSTADJUSTTYPE:
-                // 岗位调整人数
+                //岗位调整类型
                 this.postadjusttypeChange(newValue,oldValue,iRow);
                 break;
             case NCKD_POSTADJUSTNUM:
-                //岗位调整类型
+                // 岗位调整人数
                 this.postadjustnumChange(newValue,oldValue,iRow);
                 break;
             default:
@@ -117,6 +133,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             }else{
                 nckdAdjustlatenum = nckdBrealnum -  i;
             }
+            if(nckdBrealnum<0){
+                this.getView().showErrorNotification("编制人数不能小于0！");
+                this.getModel().setValue(NCKD_ADJUSTNUM,oldValue,row);
+                return;
+            }
             this.getModel().setValue(NCKD_ADJUSTLATENUM,nckdAdjustlatenum,row);
         }
     }
@@ -133,6 +154,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             nckdBrealnum = nckdBrealnum +  i;
         }else{
             nckdBrealnum = nckdBrealnum - i;
+        }
+        if(nckdBrealnum<0){
+            this.getView().showErrorNotification("编制人数不能小于0！");
+            this.getModel().setValue(NCKD_ADJUSTTYPE,oldValue,row);
+            return;
         }
         this.getModel().setValue(NCKD_ADJUSTLATENUM,nckdBrealnum,row);
     }
@@ -152,9 +178,15 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         }else{
             nckdBrealnum = nckdBrealnum - i;
         }
+        if(nckdBrealnum<0){
+            this.getView().showErrorNotification("编制人数不能小于0！");
+            this.getModel().setValue(NCKD_POSTADJUSTTYPE,oldValue,row);
+            return;
+        }
         this.getModel().setValue(NCKD_POSTADJUSTLATENUM,nckdBrealnum,row);
 
     }
+
     private void postadjustnumChange(Object newValue,Object oldValue,int row) {
         // 获取对应调整类型
         String nckdAdjusttype = (String) this.getModel().getValue(NCKD_POSTADJUSTTYPE);
@@ -171,6 +203,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 nckdAdjustlatenum = nckdBrealnum +  i;
             }else{
                 nckdAdjustlatenum = nckdBrealnum -  i;
+            }
+            if(nckdAdjustlatenum<0){
+                this.getView().showErrorNotification("编制人数不能小于0！");
+                this.getModel().setValue(NCKD_POSTADJUSTNUM,oldValue,row);
+                return;
             }
             this.getModel().setValue(NCKD_POSTADJUSTLATENUM,nckdAdjustlatenum,row);
         }
@@ -193,12 +230,13 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         }
     }
 
+
     private void initEntry(Object org,Object staff) {
         // 初始化申请单据
         if(isNotEmpty(org) && isNotEmpty(staff)){
             // 填充申请单据数据
             DynamicObject staff1 = (DynamicObject) staff;
-            BusinessDataServiceHelper.loadSingle(staff1.getPkValue(),"haos_staff");
+            DynamicObject haosStaff = BusinessDataServiceHelper.loadSingle(staff1.getPkValue(), "haos_staff");
             IFormView view = this.getView();
             AbstractFormDataModel model = (AbstractFormDataModel)this.getModel();
 //            StaffInitEntryDataService.create(view, model).loadEntryData();
@@ -208,6 +246,61 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             Long orgid = (Long) ((DynamicObject) org).getPkValue();
             // 编制维护id
             Long pkValue = (Long) staff1.getPkValue();
+            Object[] objects3 = new Object[1];
+            objects3[0] = pkValue;
+            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
+
+//            if("success".equals(haosStaffResponse.getReturnCode())){
+//                // 调用成功
+//                StaffBo returnData = (StaffBo) haosStaffResponse.getReturnData();
+//                List<StaffUseOrgBo> useOrgEntryBoList = returnData.getUseOrgEntryBoList();
+//                // 获取循环单据体数据，找到编制中匹配的数据，然后进行
+//                DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
+//                // 使用流构建一个Map<Long,DynamicObject>
+//                Map<Long, DynamicObject> resultMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
+//                        .collect(Collectors.toMap(
+//                                 obj -> (Long) obj.get("nckd_adminorg.id"),
+//                                 obj -> {
+//                                     return obj;
+//                                 }
+//                        ));
+//                useOrgEntryBoList.stream().forEach(useOrgEntryBo -> {
+//                    DynamicObject dynamicObject = resultMap.get(useOrgEntryBo.getAdminOrgBoId());
+//                    if(ObjectUtils.isNotEmpty(dynamicObject)){
+//                        Object nckdAdjustlatenum = dynamicObject.get("nckd_adjustlatenum");
+//                        if(ObjectUtils.isNotEmpty(nckdAdjustlatenum)){
+//                            // 更新组织编制人数
+//                            useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
+//                        }
+//                        // 更新岗位编制人数,如果不存在岗位则跳过
+//                        DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");
+//                        if(ObjectUtils.isNotEmpty(nckdCentryentity)){
+//                            Map<Long, DynamicObject> centrMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
+//                                    .collect(Collectors.toMap(
+//                                            obj -> (Long) obj.get("nckd_cdutyworkrole.id"),
+//                                            obj -> {
+//                                                return obj;
+//                                            }
+//                                    ));
+//                            useOrgEntryBo.getPositionDimensionBoList().stream().forEach(positionDimensionBo -> {
+//                                DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getAdminOrgBoId());
+//                                if(ObjectUtils.isNotEmpty(centerDynamicObject)){
+//                                    Object nckdPostadjustlatenum = centerDynamicObject.get("nckd_postadjustlatenum");
+//                                    if(ObjectUtils.isNotEmpty(nckdPostadjustlatenum)){
+//                                        // 更新岗位编制人数
+//                                        positionDimensionBo.setYearStaff((int) nckdPostadjustlatenum);
+//                                    }
+//                                }
+//
+//                            });
+//                        }
+//                    }
+//                });
+//
+//            }
+
+
+
             Date date = new Date();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             String dateStr = sdf.format(date);
@@ -234,7 +327,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     + "AND A.fbsed <= '" + dateStr + "' AND A.fbsled >= '" + dateStr + "' "
                     + "AND A.fenable = '1' "
                     + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ?) " +") "
+//                    + "AND A.forgid = ? "
                     + "ORDER BY S.fsortcode");
+//            Object[] param = new Object[]{(Long) orgid,haosStaff.getPkValue()};
             Object[] param = new Object[]{(Long) orgid};
             DataSet dataSet = HRDBUtil.queryDataSet("haos_adminOrgHisSearch", new DBRoute("hr"), sql.toString(), param);
 
@@ -249,8 +344,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 collect2.add((Long) retDynCol.get(i).get("BOID"));
             }
             // 获取到部门key，根据部门key获取到岗位信息,HR岗位hbpm_positionhr
-//            DynamicObject[] hbpmPositionhrs = BusinessDataServiceHelper.load("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{new QFilter("adminorg.id", QCP.in, collect2)},"number,createtime desc");
-
             DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{new QFilter("adminorg.id", QCP.in, collect2)}, "number,createtime desc");
             // 岗位id
             List<Long> positionIds = new ArrayList<Long>();
@@ -320,7 +413,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         // 获取他的单据体，循环单据体
         DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
         for (int i = 0; i < entryentityCols.size(); i++) {
-            // todo 给单据体添加子单据体数据
+            //  给单据体添加子单据体数据
 
             DynamicObject centrydynamicObject = entryentityCols.get(i);
             List<DynamicObject> nckdAdminorg1 = postMap.get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
@@ -329,6 +422,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             // 子单据体标识nckd_centryentity
             DynamicObjectCollection cntryEntity = enObj.getDynamicObjectCollection("nckd_centryentity");
             if(ObjectUtils.isNotEmpty(nckdAdminorg1)){
+
                 for (DynamicObject object : nckdAdminorg1) {
                     DynamicObject dynamicObject = new DynamicObject(cntryEntity.getDynamicObjectType());
                     DynamicObject dynamicObject2 = BusinessDataServiceHelper.newDynamicObject("hbpm_positionhr");
@@ -337,9 +431,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     dynamicObject.set("nckd_cdutyworkrole",dynamicObject2);
                     dynamicObject.set("nckd_cdutyworknumber",object.getString("number"));
 //                    dynamicObject.set("nckd_cdutyworkrole.number",object.get("number"));
-                    Map<String, Object> positionMap = staffpositionResponse.getData().get(object.get("id"));
+                    Map<String, Object> positionMap = staffpositionResponse.getData().get(String.valueOf(object.get("id")));
                     if(ObjectUtils.isNotEmpty(positionMap)){
-                        dynamicObject.set("nckd_relcyearstaff",staffpositionResponse.getData().get(object.get("id")).get("staffNum"));
+                        dynamicObject.set("nckd_relcyearstaff",positionMap.get("staffNum"));
                     }
                     cntryEntity.add(dynamicObject);
                 }
@@ -347,15 +441,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
             // 使用组织上级id
             Long aLong = (Long) entryentityCols.get(i).get("nckd_parentorg");
-            Map<String, Object> nckdAdminorg = staffResponse.getData().get(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue());
-            if(ObjectUtils.isNotEmpty(nckdAdminorg)){
-                int staffNum = (int)nckdAdminorg.get("staffNum");
-                if( staffNum != 0){
-                    centrydynamicObject.set("nckd_brealnum",staffNum);
-                }
-            }
-
-
             if(null == aLong){
                 centrydynamicObject.set("pid",0);
 //                entryentityCols.get(i).set("pid",0);
@@ -379,6 +464,13 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 // 处理未找到匹配的情况
                 centrydynamicObject.set("pid",0);
             }
+            Map<String, Object> nckdAdminorg = staffResponse.getData().get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
+            if(ObjectUtils.isNotEmpty(nckdAdminorg)){
+                // 添加直属
+                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
+                // 占编人数
+                centrydynamicObject.set("nckd_relnum",nckdAdminorg.get("holdStaff"));
+            }
         }
     }
 
@@ -396,7 +488,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
     public void beforeF7Select(BeforeF7SelectEvent e) {
 
         String fieldKey = e.getProperty().getName();
-        if (StringUtils.equals(fieldKey, "nckd_haos_staff")){
+        if (StringUtils.equals(fieldKey, NCKD_HAOS_STAFF)){
             ListShowParameter showParameter = (ListShowParameter)e.getFormShowParameter();
             //是否展示审核的改为false
             showParameter.setShowApproved(false);
@@ -425,7 +517,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         // 监听单据体行点击事件
         EntryGrid entryGrid = this.getView().getControl("nckd_bentryentity");
         entryGrid.addRowClickListener(this);
-        BasedataEdit fieldEdit = this.getView().getControl("nckd_haos_staff");//基础资料字段标识
+        BasedataEdit fieldEdit = this.getView().getControl(NCKD_HAOS_STAFF);//基础资料字段标识
         fieldEdit.addBeforeF7SelectListener(this);
     }
 
