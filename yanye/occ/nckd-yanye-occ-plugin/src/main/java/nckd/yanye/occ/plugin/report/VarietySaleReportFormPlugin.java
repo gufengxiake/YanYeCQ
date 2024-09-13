@@ -15,7 +15,10 @@ import java.util.Date;
 import java.util.Iterator;
 
 /**
- * 报表界面插件
+ * 品种销售统计表-报表界面插件
+ * 表单标识：nckd_varietysale_rpt
+ * author:zhangzhilong
+ * date:2024/09/12
  */
 public class VarietySaleReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
     @Override

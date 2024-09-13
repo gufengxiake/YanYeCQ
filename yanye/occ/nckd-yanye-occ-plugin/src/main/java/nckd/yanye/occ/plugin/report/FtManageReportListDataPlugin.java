@@ -27,9 +27,10 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定源头是销售订单的出库单
-        QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"sm_salorder");
+//        QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"sm_salorder");
+
         //限定单据为已审核
-        filter.and("billstatus", QCP.equals, "C");
+        QFilter filter = new QFilter("billstatus", QCP.equals, "C");
         qFilters.add(filter);
         DateTime start = null,end = null;
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
