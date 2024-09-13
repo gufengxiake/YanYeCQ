@@ -1,22 +1,40 @@
 package nckd.yanye.occ.plugin.form;
 
+import cn.hutool.core.date.DateUtil;
+import cn.hutool.core.math.Money;
+import cn.hutool.core.util.ObjectUtil;
+import cn.hutool.core.util.RandomUtil;
+import cn.hutool.json.JSONUtil;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.exception.KDBizException;
+import kd.bos.form.CloseCallBack;
+import kd.bos.form.FormShowParameter;
 import kd.bos.form.MessageBoxOptions;
+import kd.bos.form.ShowType;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 import nckd.yanye.occ.plugin.mis.sdk.AU011SDK;
+import nckd.yanye.occ.plugin.mis.util.JsonUtil;
+import nckd.yanye.occ.plugin.mis.util.RSA2SignUtils;
+import nckd.yanye.occ.plugin.mis.util.RequestService;
 import nckd.yanye.occ.plugin.task.UpdateCCBKeyTask;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -160,6 +178,7 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
                 this.getView().showConfirm("建行密钥下载失败 ", MessageBoxOptions.OK);
             }
         }
+        //建行更新密钥
         if ("nckd_updateccbkey".equals(itemKey)) {
             UpdateCCBKeyTask updateCCBKeyTask = new UpdateCCBKeyTask();
             RequestContext requestContext = RequestContext.get();
@@ -168,5 +187,127 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
             map.put("payParamNumber", number);
             updateCCBKeyTask.execute(requestContext, map);
         }
+        //农行调接口退款
+        if ("nckd_refund".equals(itemKey)) {
+            //弹框 设置支付金额
+            FormShowParameter showParameter = new FormShowParameter();
+            showParameter.setFormId("nckd_refund");
+            showParameter.setCaption("农行退款申请设置订单号和退款金额");
+            showParameter.getOpenStyle().setShowType(ShowType.Modal);
+            // 设置回调
+            showParameter.setCloseCallBack(new CloseCallBack(this, "abc_refund"));
+            this.getView().showForm(showParameter);
+        }
+    }
+
+    @Override
+    public void closedCallBack(ClosedCallBackEvent closedCallBackEvent) {
+        super.closedCallBack(closedCallBackEvent);
+        String key = closedCallBackEvent.getActionId();
+        Object returnData = closedCallBackEvent.getReturnData();
+        if ("abc_refund".equals(key) && ObjectUtil.isNotEmpty(returnData)) {
+            DynamicObject dynamicObject = (DynamicObject) returnData;
+            DynamicObjectCollection nckdEntryentity = this.getModel().getEntryEntity("nckd_entryentity");
+            Map<String, String> nckdEntryentityMap = nckdEntryentity.stream().collect(Collectors.toMap(k -> k.getString("nckd_payparamnbr"), v -> v.getString("nckd_payparamvalue")));
+            String privateKey = nckdEntryentityMap.get("privateKey");
+            String publicKey = nckdEntryentityMap.get("publicKey");
+            String mchId = nckdEntryentityMap.get("mch_id");
+            String url = nckdEntryentityMap.get("url");
+            String gps = nckdEntryentityMap.get("gps");
+            String terminalId = nckdEntryentityMap.get("terminal_id");
+            boolean paramConfigResult = StringUtils.isNotEmpty(privateKey) && StringUtils.isNotEmpty(publicKey)
+                    && StringUtils.isNotEmpty(mchId) && StringUtils.isNotEmpty(url)
+                    && StringUtils.isNotEmpty(gps) && StringUtils.isNotEmpty(terminalId);
+            if (!paramConfigResult) {
+                logger.info("请检查支付参数商户私钥，平台公钥，店铺编号，请求地址，gps，终端设备号是否为空");
+                this.getView().showErrorNotification("请检查支付参数商户私钥，平台公钥，店铺编号，请求地址，gps，终端设备号是否为空");
+                throw new KDBizException("请检查支付参数商户私钥，平台公钥，店铺编号，请求地址，gps，终端设备号是否为空");
+            }
+            DynamicObject nckdPaylogRecord = BusinessDataServiceHelper.newDynamicObject("nckd_paylogrecord");
+            //自定义参数 退款必须要
+            BigDecimal payAmount = dynamicObject.getBigDecimal("nckd_payamount");
+            String orderNo = dynamicObject.getString("nckd_orderno");
+            String refundNo = DateUtil.format(new Date(), "yyyyMMddHHmmssSSS") + RandomUtil.randomNumbers(6);
+            //自定义参数 退款必须要
+            Money money = new Money(payAmount);
+            logger.info("PayParamConfigBillPlugin 开始调农行退款申请接口");
+            String nonceStr = UUID.randomUUID().toString().replaceAll("-", "");
+            SortedMap<Object, Object> parameters = new TreeMap<>();
+            parameters.put("mch_id", mchId);
+            parameters.put("out_refund_no", refundNo);
+            parameters.put("out_trade_no", orderNo);
+            parameters.put("refund_fee", money.getCent());
+            parameters.put("nonce_str", nonceStr);
+            String sign = RSA2SignUtils.createSign(parameters, privateKey);
+            parameters.put("sign", sign);
+            nckdPaylogRecord.set("nckd_reqmsg", JsonUtil.toJsonString(parameters));
+            // 调农行退款申请接口
+            cn.hutool.json.JSONObject refund = abcRefund(parameters, url);
+            logger.info("PayParamConfigBillPlugin 结束调农行退款申请接口");
+            if (!"SUCCESS".equals(refund.getStr("code"))) {
+                //请求失败
+                logger.info("SetPayAmountMobFormPlugin 农行退款申请接口失败" + refund.getStr("message"));
+                this.getView().showErrorNotification("农行退款申请接口失败 " + refund.getStr("message"));
+                throw new KDBizException("农行退款申请接口失败 " + refund.getStr("message"));
+            }
+            this.getView().showSuccessNotification("退款成功");
+            String returnSign = refund.getStr("sign");
+            refund.remove("sign");
+            //构造返回数据
+            SortedMap<Object, Object> returnParam = new TreeMap<>();
+            refund.forEach(e -> {
+                returnParam.put(e.getKey(), e.getValue());
+            });
+            //验签
+            boolean checkSign = RSA2SignUtils.checkSign(returnParam, returnSign, publicKey);
+            if (!checkSign) {
+                logger.info("SetPayAmountMobFormPlugin 农行退款申请接口签失败");
+                this.getView().showErrorNotification("农行退款申请接口签失败");
+                throw new KDBizException("农行退款申请接口签失败");
+            }
+            //生成交易操作记录
+            long currUserId = RequestContext.get().getCurrUserId();
+            long userDefaultOrgID = UserServiceHelper.getUserDefaultOrgID(currUserId);
+            Date date = new Date();
+            OperationResult paylogRecordresult = createPayLogRecord(nckdPaylogRecord, currUserId, date, userDefaultOrgID, JsonUtil.toJsonString(returnParam));
+        }
+    }
+
+    /**
+     * 开始调农行退款申请接口
+     *
+     * @param parameters
+     * @param url
+     */
+    private cn.hutool.json.JSONObject abcRefund(SortedMap<Object, Object> parameters, String url) {
+        //发送请求
+        String realUrl = url + "/refund";
+        String result = new RequestService().sendJsonPost(realUrl, null, JsonUtil.toJsonString(parameters));
+        logger.info("调农行申请动态聚合码接口 result：" + result);
+        cn.hutool.json.JSONObject json = JSONUtil.parseObj(result);
+        return json;
+    }
+
+    /**
+     * 创建操作日志记录
+     *
+     * @param nckdPaylogRecord
+     * @param currUserId
+     * @param date
+     * @param userDefaultOrgID
+     * @param transResultStr
+     * @return
+     */
+    private static OperationResult createPayLogRecord(DynamicObject nckdPaylogRecord, long currUserId, Date date,
+                                                      long userDefaultOrgID, String transResultStr) {
+        nckdPaylogRecord.set("creator", currUserId);
+        nckdPaylogRecord.set("createtime", date);
+        nckdPaylogRecord.set("modifier", currUserId);
+        nckdPaylogRecord.set("modifytime", date);
+        nckdPaylogRecord.set("billstatus", "C");
+        nckdPaylogRecord.set("org", userDefaultOrgID);
+        nckdPaylogRecord.set("nckd_respmsg", transResultStr);
+        OperationResult paylogRecordresult = OperationServiceHelper.executeOperate("save", "nckd_paylogrecord", new DynamicObject[]{nckdPaylogRecord}, OperateOption.create());
+        return paylogRecordresult;
     }
 }
