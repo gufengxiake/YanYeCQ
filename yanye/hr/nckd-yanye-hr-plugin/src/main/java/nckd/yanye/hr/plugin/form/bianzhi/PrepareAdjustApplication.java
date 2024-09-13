@@ -250,54 +250,54 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             objects3[0] = pkValue;
             HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
 
-            if("success".equals(haosStaffResponse.getReturnCode())){
-                // 调用成功
-                StaffBo returnData = (StaffBo) haosStaffResponse.getReturnData();
-                List<StaffUseOrgBo> useOrgEntryBoList = returnData.getUseOrgEntryBoList();
-                // 获取循环单据体数据，找到编制中匹配的数据，然后进行
-                DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
-                // 使用流构建一个Map<Long,DynamicObject>
-                Map<Long, DynamicObject> resultMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
-                        .collect(Collectors.toMap(
-                                 obj -> (Long) obj.get("nckd_adminorg.id"),
-                                 obj -> {
-                                     return obj;
-                                 }
-                        ));
-                useOrgEntryBoList.stream().forEach(useOrgEntryBo -> {
-                    DynamicObject dynamicObject = resultMap.get(useOrgEntryBo.getAdminOrgBoId());
-                    if(ObjectUtils.isNotEmpty(dynamicObject)){
-                        Object nckdAdjustlatenum = dynamicObject.get("nckd_adjustlatenum");
-                        if(ObjectUtils.isNotEmpty(nckdAdjustlatenum)){
-                            // 更新组织编制人数
-                            useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
-                        }
-                        // 更新岗位编制人数,如果不存在岗位则跳过
-                        DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");
-                        if(ObjectUtils.isNotEmpty(nckdCentryentity)){
-                            Map<Long, DynamicObject> centrMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
-                                    .collect(Collectors.toMap(
-                                            obj -> (Long) obj.get("nckd_cdutyworkrole.id"),
-                                            obj -> {
-                                                return obj;
-                                            }
-                                    ));
-                            useOrgEntryBo.getPositionDimensionBoList().stream().forEach(positionDimensionBo -> {
-                                DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getAdminOrgBoId());
-                                if(ObjectUtils.isNotEmpty(centerDynamicObject)){
-                                    Object nckdPostadjustlatenum = centerDynamicObject.get("nckd_postadjustlatenum");
-                                    if(ObjectUtils.isNotEmpty(nckdPostadjustlatenum)){
-                                        // 更新岗位编制人数
-                                        positionDimensionBo.setYearStaff((int) nckdPostadjustlatenum);
-                                    }
-                                }
-
-                            });
-                        }
-                    }
-                });
-
-            }
+//            if("success".equals(haosStaffResponse.getReturnCode())){
+//                // 调用成功
+//                StaffBo returnData = (StaffBo) haosStaffResponse.getReturnData();
+//                List<StaffUseOrgBo> useOrgEntryBoList = returnData.getUseOrgEntryBoList();
+//                // 获取循环单据体数据，找到编制中匹配的数据，然后进行
+//                DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
+//                // 使用流构建一个Map<Long,DynamicObject>
+//                Map<Long, DynamicObject> resultMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
+//                        .collect(Collectors.toMap(
+//                                 obj -> (Long) obj.get("nckd_adminorg.id"),
+//                                 obj -> {
+//                                     return obj;
+//                                 }
+//                        ));
+//                useOrgEntryBoList.stream().forEach(useOrgEntryBo -> {
+//                    DynamicObject dynamicObject = resultMap.get(useOrgEntryBo.getAdminOrgBoId());
+//                    if(ObjectUtils.isNotEmpty(dynamicObject)){
+//                        Object nckdAdjustlatenum = dynamicObject.get("nckd_adjustlatenum");
+//                        if(ObjectUtils.isNotEmpty(nckdAdjustlatenum)){
+//                            // 更新组织编制人数
+//                            useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
+//                        }
+//                        // 更新岗位编制人数,如果不存在岗位则跳过
+//                        DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");
+//                        if(ObjectUtils.isNotEmpty(nckdCentryentity)){
+//                            Map<Long, DynamicObject> centrMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
+//                                    .collect(Collectors.toMap(
+//                                            obj -> (Long) obj.get("nckd_cdutyworkrole.id"),
+//                                            obj -> {
+//                                                return obj;
+//                                            }
+//                                    ));
+//                            useOrgEntryBo.getPositionDimensionBoList().stream().forEach(positionDimensionBo -> {
+//                                DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getAdminOrgBoId());
+//                                if(ObjectUtils.isNotEmpty(centerDynamicObject)){
+//                                    Object nckdPostadjustlatenum = centerDynamicObject.get("nckd_postadjustlatenum");
+//                                    if(ObjectUtils.isNotEmpty(nckdPostadjustlatenum)){
+//                                        // 更新岗位编制人数
+//                                        positionDimensionBo.setYearStaff((int) nckdPostadjustlatenum);
+//                                    }
+//                                }
+//
+//                            });
+//                        }
+//                    }
+//                });
+//
+//            }
 
 
 
@@ -422,6 +422,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             // 子单据体标识nckd_centryentity
             DynamicObjectCollection cntryEntity = enObj.getDynamicObjectCollection("nckd_centryentity");
             if(ObjectUtils.isNotEmpty(nckdAdminorg1)){
+
                 for (DynamicObject object : nckdAdminorg1) {
                     DynamicObject dynamicObject = new DynamicObject(cntryEntity.getDynamicObjectType());
                     DynamicObject dynamicObject2 = BusinessDataServiceHelper.newDynamicObject("hbpm_positionhr");
@@ -430,9 +431,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     dynamicObject.set("nckd_cdutyworkrole",dynamicObject2);
                     dynamicObject.set("nckd_cdutyworknumber",object.getString("number"));
 //                    dynamicObject.set("nckd_cdutyworkrole.number",object.get("number"));
-                    Map<String, Object> positionMap = staffpositionResponse.getData().get(object.get("id"));
+                    Map<String, Object> positionMap = staffpositionResponse.getData().get(String.valueOf(object.get("id")));
                     if(ObjectUtils.isNotEmpty(positionMap)){
-                        dynamicObject.set("nckd_relcyearstaff",staffpositionResponse.getData().get(object.get("id")).get("staffNum"));
+                        dynamicObject.set("nckd_relcyearstaff",positionMap.get("staffNum"));
                     }
                     cntryEntity.add(dynamicObject);
                 }
@@ -440,15 +441,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
             // 使用组织上级id
             Long aLong = (Long) entryentityCols.get(i).get("nckd_parentorg");
-            Map<String, Object> nckdAdminorg = staffResponse.getData().get(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue());
-            if(ObjectUtils.isNotEmpty(nckdAdminorg)){
-                int staffNum = (int)nckdAdminorg.get("staffNum");
-                if( staffNum != 0){
-                    centrydynamicObject.set("nckd_brealnum",staffNum);
-                }
-            }
-
-
             if(null == aLong){
                 centrydynamicObject.set("pid",0);
 //                entryentityCols.get(i).set("pid",0);
@@ -471,6 +463,13 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             } else {
                 // 处理未找到匹配的情况
                 centrydynamicObject.set("pid",0);
+            }
+            Map<String, Object> nckdAdminorg = staffResponse.getData().get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
+            if(ObjectUtils.isNotEmpty(nckdAdminorg)){
+                // 添加直属
+                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
+                // 占编人数
+                centrydynamicObject.set("nckd_relnum",nckdAdminorg.get("holdStaff"));
             }
         }
     }
