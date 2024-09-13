@@ -164,6 +164,11 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         //调入仓库
         DynamicObject inwarehouse = (DynamicObject) this.getModel().getValue("nckd_inwarehouse");
 
+        //是否集装箱
+        String iscontainer=this.getModel().getValue("nckd_iscontainer").toString();
+        //业务类型
+        String biztype1=this.getModel().getValue("nckd_biztype1").toString();
+
 
         MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
         String appId = getAppId(targetBill, dt);
@@ -205,6 +210,8 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         mode.setValue("qty", qty, row);
         mode.setValue("warehouse", warehouse, row);
         mode.setValue("inwarehouse", inwarehouse, row);
+        mode.setValue("nckd_biztype1",biztype1);
+        mode.setValue("nckd_iscontainer",iscontainer);
 
 
         OperationResult saveOp = formView.invokeOperation("save");
