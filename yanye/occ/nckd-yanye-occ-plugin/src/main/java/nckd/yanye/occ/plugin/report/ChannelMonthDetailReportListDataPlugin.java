@@ -29,6 +29,8 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
         QFilter mainFilter = new QFilter("bizorg.name", QCP.like, "%华康%");
         //限定单据为已审核
         mainFilter.and("billstatus", QCP.equals, "C");
+
+
         qFilters.add(mainFilter);
 
         //获取年份，默认今年
@@ -36,8 +38,8 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
         Date nckdDateQ = reportQueryParam.getFilter().getDate("nckd_date_q");
         //根据选择的查询条件进行组织过滤
         if (nckdDateQ != null) {
-            DateTime strat = DateUtil.beginOfDay(nckdDateQ);
-            DateTime end = DateUtil.endOfDay(nckdDateQ);
+            DateTime strat = DateUtil.beginOfYear(nckdDateQ);
+            DateTime end = DateUtil.endOfYear(nckdDateQ);
             QFilter dateFilter = new QFilter("biztime", QCP.large_equals, strat);
             dateFilter.and("biztime", QCP.less_equals, end);
             qFilters.add(dateFilter);
@@ -68,7 +70,7 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
         sumYear = im_saloutbill.copy().groupBy(new String[]{"out_bizorg","out_bizorgname","out_group"})
                 .sum("out_baseqty","yearsum").sum("out_amountandtax","yearamountandtax")
                 .finish().addField("0","yearmonth");
-        //循环汇总每个月份的数量和价税合计
+        //循环分隔每个月份的数量和价税合计
         for (int i = 1; i < 13; i++) {
             //拼接年月份
             String date = year + "-" + i ;
@@ -89,6 +91,8 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
 //                    .sum("out_baseqty","sum"+i).sum("out_amountandtax","amountandtax"+i).finish();
 //            sumYear = sumYear.leftJoin(sumMonth).on("out_bizorg","out_bizorg").select(sumYear.getRowMeta().getFieldNames(),new String[]{"yearmonth"+i,"sum"+i,"amountandtax"+i}).finish();
         }
+
+        //根据公司和分组进行汇总
         GroupbyDataSet groupbyDataSet = sumMonth.groupBy(new String[]{"out_bizorg", "out_bizorgname", "out_group"});
         for (int i = 1; i < 13; i++) {
             groupbyDataSet.sum("case when yearmonth = "+i+" then out_baseqty else 0 end" , "sum"+i)
@@ -96,10 +100,12 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
         }
         sumYear = groupbyDataSet.finish();
 
+        //根据分组吧相同分组的数据进行汇总
         GroupbyDataSet groupbyDataSet1 = sumYear.groupBy(new String[]{"out_group"});
         for (int i = 1; i < 13; i++) {
             groupbyDataSet1.sum("sum"+i).sum("amountandtax"+i);
         }
+        //汇总数据公司名称设置为合计
         sumMonth = groupbyDataSet1.finish().addField("'合计'" , "out_bizorgname")
                 .addNullField(new String[]{"out_bizorg"})
                 .select(sumYear.getRowMeta().getFieldNames());

@@ -44,6 +44,8 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
     //获取销售出库单
     public DataSet getSaleOutBill(ReportQueryParam reportQueryParam){
         ArrayList<QFilter> qFilters = new ArrayList<>();
+        //限定单据为已审核
+        qFilters.add(new QFilter("billstatus", QCP.equals, "C"));
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {

@@ -27,6 +27,8 @@ public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListData
         //限定源头是要货订单的销售出库单
         QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"ocbsoc_saleorder");
         QFilter filterOrg = new QFilter("bizorg.name",  QCP.like,"%华康%");
+        //限定单据为已审核
+        filterOrg.and("billstatus", QCP.equals, "C");
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {

@@ -28,6 +28,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定源头是销售订单的出库单
         QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"sm_salorder");
+        //限定单据为已审核
+        filter.and("billstatus", QCP.equals, "C");
         qFilters.add(filter);
         DateTime start = null,end = null;
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
@@ -82,6 +84,10 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                         "billentry.mainbillentryid as mainbillentryid";
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
         im_saloutbill = this.linkSignAtureBill(im_saloutbill);
+        //判断查询出来的数据是否为空
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
         if(start != null ){
             im_saloutbill = im_saloutbill.filter("nckd_fhdate >= to_date('" +  start + "','yyyy-MM-dd hh:mm:ss')" );
         }
@@ -110,6 +116,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 
 //        关联签收单
         QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryidToList.toArray(new Long[0]));
+        //限定单据为已审核
+        signFilter.and("billstatus", QCP.equals, "C");
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
 //                发货日期
                 "nckd_signdate as nckd_fhdate," +

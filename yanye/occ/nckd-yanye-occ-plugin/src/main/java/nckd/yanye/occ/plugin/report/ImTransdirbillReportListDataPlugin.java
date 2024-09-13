@@ -62,6 +62,9 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
                     break;
             }
         }
+        if (im.isEmpty()) {
+            return im;
+        }
         if (nckd_forg_q != null){
             im = im.filter("nckd_forg = " + nckd_forg_q);
         }
