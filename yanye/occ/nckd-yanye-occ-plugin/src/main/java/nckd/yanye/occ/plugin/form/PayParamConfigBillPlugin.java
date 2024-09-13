@@ -162,10 +162,11 @@ public class PayParamConfigBillPlugin extends AbstractBillPlugIn {
                     DynamicObject dy = nckd_entryentity.get(0);
                     dy.set("nckd_payparamvalue", key);
                     SaveServiceHelper.update(dataEntity);
-                    this.getView().updateView();
+                    this.getView().updateView("nckd_entryentity");
                     //第一次下载后，直接再调更新接口和确认接口进行激活
                     DynamicObject payParamConfig = this.getModel().getDataEntity();
                     UpdateCCBKeyTask.UpdateCCBKey(payParamConfig);
+                    this.getView().updateView("nckd_entryentity");
                     logger.info("PayParamConfigBillPlugin 建行密钥下载成功");
                     this.getView().showConfirm("建行密钥下载成功", MessageBoxOptions.OK);
                 } else {
