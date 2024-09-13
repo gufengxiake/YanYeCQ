@@ -1,15 +1,11 @@
 package nckd.yanye.fi.plugin.operate;
 
-
-import com.icbc.api.internal.apache.http.impl.cookie.S;
-import kd.bos.bec.api.IEventServicePlugin;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.ILocaleString;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
-import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.logging.Log;
@@ -20,9 +16,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.workflow.MessageCenterServiceHelper;
 import kd.bos.workflow.engine.msg.info.MessageInfo;
-import kd.scmc.scmdi.common.vo.bos.MessageChannel;
 import kd.tmc.cim.common.util.StringUtils;
-
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -30,22 +24,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 财务-实物卡片审核操作插件
- * 表单标识：fa_card_real
+ * 财务-资产变更单审核操作插件
+ * 表单标识：fa_change_dept
  * author：xiaoxiaopeng
- * date：2024-09-12
+ * date：2024-09-13
  */
-public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
+public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
 
-    private static Log logger = LogFactory.getLog(FaCardRealAuditOpPlugin.class);
+    private static Log logger = LogFactory.getLog(FaChangeDeptAuditOpPlugin.class);
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
         List<String> fieldKeys = e.getFieldKeys();
-        fieldKeys.add("assetcat");
+        fieldKeys.add("changetype");
+        fieldKeys.add("main_changebillentry");
         fieldKeys.add("createtime");
-        fieldKeys.add("price");
     }
 
     @Override
@@ -53,27 +47,35 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         super.afterExecuteOperationTransaction(e);
         DynamicObject[] dataEntities = e.getDataEntities();
         for (DynamicObject dataEntity : dataEntities) {
-            DynamicObject assetcat = dataEntity.getDynamicObject("assetcat");
-            String fixedassettype = assetcat.getString("nckd_fixedassettype");
-            if (StringUtils.isEmpty(fixedassettype) || "3".equals(fixedassettype)) {
+            DynamicObject changeType = dataEntity.getDynamicObject("changetype");
+            if (!"002".equals(changeType.getString("number"))) {
                 continue;
             }
-            if ("1".equals(fixedassettype)) {
-                sedMessage(dataEntity, "新增房产");
-            } else if ("2".equals(fixedassettype)) {
-                sedMessage(dataEntity, "新增土地");
+            DynamicObjectCollection changeBillEntry = dataEntity.getDynamicObjectCollection("main_changebillentry");
+            if (changeBillEntry.size() > 0){
+                for (DynamicObject entry : changeBillEntry) {
+                    DynamicObject realCard = entry.getDynamicObject("m_realcard");
+                    realCard = BusinessDataServiceHelper.loadSingle(realCard.getPkValue(),"fa_card_real_base");
+                    DynamicObject assetcat = realCard.getDynamicObject("assetcat");
+                    assetcat = BusinessDataServiceHelper.loadSingle(assetcat.getPkValue(),"fa_assetcategory");
+                    String fixedassettype = assetcat.getString("nckd_fixedassettype");
+                    if ("1".equals(fixedassettype)) {
+                        sedMessage(dataEntity, "房产原值变更",entry,assetcat);
+                    } else if ("2".equals(fixedassettype)) {
+                        sedMessage(dataEntity, "土地面积变更",entry,assetcat);
+                    }
+                }
             }
         }
     }
 
-    private void sedMessage(DynamicObject dataEntity, String messageInformersName) {
+    private void sedMessage(DynamicObject dataEntity, String messageInformersName, DynamicObject entry, DynamicObject assetcat) {
         //查维护税源信息消息通知人拿到模板
         DynamicObject messageInformers = BusinessDataServiceHelper.loadSingle("nckd_messageinformers", "id,name,nckd_user,nckd_mescontent", new QFilter[]{new QFilter("name", QCP.equals, messageInformersName)});
         if (messageInformers == null) {
             return;
         }
 
-        DynamicObject assetcat = dataEntity.getDynamicObject("assetcat");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String createtime = simpleDateFormat.format(dataEntity.getDate("createtime"));
         //发送消息
@@ -97,8 +99,7 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = String.format(resultMes, assetcat.getString("number"), assetcat.getString("number"), createtime, dataEntity.getString("price"));
-        //String contentMessage = "新增房产，资产编号：" + assetcat.getString("number") + ",资产名称：" + assetcat.getString("number") + ",新增时间：" + createtime + ",房产金额：" + dataEntity.getString("price");
+        String formatMes = String.format(resultMes, assetcat.getString("number"), assetcat.getString("number"), createtime, entry.getString("m_bef_originalval"),entry.getString("m_aft_originalval"));
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);
         content.setLocaleValue_zh_CN(formatMes);
@@ -124,8 +125,8 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         message.setOperation("audit");
         message.setBizDataId(dataEntity.getLong("id"));
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(MessageChannels.YUNZHIJIA).append(",");
-        stringBuilder.append(MessageChannels.SMS);
+        stringBuilder.append(MessageChannels.YUNZHIJIA.getNumber()).append(",");
+        stringBuilder.append(MessageChannels.SMS.getNumber());
         message.setNotifyType(stringBuilder.toString());
         long l = MessageCenterServiceHelper.sendMessage(message);
         logger.info("消息发送成功：{}", l);
