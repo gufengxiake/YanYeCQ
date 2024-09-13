@@ -258,10 +258,8 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
                     entry.set("dy_rank", finalRankId);
                 }
+                view.setEnable(false, entry.getInt("seq"), "dy_rank");
             }
-
-            view.setEnable(false, 0, "dy_rank");
-            view.updateView("adjapprdetailentry");
         }
     }
 

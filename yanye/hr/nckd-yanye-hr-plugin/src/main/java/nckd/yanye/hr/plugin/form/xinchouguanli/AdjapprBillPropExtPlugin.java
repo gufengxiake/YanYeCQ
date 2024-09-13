@@ -74,7 +74,11 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                                 new QFilter[]{
                                         new QFilter("person.id", QFilter.equals, adjFile.getLong("person.id")),
                                         // 是否最高学历：是
-                                        new QFilter("ishighestdegree", QCP.equals, "1")
+                                        new QFilter("ishighestdegree", QCP.equals, "1"),
+                                        // 数据状态
+                                        new QFilter("datastatus", QCP.equals, "1"),
+                                        // 当前版本
+                                        new QFilter("iscurrentversion", QCP.equals, "1"),
                                 }
                         );
 
@@ -93,7 +97,6 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                     for (Long fileId : fileIds) {
                         // 定调薪档案
                         DynamicObject adjFile = adjFilesMap.get(fileId);
-
                         // 任职经历
                         DynamicObject jobExp = BusinessDataServiceHelper.loadSingle(
                                 "hrpi_empposorgrel",
@@ -106,7 +109,11 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                                         // 结束日期大于今天
                                         new QFilter("enddate", QCP.large_than, new Date()),
                                         // 业务状态：生效中
-                                        new QFilter("businessstatus", QCP.equals, "1")
+                                        new QFilter("businessstatus", QCP.equals, "1"),
+                                        // 数据状态
+                                        new QFilter("datastatus", QCP.equals, "1"),
+                                        // 当前版本
+                                        new QFilter("iscurrentversion", QCP.equals, "1"),
                                 }
                         );
 
@@ -134,7 +141,11 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                         DynamicObject gangWei = BusinessDataServiceHelper.loadSingle(
                                 "hbpm_positionhr",
                                 new QFilter[]{
-                                        new QFilter("id", QCP.equals, adjFile.getLong("position.id"))
+                                        new QFilter("id", QCP.equals, adjFile.getLong("position.id")),
+                                        // 数据状态
+                                        new QFilter("datastatus", QCP.equals, "1"),
+                                        // 当前版本
+                                        new QFilter("iscurrentversion", QCP.equals, "1"),
                                 }
                         );
 
