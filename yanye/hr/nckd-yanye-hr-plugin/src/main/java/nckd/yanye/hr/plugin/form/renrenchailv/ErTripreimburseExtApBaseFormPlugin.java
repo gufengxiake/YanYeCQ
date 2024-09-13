@@ -10,8 +10,12 @@ import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 
+import java.util.Arrays;
 import java.util.EventObject;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Module           :财务云-费用核算-人人差旅单据
@@ -48,10 +52,14 @@ public class ErTripreimburseExtApBaseFormPlugin extends AbstractBillPlugIn imple
         String name = beforeF7SelectEvent.getProperty().getName();
         DynamicObject orgObject = (DynamicObject)this.getModel().getValue("company");
         if (name.equals("nckd_collectionpeople")){
-            //构造收款信息查询条件，createorg.id 创建组织，billstatus：数据状态（C:已审核），enable：使用状态（1:可用）
-            QFilter qFilter = new QFilter("createorg.id", QCP.equals,orgObject.getPkValue())
-                    .and("status",QCP.equals,"C").and("enable",QCP.equals,"1");
-            beforeF7SelectEvent.getCustomQFilters().add(qFilter);
+            //构造人员查询条件，bos_user.entryentity.orgstructure.longnumber 创建组织，billstatus：数据状态（C:已审核），enable：使用状态（1:可用）
+            QFilter qFilter = new QFilter("entryentity.orgstructure.longnumber", QCP.like,"%"+orgObject.getString("number")+"%");
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("bos_user", "id", new QFilter[]{qFilter});
+            List<Object> list = Arrays.stream(dynamicObjects).map(t->t.getPkValue()).collect(Collectors.toList());
+            //构造收款信息查询条件 billstatus：数据状态（C:已审核），enable：使用状态（1:可用）
+            QFilter skqFilter = new QFilter("status",QCP.equals,"C").and("enable",QCP.equals,"1")
+                    .and("payer",QCP.in,list);
+            beforeF7SelectEvent.getCustomQFilters().add(skqFilter);
         }
 
     }
