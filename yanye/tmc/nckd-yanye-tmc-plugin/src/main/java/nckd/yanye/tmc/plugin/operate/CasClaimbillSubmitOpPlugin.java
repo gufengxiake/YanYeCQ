@@ -47,7 +47,7 @@ public class CasClaimbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                 ExtendedDataEntity[] dataEntities = this.getDataEntities();
                 for (ExtendedDataEntity dataEntity : dataEntities) {
                     DynamicObject bill = dataEntity.getDataEntity();
-                    DynamicObjectCollection casRecbillCollection = bill.getDynamicObjectCollection("entry");
+                    DynamicObjectCollection casRecbillCollection = bill.getDynamicObjectCollection("entryentity");
                     for (DynamicObject casRecbillEntry : casRecbillCollection) {
                         if ("ocbsoc_saleorder".equals(casRecbillEntry.getString("e_corebilltype"))) {
                             //应收金额
