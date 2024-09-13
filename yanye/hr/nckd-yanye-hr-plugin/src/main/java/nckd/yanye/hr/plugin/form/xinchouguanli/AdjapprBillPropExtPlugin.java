@@ -104,7 +104,9 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                                         // 开始日期小于今天
                                         new QFilter("startdate", QCP.less_than, new Date()),
                                         // 结束日期大于今天
-                                        new QFilter("enddate", QCP.large_than, new Date())
+                                        new QFilter("enddate", QCP.large_than, new Date()),
+                                        // 业务状态：生效中
+                                        new QFilter("businessstatus", QCP.equals, "1")
                                 }
                         );
 
@@ -119,8 +121,7 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                             continue;
                         }
 
-                        propValues.get(fileId).putIfAbsent(cfg.getId(), zhiJi.getLong("id")
-                        );
+                        propValues.get(fileId).putIfAbsent(cfg.getId(), zhiJi.getLong("id"));
                     }
                     break;
                 // 定调薪-岗级
@@ -148,8 +149,7 @@ public class AdjapprBillPropExtPlugin implements IHcdmContrastPropExtPlugin {
                             continue;
                         }
 
-                        propValues.get(fileId).putIfAbsent(cfg.getId(), gangJi.getLong("id")
-                        );
+                        propValues.get(fileId).putIfAbsent(cfg.getId(), gangJi.getLong("id"));
                     }
                     break;
                 default:
