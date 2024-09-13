@@ -3,6 +3,7 @@ package nckd.yanye.hr.plugin.form.renrenchailv;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.events.BizDataEventArgs;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.field.BasedataEdit;
@@ -34,8 +35,15 @@ public class ErTripreimburseExtApBaseFormPlugin extends AbstractBillPlugIn imple
         int rowIndex = changeData.getRowIndex();
         IDataModel model = this.getModel();
         Object newValue = changeData.getNewValue();
-        if ("nckd_collectionpeople".equals(fieldKey)){
+        if ("nckd_collectionpeople".equals(fieldKey) && newValue != null){
             model.setValue("payer", newValue, rowIndex);
+            DynamicObject dynamicObject = (DynamicObject) newValue;
+            model.setValue("payeraccount02",dynamicObject.getString("payeraccount02"));
+        }
+        if ("payer".equals(fieldKey) && newValue != null){
+            model.setValue("nckd_collectionpeople", newValue, rowIndex);
+            DynamicObject dynamicObject = (DynamicObject) newValue;
+            model.setValue("payeraccount02",dynamicObject.getString("payeraccount02"));
         }
     }
 
@@ -62,5 +70,16 @@ public class ErTripreimburseExtApBaseFormPlugin extends AbstractBillPlugIn imple
             beforeF7SelectEvent.getCustomQFilters().add(skqFilter);
         }
 
+    }
+
+    @Override
+    public void createNewData(BizDataEventArgs e) {
+        super.createNewData(e);
+
+    }
+
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        super.afterCreateNewData(e);
     }
 }

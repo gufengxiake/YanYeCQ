@@ -15,6 +15,7 @@ import kd.imsc.dmw.utils.DateUtils;
 import kd.wtc.wtte.report.RecordDayListReport;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Module           :工时假勤云-考勤核算-考勤记录-日报表
@@ -56,6 +57,14 @@ public class RecordDayListDataReport extends RecordDayListReport {
                 .and("shiftdate",QCP.less_equals,endDate);
         //查询多次卡记录wtpm_multicard
         DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("wtpm_multicard", "id,attperson,shiftdate,attfilebo,entryentity.effectivepoint,entryentity.pointdesc", qFilter.toArray());
+        //构造原始卡记录查询条件
+        QFilter filter = new QFilter("attfilebo.personnum", QCP.in,numList)
+                .and("nckd_position",QCP.is_notnull,null).and("nckd_position",QCP.not_equals,"");
+        //查询原始卡记录
+        DynamicObject[] objects = BusinessDataServiceHelper.load("wtpd_signcard", "id,signpoint,attfilebo.personnum,nckd_position", filter.toArray());
+        //原始卡记录按照key :工号+打卡时间，value：进出卡地点
+        Map<String, String> locationMap = Arrays.stream(objects).collect(Collectors.toMap(k ->  k.getString("attfilebo.personnum")+DateUtils.format(k.getDate("signpoint"),"yyyy-MM-dd HH:mm:00"),
+                v -> v.getString("nckd_position"),(key1,key2)->key1));
 
         //构造上班打卡时间map（key：工号+日期，value：上班有效卡点）
         Map<String,String> WcMap = new HashMap<>();
@@ -76,9 +85,13 @@ public class RecordDayListDataReport extends RecordDayListReport {
                 }
             }
         });
-        //DateSet 数据新增 打卡起始时间、打卡结束时间
+        //构造查询
+
+        //DateSet 数据新增 打卡起始时间、打卡结束时间、起始打卡地点、结束打卡地点
         DataSet dataSet = queryDataSet.addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"startTime")
-                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"endTime");//打卡起始时、打卡结束时间
+                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"endTime")
+                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"startLocation")
+                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"endLocation");
         //dataSet 转换为DynamicObjectCollection
         DynamicObjectCollection dynamicObjectCollection = ORM.create().toPlainDynamicObjectCollection(dataSet);
         if (CollectionUtils.isNotEmpty(dynamicObjectCollection)){
@@ -87,6 +100,8 @@ public class RecordDayListDataReport extends RecordDayListReport {
                     //打卡起始时间、打卡结束时间 重新赋值
                     t.set("startTime",WcMap.get(t.getString("personid.number") + DateUtils.format(t.getDate("owndate"),"yyyy-MM-dd")));
                     t.set("endTime",AcMap.get(t.getString("personid.number") + DateUtils.format(t.getDate("owndate"),"yyyy-MM-dd") ));
+                    t.set("startLocation",locationMap.get(t.getString("personid.number") + t.getString("startTime")));
+                    t.set("endLocation",locationMap.get(t.getString("personid.number") + t.getString("endTime")));
                 }
             });
         }
@@ -135,9 +150,26 @@ public class RecordDayListDataReport extends RecordDayListReport {
         LocaleString endTimelocaleString = new LocaleString("打卡结束时间");
         endTimeColumn.setCaption(endTimelocaleString);
 
+        ReportColumn startLocationColumn = new ReportColumn();
+        style.setTextAlign("center");
+        startLocationColumn.setStyle(style);
+        startLocationColumn.setFieldType("text");
+        startLocationColumn.setFieldKey("startLocation");
+        LocaleString startLocationlocaleString = new LocaleString("起始打卡地点");
+        startLocationColumn.setCaption(startLocationlocaleString);
+
+        ReportColumn endLocationColumn = new ReportColumn();
+        endLocationColumn.setStyle(style);
+        endLocationColumn.setFieldType("text");
+        endLocationColumn.setFieldKey("endLocation");
+        LocaleString endLocationlocaleString = new LocaleString("结束打卡地点");
+        endLocationColumn.setCaption(endLocationlocaleString);
+
         List<AbstractReportColumn> columnList = super.getColumns(columns);
         columnList.add(startTimeColumn);
         columnList.add(endTimeColumn);
+        columnList.add(startLocationColumn);
+        columnList.add(endLocationColumn);
         return columnList;
     }
 }
