@@ -5,6 +5,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.IFormView;
+import kd.bos.form.control.RichTextEditor;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.sdk.swc.hcdm.common.Pair;
 import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchParam;
@@ -26,7 +27,6 @@ import java.util.stream.Collectors;
  * @since ：Created in 14:38 2024/9/12
  */
 public class AdjapprBillFormPlugin extends AbstractFormPlugin {
-
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         IDataModel model = this.getModel();
@@ -52,15 +52,15 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         for (DynamicObject entry : entryentity) {
             // 本次调薪信息：薪等
             DynamicObject grade = entry.getDynamicObject("dy_grade");
-            if (grade == null) {
-                continue;
-            }
             // 上次薪酬信息：薪等
             DynamicObject pregrade = entry.getDynamicObject("dy_pregrade");
-            if (pregrade == null) {
+            if (pregrade == null || grade == null) {
                 continue;
             }
-            // 薪等相同，则薪档为原薪档。
+
+            /*
+             *薪等相同，则薪档为原薪档。
+             */
             int gradeIndex = grade.getInt("gradeindex");
             int preGradeIndex = pregrade.getInt("gradeindex");
             if (gradeIndex == preGradeIndex) {
@@ -68,7 +68,6 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 if (preRank == null) {
                     continue;
                 }
-
                 model.setValue("dy_rank", preRank, (entry.getInt("seq") - 1));
                 continue;
             }
@@ -164,20 +163,20 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     SalaryStdQueryService.get().queryAmountAndSalaryCount(queryParams);
 
             BigDecimal this2_this1_amount = stdAmountAndSalaryCountQueryResults.stream()
-                    .filter(result -> result.getUnionId().equals("this2"))
+                    .filter(result -> "this2".equals(result.getUnionId()))
                     .findFirst()
                     .map(this2 -> stdAmountAndSalaryCountQueryResults.stream()
-                            .filter(result -> result.getUnionId().equals("this1"))
+                            .filter(result -> "this1".equals(result.getUnionId()))
                             .findFirst()
                             .map(this1 -> this2.getAmount().subtract(this1.getAmount()))
                             .orElse(BigDecimal.ZERO))
                     .orElse(BigDecimal.ZERO);
 
             BigDecimal pre2_pre1_amount = stdAmountAndSalaryCountQueryResults.stream()
-                    .filter(result -> result.getUnionId().equals("pre2"))
+                    .filter(result -> "pre2".equals(result.getUnionId()))
                     .findFirst()
                     .map(pre2 -> stdAmountAndSalaryCountQueryResults.stream()
-                            .filter(result -> result.getUnionId().equals("pre1"))
+                            .filter(result -> "pre1".equals(result.getUnionId()))
                             .findFirst()
                             .map(pre1 -> pre2.getAmount().subtract(pre1.getAmount()))
                             .orElse(BigDecimal.ZERO))
@@ -272,11 +271,9 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
-
                 model.setValue("dy_rank", finalRankId, (entry.getInt("seq") - 1));
             }
         }
-        view.updateView("adjapprdetailentry");
     }
 
     private Long positionInfoCheck(Pair<Long, Long> positionInfo) {
@@ -287,12 +284,12 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             return minRank;
         }
         // ②最低等id为0，最高等id不为0，代表传入的值小于最低等
-        if (minRank.equals(0L) && !maxRank.equals(0L)) {
+        if (minRank.equals(0L)) {
             return maxRank;
         }
 
         // ③最低等id不为0，最高等id为0，代表传入的值高于最高等
-        if (!minRank.equals(0L) && maxRank.equals(0L)) {
+        if (maxRank.equals(0L)) {
             return minRank;
         }
         return null;
