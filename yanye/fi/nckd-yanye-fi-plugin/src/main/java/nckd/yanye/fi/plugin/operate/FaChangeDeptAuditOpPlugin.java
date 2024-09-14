@@ -60,16 +60,16 @@ public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
                     assetcat = BusinessDataServiceHelper.loadSingle(assetcat.getPkValue(),"fa_assetcategory");
                     String fixedassettype = assetcat.getString("nckd_fixedassettype");
                     if ("1".equals(fixedassettype)) {
-                        sedMessage(dataEntity, "房产原值变更",entry,assetcat);
+                        sedMessage(dataEntity, "房产原值变更",entry,assetcat,realCard);
                     } else if ("2".equals(fixedassettype)) {
-                        sedMessage(dataEntity, "土地面积变更",entry,assetcat);
+                        sedMessage(dataEntity, "土地面积变更",entry,assetcat,realCard);
                     }
                 }
             }
         }
     }
 
-    private void sedMessage(DynamicObject dataEntity, String messageInformersName, DynamicObject entry, DynamicObject assetcat) {
+    private void sedMessage(DynamicObject dataEntity, String messageInformersName, DynamicObject entry, DynamicObject assetcat,DynamicObject realCard) {
         //查维护税源信息消息通知人拿到模板
         DynamicObject messageInformers = BusinessDataServiceHelper.loadSingle("nckd_messageinformers", "id,name,nckd_user,nckd_mescontent", new QFilter[]{new QFilter("name", QCP.equals, messageInformersName)});
         if (messageInformers == null) {
@@ -99,7 +99,7 @@ public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = String.format(resultMes, assetcat.getString("number"), assetcat.getString("number"), createtime, entry.getString("m_bef_originalval"),entry.getString("m_aft_originalval"));
+        String formatMes = String.format(resultMes, realCard.getString("number"), realCard.getString("assetname"), createtime, entry.getString("m_bef_originalval"),entry.getString("m_aft_originalval"));
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);
         content.setLocaleValue_zh_CN(formatMes);

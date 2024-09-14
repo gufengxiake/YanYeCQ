@@ -97,7 +97,7 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = String.format(resultMes, assetcat.getString("number"), assetcat.getString("number"), createtime, dataEntity.getString("price"));
+        String formatMes = String.format(resultMes, dataEntity.getString("number"), dataEntity.getString("assetname"), createtime, dataEntity.getString("price"));
         //String contentMessage = "新增房产，资产编号：" + assetcat.getString("number") + ",资产名称：" + assetcat.getString("number") + ",新增时间：" + createtime + ",房产金额：" + dataEntity.getString("price");
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);
