@@ -3,19 +3,28 @@ package nckd.yanye.scm.plugin.report;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.*;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.metadata.IDataEntityProperty;
 import kd.bos.dataentity.metadata.dynamicobject.DynamicProperty;
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.EntityMetadataCache;
+import kd.bos.entity.EntityTypeUtil;
+import kd.bos.entity.GetFilterFieldsParameter;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.filter.FilterCondition;
 import kd.bos.entity.property.GroupProp;
 import kd.bos.entity.property.ParentBasedataProp;
+import kd.bos.entity.property.UnitProp;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.form.IFormView;
+import kd.bos.form.control.FilterGrid;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
@@ -25,12 +34,17 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
+import kd.bos.servicehelper.MetadataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bplat.scmc.report.conf.ReportConf;
+import kd.bplat.scmc.report.core.ReportDataHandle;
+import kd.bplat.scmc.report.util.ReportUtil;
 import kd.fi.cal.common.helper.OrgHelper;
 import kd.fi.cal.common.helper.PeriodHelper;
 import kd.fi.cal.common.helper.PermissionHelper;
 import kd.fi.cal.common.helper.ReportF7Helper;
 import kd.fi.cal.common.util.DateUtils;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author husheng
@@ -38,6 +52,8 @@ import kd.fi.cal.common.util.DateUtils;
  * @description 出入库流水账（nckd_inoutrecords）报表界面插件
  */
 public class InoutrecordsRptForm extends AbstractReportFormPlugin implements BeforeF7SelectListener {
+    private ReportConf confCache;
+
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
@@ -76,6 +92,94 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
                 this.costAccountChanged();
             }
         }
+
+        this.initFilterAp();
+    }
+
+    private void initFilterAp() {
+        ReportConf conf = this.getReportConf();
+        final Map<String, String> renames = new HashMap(32);
+        final Set<String> fsCol = ReportUtil.filterBigtableCols(conf, (colConf) -> {
+            String calType = colConf.getCalType();
+            boolean result = !"D".equals(calType) && !"B".equals(calType);
+            if (result) {
+                renames.put(colConf.getCol(), colConf.getColName());
+            }
+
+            return result;
+        });
+        String repoEntity = conf.getRepoEntity();
+        MainEntityType type = MetadataServiceHelper.getDataEntityType(repoEntity);
+        Map<String, IDataEntityProperty> allFields = type.getAllFields();
+        final Set<String> unitCols = new HashSet(8);
+        IDataEntityProperty pro = null;
+        Iterator var9 = allFields.entrySet().iterator();
+
+        while(var9.hasNext()) {
+            Map.Entry<String, IDataEntityProperty> field = (Map.Entry)var9.next();
+            pro = field.getValue();
+            if (pro instanceof UnitProp) {
+                unitCols.add(field.getKey());
+            }
+        }
+
+        fsCol.removeAll(unitCols);
+        this.setCols4FilterGrid(conf.getRepoEntity(), "nckd_commonfs", new Predicate<Map<String, Object>>() {
+            public boolean test(Map<String, Object> info) {
+                boolean result = false;
+                String fieldName = (String)info.get("fieldName");
+                if (fieldName != null) {
+                    String[] splitName = fieldName.split("\\.");
+                    if (fsCol.contains(splitName[0])) {
+                        result = true;
+                    } else if (unitCols.contains(splitName[0])) {
+                        result = splitName.length > 1 && ("name".equals(splitName[1]) || "number".equals(splitName[1]));
+                    }
+
+                    String rename = renames.get(splitName[0]);
+                    if (result && rename != null) {
+                        String fieldCaption = (String)info.get("fieldCaption");
+                        if (fieldCaption != null) {
+                            String[] splitCaption = fieldCaption.split("\\.");
+                            splitCaption[0] = rename;
+                            info.put("fieldCaption", String.join(".", splitCaption));
+                        }
+                    }
+                }
+
+                return result;
+            }
+        });
+    }
+
+    protected final ReportConf getReportConf() {
+        if (this.confCache == null) {
+            this.confCache = ReportDataHandle.loadReportConf(this.getReoprtEntity());
+        }
+
+        return this.confCache;
+    }
+
+    protected String getReoprtEntity() {
+        return this.getModel().getDataEntityType().getName();
+    }
+
+    private void setCols4FilterGrid(String entityName, String grid, Predicate<Map<String, Object>> predicate) {
+        FilterGrid filterGrid = this.getView().getControl(grid);
+        filterGrid.SetValue(new FilterCondition());
+        if (StringUtils.isBlank(entityName)) {
+            filterGrid.setFilterColumns(new ArrayList());
+        } else {
+            MainEntityType entityType = MetadataServiceHelper.getDataEntityType(entityName);
+            GetFilterFieldsParameter filterFieldsParameter = new GetFilterFieldsParameter(entityType);
+            filterFieldsParameter.setNeedAliasEmptyFieldProp(true);
+            filterFieldsParameter.setNeedFieldCompareType(false);
+            List<Map<String, Object>> cols = EntityTypeUtil.createFilterColumns(filterFieldsParameter).stream().filter(predicate).collect(Collectors.toList());
+            filterGrid.setEntityNumber(entityType.getName());
+            filterGrid.setFilterColumns(cols);
+        }
+
+        this.getView().updateView(grid);
     }
 
     @Override
