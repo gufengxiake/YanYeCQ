@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 报表取数插件
+ * 经营团队情况一览表（交易客户）-报表取数插件
+ * 表单标识：nckd_manageteamcust_rpt
+ * author:zhangzhilong
+ * date:2024/09/13
  */
 public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 

@@ -12,7 +12,10 @@ import java.text.DecimalFormat;
 import java.util.Iterator;
 
 /**
- * 报表界面插件
+ * 经营团队情况一览表（交易客户）-报表界面插件
+ * 表单标识：nckd_manageteamcust_rpt
+ * author:zhangzhilong
+ * date:2024/09/13
  */
 public class ManageTeamCustomerReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
     @Override
