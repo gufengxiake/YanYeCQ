@@ -112,7 +112,8 @@ public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
         ArrayList<Long> receivers = new ArrayList<>();
         DynamicObjectCollection users = messageInformers.getDynamicObjectCollection("nckd_user");
         for (DynamicObject user : users) {
-            receivers.add(Long.parseLong(user.getPkValue().toString()));
+            DynamicObject bos_user = user.getDynamicObject("fbasedataid");
+            receivers.add(Long.parseLong(bos_user.getPkValue().toString()));
         }
 
         message.setMessageTitle(title);
