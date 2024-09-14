@@ -140,7 +140,7 @@ public class ClockInApiUtil {
 
         httpRequest.form("appkey", ddAppkey);
         httpRequest.form("appsecret", ddAppsecret);
-        log.error("钉钉-获取accessToken。appkey:{} appsecret:{}", ddAppkey, ddAppsecret);
+        log.error("钉钉-获取accessToken。appkey:{} 。appsecret:{}", ddAppkey, ddAppsecret);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
 

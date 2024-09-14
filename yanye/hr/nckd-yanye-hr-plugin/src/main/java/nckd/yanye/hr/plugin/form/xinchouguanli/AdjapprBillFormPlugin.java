@@ -18,6 +18,7 @@ import nckd.yanye.hr.common.ClockInConst;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -78,6 +79,8 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     continue;
                 }
                 model.setValue("dy_rank", preRank, thisRowIndex);
+                String notesInfo = "薪档差金额为:" + "薪等不变" + "，调整后金额:" + "薪等不变";
+                model.setValue("dy_nckd_notesinfo", notesInfo, thisRowIndex);
                 continue;
             }
 
@@ -190,15 +193,22 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                             .map(pre1 -> pre2.getAmount().subtract(pre1.getAmount()))
                             .orElse(BigDecimal.ZERO))
                     .orElse(BigDecimal.ZERO);
-
-
+            // 最终的rankId
+            Long finalRankId = null;
+            // 调整后金额
+            BigDecimal finalAmount = null;
+            // 薪档差金额
+            BigDecimal rankDiffAmount = null;
             // 晋升：取调动后岗位的薪等，取（此薪等下2档金额-1档金额）*2+原金额，得出调整后金额，
             // 再按照就高原则匹配到对应的薪档，系统会根据薪档得到本次调薪后的金额
             // 原金额
             BigDecimal preAmount = entry.getBigDecimal("dy_presalary");
             if (gradeIndex > preGradeIndex) {
-                // 最终金额
-                BigDecimal finalAmount = this2_this1_amount.multiply(new BigDecimal("2")).add(preAmount);
+                // 薪档差金额
+                rankDiffAmount = this2_this1_amount;
+                // 调整后金额
+                finalAmount = this2_this1_amount.multiply(new BigDecimal("2")).add(preAmount)
+                        .setScale(2, RoundingMode.HALF_UP);
                 // 查询
                 SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
                 // 标准表id
@@ -224,7 +234,6 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                         Collections.singletonList(salaryCountAmountMatchParam)
                 );
 
-                Long finalRankId;
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "up".equals(result.getUnionId()))
                         .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
@@ -235,15 +244,16 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
-
-                model.setValue("dy_rank", finalRankId, thisRowIndex);
             }
 
             // 下降：取（原薪等下2档金额-1档金额）*（-2）+原金额，得出调整后金额，
             // 再按照就低原则匹配到对应的薪档，系统会根据薪档得到本次调薪后的金额。
             if (gradeIndex < preGradeIndex) {
-                // 最终金额
-                BigDecimal finalAmount = pre2_pre1_amount.multiply(new BigDecimal("-2")).add(preAmount);
+                // 薪档差金额
+                rankDiffAmount = pre2_pre1_amount;
+                // 调整后金额
+                finalAmount = pre2_pre1_amount.multiply(new BigDecimal("-2")).add(preAmount)
+                        .setScale(2, RoundingMode.HALF_UP);
                 // 查询
                 SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
                 // 标准表id
@@ -269,7 +279,6 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                         Collections.singletonList(salaryCountAmountMatchParam)
                 );
 
-                Long finalRankId;
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "down".equals(result.getUnionId()))
                         .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
@@ -280,8 +289,12 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
-                model.setValue("dy_rank", finalRankId, thisRowIndex);
             }
+            // 设置最终的薪档
+            model.setValue("dy_rank", finalRankId, thisRowIndex);
+            // 设置“系统处理备注信息”字段：“薪档差为”&金额“，调整后金额”&金额
+            String notesInfo = "薪档差金额为:" + rankDiffAmount + "，调整后金额:" + finalAmount;
+            model.setValue("dy_nckd_notesinfo", notesInfo, thisRowIndex);
         }
     }
 
