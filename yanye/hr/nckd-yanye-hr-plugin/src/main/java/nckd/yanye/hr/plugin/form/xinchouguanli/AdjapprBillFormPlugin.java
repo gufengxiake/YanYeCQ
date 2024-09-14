@@ -64,11 +64,12 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             int gradeIndex = grade.getInt("gradeindex");
             int preGradeIndex = pregrade.getInt("gradeindex");
             if (gradeIndex == preGradeIndex) {
-                DynamicObject prerank = entry.getDynamicObject("dy_prerank");
-                if (prerank == null) {
+                DynamicObject preRank = entry.getDynamicObject("dy_prerank");
+                if (preRank == null) {
                     continue;
                 }
-                entry.set("dy_rank", prerank);
+
+                model.setValue("dy_rank", preRank, (entry.getInt("seq") - 1));
                 continue;
             }
 
@@ -105,7 +106,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     .collect(Collectors.toList());
 
 
-            // 上次1档id和2档id
+            // 上次1档id和2档id，所有档
             Map<Long, List<Map<String, Object>>> preResultMap = SalaryStdQueryService.get().getRankInfo(Collections.singleton(preSalaryStdId));
             if (preResultMap == null || preResultMap.isEmpty()) {
                 continue;
@@ -227,7 +228,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     finalRankId = positionInfoCheck(longLongPair);
                 }
 
-                entry.set("dy_rank", finalRankId);
+                model.setValue("dy_rank", finalRankId, (entry.getInt("seq") - 1));
             }
 
             // 下降：取（原薪等下2档金额-1档金额）*（-2）+原金额，得出调整后金额，
@@ -260,14 +261,20 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                         Collections.singletonList(salaryCountAmountMatchParam)
                 );
 
-                Long finalRankId = salaryCountAmountMatchResults.stream()
+                Long finalRankId;
+                finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "down".equals(result.getUnionId()))
-                        .findFirst()
-                        .map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
+                        .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
 
-                entry.set("dy_rank", finalRankId);
+                if (finalRankId == null) {
+                    Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream().filter(r -> "down".equals(r.getUnionId()))
+                            .findFirst().map(SalaryCountAmountMatchResult::getPositionInfo).orElse(null);
+                    Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
+                    finalRankId = positionInfoCheck(longLongPair);
+                }
+
+                model.setValue("dy_rank", finalRankId, (entry.getInt("seq") - 1));
             }
-            view.setEnable(false, entry.getInt("seq"), "dy_rank");
         }
         view.updateView("adjapprdetailentry");
     }

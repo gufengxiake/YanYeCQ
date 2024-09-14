@@ -111,7 +111,8 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         ArrayList<Long> receivers = new ArrayList<>();
         DynamicObjectCollection users = messageInformers.getDynamicObjectCollection("nckd_user");
         for (DynamicObject user : users) {
-            receivers.add(Long.parseLong(user.getPkValue().toString()));
+            DynamicObject bos_user = user.getDynamicObject("fbasedataid");
+            receivers.add(Long.parseLong(bos_user.getPkValue().toString()));
         }
 
         message.setMessageTitle(title);
@@ -124,8 +125,8 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         message.setOperation("audit");
         message.setBizDataId(dataEntity.getLong("id"));
         StringBuilder stringBuilder = new StringBuilder();
-        stringBuilder.append(MessageChannels.YUNZHIJIA).append(",");
-        stringBuilder.append(MessageChannels.SMS);
+        stringBuilder.append(MessageChannels.YUNZHIJIA.getNumber()).append(",");
+        stringBuilder.append(MessageChannels.SMS.getNumber());
         message.setNotifyType(stringBuilder.toString());
         long l = MessageCenterServiceHelper.sendMessage(message);
         logger.info("消息发送成功：{}", l);

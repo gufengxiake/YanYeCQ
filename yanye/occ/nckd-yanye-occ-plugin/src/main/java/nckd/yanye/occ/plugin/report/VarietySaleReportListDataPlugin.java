@@ -20,7 +20,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 报表取数插件
+ * 品种销售统计表-报表取数插件
+ * 表单标识：nckd_varietysale_rpt
+ * author:zhangzhilong
+ * date:2024/09/12
  */
 public class VarietySaleReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
