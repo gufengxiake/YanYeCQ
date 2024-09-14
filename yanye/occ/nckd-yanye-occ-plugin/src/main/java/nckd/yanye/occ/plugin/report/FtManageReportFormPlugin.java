@@ -30,6 +30,10 @@ public class FtManageReportFormPlugin extends AbstractReportFormPlugin implement
            //计算价税合计
             BigDecimal multiply = nckd_signqty.multiply(nckdPricefieldyf1);
             next.set("nckd_e_pricetaxtotal",multiply);
+            //
+            if (next.getString("nckd_bizorg").equals("晶昊本部")){
+                next.set("nckd_bizorg","江西晶昊盐化有限公司");
+            }
         }
 
     }

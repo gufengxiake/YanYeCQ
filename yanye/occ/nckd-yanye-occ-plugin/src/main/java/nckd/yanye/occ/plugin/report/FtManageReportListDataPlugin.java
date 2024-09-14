@@ -26,9 +26,9 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
-        //限定源头是销售订单的出库单
-//        QFilter filter = new QFilter("billentry.mainbillentity", QCP.equals,"sm_salorder");
-
+        //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
+        QFilter  orgfilter= new QFilter("bizorg.number", QCP.in,new String[]{"11901","121"});
+        qFilters.add(orgfilter);
         //限定单据为已审核
         QFilter filter = new QFilter("billstatus", QCP.equals, "C");
         qFilters.add(filter);
@@ -36,6 +36,13 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
+                case "nckd_org_q":
+                    if (filterItem.getValue() != null) {
+                        Long nckd_org_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        QFilter qFilter = new QFilter("bizorg", QCP.equals, nckd_org_q);
+                        qFilters.add(qFilter);
+                    }
+                    break;
                 // 查询条件收货单位,标识如不一致,请修改
                 case "nckd_customer_q":
                     if (filterItem.getValue() != null) {
@@ -60,7 +67,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
             }
         }
 
-        String sFields =
+        //公司
+        String sFields ="bizorg.name as nckd_bizorg," +
                          //客户编码
                          "customer as nckd_customer ," +
 //                        存货编码
