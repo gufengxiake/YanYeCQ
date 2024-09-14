@@ -135,8 +135,12 @@ public class ClockInApiUtil {
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.GET);
-        httpRequest.form("appkey", ClockInConst.DD_APPKEY);
-        httpRequest.form("appsecret", ClockInConst.DD_APPSECRET);
+        String ddAppkey = ClockInConst.DD_APPKEY;
+        String ddAppsecret = ClockInConst.DD_APPSECRET;
+
+        httpRequest.form("appkey", ddAppkey);
+        httpRequest.form("appsecret", ddAppsecret);
+        log.error("钉钉-获取accessToken。appkey:{} appsecret:{}", ddAppkey, ddAppsecret);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
 

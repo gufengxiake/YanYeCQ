@@ -3,6 +3,7 @@ package nckd.yanye.hr.plugin.form.xinchouguanli;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.RichTextEditor;
@@ -13,6 +14,7 @@ import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
+import nckd.yanye.hr.common.ClockInConst;
 import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
@@ -32,6 +34,9 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         IDataModel model = this.getModel();
         IFormView view = this.getView();
 
+        ChangeData changeData = e.getChangeSet()[0];
+        int changeRowIndex = changeData.getRowIndex();
+
         // 监听字段：本次调薪信息：薪等
         String propertyName = e.getProperty().getName();
         if (!"dy_grade".equals(propertyName)) {
@@ -50,6 +55,10 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         // 调薪明细信息
         DynamicObjectCollection entryentity = model.getEntryEntity("adjapprdetailentry");
         for (DynamicObject entry : entryentity) {
+            int thisRowIndex = entry.getInt("seq") - 1;
+            if (changeRowIndex != thisRowIndex) {
+                continue;
+            }
             // 本次调薪信息：薪等
             DynamicObject grade = entry.getDynamicObject("dy_grade");
             // 上次薪酬信息：薪等
@@ -68,7 +77,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 if (preRank == null) {
                     continue;
                 }
-                model.setValue("dy_rank", preRank, (entry.getInt("seq") - 1));
+                model.setValue("dy_rank", preRank, thisRowIndex);
                 continue;
             }
 
@@ -227,7 +236,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     finalRankId = positionInfoCheck(longLongPair);
                 }
 
-                model.setValue("dy_rank", finalRankId, (entry.getInt("seq") - 1));
+                model.setValue("dy_rank", finalRankId, thisRowIndex);
             }
 
             // 下降：取（原薪等下2档金额-1档金额）*（-2）+原金额，得出调整后金额，
@@ -271,7 +280,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
-                model.setValue("dy_rank", finalRankId, (entry.getInt("seq") - 1));
+                model.setValue("dy_rank", finalRankId, thisRowIndex);
             }
         }
     }
