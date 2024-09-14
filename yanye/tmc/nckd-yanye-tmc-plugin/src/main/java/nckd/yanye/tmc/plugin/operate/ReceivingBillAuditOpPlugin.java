@@ -21,8 +21,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Module           :资金云-收款单
- * Description      :因为要货订单的聚合支付暂时不能整合，先提供备选方案，客户直接在收款单上选择要货订单
+ * Module           :资金云-收款单-审核
+ * Description      :收款单审核后需要将金额反写回要货订单
  *
  * @author : zhujintao
  * @date : 2024/8/27
