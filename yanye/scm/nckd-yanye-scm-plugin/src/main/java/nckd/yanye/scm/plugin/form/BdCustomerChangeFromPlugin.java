@@ -7,6 +7,8 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.property.BasedataProp;
+import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
@@ -41,9 +43,9 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             "nckd_district", "nckd_businesstype", "nckd_quality", "nckd_societycreditcode", "nckd_basedatafield", "nckd_buyer",
             "nckd_cooperatestatus", "nckd_linkman", "nckd_phone", "nckd_postalcode", "nckd_address", "nckd_bankaccount",
             "nckd_accountname", "nckd_bank", "nckd_currency", "nckd_taxpayertype", "nckd_invoicename","nckd_banknumber",
-            "nckd_invoicetype","nckd_addressorphone","nckd_invoicephone","nckd_enterpriseemail","nckd_customeremail","nckd_myemail"};
+            "nckd_invoicetype","nckd_addressorphone","nckd_invoicephone","nckd_enterpriseemail","nckd_customeremail","nckd_myemail","nckd_isinvoice"};
 
-    private String[] NUMBERS = {"1","2","26","27","5"};
+    private String[] NUMBERS = {"1","2","26","27"};
 
 
     @Override
@@ -150,6 +152,37 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
         if ("nckd_customermodify".equals(fieldKey)) {
             setSupplierModify(rowIndex);
         }
+        //客户联系人电话
+        if ("nckd_phone".equals(fieldKey)){
+            Object phone = this.getModel().getValue("nckd_phone", rowIndex);
+            this.getModel().setValue("nckd_invoicephone", phone,rowIndex);
+        }
+        //新增客户名称
+        if ("nckd_addcustomer".equals(fieldKey)){
+            Object addcustomer = this.getModel().getValue("nckd_addcustomer", rowIndex);
+            this.getModel().setValue("nckd_invoicename", addcustomer,rowIndex);
+        }
+        //联系地址
+        if ("nckd_address".equals(fieldKey)){
+            DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", rowIndex);
+            Object phone = this.getModel().getValue("nckd_phone");
+            if (phone != null) {
+                this.getModel().setValue("nckd_addressorphone", address.getString("name")+"，"+phone.toString(),rowIndex);
+            }
+        }
+        //是否开票
+        if ("nckd_isinvoice".equals(fieldKey)){
+            String isinvoice = this.getModel().getValue("nckd_isinvoice", rowIndex).toString();
+            BasedataEdit rateEdit = this.getControl("nckd_invoicetype");
+            BasedataProp rateProp = (BasedataProp) rateEdit.getProperty();
+            if (isinvoice.equals("1")){
+                rateEdit.setMustInput(true);
+                rateProp.setMustInput(true);
+            } else {
+                rateEdit.setMustInput(false);
+                rateProp.setMustInput(false);
+            }
+        }
     }
 
     /**
@@ -214,7 +247,8 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
         DynamicObject bankEntry = customer.getDynamicObjectCollection("entry_bank").size() <= 0 ? null : customer.getDynamicObjectCollection("entry_bank").get(0);
         DynamicObject linkmanEntry = customer.getDynamicObjectCollection("entry_linkman").size() <= 0 ? null : customer.getDynamicObjectCollection("entry_linkman").get(0);
         Object changeAfter = this.getModel().getValue("nckd_changeafter", rowIndex);
-
+        Object mails = customer.get("nckd_mail");
+        String[] splitMails = {};
         //判断值改变行是否是当前选中行，不是的话直接中断操作
         if (rowIndex == index && changeAfter == null){
             this.getModel().setValue("nckd_changeafter","1",index);
@@ -230,20 +264,26 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
             this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
             this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),index);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),index);
             this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),index);
             this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),index);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            //this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",index);
+            if (mails != null && mails.toString().contains(",") && mails.toString().length() >= 3) {
+                splitMails = mails.toString().split(",");
+                this.getModel().setValue("nckd_enterpriseemail",splitMails[0],index);
+                this.getModel().setValue("nckd_customeremail",splitMails[1],index);
+                this.getModel().setValue("nckd_myemail",splitMails[2],index);
+            }
 
             //锁定当前分录行
             this.getView().setEnable(false, index, ENTRYFIELD);
@@ -264,20 +304,25 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),newIndex);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),newIndex);
             this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),newIndex);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),newIndex);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),newIndex);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),newIndex);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),newIndex);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),newIndex);
             this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),newIndex);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),newIndex);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),newIndex);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),newIndex);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),newIndex);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),newIndex);
             this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),newIndex);
-            this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),newIndex);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),newIndex);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            //this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),newIndex);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",newIndex);
+            if (mails != null && mails.toString().contains(",") && mails.toString().length() >= 3) {
+                splitMails = mails.toString().split(",");
+                this.getModel().setValue("nckd_enterpriseemail", splitMails[0], newIndex);
+                this.getModel().setValue("nckd_customeremail", splitMails[1], newIndex);
+                this.getModel().setValue("nckd_myemail", splitMails[2], newIndex);
+            }
             return;
         }
 
@@ -295,20 +340,26 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
             this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
             this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),index);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),index);
             this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),index);
             this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),index);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            //this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",index);
+            if (mails != null && mails.toString().contains(",") && mails.toString().length() >= 3) {
+                splitMails = mails.toString().split(",");
+                this.getModel().setValue("nckd_enterpriseemail", splitMails[0], index);
+                this.getModel().setValue("nckd_customeremail", splitMails[1], index);
+                this.getModel().setValue("nckd_myemail", splitMails[2], index);
+            }
         }
     }
 
