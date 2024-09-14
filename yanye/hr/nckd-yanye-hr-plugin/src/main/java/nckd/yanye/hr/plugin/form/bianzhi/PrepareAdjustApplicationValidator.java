@@ -52,7 +52,6 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
 
 
 
-
     @Override
     public void onAddValidators(AddValidatorsEventArgs e) {
         super.onAddValidators(e);
@@ -90,13 +89,17 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                             if(ObjectUtils.isNotEmpty(dynamicObject)){
                                 Object nckdAdjustlatenum = dynamicObject.get("nckd_adjustlatenum");
                                 if(ObjectUtils.isNotEmpty(nckdAdjustlatenum)){
-                                    // 更新组织编制人数
-                                    useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
+                                    if(!StringUtils.equals("A", (String) dynamicObject.get("nckd_lowermost"))){
+                                        // 更新组织编制人数
+                                        useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
+                                        // 直属人数
+                                        useOrgEntryBo.setYearStaff((int)dynamicObject.get("nckd_relbdirectnum"));
+                                    }
                                 }
                                 // 更新岗位编制人数,如果不存在岗位则跳过
                                 DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");
                                 if(ObjectUtils.isNotEmpty(nckdCentryentity)){
-                                    Map<Long, DynamicObject> centrMap = Arrays.stream(entryentityCols.toArray(new DynamicObject[0]))
+                                    Map<Long, DynamicObject> centrMap = Arrays.stream(nckdCentryentity.toArray(new DynamicObject[0]))
                                             .collect(Collectors.toMap(
                                                     obj -> (Long) obj.get("nckd_cdutyworkrole.id"),
                                                     obj -> {
@@ -112,11 +115,11 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                                                 positionDimensionBo.setYearStaff((int) nckdPostadjustlatenum);
                                             }
                                         }
-
                                     });
                                 }
                             }
                         });
+                        returnData.setUseOrgEntryBoList(useOrgEntryBoList);
                         Object[] objects = new Object[1];
                         objects[0] = returnData;
                         // 调用更新服务
@@ -126,6 +129,14 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                         logger.info("调用校验服务返回结果："+haosValidateResult);
                         if(!"success".equals(haosValidateResult.getReturnCode())){
                             errorMsg = haosValidateResult.getMessage();
+                        }else{
+                            // 校验成功，调用更新服务
+                            logger.info("调用校验服务返回结果："+haosValidateResult);
+                            HRMServiceResult haoSaveResult =DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","saveStaff",objects);
+                            logger.info("调用保存服务返回结果："+haosValidateResult);
+                            if(!"success".equals(haoSaveResult.getReturnCode())){
+                                errorMsg = haoSaveResult.getMessage();
+                            }
                         }
                     }else{
                         errorMsg = haosStaffResponse.getMessage();
@@ -133,7 +144,6 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                     // 判断是否在本周内
                     if (StringUtils.isNotEmpty(errorMsg)) {
                         this.addErrorMessage(dataEntity, "单据" + dataEntityObj.getString("billno") +","+ errorMsg);
-//                        this.addErrorMessage(dataEntity, "单据" + dataEntityObj.getString("billno") + "为上周单据，不允许上报！");
                     }
                 }
             }

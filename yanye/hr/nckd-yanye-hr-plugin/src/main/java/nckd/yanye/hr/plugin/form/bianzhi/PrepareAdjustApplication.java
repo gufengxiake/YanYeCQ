@@ -26,17 +26,14 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
-import kd.hr.haos.business.service.staff.externalInterface.bean.StaffBo;
-import kd.hr.haos.business.service.staff.externalInterface.bean.StaffMultiDimensionBo;
-import kd.hr.haos.business.service.staff.externalInterface.bean.StaffUseOrgBo;
 import kd.hr.hbp.common.model.org.staff.StaffResponse;
-import kd.hr.hbp.common.mservice.HRMServiceResult;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
@@ -133,7 +130,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             }else{
                 nckdAdjustlatenum = nckdBrealnum -  i;
             }
-            if(nckdBrealnum<0){
+            if(nckdAdjustlatenum<0){
                 this.getView().showErrorNotification("编制人数不能小于0！");
                 this.getModel().setValue(NCKD_ADJUSTNUM,oldValue,row);
                 return;
@@ -246,10 +243,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             Long orgid = (Long) ((DynamicObject) org).getPkValue();
             // 编制维护id
             Long pkValue = (Long) staff1.getPkValue();
-//            Object[] objects3 = new Object[1];
-//            objects3[0] = pkValue;
+            Object[] objects3 = new Object[1];
+            objects3[0] = pkValue;
 //            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
 
+//            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
 
 
 
@@ -259,13 +257,14 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
             // 拼接 SQL 查询
             StringBuilder sql = new StringBuilder("SELECT a.fid AS id, a.fboid AS boid, A.fparentid as parentorg, "
-                    + "t.flevel as level1, t.fstructlongnumber as structlongnumber, "
+                    + "t.flevel as level1, t.fstructlongnumber as structlongnumber, ST.fcount as count,ST.fcontainsubcount as containsubcount, "
 //                    + "(select top 1 N.fstaffcount  from t_haos_adminorg M where a.fparentid = M.fboid ) as "
                     + "(select top 1 N.fstaffcount  from t_haos_adminorg M left join t_haos_dutyorgdetail N on N.fdutyorgid = M.fid "
                     + "where M.fenable ='1'  and M.fboid  =a.fboid "
                     + "AND M.fbsed <= '" + dateStr + "' AND M.fbsled >= '" + dateStr + "'  "
                     + "order by M.fhisversion desc) as staffcount "
                     + "FROM T_HAOS_ADMINORG A "
+                    + "LEFT JOIN T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
                     + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON A.fboid = T.fadminorgid "
                     + "AND T.fiscurrentversion = '0' AND T.fdatastatus = '1' AND T.fstructprojectid = 1010 "
                     + "AND T.finitstatus = '2' AND T.fbsed <= '" + dateStr + "' "
@@ -292,7 +291,12 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 int index = this.getModel().insertEntryRow("nckd_bentryentity", i);
                 this.getModel().setValue("nckd_adminorg",retDynCol.get(i).get("BOID"),index);
                 this.getModel().setValue("nckd_parentorg",retDynCol.get(i).get("parentorg"),index);
+                // 编制人数
                 this.getModel().setValue("nckd_brealnum",retDynCol.get(i).get("staffcount"),index);
+                this.getModel().setValue("nckd_adjustlatenum",retDynCol.get(i).get("staffcount"),index);
+                // 实际人数
+//                this.getModel().setValue("nckd_rellownum",retDynCol.get(i).get("containsubcount"),index);
+                this.getModel().setValue("nckd_relnum",retDynCol.get(i).get("count"),index);
                 collect2.add((Long) retDynCol.get(i).get("BOID"));
             }
             // 获取到部门key，根据部门key获取到岗位信息,HR岗位hbpm_positionhr
@@ -340,8 +344,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             this.initTree(staffResponse,staffpositionResponse,resultMap);
             this.getView().updateView("nckd_bentryentity");
             this.getView().updateView("nckd_centryentity");
-            System.out.println("初始化申请单据成功");
-            //sql2.append( "AND T.finitstatus = '2' AND T.fenable = '1' AND T.fbsed <= " + dateStr + " AND T.fbsled >= " + dateStr +" ");
+
 
         }
     }
@@ -374,7 +377,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             // 子单据体标识nckd_centryentity
             DynamicObjectCollection cntryEntity = enObj.getDynamicObjectCollection("nckd_centryentity");
             if(ObjectUtils.isNotEmpty(nckdAdminorg1)){
-
                 for (DynamicObject object : nckdAdminorg1) {
                     DynamicObject dynamicObject = new DynamicObject(cntryEntity.getDynamicObjectType());
                     DynamicObject dynamicObject2 = BusinessDataServiceHelper.newDynamicObject("hbpm_positionhr");
@@ -411,31 +413,34 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 DynamicObject result = matchingObject.get();
                 // 执行所需操作
                 centrydynamicObject.set("pid",result.getPkValue());
-//                entryentityCols.get(i).set("pid",result.getPkValue());
+
             } else {
                 // 处理未找到匹配的情况
                 centrydynamicObject.set("pid",0);
             }
             Map<String, Object> nckdAdminorg = staffResponse.getData().get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
             if(ObjectUtils.isNotEmpty(nckdAdminorg)){
-                // 添加直属
-                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
                 // 占编人数
-                centrydynamicObject.set("nckd_relnum",nckdAdminorg.get("holdStaff"));
+                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
+
+
+                // 占编人数
+//                centrydynamicObject.set("nckd_relnum",nckdAdminorg.get("holdStaff"));
+                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("holdStaff"));
+                centrydynamicObject.set("nckd_relbdirectnum",nckdAdminorg.get("holdStaff"));
             }
         }
+
         DynamicObjectCollection entryentityCols2 = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
         DynamicObjectCollection entryentityCols3 = entryentityCols2;
-        Map<Long, DynamicObject> resultMap = Arrays.stream(entryentityCols2.toArray(new DynamicObject[0]))
-                .collect(Collectors.toMap(
-                         obj -> (Long) obj.get("pid"),
-                         obj -> {
-                             return obj;
-                         },(existing, replacement) -> existing // 如果键冲突，保留第一个出现的值
+        Map<Long, List<DynamicObject>> resultMap = Arrays.stream(entryentityCols2.toArray(new DynamicObject[0]))
+                .collect(Collectors.groupingBy(
+                        obj -> (Long) obj.get("pid") // 使用 pid 作为 key
                 ));
+
         entryentityCols3.stream().forEach(obj -> {
-            DynamicObject dynamicObject = resultMap.get(obj.getPkValue());
-            if(ObjectUtils.isEmpty(dynamicObject)){
+            List<DynamicObject> dynamicObjects = resultMap.get(obj.getPkValue());
+            if(ObjectUtils.isEmpty(dynamicObjects)){
                 obj.set("nckd_lowermost","A");
             }
         });
