@@ -3,12 +3,16 @@ package nckd.yanye.hr.plugin.form.web.activity;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.DateProp;
+import kd.bos.form.control.Control;
+import kd.bos.form.control.events.BeforeClickEvent;
 import kd.bos.form.field.DateEdit;
 import kd.hr.hpfs.formplugin.privacy.AbstractDesensitizeFieldCommonPlugin;
 
+import java.util.EventObject;
+
 
 /**
- * PC端-》信息采集协作-》基本信息 ,当是退伍军人，入伍和退伍时间必填处理
+ * PC端-》信息采集协作-》基本信息 ,当选退伍军人为是，入伍和退伍时间设置必填处理
  * 信息组页面 ：nckd_hom_infogroupdyn_ext
  * 2024-09-12
  * chengchaohua
