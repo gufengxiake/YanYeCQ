@@ -6,10 +6,8 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.DateProp;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.Button;
-import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeClickEvent;
 import kd.bos.form.field.DateEdit;
-import kd.hr.hom.common.constant.InfoGroupFieldConstants;
 import kd.hr.hom.formplugin.mobile.collect.InfoGroupDynViewMobilePlugin;
 import kd.sdk.hr.hom.common.InfoGroupEntity;
 
@@ -55,10 +53,13 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                     property1.setMustInput(true);
                     DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
                     property2.setMustInput(true);
+                    // 锁定日期，可编辑
+                    this.getView().setEnable(true , "field2004391669838916608"); // 入伍时间
+                    this.getView().setEnable(true , "field2004391669838916609"); // 退伍时间
                 } else {
                     // 锁定日期，不可编辑
-                    this.getView().setVisible(false , "field2004391669838916608"); // 入伍时间
-                    this.getView().setVisible(false , "field2004391669838916609"); // 退伍时间
+                    this.getView().setEnable(false , "field2004391669838916608"); // 入伍时间
+                    this.getView().setEnable(false , "field2004391669838916609"); // 退伍时间
                 }
             }
         }
@@ -84,7 +85,7 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                 // 前端属性设置（前端判断必填校验）
                 DateEdit property1 = (DateEdit) this.getControl("field2004391669838916608");
                 property1.setMustInput(true);
-                DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609");
+                DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
                 property2.setMustInput(true);
                 // 后端属性设置（后端判断必填校验）
                 DateProp Prop1 = (DateProp)this.getModel().getDataEntityType().getProperty("field2004391669838916608");
@@ -92,12 +93,12 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                 DateProp Prop2 = (DateProp)this.getModel().getDataEntityType().getProperty("field2004391669838916609");
                 Prop2.setMustInput(true);
                 // 可编辑
-                this.getView().setEnable(true, "field2004391669838916608");
-                this.getView().setEnable(true, "field2004391669838916609");
+                this.getView().setEnable(true, "field2004391669838916608"); // 入伍时间
+                this.getView().setEnable(true, "field2004391669838916609"); // 退伍时间
             } else {
                 DateEdit property1 = (DateEdit) this.getControl("field2004391669838916608");
                 property1.setMustInput(false);
-                DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609");
+                DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
                 property2.setMustInput(false);
 
                 DateProp Prop1 = (DateProp)this.getModel().getDataEntityType().getProperty("field2004391669838916608");
@@ -106,9 +107,9 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                 Prop2.setMustInput(false);
                 // 值置空，不可编辑
                 this.getModel().setValue("field2004391669838916608",null);
-                this.getView().setEnable(false, "field2004391669838916608");
+                this.getView().setEnable(false, "field2004391669838916608"); // 入伍时间
                 this.getModel().setValue("field2004391669838916609",null);
-                this.getView().setEnable(false, "field2004391669838916609");
+                this.getView().setEnable(false, "field2004391669838916609"); // 退伍时间
             }
         }
         // 学历：field1249297648691749891
