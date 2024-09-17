@@ -30,7 +30,7 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
         if(StringUtils.equals("field1249297648691749891", key)) {
             // 学历：field1249297648691749891
             // 学位：field1249297648691749892
-            // 毕业院系名称:field2004400643116121089
+            // 毕业院系名称:field2004400643116121089，毕业院校(旧)  field1249297648691749888
             // 第一专业：field1249297648691749893
             IDataModel model = this.getModel();
             DynamicObject  xueli = (DynamicObject )model.getValue("field1249297648691749891");
@@ -45,7 +45,7 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
                 // 当【学历】不等于“1010_S 博士研究生、1020_S 硕士研究生、1030_S 本科、1040_S 大专”时，
                 // 【学位】默认赋值基础资料码值为“1000_S 无”
                 model.setItemValueByNumber("field1249297648691749892","1000_S"); // 1000_S 无
-                // 【毕业院系名称】默认赋值为文本”无“
+                // 【毕业院系名称】默认赋值为文本”无“ （二开新增字段）
                 model.setValue("field2004400643116121089","无");
                 // 【第一专业】默认赋值为文本”无"
                 model.setValue("field1249297648691749893","无");
