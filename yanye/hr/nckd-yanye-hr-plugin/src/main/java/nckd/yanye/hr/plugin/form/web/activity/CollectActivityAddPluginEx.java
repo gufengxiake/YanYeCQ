@@ -1,20 +1,26 @@
 package nckd.yanye.hr.plugin.form.web.activity;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.events.UploadListener;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.hr.hom.common.entity.InfoGroupConfigEntity;
 import kd.hr.hom.formplugin.web.activity.AbstractCollectDynViewPlugin;
+import kd.sdk.hr.hom.common.InfoGroupEntity;
 
+import java.util.EventObject;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * 单据标识：hom_infogroupdataadd  名称：新增多行信息组数据页面
- * 菜单：玩美入职-》信息采集
+ * 菜单：玩美入职-》信息采集 教育经历 弹框编辑页面
  * 需求：根据学历字段的值来控制其它字段的默认值,可新增多笔记录的信息组
  * author: chengchaohua
  * date: 2024-09-03
@@ -49,6 +55,24 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
                 model.setValue("field2004400643116121089","无");
                 // 【第一专业】默认赋值为文本”无"
                 model.setValue("field1249297648691749893","无");
+            }
+        }
+    }
+
+    @Override
+    public void afterBindData(EventObject e) {
+//        super.afterBindData(e);
+        FormShowParameter formShowParameter = this.getView().getFormShowParameter();
+        String param = ((JSONObject)formShowParameter.getCustomParam("param")).toJSONString();
+        InfoGroupEntity infoGroupEntity = (InfoGroupEntity)JSONObject.parseObject(param, InfoGroupEntity.class);
+        InfoGroupConfigEntity infoGroupConfigEntity = (InfoGroupConfigEntity)JSONObject.parseObject(((JSONObject)formShowParameter.getCustomParam("config")).toJSONString(), InfoGroupConfigEntity.class);
+
+        String infoGroupName = infoGroupEntity.getInfoGroupName(); // 分组名称，名称可能会人工修改
+        Long infoGroupId = infoGroupEntity.getInfoGroupId(); // 分组id
+        if ("教育经历".equals(infoGroupName) || 1247809451256209408L == infoGroupId) {
+            if (param.contains("1249297648691749888")) {
+                // 毕业院校(旧) 1249297648691749888,标准版自带的字段，某些方法体有用到，不能删除，就隐藏操作
+                this.getView().setVisible(false , "field1249297648691749888");
             }
         }
 

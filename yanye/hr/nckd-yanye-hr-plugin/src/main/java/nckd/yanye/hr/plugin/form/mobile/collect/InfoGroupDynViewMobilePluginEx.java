@@ -42,9 +42,9 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
         FormShowParameter showParameter = this.getView().getFormShowParameter();
         String jsonObject = (String)showParameter.getCustomParam("infoGroupEntity");
         InfoGroupEntity infoGroupEntity = (InfoGroupEntity) JSONObject.parseObject(jsonObject, InfoGroupEntity.class);
-        String infoGroupName = infoGroupEntity.getInfoGroupName();
-
-        if ("基本信息".equals(infoGroupName)) {
+        String infoGroupName = infoGroupEntity.getInfoGroupName(); // 分组名称，名称可能会人工修改
+        Long infoGroupId = infoGroupEntity.getInfoGroupId(); // 分组id
+        if ("基本信息".equals(infoGroupName) || 1247661585950874624L == infoGroupId) {
             // 基本信息字段：是否退伍军人 2004353791935130624
             if (jsonObject.contains("2004353791935130624")) {
                 String istuiwu = (String)this.getModel().getValue("field2004353791935130624");
@@ -55,7 +55,18 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                     property1.setMustInput(true);
                     DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
                     property2.setMustInput(true);
+                } else {
+                    // 锁定日期，不可编辑
+                    this.getView().setVisible(false , "field2004391669838916608"); // 入伍时间
+                    this.getView().setVisible(false , "field2004391669838916609"); // 退伍时间
                 }
+            }
+        }
+
+        if ("教育经历".equals(infoGroupName) || 1247809451256209408L == infoGroupId) {
+            if (jsonObject.contains("1249297648691749888")) {
+                // 毕业院校(旧) 1249297648691749888,标准版自带的字段，某些方法体有用到，不能删除，就隐藏操作
+                this.getView().setVisible(false , "field1249297648691749888");
             }
         }
 
@@ -100,6 +111,20 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                 this.getView().setEnable(false, "field2004391669838916609");
             }
         }
+        // 学历：field1249297648691749891
+        if (StringUtils.equals("field1249297648691749891", key)) {
+            FormShowParameter showParameter = this.getView().getFormShowParameter();
+            String jsonObject = (String)showParameter.getCustomParam("infoGroupEntity");
+            InfoGroupEntity infoGroupEntity = (InfoGroupEntity) JSONObject.parseObject(jsonObject, InfoGroupEntity.class);
+            String infoGroupName = infoGroupEntity.getInfoGroupName();
+            Long infoGroupId = infoGroupEntity.getInfoGroupId(); // 分组id
+            if ("教育经历".equals(infoGroupName) || 1247809451256209408L == infoGroupId) {
+                if (jsonObject.contains("1249297648691749888")) {
+                    // 毕业院校(旧) 1249297648691749888,标准版自带的字段，某些方法体有用到，不能删除，就隐藏操作
+                    this.getView().setVisible(false , "field1249297648691749888");
+                }
+            }
+        }
     }
 
     @Override
@@ -113,7 +138,8 @@ public class InfoGroupDynViewMobilePluginEx extends InfoGroupDynViewMobilePlugin
                 String jsonObject = (String)showParameter.getCustomParam("infoGroupEntity");
                 InfoGroupEntity infoGroupEntity = (InfoGroupEntity) JSONObject.parseObject(jsonObject, InfoGroupEntity.class);
                 String infoGroupName = infoGroupEntity.getInfoGroupName();
-                if ("基本信息".equals(infoGroupName)) {
+                Long infoGroupId = infoGroupEntity.getInfoGroupId(); // 分组id
+                if ("基本信息".equals(infoGroupName) || 1247661585950874624L == infoGroupId) {
                     String istuiwu = (String)this.getModel().getValue("field2004353791935130624");
                     if ("YES".equals(istuiwu)) {
                         // 入伍时间 field2004391669838916608
