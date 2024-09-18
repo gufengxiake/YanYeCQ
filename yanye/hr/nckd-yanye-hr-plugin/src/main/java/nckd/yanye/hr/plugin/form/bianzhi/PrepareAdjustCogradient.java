@@ -109,7 +109,7 @@ public class PrepareAdjustCogradient extends AbstractOperationServicePlugIn {
                                                     }
                                             ));
                                     useOrgEntryBo.getPositionDimensionBoList().stream().forEach(positionDimensionBo -> {
-                                        DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getAdminOrgBoId());
+                                        DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getKeyFieldId());
                                         if(ObjectUtils.isNotEmpty(centerDynamicObject)){
                                             Object nckdPostadjustlatenum = centerDynamicObject.get("nckd_postadjustlatenum");
                                             if(ObjectUtils.isNotEmpty(nckdPostadjustlatenum)){

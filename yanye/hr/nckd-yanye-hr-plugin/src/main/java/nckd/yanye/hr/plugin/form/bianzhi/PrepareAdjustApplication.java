@@ -26,6 +26,8 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
+import kd.hr.haos.business.servicehelper.OrgBatchBillHelper;
+import kd.hr.haos.common.constants.masterdata.AdminOrgConstants;
 import kd.hr.hbp.common.model.org.staff.StaffResponse;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
@@ -234,8 +236,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             DynamicObject haosStaff = BusinessDataServiceHelper.loadSingle(staff1.getPkValue(), "haos_staff");
             IFormView view = this.getView();
             AbstractFormDataModel model = (AbstractFormDataModel)this.getModel();
-//            StaffInitEntryDataService.create(view, model).loadEntryData();
-//            StaffFormService.create(view, model).setVisibleByUseOrg();
             List<Long> orgIds = Arrays.asList((Long) ((DynamicObject) org).getPkValue());
             // 组织id
             Long orgid = (Long) ((DynamicObject) org).getPkValue();
@@ -281,6 +281,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             ORM orm = ORM.create();
             DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet);
             List<Long> collect2 = new ArrayList<Long>();
+            Set<Long> longSet = new HashSet<Long>();
             for (int i = 0; i < retDynCol.size(); i++) {
                 int index = this.getModel().insertEntryRow("nckd_bentryentity", i);
                 this.getModel().setValue("nckd_adminorg",retDynCol.get(i).get("BOID"),index);
@@ -292,9 +293,10 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 //                this.getModel().setValue("nckd_rellownum",retDynCol.get(i).get("containsubcount"),index);
                 this.getModel().setValue("nckd_relnum",retDynCol.get(i).get("count"),index);
                 collect2.add((Long) retDynCol.get(i).get("BOID"));
+                longSet.add((Long) retDynCol.get(i).get("parentorg"));
             }
             // 获取到部门key，根据部门key获取到岗位信息,HR岗位hbpm_positionhr
-            DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{new QFilter("adminorg.id", QCP.in, collect2)}, "number,createtime desc");
+            DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{new QFilter("adminorg.id", QCP.in, collect2)}, "number,createtime desc,hisversion");
             // 岗位id
             List<Long> positionIds = new ArrayList<Long>();
             //  创建一个Map来存储结果
@@ -334,8 +336,8 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             objects[0] = new Date();
             objects[1] = collect2;
             StaffResponse<Map<String, Map<String, Object>>> staffResponse = (StaffResponse<Map<String, Map<String, Object>>>) DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryUseStaffInfo",objects);
-
-            this.initTree(staffResponse,staffpositionResponse,resultMap);
+            Map<Long, String> orgLongNameMap = OrgBatchBillHelper.getOrgLongName(longSet, new Date(), String.valueOf(AdminOrgConstants.ADMINORG_STRUCT));
+            this.initTree(staffResponse,staffpositionResponse,resultMap,orgLongNameMap);
             this.getView().updateView("nckd_bentryentity");
             this.getView().updateView("nckd_centryentity");
 
@@ -358,7 +360,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
 
     // 分配树形结构
-    private void initTree(StaffResponse<Map<String, Map<String, Object>>> staffResponse,StaffResponse<Map<String, Map<String, Object>>> staffpositionResponse,Map<String, List<DynamicObject>> postMap) {
+    private void initTree(StaffResponse<Map<String, Map<String, Object>>> staffResponse,StaffResponse<Map<String, Map<String, Object>>> staffpositionResponse,Map<String, List<DynamicObject>> postMap,Map<Long, String> orgLongNameMap) {
         // 获取他的单据体，循环单据体
         DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
         for (int i = 0; i < entryentityCols.size(); i++) {
@@ -366,6 +368,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
             DynamicObject centrydynamicObject = entryentityCols.get(i);
             List<DynamicObject> nckdAdminorg1 = postMap.get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
+
 
             DynamicObject enObj = entryentityCols.get(i);
             // 子单据体标识nckd_centryentity
@@ -389,9 +392,14 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
             // 使用组织上级id
             Long aLong = (Long) entryentityCols.get(i).get("nckd_parentorg");
+
+
             if(null == aLong){
                 centrydynamicObject.set("pid",0);
                 continue;
+            }
+            if(StringUtils.isNotEmpty(orgLongNameMap.get(aLong))){
+                centrydynamicObject.set("nckd_bparentlongname",orgLongNameMap.get(aLong));
             }
             Optional<DynamicObject> matchingObject = entryentityCols.stream()
                     .filter(obj -> {
