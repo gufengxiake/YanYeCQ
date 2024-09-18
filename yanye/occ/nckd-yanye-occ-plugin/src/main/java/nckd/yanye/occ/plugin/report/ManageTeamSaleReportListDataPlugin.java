@@ -67,6 +67,9 @@ public class ManageTeamSaleReportListDataPlugin extends AbstractReportListDataPl
                 "biztime as nckd_date";
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
 
         DateTime monthBegin = DateUtil.beginOfMonth(new SimpleDateFormat("yyyy-MM").parse((year-1) + "-" +month));
         DateTime monthEnd = DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse((year-1) + "-" +month));

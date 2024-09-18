@@ -32,7 +32,6 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         //限定单据为已审核
         QFilter filter = new QFilter("billstatus", QCP.equals, "C");
         qFilters.add(filter);
-        DateTime start = null,end = null;
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
@@ -54,14 +53,16 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                 // 查询条件发货日期,标识如不一致,请修改
                 case "nckd_fhdate_q_start":
                     if (filterItem.getDate() != null) {
-                        start = DateUtil.beginOfDay(filterItem.getDate());
-
+                        DateTime start = DateUtil.beginOfDay(filterItem.getDate());
+                        QFilter qFilter = new QFilter("biztime", QCP.large_equals, start);
+                        qFilters.add(qFilter);
                     }
                     break;
                 case "nckd_fhdate_q_end":
                     if (filterItem.getDate() != null) {
-                        end =  DateUtil.endOfDay(filterItem.getDate());
-
+                        DateTime end =  DateUtil.endOfDay(filterItem.getDate());
+                        QFilter qFilter = new QFilter("biztime", QCP.less_equals, end);
+                        qFilters.add(qFilter);
                     }
                     break;
             }
@@ -73,6 +74,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                          "customer as nckd_customer ," +
 //                        存货编码
                         "billentry.material as nckd_material ," +
+//                       发货日期
+                        "biztime as nckd_fhdate," +
 //                        发货单号
                         "billno as nckd_fhbillno ," +
 //                        发货数量
@@ -93,17 +96,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                         "billentry.mainbillentryid as mainbillentryid";
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
         im_saloutbill = this.linkSignAtureBill(im_saloutbill);
-        //判断查询出来的数据是否为空
-        if (im_saloutbill.isEmpty()) {
-            return im_saloutbill;
-        }
-        if(start != null ){
-            im_saloutbill = im_saloutbill.filter("nckd_fhdate >= to_date('" +  start + "','yyyy-MM-dd hh:mm:ss')" );
-        }
-        if( end != null){
-            im_saloutbill = im_saloutbill.filter("nckd_fhdate <= to_date('" +  end + "','yyyy-MM-dd hh:mm:ss')"  );
-        }
-        return im_saloutbill.orderBy(im_saloutbill.getRowMeta().getFieldNames());
+
+        return im_saloutbill.orderBy(new String[]{"nckd_bizorg","nckd_fhdate"});
     }
 
     //获取签收单  nckd_signaturebill
@@ -129,9 +123,9 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         signFilter.and("billstatus", QCP.equals, "C");
         DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
 //                发货日期
-                "nckd_signdate as nckd_fhdate," +
-//                        合理途损+非合理途损 = 途损数量
-                        "entryentity.nckd_lossqty + entryentity.nckd_unableqty as nckd_damageqty," +
+//                "nckd_signdate as nckd_fhdate," +
+//                       出库数量-签收数量 = 途损数量
+                        "entryentity.nckd_outstockqty - entryentity.nckd_signqty as nckd_damageqty," +
 //                        签收数量
                         "entryentity.nckd_signqty as nckd_signqty,"+
 //                        磅单号
