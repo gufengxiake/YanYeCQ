@@ -2,18 +2,16 @@ package nckd.yanye.hr.plugin.form.zhaoping;
 
 
 import kd.bos.bill.AbstractBillPlugIn;
-import kd.bos.dataentity.OperateOption;
-import kd.bos.dataentity.RefObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.ConfirmCallBackListener;
-import kd.bos.form.ConfirmTypes;
 import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.MessageBoxResult;
 import kd.bos.form.control.EntryGrid;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.field.BasedataEdit;
@@ -26,8 +24,6 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.StringUtils;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -242,6 +238,59 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         }
         this.getModel().setValue("nckd_applynum", num);
     }
+
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        FormOperate opreate = (FormOperate) args.getSource();
+        switch (opreate.getOperateKey()) {
+            case "submit":
+                // 在此添加处理逻辑
+                int nckdSftaffcount = (int) this.getModel().getValue("nckd_sftaffcount");
+                // 实际人数
+                int nckdRelnum = (int) this.getModel().getValue("nckd_relnum");
+                // 申请人数
+                int nckdApplynum = (int) this.getModel().getValue("nckd_applynum");
+                if(nckdSftaffcount < nckdRelnum + nckdApplynum){
+                    // 判断是否处理过
+                    String isDealed = this.getView().getPageCache().get("isDealed");
+                    if (!"true".equals(isDealed)) {
+                        // 取消原来的操作
+                        args.setCancel(true);
+                        // 在用户点击确认框上的按钮后，系统会调用confirmCallBack方法
+                        ConfirmCallBackListener confirmCallBackListener = new ConfirmCallBackListener("isExceed", this);
+                        // 设置页面确认框，参数为：标题，选项框类型，回调监听
+                        this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, confirmCallBackListener);
+                        // 只执行一次
+                        this.getView().getPageCache().put("isDealed", "true");
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs afterDoOperationEventArgs) {
+        super.afterDoOperation(afterDoOperationEventArgs);
+        this.getView().getPageCache().remove("isDealed");
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        //判断回调参数id
+        if ("isExceed".equals(messageBoxClosedEvent.getCallBackId())) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                this.getView().invokeOperation("submit");
+            } else if (MessageBoxResult.No.equals(messageBoxClosedEvent.getResult())) {
+                // 点击否也清除
+                this.getView().getPageCache().remove("isDealed");
+            }
+        }
+    }
+
+
 
 
 //    @Override
