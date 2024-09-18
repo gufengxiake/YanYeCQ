@@ -57,13 +57,14 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         longs.add(pkValue);
         QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
         // 获取组织历史查询
-        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-        if(ObjectUtils.isNotEmpty(query)){
-            long boid = query.get(0).getLong("id");
-            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
-        }
+//        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
+//        if(ObjectUtils.isNotEmpty(query)){
+//            long boid = query.get(0).getLong("id");
+//            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
+//            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
+//
+//        }
+        this.getModel().setValue("nckd_sftaffcount",YearcrapplyFormPlugin.getStaffCount("staffcount"));
 
     }
 
@@ -124,6 +125,10 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                         this.getModel().setValue("nckd_payrange", str,iRow);
                     }
                 }
+                break;
+            case "nckd_recruitnum":
+                // 人数字段统计
+                setSumRecruitnum(newValue,iRow);
                 break;
             default:
                 break;
@@ -209,5 +214,17 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     }
 
 
-
+    public void setSumRecruitnum(Object newValue,int row){
+        // 计算招聘人数,获取出所有分录，然后统计所有分录的招聘人数累加
+        DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("entryentity");
+        int num = 0;
+        for (int i = 0; i < entryEntity.size(); i++) {
+            if(row == i){
+                num = num + (Integer) newValue;
+            }else{
+                num = num + (Integer) entryEntity.get(i).get("nckd_recruitnum");
+            }
+        }
+        this.getModel().setValue("nckd_applynum", num);
+    }
 }

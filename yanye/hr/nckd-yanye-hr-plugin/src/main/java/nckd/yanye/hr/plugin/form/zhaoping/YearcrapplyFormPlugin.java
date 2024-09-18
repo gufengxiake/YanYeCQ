@@ -1,9 +1,11 @@
 package nckd.yanye.hr.plugin.form.zhaoping;
 
 
+import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.db.DBRoute;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
@@ -12,16 +14,16 @@ import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
+import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EventObject;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Module           :人才供应云-招聘直通车-首页-年度招聘申请
@@ -60,13 +62,14 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         longs.add(pkValue);
         QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
         // 获取组织历史查询
-        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-        if(ObjectUtils.isNotEmpty(query)){
-            long boid = query.get(0).getLong("id");
-            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
-        }
+//        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
+//        if(ObjectUtils.isNotEmpty(query)){
+//            long boid = query.get(0).getLong("id");
+//            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
+//            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
+//            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+//        }
+        this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
 
     }
 
@@ -127,6 +130,10 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                         this.getModel().setValue("nckd_payrange", str,iRow);
                     }
                 }
+                break;
+            case "nckd_recruitnum":
+                // 人数字段统计
+                setSumRecruitnum(newValue,iRow);
                 break;
             default:
                 break;
@@ -211,6 +218,63 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         return true;
     }
 
+
+    // 获取组织对应人员编制总数（包含下级）
+    public static int getStaffCount(Object orgId){
+
+        Date date = new Date();
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+        String dateStr = sdf.format(date);
+
+        // 拼接 SQL 查询
+        StringBuilder sql = new StringBuilder("SELECT a.fid AS id, a.fboid AS boid, A.fparentid as parentorg, "
+                + "t.flevel as level1, t.fstructlongnumber as structlongnumber, ST.fcount as count,ST.fcontainsubcount as containsubcount, "
+//                    + "(select top 1 N.fstaffcount  from t_haos_adminorg M where a.fparentid = M.fboid ) as "
+                + "(select top 1 N.fstaffcount  from t_haos_adminorg M left join t_haos_dutyorgdetail N on N.fdutyorgid = M.fid "
+                + "where M.fenable ='1'  and M.fboid  =a.fboid "
+                + "AND M.fbsed <= '" + dateStr + "' AND M.fbsled >= '" + dateStr + "'  "
+                + "order by M.fhisversion desc) as staffcount "
+                + "FROM T_HAOS_ADMINORG A "
+                + "LEFT JOIN T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
+                + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON A.fboid = T.fadminorgid "
+                + "AND T.fiscurrentversion = '0' AND T.fdatastatus = '1' AND T.fstructprojectid = 1010 "
+                + "AND T.finitstatus = '2' AND T.fbsed <= '" + dateStr + "' "
+                + "AND T.fbsled >= '" + dateStr + "' AND T.fenable = '1' "
+                + "LEFT JOIN T_HAOS_ORGSORTCODE S ON S.FADMINORGID = A.fboid "
+                + "AND S.fiscurrentversion = '0' AND S.fdatastatus = '1' AND S.finitstatus = '2' "
+                + "AND S.fbsed <= '" + dateStr + "' AND S.fbsled >= '" + dateStr + "' "
+                + "AND S.fenable = '1' "
+                + "LEFT JOIN T_HAOS_DUTYORGDETAIL M ON M.fdutyorgid = A.fboid "
+                + "WHERE A.fiscurrentversion = '0' AND A.fdatastatus = '1' AND A.finitstatus = '2' "
+                + "AND A.fbsed <= '" + dateStr + "' AND A.fbsled >= '" + dateStr + "' "
+                + "AND A.fenable = '1' "
+                + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ?) " +") "
+                + "ORDER BY S.fsortcode");
+        Object[] param = new Object[]{(Long) orgId};
+        DataSet dataSet = HRDBUtil.queryDataSet("haos_adminOrgHisSearch", new DBRoute("hr"), sql.toString(), param);
+
+        ORM orm = ORM.create();
+        DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet);
+        AtomicInteger nckdRellownum2 = new AtomicInteger(0);
+        retDynCol.forEach(dynObj -> {
+            nckdRellownum2.addAndGet(dynObj.getInt("count"));
+        });
+        return nckdRellownum2.get();
+    }
+
+    public void setSumRecruitnum(Object newValue,int row){
+        // 计算招聘人数,获取出所有分录，然后统计所有分录的招聘人数累加
+        DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("entryentity");
+        int num = 0;
+        for (int i = 0; i < entryEntity.size(); i++) {
+            if(row == i){
+                num = num + (Integer) newValue;
+            }else{
+                num = num + (Integer) entryEntity.get(i).get("nckd_recruitnum");
+            }
+        }
+        this.getModel().setValue("nckd_applynum", num);
+    }
 
 
 }
