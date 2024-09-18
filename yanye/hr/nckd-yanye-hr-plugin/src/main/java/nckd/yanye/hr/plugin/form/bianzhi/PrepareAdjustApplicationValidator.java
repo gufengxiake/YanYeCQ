@@ -94,6 +94,8 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                                         useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
                                         // 直属人数
                                         useOrgEntryBo.setYearStaff((int)dynamicObject.get("nckd_relbdirectnum"));
+                                    }else{
+                                        useOrgEntryBo.setYearStaff((int)dynamicObject.get("nckd_relbdirectnum"));
                                     }
                                 }
                                 // 更新岗位编制人数,如果不存在岗位则跳过

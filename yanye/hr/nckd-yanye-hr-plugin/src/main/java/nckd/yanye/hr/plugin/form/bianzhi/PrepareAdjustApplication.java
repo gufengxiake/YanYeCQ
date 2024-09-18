@@ -247,10 +247,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             objects3[0] = pkValue;
 //            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
 
-//            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
-
-
-
             Date date = new Date();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
             String dateStr = sdf.format(date);
@@ -397,7 +393,6 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             Long aLong = (Long) entryentityCols.get(i).get("nckd_parentorg");
             if(null == aLong){
                 centrydynamicObject.set("pid",0);
-//                entryentityCols.get(i).set("pid",0);
                 continue;
             }
             Optional<DynamicObject> matchingObject = entryentityCols.stream()
@@ -420,14 +415,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             }
             Map<String, Object> nckdAdminorg = staffResponse.getData().get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
             if(ObjectUtils.isNotEmpty(nckdAdminorg)){
-                // 占编人数
+                // 编制人数
                 centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
-
-
-                // 占编人数
-//                centrydynamicObject.set("nckd_relnum",nckdAdminorg.get("holdStaff"));
-                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("holdStaff"));
-                centrydynamicObject.set("nckd_relbdirectnum",nckdAdminorg.get("holdStaff"));
+                centrydynamicObject.set("nckd_relbdirectnum",nckdAdminorg.get("staffNum"));
             }
         }
 
@@ -439,11 +429,56 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 ));
 
         entryentityCols3.stream().forEach(obj -> {
+
             List<DynamicObject> dynamicObjects = resultMap.get(obj.getPkValue());
             if(ObjectUtils.isEmpty(dynamicObjects)){
                 obj.set("nckd_lowermost","A");
             }
         });
+
+        DynamicObjectCollection useOrgInfos = this.getModel().getEntryEntity("nckd_bentryentity");
+        DynamicObjectCollection useOrgInfos2 = useOrgInfos;
+        Map<Long, DynamicObject> idVsDynMap = (Map)useOrgInfos.stream().collect(Collectors.toMap((info) -> {
+            return info.getLong("id");
+        }, (info) -> {
+            return info;
+        }, (o1, o2) -> {
+            return o1;
+        }));
+        List<DynamicObject> useOrgInfoSortList = (List)useOrgInfos2.stream().sorted(Comparator.comparing((o) -> {
+            return String.valueOf(o.get("nckd_parentorg"));
+        })).collect(Collectors.toList());
+
+        for(int i = useOrgInfoSortList.size() - 1; i >= 0; --i) {
+            DynamicObject useOrgInfo = (DynamicObject)useOrgInfoSortList.get(i);
+            Object directNumObject = useOrgInfo.get("nckd_relnum");
+            Object realNumWithSubObject = useOrgInfo.get("nckd_rellownum");
+            if (!Objects.isNull(directNumObject) || !Objects.isNull(realNumWithSubObject)) {
+                int realNumWithSub = 0;
+                if (Objects.nonNull(realNumWithSubObject)) {
+                    realNumWithSub = (Integer)realNumWithSubObject;
+                }
+
+                int directNum = 0;
+                if (Objects.nonNull(directNumObject)) {
+                    directNum = (Integer)directNumObject;
+                }
+
+                useOrgInfo.set("nckd_rellownum", directNum + realNumWithSub);
+                long parentEntryId = useOrgInfo.getLong("pid");
+                if (parentEntryId != 0L) {
+                    DynamicObject parentDyn = (DynamicObject)idVsDynMap.get(parentEntryId);
+                    if (!Objects.isNull(parentDyn)) {
+                        Object parentRealNumWithSubObject = parentDyn.get("nckd_rellownum");
+                        if (Objects.nonNull(parentRealNumWithSubObject)) {
+                            parentDyn.set("nckd_rellownum", useOrgInfo.getInt("nckd_rellownum") + (Integer)parentRealNumWithSubObject);
+                        }
+                    }
+                }
+            }
+        }
+
+
     }
 
 
