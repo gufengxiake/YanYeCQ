@@ -1007,8 +1007,12 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             this.getModel().deleteEntryRow("pom_planning_entry", i);
                         }
                     }
-                    return;
                 }
+                this.getModel().setValue("nckd_yield",null,rowIndex);
+                this.getModel().setValue("nckd_producedept",null,rowIndex);
+                this.getModel().setValue("nckd_bomid",null,rowIndex);
+                this.getModel().setValue("nckd_unit",null,rowIndex);
+                return;
             }
             if (mftbom != null) {
                 this.getModel().setValue("nckd_bomid", mftbom.getPkValue(), rowIndex);
