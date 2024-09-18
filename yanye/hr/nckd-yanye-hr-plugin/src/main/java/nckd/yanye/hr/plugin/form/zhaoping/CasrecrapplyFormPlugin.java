@@ -2,21 +2,32 @@ package nckd.yanye.hr.plugin.form.zhaoping;
 
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
+import kd.bos.dataentity.RefObject;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.ConfirmCallBackListener;
+import kd.bos.form.ConfirmTypes;
+import kd.bos.form.MessageBoxOptions;
+import kd.bos.form.MessageBoxResult;
 import kd.bos.form.control.EntryGrid;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.form.operate.FormOperate;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -39,6 +50,10 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     // 定义日期格式
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    private final String SUBMIT = "submit";
+
+    private static String OPPARAM_AFTERCONFIRM = "afterconfirm";
+
 
 
     @Override
@@ -57,15 +72,15 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         longs.add(pkValue);
         QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
         // 获取组织历史查询
-//        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-//        if(ObjectUtils.isNotEmpty(query)){
-//            long boid = query.get(0).getLong("id");
-//            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-//            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-//
-//        }
-        this.getModel().setValue("nckd_sftaffcount",YearcrapplyFormPlugin.getStaffCount("staffcount"));
-
+        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
+        if(ObjectUtils.isNotEmpty(query)){
+            long boid = query.get(0).getLong("id");
+            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
+            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
+            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+        }
+        // 实际人数
+        this.getModel().setValue("nckd_relnum",YearcrapplyFormPlugin.getStaffCount(org.getPkValue()));
     }
 
     @Override
@@ -227,4 +242,53 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         }
         this.getModel().setValue("nckd_applynum", num);
     }
+
+
+//    @Override
+//    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+//        super.beforeDoOperation(args);
+//        FormOperate formOperate = (FormOperate) args.getSource();
+//        if (StringUtils.equals(SUBMIT, formOperate.getOperateKey())) {
+//            DynamicObject dataEntityObj = this.getModel().getDataEntity();
+//
+//            // 编制总数
+//            int nckdSftaffcount = dataEntityObj.getInt("nckd_sftaffcount");
+//            // 实际人数
+//            int nckdRelnum = dataEntityObj.getInt("nckd_relnum");
+//            // 申请人数
+//            int nckdApplynum = dataEntityObj.getInt("nckd_applynum");
+//            if(nckdSftaffcount < nckdRelnum + nckdApplynum){
+//                RefObject<String> afterConfirm = new RefObject<>();
+//                // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
+//                if (!formOperate.getOption().tryGetVariableValue(SUBMIT, afterConfirm)) {
+//
+//                }
+//                // 显示确认消息
+//                ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(SUBMIT, this);
+//                //收款单位为失信单位，是否继续付款
+//                this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+//                // 在没有确认之前，先取消本次操作
+//                args.setCancel(true);
+//            }
+//
+//        }
+//    }
+//    @Override
+//    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+//        super.confirmCallBack(messageBoxClosedEvent);
+//        if (StringUtils.equals(SUBMIT, messageBoxClosedEvent.getCallBackId())) {
+//            // 提交确认
+//            if (messageBoxClosedEvent.getResult() == MessageBoxResult.Yes) {
+//                // 确认执行提交操作
+//                // 构建操作自定义参数，标志为确认后再次执行操作，避免重复显示交互提示
+//                OperateOption operateOption = OperateOption.create();
+//                operateOption.setVariableValue(OPPARAM_AFTERCONFIRM, "true");
+//
+//                // 执行提交操作，并传入自定义操作参数
+//                this.getView().invokeOperation(SUBMIT, operateOption);
+//            }
+//        }
+//
+//    }
+
 }

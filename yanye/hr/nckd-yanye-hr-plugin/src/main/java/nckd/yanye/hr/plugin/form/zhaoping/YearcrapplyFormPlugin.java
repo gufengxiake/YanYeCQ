@@ -62,13 +62,13 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         longs.add(pkValue);
         QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
         // 获取组织历史查询
-//        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-//        if(ObjectUtils.isNotEmpty(query)){
-//            long boid = query.get(0).getLong("id");
-//            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-//            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-//            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
-//        }
+        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
+        if(ObjectUtils.isNotEmpty(query)){
+            long boid = query.get(0).getLong("id");
+            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
+            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
+            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+        }
         this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
 
     }
@@ -255,6 +255,7 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
 
         ORM orm = ORM.create();
         DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet);
+        // 获取实际人数
         AtomicInteger nckdRellownum2 = new AtomicInteger(0);
         retDynCol.forEach(dynObj -> {
             nckdRellownum2.addAndGet(dynObj.getInt("count"));

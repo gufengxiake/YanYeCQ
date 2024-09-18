@@ -30,10 +30,8 @@ import kd.hr.hbp.common.model.org.staff.StaffResponse;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 
