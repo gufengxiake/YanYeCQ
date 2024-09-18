@@ -102,7 +102,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         DynamicObject address = entity.getDynamicObject("nckd_address");
                         if (address != null) {
                             address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
-                            address.set("name", address.getString("name")+entity.getString("nckd_phone"));
+                            address.set("name", address.getString("name") + ";" + entity.getString("nckd_phone"));
                             SaveServiceHelper.update(address);
                         }
                         bdCustomer.set("nckd_addtel", address);//客户联系人地址
@@ -165,11 +165,13 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                     break;
                 //修改
                 case "update":
+                    String phone = "";
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
                         //变更前后，只保存变更后的数据
                         String changeAfter = entity.getString("nckd_changeafter");
                         if ("1".equals(changeAfter)) {
+                            phone = entity.getString("nckd_phone");
                             continue;
                         }
                         String isInvoice = entity.getString("nckd_isinvoice");
@@ -203,9 +205,12 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
                         DynamicObject address = entity.getDynamicObject("nckd_address");
                         if (address != null) {
-                            address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
-                            address.set("name", address.getString("name")+entity.getString("nckd_phone"));
-                            SaveServiceHelper.update(address);
+                            if (StringUtils.isNotEmpty(phone) && !phone.equals(entity.getString("nckd_phone"))) {
+                                address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
+                                String[] split = address.getString("name").split(";");
+                                address.set("name", split[0] + ";" + entity.getString("nckd_phone"));
+                                SaveServiceHelper.update(address);
+                            }
                         }
                         bdCustomer.set("nckd_addtel", address);//客户联系人地址
                         bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
