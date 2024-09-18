@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.Date;
 
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.orm.query.QCP;
@@ -24,6 +25,16 @@ public class CalDatacheckResultOpPlugin extends AbstractOperationServicePlugIn {
         DynamicObject[] dataEntities = e.getDataEntities();
 
         Arrays.stream(dataEntities).forEach(dynamicObject -> {
+            // 核算组织
+            String calorg = dynamicObject.getString("calorg");
+            DynamicObject org = BusinessDataServiceHelper.loadSingle("bos_org", new QFilter[]{new QFilter("name", QCP.equals, calorg)});
+
+            QFilter filter = new QFilter("org", QCP.equals, org.getPkValue())
+                    .and("entry.isenabled", QCP.equals, true);
+            DynamicObject sysctrlentity = BusinessDataServiceHelper.loadSingle("cal_sysctrlentity", filter.toArray());
+            DynamicObjectCollection sysctrlentityEntry = sysctrlentity.getDynamicObjectCollection("entry");
+            DynamicObject currentperiod = sysctrlentityEntry.get(0).getDynamicObject("currentperiod");
+
             // 获取校验是否存在未审核的财务应付单的检查项
             DynamicObject object = dynamicObject.getDynamicObjectCollection("entryentity").stream()
                     .filter(d -> "DC-ITEM-46".equals(d.getDynamicObject("checkitem").getString("number")))
@@ -39,8 +50,8 @@ public class CalDatacheckResultOpPlugin extends AbstractOperationServicePlugIn {
                 // 记账日期
                 Date bookdate = loadSingle.getDate("bookdate");
 
-                loadSingle.set("bizdate", getDate(bizdate));
-                loadSingle.set("bookdate", getDate(bookdate));
+                loadSingle.set("bizdate", getDate(currentperiod.getDate("enddate")));
+                loadSingle.set("bookdate", getDate(currentperiod.getDate("enddate")));
                 SaveServiceHelper.update(new DynamicObject[]{loadSingle});
             });
         });
