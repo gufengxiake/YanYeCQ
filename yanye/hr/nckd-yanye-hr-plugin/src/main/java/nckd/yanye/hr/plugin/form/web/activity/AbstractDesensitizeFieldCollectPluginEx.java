@@ -1,8 +1,11 @@
 package nckd.yanye.hr.plugin.form.web.activity;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.DateProp;
+import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.Button;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeClickEvent;
@@ -103,14 +106,21 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
     @Override
     public void afterBindData(EventObject e) {
         super.afterBindData(e);
-        String istuiwu = (String)this.getModel().getValue("field2004353791935130624");
-        if ("YES".equals(istuiwu)) {
-            // 是退伍军人，设置必填
-            // 前端属性设置（前端判断必填校验）
-            DateEdit property1 = (DateEdit) this.getControl("field2004391669838916608"); // 入伍时间
-            property1.setMustInput(true);
-            DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
-            property2.setMustInput(true);
+        FormShowParameter showParameter = this.getView().getFormShowParameter();
+        JSONObject jsonObject = (JSONObject)showParameter.getCustomParam("config");
+        JSONArray infoGroupEntityList = jsonObject.getJSONArray("infoGroupEntityList");
+        String entitlist = infoGroupEntityList.toJSONString();
+        if (entitlist.contains("2004353791935130624")) {
+            // 是否退伍军人字段：field2004353791935130624
+            String istuiwu = (String)this.getModel().getValue("field2004353791935130624");
+            if ("YES".equals(istuiwu)) {
+                // 是退伍军人，设置必填
+                // 前端属性设置（前端判断必填校验）
+                DateEdit property1 = (DateEdit) this.getControl("field2004391669838916608"); // 入伍时间
+                property1.setMustInput(true);
+                DateEdit property2 = (DateEdit) this.getControl("field2004391669838916609"); // 退伍时间
+                property2.setMustInput(true);
+            }
         }
     }
 }

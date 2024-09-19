@@ -31,9 +31,13 @@ public class AbstractDesensitizeFieldCollectMutiPluginEx extends AbstractDesensi
         String infoGroupName = infoGroupEntity.getInfoGroupName(); // 分组名称，名称可能会人工修改
         Long infoGroupId = infoGroupEntity.getInfoGroupId(); // 分组id
         if ("教育经历".equals(infoGroupName) || 1247809451256209408L == infoGroupId) {
-            if (param.contains("1249297648691749888")) {
-                // 毕业院校(旧) 1249297648691749888,标准版自带的字段，某些方法体有用到，不能删除，就隐藏操作
-                this.getView().setVisible(false , "fieldboard12492976486917498880");
+            if (param.contains("1249297648691749888")) { // 毕业院校(旧) 1249297648691749888
+                JSONArray data = (JSONArray ) formShowParameter.getCustomParam("data");
+                int size = data.size();
+                for (int i = 0 ; size > i ; i++) {
+                    // 毕业院校(旧) 每一条记录该字段的标识加1
+                    this.getView().setVisible(false , "fieldboard1249297648691749888" + i);
+                }
             }
         }
     }
