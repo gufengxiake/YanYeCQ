@@ -79,7 +79,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 //                        发货单号
                         "billno as nckd_fhbillno ," +
 //                        发货数量
-                        "billentry.qty as nckd_quantity," +
+                        "billentry.baseqty as nckd_quantity," +
 //                        销售单价
                         "billentry.price as nckd_price," +
 //                        销售金额
@@ -90,6 +90,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                         "billentry.nckd_pricefieldyf1 as nckd_pricefieldyf1," +
 //                         运费结算方式
                          "nckd_freighttype as nckd_freighttype," +
+                        //签收基本数量
+                         "billentry.nckd_signbaseqty as nckd_signqty," +
 //                      销售出库表体id
                         "billentry.id as saleoutbodyid," +
 //                        核心单据行id
@@ -107,9 +109,9 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 
         //关联销售订单
         QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryidToList.toArray(new Long[0]));
-        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder"
+        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder",
                 //      销售合同号
-                ,"nckd_salecontractno as nckd_salecontractno," +
+                "nckd_salecontractno as nckd_salecontractno," +
                 //        运输合同号
                         "nckd_trancontractno as nckd_trancontractno," +
 //                        销售订单表体id
@@ -127,7 +129,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 //                       出库数量-签收数量 = 途损数量
                         "entryentity.nckd_outstockqty - entryentity.nckd_signqty as nckd_damageqty," +
 //                        签收数量
-                        "entryentity.nckd_signqty as nckd_signqty,"+
+//                        "entryentity.nckd_signqty as nckd_signqty,"+
 //                        磅单号
                         "entryentity.nckd_eleno as nckd_eleno," +
 //                        车号
@@ -146,16 +148,17 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 
         //关联开票申请单
         QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryidToList.toArray(new Long[0]));
+        aimFilter.and("billstatus",QCP.not_equals2 ,"A").and("billstatus",QCP.not_equals2 ,"B");
         DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sim_original_bill",
                 //查询开票申请单核心单据行id，
                 "sim_original_bill_item.corebillentryid as sim_corebillentryid, " +
 //                        开票日期，
-                        "billdate as nckd_invbilldate ," +
+                        "issuetime as nckd_invbilldate ," +
 //                        发票号
                         "invoiceno as nckd_invbillno ," +
 //                        开票数量
-                        "sim_original_bill_item.num as nckd_qtyfinv ",new QFilter[]{aimFilter},null);
+                        "sim_original_bill_item.issuednum as nckd_qtyfinv ",new QFilter[]{aimFilter},null);
         ds = ds.leftJoin(originalBill).on("mainbillentryid","sim_corebillentryid")
                 .select(ds.getRowMeta().getFieldNames(),originalBill.getRowMeta().getFieldNames()).finish();
         return ds;
