@@ -6,19 +6,22 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.IFormView;
-import kd.bos.form.control.RichTextEditor;
+import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.plugin.AbstractFormPlugin;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.util.StringUtils;
 import kd.sdk.swc.hcdm.common.Pair;
 import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchParam;
 import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
-import nckd.yanye.hr.common.ClockInConst;
-import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,12 @@ import java.util.stream.Collectors;
  * @since ：Created in 14:38 2024/9/12
  */
 public class AdjapprBillFormPlugin extends AbstractFormPlugin {
+    @Override
+    public void registerListener(EventObject event) {
+        super.registerListener(event);
+        this.addItemClickListeners("advcontoolbarap");
+    }
+
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         IDataModel model = this.getModel();
@@ -44,15 +53,245 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             return;
         }
 
-        // 非调动调薪不作处理
         DynamicObject salaryadjrsn = (DynamicObject) model.getValue("salaryadjrsn");
         if (salaryadjrsn == null) {
             return;
         }
         String salaryadjrsnName = salaryadjrsn.getString("name");
-        if (!"调动调薪".equals(salaryadjrsnName)) {
-            return;
+        // 需求：调动调薪
+        if ("调动调薪".equals(salaryadjrsnName)) {
+            autoGetRank(model, changeRowIndex);
         }
+    }
+
+
+    @Override
+    public void beforeItemClick(BeforeItemClickEvent e) {
+        String itemKey = e.getItemKey();
+        // 添加所有年度绩效调薪人员
+        if ("advconbaritemap".equals(itemKey)) {
+            // 组织范围：针对晶昊公司和富达公司
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+            String orgName = org.getString("name");
+            if ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName)) {
+                this.getView().getPageCache().put("isYear", "true");
+            }
+        }
+    }
+
+
+    private void addAllYearPerson() {
+        // 获取所有年度绩效Map <员工id, <考核年度, 考核结果>>
+        DynamicObject[] yearKaoheArray = BusinessDataServiceHelper.load(
+                "nckd_hspm_yearkaohe",
+                "person,nckd_kaoheyear,nckd_kaoheresult,nckd_pingjiaorg,nckd_wcjreason",
+                new QFilter[]{
+                        // 数据状态
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+        );
+        Map<Long, Map<String, String>> yearKaoheMap = Arrays.stream(yearKaoheArray)
+                .collect(Collectors.groupingBy(
+                        obj -> obj.getLong("person.id"),
+                        Collectors.toMap(
+                                obj -> obj.getString("nckd_kaoheyear"),
+                                obj -> obj.getString("nckd_kaoheresult.name") == null ? "" : obj.getString("nckd_kaoheresult.name")
+                        )
+                ));
+
+        // 获取所有任职经历Map <员工id, 职级名称>
+        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
+                "hrpi_empposorgrel",
+                "person,nckd_zhiji",
+                new QFilter[]{
+                        // 是否主任职：是
+                        new QFilter("isprimary", QCP.equals, "1"),
+                        // 开始日期小于今天
+                        new QFilter("startdate", QCP.less_than, new Date()),
+                        // 结束日期大于今天
+                        new QFilter("enddate", QCP.large_than, new Date()),
+                        // 业务状态：生效中
+                        new QFilter("businessstatus", QCP.equals, "1"),
+                        // 数据状态
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+        );
+        Map<Long, String> jobExpMap = Arrays.stream(jobExpArray)
+                .collect(Collectors.toMap(
+                        obj -> obj.getLong("person.id"),
+                        obj -> obj.getString("nckd_zhiji.name") == null ? "" : obj.getString("nckd_zhiji.name")
+                ));
+
+
+        IDataModel model = this.getModel();
+        IFormView view = this.getView();
+//            // 清空调薪明细
+//            int delete = DeleteServiceHelper.delete(
+//                    "hcdm_adjapprperson",
+//                    new QFilter[]{
+//                            new QFilter("adjapprbill", QCP.equals, model.getDataEntity().getLong("id"))
+//                    }
+//            );
+//            this.getView().updateView();
+
+        // fixme 假设已批量添加成功
+        DynamicObjectCollection entryEntity = model.getEntryEntity("adjapprdetailentry");
+        //  根据调薪单据日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
+        Date effectivedate = (Date) model.getValue("effectivedate");
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(effectivedate);
+        // 上一年
+        calendar.add(Calendar.YEAR, -1);
+        String lastYearDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+
+        // 上上年
+        calendar.add(Calendar.YEAR, -1);
+        String lastTwoYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+
+        // 上上上年
+        calendar.add(Calendar.YEAR, -1);
+        String lastThreeYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+        for (DynamicObject entry : entryEntity) {
+            int thisRowIndex = entry.getInt("seq") - 1;
+            DynamicObject person = entry.getDynamicObject("dy_person");
+
+            // 获取此薪档下2档金额和1档金额
+            // 本次薪酬标准表
+            long salaryStdId = entry.getDynamicObject("dy_salarystd").getLong("id");
+            // 上次薪酬标准表
+            long preSalaryStdId = entry.getDynamicObject("dy_presalarystd").getLong("id");
+
+            // SPI接口2：获取标准表的薪档信息
+            Map<Long, List<Map<String, Object>>> thisResultMap = SalaryStdQueryService.get().getRankInfo(Collections.singleton(salaryStdId));
+            Map<Long, List<Map<String, Object>>> preResultMap = SalaryStdQueryService.get().getRankInfo(Collections.singleton(preSalaryStdId));
+            if (thisResultMap == null || thisResultMap.isEmpty()) {
+                continue;
+            }
+            Map<Integer, Long> thisRankMap = thisResultMap.get(salaryStdId).stream().collect(
+                    Collectors.toMap(
+                            obj -> (Integer) obj.get("rankIndex"),
+                            obj -> (Long) obj.get("rankId")
+                    ));
+            Map<Long, Integer> preRankMap = preResultMap.get(preSalaryStdId).stream().collect(
+                    Collectors.toMap(
+                            obj -> (Long) obj.get("rankId"),
+                            obj -> (Integer) obj.get("rankIndex")
+                    ));
+            // 本次最高和最低档
+            Long thisMaxRankId = thisRankMap.get(thisRankMap.size());
+            Long thisMinRankId = thisRankMap.get(1);
+
+            // 该员工职级
+            String zhiJiName = jobExpMap.get(person.getLong("id"));
+            if (StringUtils.isEmpty(zhiJiName)) {
+                continue;
+            }
+
+            // 员工年度考核数据
+            Map<String, String> yearKaoheResult = yearKaoheMap.get(person.getLong("id"));
+            if (yearKaoheResult == null || yearKaoheResult.isEmpty()) {
+                continue;
+            }
+            // 员工上一年的年度绩效考核成绩
+            String lastYearKaoHeResult = yearKaoheResult.get(lastYearDateString);
+            // 员工上次薪等
+            DynamicObject preGrade = entry.getDynamicObject("pregrade");
+            // 员工上次薪档
+            DynamicObject preRank = entry.getDynamicObject("prerank");
+            Integer preRankIndex = preRankMap.get(preRank.getLong("id"));
+            // 本次调档范围
+            int changeRank = 0;
+            // 员工的薪档逻辑：
+            if ("员工".equals(zhiJiName)) {
+                switch (lastYearKaoHeResult) {
+                    case "优秀":
+                        changeRank = 3;
+                        break;
+                    case "良好":
+                        changeRank = 2;
+                        break;
+                    case "称职":
+                        changeRank = 1;
+                        break;
+                    case "基本称职":
+                        changeRank = 0;
+                        break;
+                    case "不称职":
+                        changeRank = -1;
+                        break;
+                    default:
+                        break;
+                }
+                model.setValue("dy_grade", preGrade, thisRowIndex);
+                int thisRankIndex = preRankIndex + changeRank;
+                Long thisRankId = thisRankMap.get(thisRankIndex);
+                if (thisRankIndex > thisRankMap.size()) {
+                    model.setValue("dy_rank", thisMaxRankId, thisRowIndex);
+                } else if (thisRankIndex < 1) {
+                    model.setValue("dy_rank", thisMinRankId, thisRowIndex);
+                } else {
+                    model.setValue("dy_rank", thisRankId, thisRowIndex);
+                }
+            }
+
+            // 中层管理人员：不等于 员工 或 其他
+            if (!"其他".equals(zhiJiName) && !"员工".equals(zhiJiName)) {
+                switch (lastYearKaoHeResult) {
+                    case "优秀":
+                        changeRank = 1;
+                        break;
+                    case "良好":
+                        // 连续两年良好
+                        if ("良好".equals(yearKaoheResult.get(lastTwoYearsDateString))) {
+                            changeRank = 1;
+                        }
+                        break;
+                    case "不称职":
+                        // 连续三年内累计两次基本称职
+                        changeRank = -1;
+                        break;
+                    case "基本称职":
+                        // 连续三年内累计两次基本称职
+                        if ("基本称职".equals(yearKaoheResult.get(lastThreeYearsDateString)) ||
+                                "基本称职".equals(yearKaoheResult.get(lastTwoYearsDateString))) {
+                            changeRank = -1;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                model.setValue("dy_grade", preGrade, thisRowIndex);
+                int thisRankIndex = preRankIndex + changeRank;
+                Long thisRankId = thisRankMap.get(thisRankIndex);
+                if (thisRankIndex > thisRankMap.size()) {
+                    model.setValue("dy_rank", thisMaxRankId, thisRowIndex);
+                    // 最低档，次年工资下调10%
+                } else if (thisRankIndex <= 1) {
+                    model.setValue("dy_calctype", 1, thisRowIndex);
+                    model.setValue("dy_actualrange", -10.00, thisRowIndex);
+                } else {
+                    model.setValue("dy_rank", thisRankId, thisRowIndex);
+                }
+            }
+
+
+            // “系统处理备注信息”字段：“上年度绩效考核”&值“，
+            model.setValue("dy_nckd_notesinfo", "上年度绩效考核：" + lastYearKaoHeResult, thisRowIndex);
+        }
+    }
+
+
+    /**
+     * 调动调薪：自动生成薪档
+     *
+     * @param model
+     * @param changeRowIndex
+     */
+    private void autoGetRank(IDataModel model, int changeRowIndex) {
         // 调薪明细信息
         DynamicObjectCollection entryentity = model.getEntryEntity("adjapprdetailentry");
         for (DynamicObject entry : entryentity) {
@@ -69,7 +308,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             }
 
             /*
-             *薪等相同，则薪档为原薪档。
+             * 薪等相同，则薪档为原薪档。
              */
             int gradeIndex = grade.getInt("gradeindex");
             int preGradeIndex = pregrade.getInt("gradeindex");
@@ -209,30 +448,13 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 // 调整后金额
                 finalAmount = this2_this1_amount.multiply(new BigDecimal("2")).add(preAmount)
                         .setScale(2, RoundingMode.HALF_UP);
-                // 查询
-                SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
-                // 标准表id
-                salaryCountAmountMatchParam.setStdTableId(salaryStdId);
-                // 定调薪项目id
-                salaryCountAmountMatchParam.setItemId(itemId);
-                // 薪等id：本次薪等
-                salaryCountAmountMatchParam.setGradeId(gradeId);
-                // 标准金额
-                salaryCountAmountMatchParam.setAmount(finalAmount);
-                // 给定薪等薪档范围
-                HashMap<Long, List<Long>> gradeRankInfoMap = new HashMap<>();
-                gradeRankInfoMap.put(gradeId, rankList);
-                salaryCountAmountMatchParam.setGradeRankInfo(gradeRankInfoMap);
-                // unionId
-                salaryCountAmountMatchParam.setUnionId("up");
-                // 匹配策略:就高
-                salaryCountAmountMatchParam.setMatchStrategy("1");
-                // 是否显示薪等薪档
-                salaryCountAmountMatchParam.setisMatchGradeRank("1");
-
-                List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults = SalaryStdQueryService.get().matchTableRangeBySalaryCountOrAmount(
-                        Collections.singletonList(salaryCountAmountMatchParam)
-                );
+                String unionId = "up";
+                String matchStrategy = "1";
+                String isMatchGradeRank = "1";
+                List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults =
+                        getSalaryCountAmountMatchResults(
+                                salaryStdId, itemId, gradeId, finalAmount, rankList, unionId, matchStrategy, isMatchGradeRank
+                        );
 
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "up".equals(result.getUnionId()))
@@ -255,29 +477,10 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 finalAmount = pre2_pre1_amount.multiply(new BigDecimal("-2")).add(preAmount)
                         .setScale(2, RoundingMode.HALF_UP);
                 // 查询
-                SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
-                // 标准表id
-                salaryCountAmountMatchParam.setStdTableId(preSalaryStdId);
-                // 定调薪项目id
-                salaryCountAmountMatchParam.setItemId(itemId);
-                // 薪等id：原薪等
-                salaryCountAmountMatchParam.setGradeId(preGradeId);
-                // 标准金额
-                salaryCountAmountMatchParam.setAmount(finalAmount);
-                // 给定薪等薪档范围
-                HashMap<Long, List<Long>> gradeRankInfoMap = new HashMap<>();
-                gradeRankInfoMap.put(preGradeId, preRankList);
-                salaryCountAmountMatchParam.setGradeRankInfo(gradeRankInfoMap);
-                // unionId
-                salaryCountAmountMatchParam.setUnionId("down");
-                // 匹配策略:就低
-                salaryCountAmountMatchParam.setMatchStrategy("3");
-                // 是否显示薪等薪档
-                salaryCountAmountMatchParam.setisMatchGradeRank("1");
-
-                List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults = SalaryStdQueryService.get().matchTableRangeBySalaryCountOrAmount(
-                        Collections.singletonList(salaryCountAmountMatchParam)
-                );
+                List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults =
+                        getSalaryCountAmountMatchResults(
+                                preSalaryStdId, itemId, preGradeId, finalAmount, preRankList, "down", "3", "1"
+                        );
 
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "down".equals(result.getUnionId()))
@@ -298,26 +501,45 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         }
     }
 
+
+    private List<SalaryCountAmountMatchResult> getSalaryCountAmountMatchResults(long salaryStdId, long itemId, long gradeId, BigDecimal finalAmount, List<Long> rankList, String unionId, String matchStrategy, String isMatchGradeRank) {
+        // 查询
+        SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
+        // 标准表id
+        salaryCountAmountMatchParam.setStdTableId(salaryStdId);
+        // 定调薪项目id
+        salaryCountAmountMatchParam.setItemId(itemId);
+        // 薪等id：本次薪等
+        salaryCountAmountMatchParam.setGradeId(gradeId);
+        // 标准金额
+        salaryCountAmountMatchParam.setAmount(finalAmount);
+        // 给定薪等薪档范围
+        HashMap<Long, List<Long>> gradeRankInfoMap = new HashMap<>();
+        gradeRankInfoMap.put(gradeId, rankList);
+        salaryCountAmountMatchParam.setGradeRankInfo(gradeRankInfoMap);
+        // unionId
+        salaryCountAmountMatchParam.setUnionId(unionId);
+        // 匹配策略:就高
+        salaryCountAmountMatchParam.setMatchStrategy(matchStrategy);
+        // 是否显示薪等薪档
+        salaryCountAmountMatchParam.setisMatchGradeRank(isMatchGradeRank);
+
+        return SalaryStdQueryService.get().matchTableRangeBySalaryCountOrAmount(
+                Collections.singletonList(salaryCountAmountMatchParam)
+        );
+    }
+
     private Long positionInfoCheck(Pair<Long, Long> positionInfo) {
         Long minRank = positionInfo.getKey();
         Long maxRank = positionInfo.getValue();
-        // ①最低最高等d相同代表传入的值正好等于某个等
-        if (minRank.equals(maxRank)) {
-            return minRank;
-        }
-        // ②最低等id为0，最高等id不为0，代表传入的值小于最低等
-        if (minRank.equals(0L)) {
-            return maxRank;
-        }
-
-        // ③最低等id不为0，最高等id为0，代表传入的值高于最高等
-        if (maxRank.equals(0L)) {
-            return minRank;
+        // 当最低等级和最高等级相同，或者其中一个为0时，返回非0的等级
+        if (minRank.equals(maxRank) || minRank.equals(0L) || maxRank.equals(0L)) {
+            return minRank.equals(0L) ? maxRank : minRank;
         }
         return null;
     }
 
-    @NotNull
+
     private StdAmountQueryParam getStdAmountQueryParam(Long salaryStdId, Long itemId, Long gradeId, Long rankId1, String unionId) {
         // 构建查询参数
         StdAmountQueryParam queryParam = new StdAmountQueryParam();
