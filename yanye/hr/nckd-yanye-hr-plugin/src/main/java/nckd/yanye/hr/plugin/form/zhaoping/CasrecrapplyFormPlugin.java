@@ -121,8 +121,9 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                     DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("nckd_recruitorg", iRow);
                     if(ObjectUtils.isEmpty(nckdRecruitcompany)){
                         DynamicObject adminorg = newValue1.getDynamicObject("adminorg");
-                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle(adminorg.getPkValue(), "haos_adminorgf7");
-                        this.getModel().setValue("nckd_recruitorg", dynamicObject.getDynamicObject("belongcompany").getPkValue(),iRow);
+                        this.getModel().setValue("nckd_recruitorg",adminorg,iRow);
+
+//                        this.getModel().setValue("nckd_recruitcompany", dynamicObject.getDynamicObject("belongcompany").getPkValue(),iRow);
                     }
                 }
                 break;
