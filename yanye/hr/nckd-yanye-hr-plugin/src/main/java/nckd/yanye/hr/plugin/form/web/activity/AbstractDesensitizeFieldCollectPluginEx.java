@@ -27,6 +27,8 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
     public void registerListener(EventObject e) {
         Button button = this.getView().getControl("savesingles001"); // 基本信息的保存按钮
         button.addClickListener(this);
+        Button button2 = this.getView().getControl("editsingles002"); // 联系方式的修改按钮
+        button2.addClickListener(this);
     }
 
     @Override
@@ -76,7 +78,7 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
         String key = ((Control)evt.getSource()).getKey();
         // 基本信息 保存标识：savesingles001
         if ("savesingles001".equals(key)) {
-            this.getModel();
+            // 基本信息的保存按钮 savesingles001
             String istuiwu = (String)this.getModel().getValue("field2004353791935130624");
             if ("YES".equals(istuiwu)) {
                 // 入伍时间 field2004391669838916608
@@ -100,6 +102,12 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
                         evt.setCancel(true);
                     }
                 }
+            }
+        } else if ("editsingles002".equals(key)) {
+            // 联系方式的修改按钮 editsingles002
+            Object address = this.getModel().getValue("field1249295461932639234");
+            if(address == null) {
+                this.getModel().setItemValueByNumber("field1249295461932639234","001"); // 通讯地址国家/地区：001 中国
             }
         }
     }
