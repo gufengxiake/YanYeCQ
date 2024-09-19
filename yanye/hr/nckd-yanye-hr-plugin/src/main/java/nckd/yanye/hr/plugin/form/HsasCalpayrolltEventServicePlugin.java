@@ -36,7 +36,7 @@ public class HsasCalpayrolltEventServicePlugin implements IEventServicePlugin {
             List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
             logger.info("薪资审批单id：{}",JSONObject.toJSONString(businesskeys));
             //查询薪资审批单
-            DynamicObject hsasApprovebillObject = BusinessDataServiceHelper.loadSingle(businesskeys.get(0), "hsas_approvebill");
+            DynamicObject hsasApprovebillObject = BusinessDataServiceHelper.loadSingle(Long.valueOf(businesskeys.get(0)), "hsas_approvebill");
             if (Objects.nonNull(hsasApprovebillObject)){
                 //审批单(hsas_approvebill)分录calentryentity
                 DynamicObjectCollection hsasApprovebill = hsasApprovebillObject.getDynamicObjectCollection("calentryentity");
