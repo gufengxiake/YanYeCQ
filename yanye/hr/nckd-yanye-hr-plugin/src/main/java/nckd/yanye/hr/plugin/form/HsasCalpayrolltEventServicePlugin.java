@@ -87,7 +87,6 @@ public class HsasCalpayrolltEventServicePlugin implements IEventServicePlugin {
 
                 //净薪资合计
                 BigDecimal netWorthTotal = dynamicObjectCollection1.stream().map(t->t.getBigDecimal("calamountvalue")).reduce(BigDecimal.ZERO,BigDecimal::add);
-                System.out.println();
                 //备注赋值
                 hsasApprovebillObject.set("description","概览：总人数："+num+"，总薪资合计："+salaryTotal.setScale(2)+"，净薪资合计："+netWorthTotal.setScale(2));
                 SaveServiceHelper.update(hsasApprovebillObject);
