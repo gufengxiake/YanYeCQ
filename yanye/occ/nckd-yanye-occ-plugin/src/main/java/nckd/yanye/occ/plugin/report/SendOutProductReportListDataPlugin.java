@@ -27,7 +27,7 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
-        QFilter initFilter= new QFilter("bizorg.number", QCP.in,new String[]{"11901","121"});
+        QFilter initFilter = new QFilter("bizorg.number", QCP.in, new String[]{"11901", "121"});
         //限定单据为已审核
         initFilter.and("billstatus", QCP.equals, "C");
         qFilters.add(initFilter);
@@ -35,27 +35,27 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
         FilterInfo filter = reportQueryParam.getFilter();
         //获取过滤组织
         DynamicObject nckdOrgQ = filter.getDynamicObject("nckd_org_q");
-        if(nckdOrgQ != null){
-            Long pkValue =(Long)nckdOrgQ.getPkValue();
-            QFilter orgFilter= new QFilter("bizorg",QCP.equals,pkValue);
+        if (nckdOrgQ != null) {
+            Long pkValue = (Long) nckdOrgQ.getPkValue();
+            QFilter orgFilter = new QFilter("bizorg", QCP.equals, pkValue);
             qFilters.add(orgFilter);
         }
         //获取过滤客户
         DynamicObject nckdCustomerQ = filter.getDynamicObject("nckd_customer_q");
-        if(nckdCustomerQ != null){
-            Long pkValue =(Long)nckdCustomerQ.getPkValue();
-            QFilter cusFilter= new QFilter("customer",QCP.equals,pkValue);
+        if (nckdCustomerQ != null) {
+            Long pkValue = (Long) nckdCustomerQ.getPkValue();
+            QFilter cusFilter = new QFilter("customer", QCP.equals, pkValue);
             qFilters.add(cusFilter);
         }
         //获取发货日期
-        if(filter.getDate("fhdate_s") != null && filter.getDate("fhdate_e") != null){
+        if (filter.getDate("fhdate_s") != null && filter.getDate("fhdate_e") != null) {
             DateTime begin = DateUtil.beginOfDay(filter.getDate("fhdate_s"));
             DateTime end = DateUtil.endOfDay(filter.getDate("fhdate_e"));
-            QFilter dateFilter= new QFilter("biztime",QCP.large_equals,begin).and("biztime",QCP.less_equals,end);
+            QFilter dateFilter = new QFilter("biztime", QCP.large_equals, begin).and("biztime", QCP.less_equals, end);
             qFilters.add(dateFilter);
         }
         //合同编号
-        String fields = "nckd_xshth," +
+        String fields = "nckd_salecontractno," +
                 //发货单号
                 "billno as out_billno," +
                 //发货日期
@@ -94,13 +94,13 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
                 "billentry.nckd_cbj as out_cbj," +
                 //签收数量
                 "billentry.nckd_signbaseqty as out_signbaseqty," +
-                //核心单据行id
-                "billentry.mainbillentryid as out_mainbillentryid," +
+                //来源单据行id
+                "billentry.srcbillentryid as out_srcbillentryid," +
                 //单据行id
                 "billentry.id as out_entryid";
         DataSet imSalOutBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", fields, qFilters.toArray(new QFilter[0]), null);
-        if (imSalOutBill.isEmpty()){
+        if (imSalOutBill.isEmpty()) {
             return imSalOutBill;
         }
         //根据销售出库表体id获取财务应付单信息
@@ -110,54 +110,130 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
                 "entry.e_amount as fin_amount,bizdate as fin_bizdate ,entry.e_srcentryid as fin_srcentryid",
                 new QFilter[]{new QFilter("entry.e_srcentryid", QCP.in, outEntryid.toArray(new Long[0]))}, null);
         //关联财务应收单
-        imSalOutBill = imSalOutBill.leftJoin(finArBill).on("out_entryid","fin_srcentryid").select(imSalOutBill.getRowMeta().getFieldNames(),new String[]{"fin_amount","fin_bizdate"}).finish();
+        imSalOutBill = imSalOutBill.leftJoin(finArBill).on("out_entryid", "fin_srcentryid").select(imSalOutBill.getRowMeta().getFieldNames(), new String[]{"fin_amount", "fin_bizdate"}).finish();
         //根据财务应收单的日期进行过滤
-        if(filter.getDate("jsdate_s") != null && filter.getDate("jsdate_e") != null){
+        if (filter.getDate("jsdate_s") != null && filter.getDate("jsdate_e") != null) {
             DateTime begin = DateUtil.beginOfDay(filter.getDate("jsdate_s"));
             DateTime end = DateUtil.endOfDay(filter.getDate("jsdate_e"));
             imSalOutBill = imSalOutBill.filter("fin_bizdate >=to_date('" + begin + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("fin_bizdate <=to_date('" + end + "','yyyy-MM-dd hh:mm:ss')");
         }
 
-        //根据销售出库的核心单据行id获取销售订单信息
-        List<Long> outMainbillentryid = DataSetToList.getOneToList(imSalOutBill, "out_mainbillentryid");
-        DataSet salOrder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder",
-                //单据编号，分录id
-                "billentry.id as orderid,billno as order_billno",
-                new QFilter[]{new QFilter("billentry.id", QCP.in, outMainbillentryid.toArray(new Long[0]))}, null);
+        //获取上游单据信息
+        DataSet salOrder = this.linkUpBills(imSalOutBill);
+        salOrder = salOrder.union(this.linkUpSaleOutBills(imSalOutBill)).distinct();
+        //如果上游信息为空则直接返回
+        if (salOrder.isEmpty()){
+            return imSalOutBill.orderBy(new String[]{"out_biztime", "out_billno"});
+        }
         //关联销售订单
-        imSalOutBill = imSalOutBill.leftJoin(salOrder).on("out_mainbillentryid","orderid").select(imSalOutBill.getRowMeta().getFieldNames(),new String[]{"order_billno"}).finish();
+        imSalOutBill = imSalOutBill.leftJoin(salOrder).on("out_srcbillentryid", "ele_entryentityid").select(imSalOutBill.getRowMeta().getFieldNames(), new String[]{"order_billno"}).finish().distinct();
 
-
-        return imSalOutBill.orderBy(new String[]{"out_biztime","out_billno"});
+        return imSalOutBill.orderBy(new String[]{"out_biztime", "out_billno"});
     }
+
+    //特殊处理上游是销售出库单的销售出库单
+    public DataSet linkUpSaleOutBills(DataSet ds) {
+        //获取销售出库来源单据行id
+        List<Long> outSrcbillentryid = DataSetToList.getOneToList(ds, "out_srcbillentryid");
+        if (outSrcbillentryid.isEmpty()) {
+            return ds;
+        }
+        DataSet dataSet = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "im_saloutbill",
+                //来源单据行id
+                "billentry.srcbillentryid as out_srcbillentryid," +
+                        //单据行id
+                        "billentry.id as out_entryid",
+                new QFilter[]{new QFilter("billentry.id", QCP.in, outSrcbillentryid.toArray(new Long[0]))}, null);
+        //获取上游销售出库的上游数据
+        DataSet upDataSet = this.linkUpBills(dataSet);
+        if (upDataSet.isEmpty()){
+            return dataSet.addNullField("order_billno").select("out_entryid as ele_entryentityid","order_billno");
+        }
+        dataSet = dataSet.leftJoin(upDataSet).on("out_srcbillentryid","ele_entryentityid")
+                .select("out_entryid as ele_entryentityid","order_billno").finish();
+        return dataSet;
+    }
+
+    //关联上游单据单据
+    public DataSet linkUpBills(DataSet ds) {
+        //获取销售出库来源单据行id
+        List<Long> outSrcbillentryid = DataSetToList.getOneToList(ds, "out_srcbillentryid");
+        if (outSrcbillentryid.isEmpty()) {
+            return ds;
+        }
+        //根据来源信息查询销售出库上游电子磅单
+        DataSet nckd_eleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "nckd_eleweighing",
+                //来源单据行id
+                "entryentity.nckd_srcbillentryid as ele_srcbillentryid," +
+                        //单据体id
+                        "entryentity.id as ele_entryentityid ",
+                new QFilter[]{new QFilter("entryentity.id", QCP.in, outSrcbillentryid.toArray(new Long[0]))}, null);
+
+        //获取电子磅单来源单据行id
+        List<Long> eleSrcbillentryid = DataSetToList.getOneToList(nckd_eleweighing, "ele_srcbillentryid");
+        //根据电子磅单来源信息查询上游发货通知单
+        DataSet sm_delivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "sm_delivernotice",
+                //来源单据行id
+                "billentry.srcbillentryid as del_srcbillentryid," +
+                        //单据体id
+                        "billentry.id as del_billentryid ",
+                new QFilter[]{new QFilter("billentry.id", QCP.in, eleSrcbillentryid.toArray(new Long[0]))}, null);
+        //电子磅单关联发货申请单
+        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_delivernotice).on("ele_srcbillentryid", "del_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(), sm_delivernotice.getRowMeta().getFieldNames()).finish();
+
+        //获取发货申请单来源单据行id
+        List<Long> delSrcbillentryid = DataSetToList.getOneToList(sm_delivernotice, "del_srcbillentryid");
+        //根据发货通知单的来源单据行id查询销售订单
+        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "sm_salorder",
+                //订单号
+                "billno as order_billno," +
+                        //单据体id
+                        "billentry.id as order_billentryid ",
+                new QFilter[]{new QFilter("billentry.id", QCP.in, delSrcbillentryid.toArray(new Long[0]))}, null);
+        //关联销售订单
+        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_salorder).on("del_srcbillentryid", "order_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(), sm_salorder.getRowMeta().getFieldNames()).finish();
+
+        //销售出库单关联电子磅单
+        ds = ds.leftJoin(nckd_eleweighing).on("out_srcbillentryid", "ele_entryentityid").select(new String[]{"ele_entryentityid","order_billno"}).finish();
+
+        nckd_eleweighing.close();
+        sm_delivernotice.close();
+        sm_salorder.close();
+        return ds;
+    }
+
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
-        columns.add(createReportColumn("nckd_xshth",ReportColumn.TYPE_TEXT,"合同编号"));
-        columns.add(createReportColumn("order_billno",ReportColumn.TYPE_TEXT,"订单编号"));
-        columns.add(createReportColumn("out_billno",ReportColumn.TYPE_TEXT,"发货单号"));
-        columns.add(createReportColumn("out_biztime",ReportColumn.TYPE_DATE,"发货日期"));
-        columns.add(createReportColumn("out_customernumber",ReportColumn.TYPE_TEXT,"客户编码"));
-        columns.add(createReportColumn("out_customername",ReportColumn.TYPE_TEXT,"客户名称"));
-        columns.add(createReportColumn("admindivision",ReportColumn.TYPE_TEXT,"客户省份"));
-        columns.add(createReportColumn("out_customerxz",ReportColumn.TYPE_TEXT,"客户性质"));
-        columns.add(createReportColumn("out_customertype",ReportColumn.TYPE_TEXT,"集团内/外"));
+        columns.add(createReportColumn("nckd_salecontractno", ReportColumn.TYPE_TEXT, "合同编号"));
+        columns.add(createReportColumn("order_billno", ReportColumn.TYPE_TEXT, "订单编号"));
+        columns.add(createReportColumn("out_billno", ReportColumn.TYPE_TEXT, "发货单号"));
+        columns.add(createReportColumn("out_biztime", ReportColumn.TYPE_DATE, "发货日期"));
+        columns.add(createReportColumn("out_customernumber", ReportColumn.TYPE_TEXT, "客户编码"));
+        columns.add(createReportColumn("out_customername", ReportColumn.TYPE_TEXT, "客户名称"));
+        columns.add(createReportColumn("admindivision", ReportColumn.TYPE_TEXT, "客户省份"));
+        columns.add(createReportColumn("out_customerxz", ReportColumn.TYPE_TEXT, "客户性质"));
+        columns.add(createReportColumn("out_customertype", ReportColumn.TYPE_TEXT, "集团内/外"));
 
-        columns.add(createReportColumn("out_groupname",ReportColumn.TYPE_TEXT,"产品类别"));
-        columns.add(createReportColumn("out_materialnumber",ReportColumn.TYPE_TEXT,"存货编码"));
-        columns.add(createReportColumn("out_materialname",ReportColumn.TYPE_TEXT,"存货名称"));
-        columns.add(createReportColumn("out_gg",ReportColumn.TYPE_TEXT,"规格"));
-        columns.add(createReportColumn("out_xh",ReportColumn.TYPE_TEXT,"型号"));
+        columns.add(createReportColumn("out_groupname", ReportColumn.TYPE_TEXT, "产品类别"));
+        columns.add(createReportColumn("out_materialnumber", ReportColumn.TYPE_TEXT, "存货编码"));
+        columns.add(createReportColumn("out_materialname", ReportColumn.TYPE_TEXT, "存货名称"));
+        columns.add(createReportColumn("out_gg", ReportColumn.TYPE_TEXT, "规格"));
+        columns.add(createReportColumn("out_xh", ReportColumn.TYPE_TEXT, "型号"));
 
-        columns.add(createReportColumn("out_baseqty",ReportColumn.TYPE_DECIMAL,"销售数量"));
-        columns.add(createReportColumn("out_baseunit",ReportColumn.TYPE_TEXT,"计量单位"));
-        columns.add(createReportColumn("out_price",ReportColumn.TYPE_DECIMAL,"单价"));
-        columns.add(createReportColumn("out_settlecurrency",ReportColumn.TYPE_TEXT,"结算币别"));
-        columns.add(createReportColumn("out_amount",ReportColumn.TYPE_DECIMAL,"销售金额"));
-        columns.add(createReportColumn("out_cbj",ReportColumn.TYPE_DECIMAL,"发出商品成本"));
-        columns.add(createReportColumn("out_signbaseqty",ReportColumn.TYPE_DECIMAL,"签收数量"));
-        columns.add(createReportColumn("fin_amount",ReportColumn.TYPE_DECIMAL,"开票金额"));
+        columns.add(createReportColumn("out_baseqty", ReportColumn.TYPE_DECIMAL, "销售数量"));
+        columns.add(createReportColumn("out_baseunit", ReportColumn.TYPE_TEXT, "计量单位"));
+        columns.add(createReportColumn("out_price", ReportColumn.TYPE_DECIMAL, "单价"));
+        columns.add(createReportColumn("out_settlecurrency", ReportColumn.TYPE_TEXT, "结算币别"));
+        columns.add(createReportColumn("out_amount", ReportColumn.TYPE_DECIMAL, "销售金额"));
+        columns.add(createReportColumn("out_cbj", ReportColumn.TYPE_DECIMAL, "发出商品成本"));
+        columns.add(createReportColumn("out_signbaseqty", ReportColumn.TYPE_DECIMAL, "签收数量"));
+        columns.add(createReportColumn("fin_amount", ReportColumn.TYPE_DECIMAL, "开票金额"));
         //特殊处理一下行政区划，获取行政区划的对象并隐藏后续用来获取省份
         ReportColumn out_admindivision = ReportColumn.createBaseDataColumn("out_admindivision", "bd_admindivision");
         out_admindivision.setHide(true);

@@ -11,7 +11,10 @@ import java.math.RoundingMode;
 import java.util.Iterator;
 
 /**
- * 报表界面插件
+ * 渠道月度销售情况（明细表）-报表界面插件
+ * 表单标识：nckd_channelmonthdetail
+ * author:zhangzhilong
+ * date:2024/09/11
  */
 public class ChannelMonthDetailReporFormPlugin extends AbstractReportFormPlugin implements Plugin {
     @Override

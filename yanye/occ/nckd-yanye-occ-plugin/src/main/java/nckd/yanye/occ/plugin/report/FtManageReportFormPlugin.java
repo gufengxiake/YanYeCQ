@@ -49,6 +49,11 @@ public class FtManageReportFormPlugin extends AbstractReportFormPlugin implement
             if(next.getBigDecimal("nckd_damageqty").compareTo(BigDecimal.ZERO) <= 0){
                 next.set("nckd_damageqty",BigDecimal.ZERO);
             }
+            //签收数量为空则赋值为基本数量
+            if(next.getBigDecimal("nckd_signqty").compareTo(BigDecimal.ZERO) == 0){
+                next.set("nckd_signqty",next.getBigDecimal("nckd_quantity"));
+
+            }
         }
 
     }

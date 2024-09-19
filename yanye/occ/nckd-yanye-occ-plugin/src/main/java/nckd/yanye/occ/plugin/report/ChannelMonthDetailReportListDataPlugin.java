@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 报表取数插件
+ * 渠道月度销售情况（明细表）-报表取数插件
+ * 表单标识：nckd_channelmonthdetail
+ * author:zhangzhilong
+ * date:2024/09/11
  */
 public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
