@@ -128,6 +128,19 @@ public class SyncDingDingClockInTask extends AbstractTask {
                 )
         );
 
+        // 预加载考勤人员信息
+        DynamicObject[] allAttPersons = BusinessDataServiceHelper.load(
+                "wtp_attendperson",
+                "id,number,name",
+                new QFilter[]{}
+        );
+        Map<String, DynamicObject> attPersonMap = Arrays.stream(allAttPersons).collect(
+                Collectors.toMap(
+                        obj -> obj.getString("number"),
+                        obj -> obj
+                )
+        );
+
         // 打卡数据新增
         for (Object o : yunZhiJiaClockInList) {
             JSONObject clockInfo = (JSONObject) o;
@@ -188,6 +201,16 @@ public class SyncDingDingClockInTask extends AbstractTask {
 
             // 状态-有效
             signCard.set("status", "1");
+
+            // 其他需要的字段
+            // 考勤人
+            DynamicObject attPerson = attPersonMap.get(user.getString("number"));
+            if (attPerson == null) {
+                failedUserMap.put(user.getString("number"), user.getString("name"));
+                log.error("未找到该员工工号的考勤人员信息: " + user.getString("name"));
+                continue;
+            }
+            signCard.set("attperson", attPerson);
 
             signCardList.add(signCard);
         }
