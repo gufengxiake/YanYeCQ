@@ -85,16 +85,16 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             //构造查询生产工单分录条件 未关闭，非完工
             QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C")
-                    .and("org.id",QCP.in,idSet).and("treeentryentity.beginbookdate",QCP.is_notnull,null);
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate", new QFilter[]{qFilter});
+                    .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{qFilter});
             if (dynamicObjects != null && dynamicObjects.length > 0){
                 objects.addAll(Arrays.asList(dynamicObjects));
             }
             //构造查询生产工单分录条件 已完工，未关闭
             QFilter filter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
                     .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C")
-                    .and("org.id",QCP.in,idSet).and("treeentryentity.beginbookdate",QCP.is_notnull,null);
-            DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate", new QFilter[]{filter});
+                    .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
+            DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{filter});
             if (dynamicObj != null && dynamicObj.length > 0){
                 objects.addAll(Arrays.asList(dynamicObj));
             }
@@ -105,7 +105,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             for (DynamicObject dynamicObject :objects){
                 DynamicObjectCollection dynamics = dynamicObject.getDynamicObjectCollection("treeentryentity");
                 for (DynamicObject dynami : dynamics){
-                    map.put(dynami.getString("material.masterid.number")+dateFormat(dynami.getDate("beginbookdate")),dynamicObject);
+                    map.put(dynami.getString("material.masterid.number")+dateFormat(dynami.getDate("planbegintime")),dynamicObject);
 //                    masterMap.put(dynami.getDynamicObject("material").getPkValue(),dynami);
                 }
             }
