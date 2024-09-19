@@ -52,7 +52,6 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         if (!"dy_grade".equals(propertyName)) {
             return;
         }
-
         DynamicObject salaryadjrsn = (DynamicObject) model.getValue("salaryadjrsn");
         if (salaryadjrsn == null) {
             return;
@@ -73,8 +72,14 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             // 组织范围：针对晶昊公司和富达公司
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             String orgName = org.getString("name");
-            if ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName)) {
+            DynamicObject salaryadjrsn = (DynamicObject) this.getModel().getValue("salaryadjrsn");
+            String salaryadjrsnName = salaryadjrsn.getString("name");
+
+            if ("年度绩效调薪".equals(salaryadjrsnName) &&
+                    ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
                 this.getView().getPageCache().put("isYear", "true");
+            } else {
+                this.getView().getPageCache().put("isYear", "false");
             }
         }
     }
