@@ -81,15 +81,15 @@ public class ZcPlatformConst {
     /**
      * 招采平台接口授权类型，固定值: client_credentials
      */
-    public static final String GRANT_TYPE = "client_credentials";
+    public static String GRANT_TYPE = "client_credentials";
 
     /**
      * 招采平台-测试环境url
      */
-    public static final String ZC_URL = CappConfig.getConfigValue("zc_url");
+    public static String ZC_URL = CappConfig.getConfigValue("zc_url");
 
     /**
      * 招采平台-测试环境访问指定页面url
      */
-    public static final String ZC_PASSPORTURL = CappConfig.getConfigValue("zc_passporturl");
+    public static String ZC_PASSPORTURL = CappConfig.getConfigValue("zc_passporturl");
 }

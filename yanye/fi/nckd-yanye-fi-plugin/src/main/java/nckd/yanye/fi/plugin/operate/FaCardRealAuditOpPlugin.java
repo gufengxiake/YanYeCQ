@@ -46,6 +46,8 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         fieldKeys.add("assetcat");
         fieldKeys.add("createtime");
         fieldKeys.add("price");
+        fieldKeys.add("nckd_textfield6");
+        fieldKeys.add("org");
     }
 
     @Override
@@ -59,7 +61,8 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
                 continue;
             }
             if ("1".equals(fixedassettype)) {
-                sedMessage(dataEntity, "新增房产");
+                //sedMessage(dataEntity, "新增房产");
+                return;
             } else if ("2".equals(fixedassettype)) {
                 sedMessage(dataEntity, "新增土地");
             }
@@ -90,14 +93,14 @@ public class FaCardRealAuditOpPlugin extends AbstractOperationServicePlugIn {
         //新增房产，资产编号：XXXX，资产名称：XXX，新增时间：年-月-日，房产金额：XXX；
         String contentMessage = messageInformers.getString("nckd_mescontent");
         String[] arr = contentMessage.split("：");
-        String resultMes = "";
+        String resultMes = "【%s】";
         for (String s : arr) {
             if (s.equals(arr[arr.length-1])){
                 continue;
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = String.format(resultMes, assetcat.getString("number"), assetcat.getString("number"), createtime, dataEntity.getString("price"));
+        String formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"),dataEntity.getString("number"), dataEntity.getString("assetname"), createtime, dataEntity.getString("nckd_textfield6"));
         //String contentMessage = "新增房产，资产编号：" + assetcat.getString("number") + ",资产名称：" + assetcat.getString("number") + ",新增时间：" + createtime + ",房产金额：" + dataEntity.getString("price");
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);

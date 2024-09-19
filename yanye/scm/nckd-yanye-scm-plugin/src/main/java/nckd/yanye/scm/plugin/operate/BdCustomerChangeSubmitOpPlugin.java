@@ -44,6 +44,17 @@ public class BdCustomerChangeSubmitOpPlugin extends AbstractOperationServicePlug
                 case "save":
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
+                        //开票校验
+                        String isInvoice = entity.getString("nckd_isinvoice");
+                        if ("1".equals(isInvoice)) {
+                            String enterpriseemail = entity.getString("nckd_enterpriseemail");//客户企业邮箱
+                            String customeremail = entity.getString("nckd_customeremail");//客户业务员邮箱
+                            String myemail = entity.getString("nckd_myemail");//我方业务员邮箱
+                            if (StringUtils.isEmpty(enterpriseemail) && StringUtils.isEmpty(customeremail) && StringUtils.isEmpty(myemail)) {
+                                stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中在开票状态下必须填写一个邮箱信息");
+                                continue;
+                            }
+                        }
                         //社会统一信用代码
                         String societyCreditCode = entity.getString("nckd_societycreditcode");
                         String addCustomer = entity.getString("nckd_addcustomer");

@@ -12,7 +12,9 @@ import kd.bos.form.MobileFormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeClickEvent;
+import kd.bos.form.events.BeforeCreateListDataProviderArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.events.PreOpenFormEventArgs;
 import kd.bos.list.BillList;
 import kd.bos.list.plugin.AbstractMobListPlugin;
 import kd.bos.logging.Log;
@@ -39,7 +41,6 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
     private static final Log logger = LogFactory.getLog(OcbSocSaleOrderMobListPlugin.class);
     //1)点击后，需弹出窗口。支付金额：(内容-待收金额)，如待收金额为0，则提示已收款，无需支付；支付金额栏位可修改，但不可超过待收金额；
 
-
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
@@ -58,15 +59,20 @@ public class OcbSocSaleOrderMobListPlugin extends AbstractMobListPlugin {
             //获取完整数据
             DynamicObject saleOrderbill = BusinessDataServiceHelper.loadSingle(id, entityType);
             if (ObjectUtil.isNotEmpty(saleOrderbill)) {
-                if (!"C".equals(saleOrderbill.getString("billstatus"))) {
-                    this.getView().showErrorNotification("只有审核状态的要货订单才能发起结算");
+                if ("C".equals(saleOrderbill.getString("paystatus"))) {
+                    this.getView().showErrorNotification("订单已收款，无需支付");
+                    evt.setCancel(true);
+                    return;
+                }
+                if ("B".equals(saleOrderbill.getString("closestatus"))) {
+                    this.getView().showErrorNotification("订单已关闭，无法支付");
                     evt.setCancel(true);
                     return;
                 }
                 //获取待收金额 sumunrecamount 应收金额 sumreceivableamount
                 BigDecimal sumunrecamount = saleOrderbill.getBigDecimal("sumunrecamount");
                 if (sumunrecamount.compareTo(new BigDecimal(0)) == 0) {
-                    this.getView().showErrorNotification("已收款，无需支付");
+                    this.getView().showErrorNotification("订单已收款，无需支付");
                     evt.setCancel(true);
                     return;
                 }

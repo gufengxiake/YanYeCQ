@@ -20,6 +20,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
@@ -59,6 +60,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
                         DynamicObject bdCustomer = BusinessDataServiceHelper.newDynamicObject("bd_customer");
+                        String isInvoice = entity.getString("nckd_isinvoice");
                         //获取编码规则
                         CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(bdCustomer.getDataEntityType().getName(), bdCustomer, null);
                         String number = CodeRuleServiceHelper.getNumber(codeRule, bdCustomer);
@@ -66,6 +68,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         bdCustomer.set("number", number);//编码
                         bdCustomer.set("name", entity.get("nckd_addcustomer"));//名称
+                        bdCustomer.set("nckd_name1", entity.get("nckd_addcustomer"));//购方名称
                         bdCustomer.set("createorg", bosOrg);//创建组织
                         bdCustomer.set("org", bosOrg);//管理组织
                         bdCustomer.set("createtime", date.get("nckd_date"));//创建日期
@@ -77,6 +80,8 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("admindivision", entity.get("nckd_province"));//区域划分
                         bdCustomer.set("nckd_customertype", entity.getDynamicObject("nckd_customerrange"));//客户范围
                         bdCustomer.set("societycreditcode", entity.get("nckd_societycreditcode"));//统一社会信用代码
+                        bdCustomer.set("tx_register_no", entity.get("nckd_societycreditcode"));//纳税人识别号
+                        bdCustomer.set("nckd_nashuitax", entity.get("nckd_societycreditcode"));//纳税人识别号
                         //bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
                         bdCustomer.set("nckd_group", entity.getDynamicObject("nckd_businesstype"));//分类
                         bdCustomer.set("nckd_customerxz", entity.getDynamicObject("nckd_quality"));//客户性质
@@ -84,13 +89,33 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("salerid", entity.getDynamicObject("nckd_buyer"));//业务员
                         bdCustomer.set("nckd_cooperationstatus", getCooperateStatus(entity.getString("nckd_cooperatestatus")));//合作状态
                         //bdCustomer.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdCustomer.set("bizpartner_address", entity.get("nckd_address"));//联系地址
+                        bdCustomer.set("bizpartner_address", entity.getDynamicObject("nckd_address") == null ? null : entity.getDynamicObject("nckd_address").getString("name"));//联系地址
                         bdCustomer.set("nckd_nashuitype", entity.getDynamicObject("nckd_taxpayertype"));//纳税人类型
                         //bdCustomer.set("", entity.get("nckd_invoicename"));//开票单位名称
                         bdCustomer.set("invoicecategory", entity.getDynamicObject("nckd_invoicetype"));//发票类型
                         bdCustomer.set("nckd_yhzh", entity.getString("nckd_banknumber"));//银行账号
-                        bdCustomer.set("nckd_telnumber", entity.getString("nckd_invoicephone"));//客户收票手机号码
+                        bdCustomer.set("nckd_bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
+                        bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
+                        bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
+                        //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
+                        DynamicObject address = entity.getDynamicObject("nckd_address");
+                        if (address != null) {
+                            address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
+                            address.set("name", address.getString("name") + ";" + entity.getString("nckd_phone"));
+                            SaveServiceHelper.update(address);
+                        }
+                        bdCustomer.set("nckd_addtel", address);//客户联系人地址
+                        bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
+                        bdCustomer.set("nckd_email2", entity.getString("nckd_customeremail"));//邮箱2
+                        bdCustomer.set("nckd_email3", entity.getString("nckd_myemail"));//邮箱3
+                        String enterpriseemail = entity.getString("nckd_enterpriseemail");//客户企业邮箱
+                        String customeremail = entity.getString("nckd_customeremail");//客户业务员邮箱
+                        String myemail = entity.getString("nckd_myemail");//我方业务员邮箱
+                        if (StringUtils.isNotEmpty(enterpriseemail) || StringUtils.isNotEmpty(customeremail) || StringUtils.isNotEmpty(myemail)) {
+                            String email = (StringUtils.isEmpty(enterpriseemail) ? "" : (enterpriseemail + ";")) + (StringUtils.isEmpty(customeremail) ? "" : (customeremail + ";")) + (StringUtils.isEmpty(myemail) ? "" : (myemail));
+                            bdCustomer.set("nckd_mail", email);//客户联系人地
+                        }
 
                         //联系人分录
                         DynamicObjectCollection entryLinkman = bdCustomer.getDynamicObjectCollection("entry_linkman");
@@ -120,13 +145,13 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
-                            if (date.getDynamicObject("org").getLong("id") != 100000){
+                            if (date.getDynamicObject("org").getLong("id") != 100000) {
                                 Set<Long> dataIdsTemp = new HashSet<>();
                                 dataIdsTemp.add(bdCustomer.getLong("id"));
                                 Set<Long> orgIds = new HashSet<>();
                                 orgIds.add(date.getDynamicObject("org").getLong("id"));
-                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer",100000L , "basedata", dataIdsTemp, orgIds);
-                                if (!assign.isSuccess()){
+                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", 100000L, "basedata", dataIdsTemp, orgIds);
+                                if (!assign.isSuccess()) {
                                     throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
                                 }
                             }
@@ -140,21 +165,27 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                     break;
                 //修改
                 case "update":
+                    String phone = "";
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
                         //变更前后，只保存变更后的数据
                         String changeAfter = entity.getString("nckd_changeafter");
                         if ("1".equals(changeAfter)) {
+                            phone = entity.getString("nckd_phone");
                             continue;
                         }
+                        String isInvoice = entity.getString("nckd_isinvoice");
                         //查出更改前数据
                         DynamicObject bdCustomer = BusinessDataServiceHelper.loadSingle(entry.get(t - 1).getDynamicObject("nckd_customermodify").getPkValue(), "bd_customer");
                         bdCustomer.set("name", entity.get("nckd_spname"));//名称
+                        bdCustomer.set("nckd_name1", entity.get("nckd_spname"));//购方名称
                         bdCustomer.set("modifier", date.getDynamicObject("creator"));//修改人
                         bdCustomer.set("modifytime", new Date());//修改时间
                         bdCustomer.set("admindivision", entity.get("nckd_province"));//区域划分
                         bdCustomer.set("nckd_customertype", entity.getDynamicObject("nckd_customerrange"));//客户范围
                         bdCustomer.set("societycreditcode", entity.get("nckd_societycreditcode"));//统一社会信用代码
+                        bdCustomer.set("tx_register_no", entity.get("nckd_societycreditcode"));//纳税人识别号
+                        bdCustomer.set("nckd_nashuitax", entity.get("nckd_societycreditcode"));//纳税人识别号
                         //bdCustomer.set("nckd_v", entity.getDynamicObject("nckd_businesstype"));//经营类型
                         bdCustomer.set("nckd_group", entity.getDynamicObject("nckd_businesstype"));//分类
                         bdCustomer.set("nckd_customerxz", entity.getDynamicObject("nckd_quality"));//客户性质
@@ -162,14 +193,37 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("salerid", entity.getDynamicObject("nckd_buyer"));//业务员
                         bdCustomer.set("nckd_cooperationstatus", getCooperateStatus(entity.getString("nckd_cooperatestatus")));//合作状态
                         bdCustomer.set("duns", entity.get("nckd_postalcode"));//邮政编码
-                        bdCustomer.set("bizpartner_address", entity.get("nckd_address"));//联系地址
+                        bdCustomer.set("bizpartner_address", entity.getDynamicObject("nckd_address") == null ? null : entity.getDynamicObject("nckd_address").getString("name"));//联系地址
                         bdCustomer.set("nckd_nashuitype", entity.getDynamicObject("nckd_taxpayertype"));//纳税人类型
                         //bdCustomer.set("", entity.get("nckd_invoicename"));//开票单位名称
                         bdCustomer.set("invoicecategory", entity.getDynamicObject("nckd_invoicetype"));//发票类型
                         bdCustomer.set("nckd_yhzh", entity.getString("nckd_banknumber"));//银行账号
-                        bdCustomer.set("nckd_telnumber", entity.getString("nckd_invoicephone"));//客户收票手机号码
+                        bdCustomer.set("nckd_bank", entity.getDynamicObject("nckd_bank"));//开户银行
                         bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
+                        bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
+                        bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
+                        //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
+                        DynamicObject address = entity.getDynamicObject("nckd_address");
+                        if (address != null) {
+                            if (StringUtils.isNotEmpty(phone) && !phone.equals(entity.getString("nckd_phone"))) {
+                                address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
+                                String[] split = address.getString("name").split(";");
+                                address.set("name", split[0] + ";" + entity.getString("nckd_phone"));
+                                SaveServiceHelper.update(address);
+                            }
+                        }
+                        bdCustomer.set("nckd_addtel", address);//客户联系人地址
+                        bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
+                        bdCustomer.set("nckd_email2", entity.getString("nckd_customeremail"));//邮箱2
+                        bdCustomer.set("nckd_email3", entity.getString("nckd_myemail"));//邮箱3
 
+                        String enterpriseemail = entity.getString("nckd_enterpriseemail");//客户企业邮箱
+                        String customeremail = entity.getString("nckd_customeremail");//客户业务员邮箱
+                        String myemail = entity.getString("nckd_myemail");//我方业务员邮箱
+                        if (StringUtils.isNotEmpty(enterpriseemail) || StringUtils.isNotEmpty(customeremail) || StringUtils.isNotEmpty(myemail)) {
+                            String email = (StringUtils.isEmpty(enterpriseemail) ? "" : (enterpriseemail + ";")) + (StringUtils.isEmpty(customeremail) ? "" : (customeremail + ";")) + (StringUtils.isEmpty(myemail) ? "" : (myemail));
+                            bdCustomer.set("nckd_mail", email);//客户联系人地址
+                        }
                         //联系人分录
                         DynamicObjectCollection entryLinkman = bdCustomer.getDynamicObjectCollection("entry_linkman");
                         if (entryLinkman.size() > 0) {

@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 报表取数插件
+ * 经营团队情况一览表（交易客户）-报表取数插件
+ * 表单标识：nckd_manageteamcust_rpt
+ * author:zhangzhilong
+ * date:2024/09/13
  */
 public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
@@ -58,6 +61,9 @@ public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDa
                 "biztime as nckd_date";
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
+        if (im_saloutbill.isEmpty()) {
+            return im_saloutbill;
+        }
 
         DataSet thisYearIm = this.sumImSalOutBill(im_saloutbill,year,month);
 
@@ -89,6 +95,7 @@ public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDa
         im_saloutbill = im_saloutbill.leftJoin(ocbsoc_saleorder).on("out_mainbillentryid","entryid")
                 .select(im_saloutbill.getRowMeta().getFieldNames(),new String[]{"boutiquecustomer"}).finish();
 
+        //过滤不为精品客户的数据
         im_saloutbill = im_saloutbill.filter("boutiquecustomer = " + Boolean.TRUE);
         if (!im_saloutbill.isEmpty()){
             im_saloutbill = this.sumImSalOutBill(im_saloutbill,year,month)
@@ -185,7 +192,7 @@ public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDa
         monthjpReportColumnGroup.setCaption(new LocaleString("月度精品客户"));
         monthjpReportColumnGroup.getChildren().add(createReportColumn("month_hk_ydjpzdkh",ReportColumn.TYPE_DECIMAL,"月度精品客户目标"));
         monthjpReportColumnGroup.getChildren().add(createReportColumn("out_isJPMonth",ReportColumn.TYPE_DECIMAL,"本月精品客户"));
-        monthjpReportColumnGroup.getChildren().add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"月度精品客户完成"));
+        monthjpReportColumnGroup.getChildren().add(createReportColumn("monthjpkhwcl",ReportColumn.TYPE_DECIMAL,"月度精品客户完成"));
         columns.add(monthjpReportColumnGroup);
 
         ReportColumnGroup yearjpReportColumnGroup = new ReportColumnGroup();
@@ -193,7 +200,7 @@ public class ManageTeamCustomerReportListDataPlugin extends AbstractReportListDa
         yearjpReportColumnGroup.setCaption(new LocaleString("年度精品客户"));
         yearjpReportColumnGroup.getChildren().add(createReportColumn("year_hk_ydjpzdkh",ReportColumn.TYPE_DECIMAL,"精品客户目标"));
         yearjpReportColumnGroup.getChildren().add(createReportColumn("out_isJPYear",ReportColumn.TYPE_DECIMAL,"精品客户累计"));
-        yearjpReportColumnGroup.getChildren().add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"精品客户完成"));
+        yearjpReportColumnGroup.getChildren().add(createReportColumn("monthjpkhwcl",ReportColumn.TYPE_DECIMAL,"精品客户完成"));
         columns.add(yearjpReportColumnGroup);
 
 

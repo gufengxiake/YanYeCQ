@@ -7,10 +7,17 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.ConfirmCallBackListener;
+import kd.bos.form.MessageBoxOptions;
+import kd.bos.form.MessageBoxResult;
 import kd.bos.form.control.EntryGrid;
+import kd.bos.form.events.AfterDoOperationEventArgs;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.form.operate.FormOperate;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -39,6 +46,10 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     // 定义日期格式
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
+    private final String SUBMIT = "submit";
+
+    private static String OPPARAM_AFTERCONFIRM = "afterconfirm";
+
 
 
     @Override
@@ -64,7 +75,8 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
             DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
             this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
         }
-
+        // 实际人数
+        this.getModel().setValue("nckd_relnum",YearcrapplyFormPlugin.getStaffCount(org.getPkValue()));
     }
 
     @Override
@@ -124,6 +136,10 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                         this.getModel().setValue("nckd_payrange", str,iRow);
                     }
                 }
+                break;
+            case "nckd_recruitnum":
+                // 人数字段统计
+                setSumRecruitnum(newValue,iRow);
                 break;
             default:
                 break;
@@ -209,5 +225,119 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     }
 
 
+    public void setSumRecruitnum(Object newValue,int row){
+        // 计算招聘人数,获取出所有分录，然后统计所有分录的招聘人数累加
+        DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("entryentity");
+        int num = 0;
+        for (int i = 0; i < entryEntity.size(); i++) {
+            if(row == i){
+                num = num + (Integer) newValue;
+            }else{
+                num = num + (Integer) entryEntity.get(i).get("nckd_recruitnum");
+            }
+        }
+        this.getModel().setValue("nckd_applynum", num);
+    }
+
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        FormOperate opreate = (FormOperate) args.getSource();
+        switch (opreate.getOperateKey()) {
+            case "submit":
+                // 在此添加处理逻辑
+                int nckdSftaffcount = (int) this.getModel().getValue("nckd_sftaffcount");
+                // 实际人数
+                int nckdRelnum = (int) this.getModel().getValue("nckd_relnum");
+                // 申请人数
+                int nckdApplynum = (int) this.getModel().getValue("nckd_applynum");
+                if(nckdSftaffcount < nckdRelnum + nckdApplynum){
+                    // 判断是否处理过
+                    String isDealed = this.getView().getPageCache().get("isDealed");
+                    if (!"true".equals(isDealed)) {
+                        // 取消原来的操作
+                        args.setCancel(true);
+                        // 在用户点击确认框上的按钮后，系统会调用confirmCallBack方法
+                        ConfirmCallBackListener confirmCallBackListener = new ConfirmCallBackListener("isExceed", this);
+                        // 设置页面确认框，参数为：标题，选项框类型，回调监听
+                        this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, confirmCallBackListener);
+                        // 只执行一次
+                        this.getView().getPageCache().put("isDealed", "true");
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs afterDoOperationEventArgs) {
+        super.afterDoOperation(afterDoOperationEventArgs);
+        this.getView().getPageCache().remove("isDealed");
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        //判断回调参数id
+        if ("isExceed".equals(messageBoxClosedEvent.getCallBackId())) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                this.getView().invokeOperation("submit");
+            } else if (MessageBoxResult.No.equals(messageBoxClosedEvent.getResult())) {
+                // 点击否也清除
+                this.getView().getPageCache().remove("isDealed");
+            }
+        }
+    }
+
+
+
+
+//    @Override
+//    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+//        super.beforeDoOperation(args);
+//        FormOperate formOperate = (FormOperate) args.getSource();
+//        if (StringUtils.equals(SUBMIT, formOperate.getOperateKey())) {
+//            DynamicObject dataEntityObj = this.getModel().getDataEntity();
+//
+//            // 编制总数
+//            int nckdSftaffcount = dataEntityObj.getInt("nckd_sftaffcount");
+//            // 实际人数
+//            int nckdRelnum = dataEntityObj.getInt("nckd_relnum");
+//            // 申请人数
+//            int nckdApplynum = dataEntityObj.getInt("nckd_applynum");
+//            if(nckdSftaffcount < nckdRelnum + nckdApplynum){
+//                RefObject<String> afterConfirm = new RefObject<>();
+//                // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
+//                if (!formOperate.getOption().tryGetVariableValue(SUBMIT, afterConfirm)) {
+//
+//                }
+//                // 显示确认消息
+//                ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(SUBMIT, this);
+//                //收款单位为失信单位，是否继续付款
+//                this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+//                // 在没有确认之前，先取消本次操作
+//                args.setCancel(true);
+//            }
+//
+//        }
+//    }
+//    @Override
+//    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+//        super.confirmCallBack(messageBoxClosedEvent);
+//        if (StringUtils.equals(SUBMIT, messageBoxClosedEvent.getCallBackId())) {
+//            // 提交确认
+//            if (messageBoxClosedEvent.getResult() == MessageBoxResult.Yes) {
+//                // 确认执行提交操作
+//                // 构建操作自定义参数，标志为确认后再次执行操作，避免重复显示交互提示
+//                OperateOption operateOption = OperateOption.create();
+//                operateOption.setVariableValue(OPPARAM_AFTERCONFIRM, "true");
+//
+//                // 执行提交操作，并传入自定义操作参数
+//                this.getView().invokeOperation(SUBMIT, operateOption);
+//            }
+//        }
+//
+//    }
 
 }
