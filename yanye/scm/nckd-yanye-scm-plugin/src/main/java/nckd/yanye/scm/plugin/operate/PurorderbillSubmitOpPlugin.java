@@ -67,7 +67,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                         .and("validstatus", QCP.equals, "B")
                         .and("closestatus", QCP.equals, "A");
                 //String entityName, String selectProperties, QFilter[] filters
-                DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,type,totalallamount,nckd_totalallamount,billentry.id,billentry.material,billentry.nckd_priceandtaxup,billentry.nckd_priceandtaxlow" +
+                DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,type,totalallamount,nckd_totalallamount,nckd_cebl,billentry.id,billentry.material,billentry.nckd_priceandtaxup,billentry.nckd_priceandtaxlow" +
                         ",billentry.qty,billentry.nckd_qty,billentry.amountandtax,billentry.nckd_amount,billentry,billentry.seq", qFilter.toArray());
                 //转成key id value DynamicObject采购合同
                 Map<Long, DynamicObject> map = Arrays.stream(purcontractArr).collect(Collectors.toMap(k -> k.getLong("id"), v -> v));
@@ -178,10 +178,12 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                 //c）如果控制总金额，则采购订单中相同采购合同的物料明细行的“价税合计”的合计≤采购合同财务信息“已执行价税合计”，存在一个采购订单多行物料对应一个采购合同，故需要先将采购订单中相同采购合同的金额进行汇总后，再与采购合同进行比较判断；
                 //采购订单数据
                 BigDecimal groupAmountandtax = purorderbillMap.get(purorderbillEntry.get("conbillid"));
-                //采购合同数量
+                //采购合同数量 modify 这里新增超额设置（采购合同上已执行价税合计+本次采购订单执行价税合计）小于等于价税合计*（1+允许超额比例）
                 BigDecimal totalallamount = purcontract.getBigDecimal("totalallamount");
+                BigDecimal nckdCebl = purcontract.getBigDecimal("nckd_cebl");
+                BigDecimal total = totalallamount.add(totalallamount.multiply(nckdCebl).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP));
                 BigDecimal nckdTotalallamount = purcontract.getBigDecimal("nckd_totalallamount");
-                BigDecimal subtract = totalallamount.subtract(nckdTotalallamount);
+                BigDecimal subtract = total.subtract(nckdTotalallamount);
                 if (groupAmountandtax.compareTo(subtract) > 0) {
                     //%s 物料明细第(%s)行，对应合同：[%s] 的已订货金额超额
                     String billno = purorderbill.getString("billno");

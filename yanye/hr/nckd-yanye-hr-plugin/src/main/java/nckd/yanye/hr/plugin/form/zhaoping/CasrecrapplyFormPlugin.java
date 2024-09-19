@@ -43,6 +43,8 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     // 公司类型
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"1020_S","1050_S","1060_S","1070_S"});
 
+    private final List<String> COMPANY_LIST2 = Arrays.asList(new String[]{"Orgform01","Orgform01-100","Orgform02","Orgform03"});
+
     // 定义日期格式
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -102,13 +104,7 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 break;
             case "nckd_recruitorg":
                 // 部门，判断是否存企业，如果不存在企业则将部门的所属公司带入到企业中
-                if(isNotEmpty(newValue)){
-                    DynamicObject newValue1 = (DynamicObject) newValue;
-                    DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("nckd_recruitcompany", iRow);
-                    if(ObjectUtils.isEmpty(nckdRecruitcompany)){
-                        this.getModel().setValue("nckd_recruitcompany", newValue1.getDynamicObject("belongcompany").getPkValue(),iRow);
-                    }
-                }else{
+                if(!isNotEmpty(newValue)){
                     this.getModel().setValue("nckd_recruitpost", null,iRow);
                 }
                 break;
@@ -121,8 +117,7 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                     DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("nckd_recruitorg", iRow);
                     if(ObjectUtils.isEmpty(nckdRecruitcompany)){
                         DynamicObject adminorg = newValue1.getDynamicObject("adminorg");
-                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle(adminorg.getPkValue(), "haos_adminorgf7");
-                        this.getModel().setValue("nckd_recruitorg", dynamicObject.getDynamicObject("belongcompany").getPkValue(),iRow);
+                        this.getModel().setValue("nckd_recruitorg",adminorg,iRow);
                     }
                 }
                 break;
@@ -158,22 +153,13 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 //是否展示审核的改为false
                 QFilter qFilter = new QFilter("adminorgtype.number", "in", COMPANY_LIST);
                 showParameter.getListFilterParameter().setFilter(qFilter);
-
                 break;
             case "nckd_recruitorg":
                 // 组织名称
                 ListShowParameter showParameter2 = (ListShowParameter)e.getFormShowParameter();
-                // 展示部门，如果选择了企业，展示企业下的部门
-                QFilter qFilter2 = new QFilter("adminorgtype.number", QCP.in, "1040_S");
-                EntryGrid treeEntryEntity = this.getControl("entryentity");
-                int[] rows = treeEntryEntity.getSelectRows();
-                if(rows.length > 0){
-                    // 企业不为null，添加企业筛选条件
-                    DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("nckd_recruitcompany", rows[0]);
-                    if(ObjectUtils.isNotEmpty(nckdRecruitcompany)){
-                        qFilter2.and("belongcompany.number", QCP.like, nckdRecruitcompany.getString("number")+"%");
-                    }
-                }
+                // 展示部门，如果选择了企业，展示企业下的部门，添加企业筛选条件
+                DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("org");
+                QFilter qFilter2 = new QFilter("adminorgtype.number", QCP.in, "1040_S").and("belongcompany.number", QCP.like, nckdRecruitcompany.getString("number")+"%");
                 showParameter2.getListFilterParameter().setFilter(qFilter2);
                 break;
             case "nckd_recruitpost":
@@ -182,20 +168,19 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 // 展示部门，如果选择了企业，展示企业下的部门
                 EntryGrid treeEntryEntity2 = this.getControl("entryentity");
                 int[] rows2 = treeEntryEntity2.getSelectRows();
-                DynamicObject nckdRecruitcompany2 = (DynamicObject)this.getModel().getValue("nckd_recruitcompany", rows2[0]);
+                DynamicObject nckdRecruitcompany2 = (DynamicObject)this.getModel().getValue("org");
                 DynamicObject nckdRecruitorg = (DynamicObject)this.getModel().getValue("nckd_recruitorg", rows2[0]);
-                QFilter qFilter1 = null;
-                if(ObjectUtils.isNotEmpty(nckdRecruitcompany2)){
-                    qFilter1 = new QFilter("adminorg.number", QCP.like, nckdRecruitcompany2.getString("number") + "%");
-                }
+                QFilter qFilter1 = new QFilter("adminorg.number", QCP.like, nckdRecruitcompany2.getString("number") + "%");
                 if(ObjectUtils.isNotEmpty(nckdRecruitorg)){
-                    if(qFilter1 ==null){
-                        qFilter1 = new QFilter("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
-                    }else{
-                        qFilter1.and("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
-                    }
+                    qFilter1.and("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
                 }
                 showParameter3.getListFilterParameter().setFilter(qFilter1);
+                break;
+            case "org":
+                ListShowParameter showParameter4 = (ListShowParameter)e.getFormShowParameter();
+                // 去除部门
+                QFilter qFilter4 = new QFilter("orgpattern.number", "in", COMPANY_LIST2);
+                showParameter4.getListFilterParameter().setFilter(qFilter4);
                 break;
             default:
                 break;
@@ -209,10 +194,12 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         BasedataEdit fieldEdit = (BasedataEdit) this.getView().getControl("nckd_recruitcompany");
         BasedataEdit fieldEdit2 = (BasedataEdit) this.getView().getControl("nckd_recruitorg");
         BasedataEdit fieldEdit3 = (BasedataEdit) this.getView().getControl("nckd_recruitpost");
+        BasedataEdit fieldEdit4 = this.getView().getControl("org");
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit2.addBeforeF7SelectListener(this);
         fieldEdit3.addBeforeF7SelectListener(this);
+        fieldEdit4.addBeforeF7SelectListener(this);
     }
 
 
@@ -291,53 +278,5 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     }
 
 
-
-
-//    @Override
-//    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
-//        super.beforeDoOperation(args);
-//        FormOperate formOperate = (FormOperate) args.getSource();
-//        if (StringUtils.equals(SUBMIT, formOperate.getOperateKey())) {
-//            DynamicObject dataEntityObj = this.getModel().getDataEntity();
-//
-//            // 编制总数
-//            int nckdSftaffcount = dataEntityObj.getInt("nckd_sftaffcount");
-//            // 实际人数
-//            int nckdRelnum = dataEntityObj.getInt("nckd_relnum");
-//            // 申请人数
-//            int nckdApplynum = dataEntityObj.getInt("nckd_applynum");
-//            if(nckdSftaffcount < nckdRelnum + nckdApplynum){
-//                RefObject<String> afterConfirm = new RefObject<>();
-//                // 自定义操作参数中，没有afterconfirm参数：说明是首次执行付款操作，需要提示用户确认
-//                if (!formOperate.getOption().tryGetVariableValue(SUBMIT, afterConfirm)) {
-//
-//                }
-//                // 显示确认消息
-//                ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener(SUBMIT, this);
-//                //收款单位为失信单位，是否继续付款
-//                this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
-//                // 在没有确认之前，先取消本次操作
-//                args.setCancel(true);
-//            }
-//
-//        }
-//    }
-//    @Override
-//    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
-//        super.confirmCallBack(messageBoxClosedEvent);
-//        if (StringUtils.equals(SUBMIT, messageBoxClosedEvent.getCallBackId())) {
-//            // 提交确认
-//            if (messageBoxClosedEvent.getResult() == MessageBoxResult.Yes) {
-//                // 确认执行提交操作
-//                // 构建操作自定义参数，标志为确认后再次执行操作，避免重复显示交互提示
-//                OperateOption operateOption = OperateOption.create();
-//                operateOption.setVariableValue(OPPARAM_AFTERCONFIRM, "true");
-//
-//                // 执行提交操作，并传入自定义操作参数
-//                this.getView().invokeOperation(SUBMIT, operateOption);
-//            }
-//        }
-//
-//    }
 
 }

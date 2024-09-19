@@ -1,11 +1,14 @@
 package nckd.yanye.occ.plugin.report;
 
 import kd.bos.context.RequestContext;
+import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
+
+import java.math.BigDecimal;
 
 /**
  * 运费结算表-报表界面插件
@@ -26,5 +29,10 @@ public class FreightSettlementReportFormPlugin extends AbstractReportFormPlugin 
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
+        for (DynamicObject row : rowData) {
+            //计算价税合计 = 客户签收数量*运费
+            BigDecimal multiply = row.getBigDecimal("nckd_receiveqty").multiply(row.getBigDecimal("yf"));
+            row.set("i_pricetaxtotal",multiply);
+        }
     }
 }

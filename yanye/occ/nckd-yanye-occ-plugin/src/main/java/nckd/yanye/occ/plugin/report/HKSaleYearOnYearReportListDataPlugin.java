@@ -72,8 +72,8 @@ public class HKSaleYearOnYearReportListDataPlugin extends AbstractReportListData
                     .sum("case when groupname = '"+groupName[i]+"' and year = 0 then amount - nckd_cbj else 0 end","thisYearML"+groupName[i])
                     .sum("case when groupname = '"+groupName[i]+"' and year = 1 then amount - nckd_cbj else 0 end","lastYearML"+groupName[i]);
         }
-
-        return null;
+        DataSet finish = groupbyDataSet.finish();
+        return finish.orderBy(new String[]{"bizorgname"});
     }
 
     public DataSet getImSalOutBill(List<QFilter> qFilters) {
@@ -121,7 +121,71 @@ public class HKSaleYearOnYearReportListDataPlugin extends AbstractReportListData
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
-        return super.getColumns(columns);
+        columns.add(createReportColumn("bizorgname",ReportColumn.TYPE_TEXT,"公司名称"));
+        ReportColumnGroup xbyGroup = new ReportColumnGroup();
+        for (int i = 0; i < groupName.length; i++) {
+            ReportColumnGroup xsGroup = new ReportColumnGroup();
+            xsGroup.setCaption(new LocaleString(groupName[i]+"销售收入（无税）（万元）"));
+            xsGroup.getChildren().add((createReportColumn("thisYearAmount"+groupName[i],ReportColumn.TYPE_DECIMAL,"今年累计")));
+            xsGroup.getChildren().add((createReportColumn("lastYearAmount"+groupName[i],ReportColumn.TYPE_DECIMAL,"去年同期")));
+            xsGroup.getChildren().add((createReportColumn("yearAmountTB"+groupName[i],ReportColumn.TYPE_TEXT,"同比")));
+
+            ReportColumnGroup xlGroup = new ReportColumnGroup();
+            xlGroup.setCaption(new LocaleString(groupName[i]+"销售量（吨）"));
+            xlGroup.getChildren().add((createReportColumn("thisYearQty"+groupName[i],ReportColumn.TYPE_DECIMAL,"今年销量")));
+            xlGroup.getChildren().add((createReportColumn("lastYearQty"+groupName[i],ReportColumn.TYPE_DECIMAL,"去年销量")));
+            xlGroup.getChildren().add((createReportColumn("yearQtyTB"+groupName[i],ReportColumn.TYPE_TEXT,"同比")));
+
+            ReportColumnGroup mlGroup = new ReportColumnGroup();
+            mlGroup.setCaption(new LocaleString(groupName[i]+"销售毛利（万元）"));
+            mlGroup.getChildren().add((createReportColumn("thisYearML"+groupName[i],ReportColumn.TYPE_DECIMAL,"今年累计")));
+            mlGroup.getChildren().add((createReportColumn("lastYearML"+groupName[i],ReportColumn.TYPE_DECIMAL,"去年同期")));
+            mlGroup.getChildren().add((createReportColumn("yearMLTB"+groupName[i],ReportColumn.TYPE_TEXT,"同比")));
+
+            ReportColumnGroup jjGroup = new ReportColumnGroup();
+            jjGroup.setCaption(new LocaleString(groupName[i]+"销售均价（无税）（元）"));
+            jjGroup.getChildren().add((createReportColumn("thisYearPrice"+groupName[i],ReportColumn.TYPE_DECIMAL,"今年均价")));
+            jjGroup.getChildren().add((createReportColumn("lastYearPrice"+groupName[i],ReportColumn.TYPE_DECIMAL,"去年均价")));
+            jjGroup.getChildren().add((createReportColumn("yearPriceTB"+groupName[i],ReportColumn.TYPE_TEXT,"同比")));
+            if (groupName[i].equals("小包盐")){
+                xbyGroup.setCaption(new LocaleString("小包盐销售情况"));
+                xbyGroup.getChildren().add(xsGroup);
+                xbyGroup.getChildren().add(xlGroup);
+                xbyGroup.getChildren().add(mlGroup);
+                xbyGroup.getChildren().add(jjGroup);
+            }else if (groupName[i].equals("深井盐")){
+                ReportColumnGroup sjyGroup = new ReportColumnGroup();
+                sjyGroup.setCaption(new LocaleString("其中深井盐"));
+                sjyGroup.getChildren().add(xsGroup);
+                sjyGroup.getChildren().add(xlGroup);
+                sjyGroup.getChildren().add(mlGroup);
+                sjyGroup.getChildren().add(jjGroup);
+                xbyGroup.getChildren().add(sjyGroup);
+                columns.add(xbyGroup);
+            }else if (groupName[i].equals("非盐")){
+                ReportColumnGroup qtGroup = new ReportColumnGroup();
+                qtGroup.setCaption(new LocaleString(groupName[i]+"销售情况"));
+                qtGroup.getChildren().add(xsGroup);
+//                qtGroup.getChildren().add(xlGroup);
+                qtGroup.getChildren().add(mlGroup);
+//                qtGroup.getChildren().add(jjGroup);
+                columns.add(qtGroup);
+            }else{
+                ReportColumnGroup qtGroup = new ReportColumnGroup();
+                qtGroup.setCaption(new LocaleString(groupName[i]+"销售情况"));
+                qtGroup.getChildren().add(xsGroup);
+                qtGroup.getChildren().add(xlGroup);
+                qtGroup.getChildren().add(mlGroup);
+                qtGroup.getChildren().add(jjGroup);
+                columns.add(qtGroup);
+            }
+        }
+        columns.add(createReportColumn("zxssr",ReportColumn.TYPE_DECIMAL,"总销售收入"));
+        columns.add(createReportColumn("zml",ReportColumn.TYPE_DECIMAL,"总毛利"));
+        columns.add(createReportColumn("tqzsr",ReportColumn.TYPE_DECIMAL,"同期总收入"));
+        columns.add(createReportColumn("tqml",ReportColumn.TYPE_DECIMAL,"同期毛利"));
+
+        return columns;
     }
 
     public ReportColumn createReportColumn(String fileKey, String fileType, String name) {

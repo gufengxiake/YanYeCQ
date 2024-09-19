@@ -57,6 +57,10 @@ public class FreightSettlementReportListDataPlugin extends AbstractReportListDat
                 "detailentry.material.name as materialName," +
                 //规格型号
                 "detailentry.material.modelnum as materialModelnum," +
+                //运费单位
+                "asstact.name as asstact," +
+                //收货单位
+                "nckd_customer.name as nckd_customer," +
                 //发货日期
                 "detailentry.nckd_fhdate as nckd_fhdate," +
                 //发货单号
@@ -70,7 +74,7 @@ public class FreightSettlementReportListDataPlugin extends AbstractReportListDat
                 //运费
                 "detailentry.pricetax as yf," +
                 //价税合计
-                "inventry.i_pricetaxtotal as i_pricetaxtotal," +
+//                "inventry.i_pricetaxtotal as i_pricetaxtotal," +
                 //结算方式
                 "nckd_freighttype as nckd_freighttype," +
                 //磅单号
@@ -104,6 +108,9 @@ public class FreightSettlementReportListDataPlugin extends AbstractReportListDat
         columns.add(createReportColumn("materialNumber",ReportColumn.TYPE_TEXT,"物料编码"));
         columns.add(createReportColumn("materialName",ReportColumn.TYPE_TEXT,"物料名称"));
         columns.add(createReportColumn("materialModelnum",ReportColumn.TYPE_TEXT,"规格型号"));
+        columns.add(createReportColumn("asstact",ReportColumn.TYPE_TEXT,"运费单位"));
+        columns.add(createReportColumn("nckd_customer",ReportColumn.TYPE_TEXT,"收货单位"));
+
         columns.add(createReportColumn("nckd_fhdate",ReportColumn.TYPE_DATE,"发货日期"));
         columns.add(createReportColumn("nckd_fhbillno",ReportColumn.TYPE_TEXT,"发货单号"));
 

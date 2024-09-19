@@ -14,10 +14,11 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.hr.common.utils.ClockInApiUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 云之家打卡同步任务
@@ -37,7 +38,13 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
 
     public static void addYunZhiJiaClockIn() {
         // 所有人员昨天到今天的打卡流水
-        JSONArray yunZhiJiaClockInList = ClockInApiUtil.getYunZhiJiaClockInList();
+        // 查询时间
+        LocalDateTime today = LocalDate.now().atStartOfDay();
+        LocalDateTime yesterday = today.minusDays(2);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String todayStr = today.format(formatter);
+        String yesterdayStr = yesterday.format(formatter);
+        JSONArray yunZhiJiaClockInList = ClockInApiUtil.getYunZhiJiaClockInList(yesterdayStr, todayStr);
         // 新增原始卡记录集合
         ArrayList<DynamicObject> signCardList = new ArrayList<>();
         // 新增失败的员工
@@ -62,22 +69,28 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
                 new QFilter[]{new QFilter("name", QCP.equals, "云之家")}
         );
 
-        // 预先加载所有原始卡记录信息
+        // 预先加载所有原始卡记录信息的唯一id信息
         DynamicObject[] signcards = BusinessDataServiceHelper.load(
                 "wtpd_signcard",
-                "attcard",
+                "attcard,nckd_cardid",
                 null
         );
         HashSet<String> signCardSet = new HashSet<>();
         for (DynamicObject signcard : signcards) {
-            signCardSet.add(signcard.getString("attcard"));
+            signCardSet.add(signcard.getString("nckd_cardid"));
         }
 
         // 预先加载所有考勤档案信息
         DynamicObject[] allAttFiles = BusinessDataServiceHelper.load(
                 "wtp_attfilebase",
                 "id,personnum,org",
-                null
+                new QFilter[]{
+                        // 数据版本状态：生效中
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+
         );
         HashMap<String, DynamicObject> attFileMap = new HashMap<>();
         for (DynamicObject attFile : allAttFiles) {
@@ -94,6 +107,40 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
         for (DynamicObject user : allUsers) {
             userMap.put(user.getString("useropenid"), user);
         }
+        // 预加载所有考勤卡号
+        DynamicObject[] allCardSchedules = BusinessDataServiceHelper.load(
+                "wtp_cardschedule",
+                "id,number,attfileid,card,bsed,bsled",
+                new QFilter[]{
+                        // 开始日期小于今天
+                        new QFilter("bsed", QCP.less_than, new Date()),
+                        // 结束日期大于今天
+                        new QFilter("bsled", QCP.large_than, new Date()),
+                        // 数据版本状态：生效中
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+        );
+        Map<Long, String> cardMap = Arrays.stream(allCardSchedules).collect(
+                Collectors.toMap(
+                        obj -> obj.getLong("attfileid.id"),
+                        obj -> obj.getString("card")
+                )
+        );
+
+        // 预加载考勤人员信息
+        DynamicObject[] allAttPersons = BusinessDataServiceHelper.load(
+                "wtp_attendperson",
+                "id,number,name",
+                new QFilter[]{}
+        );
+        Map<String, DynamicObject> attPersonMap = Arrays.stream(allAttPersons).collect(
+                Collectors.toMap(
+                        obj -> obj.getString("number"),
+                        obj -> obj
+                )
+        );
 
         // 遍历打卡流水
         for (Object o : yunZhiJiaClockInList) {
@@ -125,7 +172,10 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             DynamicObject signCard = BusinessDataServiceHelper.newDynamicObject("wtpd_signcard");
 
             // 考勤卡号
-            signCard.set("attcard", "YZJ" + clockInfo.getString("id"));
+            signCard.set("attcard", cardMap.get(attFile.getLong("id")));
+
+            // 唯一id
+            signCard.set("nckd_cardid", "YZJ" + clockInfo.getString("id"));
 
             // 考勤档案
             signCard.set("attfilebo", attFileMap.get(clockInfo.getString("workNum")));
@@ -152,7 +202,17 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             signCard.set("timezone", timezone);
 
             // 状态-有效
-//            signCard.set("status", "1");
+            signCard.set("status", "1");
+
+            // 其他需要的字段
+            // 考勤人
+            DynamicObject attPerson = attPersonMap.get(user.getString("number"));
+            if (attPerson == null) {
+                failedUserMap.put(user.getString("number"), user.getString("name"));
+                log.error("未找到该员工工号的考勤人员信息: " + user.getString("name"));
+                continue;
+            }
+            signCard.set("attperson", attPerson);
 
             signCardList.add(signCard);
         }

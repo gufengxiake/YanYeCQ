@@ -50,12 +50,18 @@ import java.util.stream.Collectors;
 public class PrepareAdjustApplication extends AbstractBillPlugIn implements BeforeF7SelectListener, RowClickEventListener {
 
 
+    private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"Orgform01","Orgform01-100","Orgform02","Orgform03"});
+
     private static final String ADJUSTTYPE_ADD = "A";
     private static final String ADJUSTTYPE_MINUS = "B";
 
     // 编制信息单
     private static final String NCKD_HAOS_STAFF = "nckd_haos_staff";
-    // 组织 调整人数
+    // 组织 直属调整人数
+    private static final String NCKD_ADJUSTDIRE = "nckd_adjustdire";
+    // 组织 直属调整后人数
+    private static final String NCKD_RELBDIRECTNUM = "nckd_relbdirectnum";
+    // 组织 含下级调整人数
     private static final String NCKD_ADJUSTNUM = "nckd_adjustnum";
     // 组织 调整类型
     private static final String NCKD_ADJUSTTYPE = "nckd_adjusttype";
@@ -65,7 +71,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
     private static final String NCKD_ADJUSTLATENUM = "nckd_adjustlatenum";
     // 岗位调整类型
     private static final String NCKD_POSTADJUSTTYPE = "nckd_postadjusttype";
-    // 岗位 现有编制人数
+    // 组织 现在编制直属人数
+    private static final String NCKD_BDIRECTNUM = "nckd_bdirectnum";
+    // 岗位 现有含下级编制人数
     private static final String NCKD_RELCYEARSTAFF = "nckd_relcyearstaff";
     // 岗位调整人数
     private static final String NCKD_POSTADJUSTNUM = "nckd_postadjustnum";
@@ -95,6 +103,10 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 // 调整人数
                 this.adjustnumChange(newValue,oldValue,iRow);
                 break;
+            case NCKD_ADJUSTDIRE:
+                // 直属调整人数
+                this.adjustdireChange(newValue,oldValue,iRow);
+                break;
             case NCKD_ADJUSTTYPE:
                 //调整类型
                 this.adjusttype(newValue,oldValue,iRow);
@@ -112,32 +124,39 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         }
 
     }
-
-    private void adjustnumChange(Object newValue,Object oldValue,int row) {
-        // 获取对应调整类型
-        String nckdAdjusttype = (String) this.getModel().getValue(NCKD_ADJUSTTYPE);
-        if(StringUtils.isEmpty(nckdAdjusttype)){
-            this.getView().showErrorNotification("请先维护调整类型！");
-        }else{
-            // 获取现有编制人数
-            int nckdBrealnum =getIntValue(NCKD_BREALNUM,row);
-            int nckdAdjustlatenum = 0;
-            // 调整人数
-            int i = newValue == null ? 0 : (int) newValue;
-            if(ADJUSTTYPE_ADD.equals(nckdAdjusttype)){
-                // 增加调整人数
-                nckdAdjustlatenum = nckdBrealnum +  i;
-            }else{
-                nckdAdjustlatenum = nckdBrealnum -  i;
-            }
-            if(nckdAdjustlatenum<0){
-                this.getView().showErrorNotification("编制人数不能小于0！");
-                this.getModel().setValue(NCKD_ADJUSTNUM,oldValue,row);
-                return;
-            }
-            this.getModel().setValue(NCKD_ADJUSTLATENUM,nckdAdjustlatenum,row);
+    // 组织 直属调整人数修改
+    private void adjustdireChange(Object newValue,Object oldValue,int row) {
+        // 获取直属编制人数
+        int nckdBrealnum =getIntValue(NCKD_BDIRECTNUM,row);
+        int nckdAdjustlatenum = 0;
+        // 调整人数
+        int i = newValue == null ? 0 : (int) newValue;
+        nckdAdjustlatenum = nckdBrealnum +  i;
+        if(nckdAdjustlatenum<0){
+            this.getView().showErrorNotification("编制人数不能小于0！");
+            this.getModel().setValue(NCKD_RELBDIRECTNUM,oldValue,row);
+            return;
         }
+        this.getModel().setValue(NCKD_RELBDIRECTNUM,nckdAdjustlatenum,row);
     }
+
+
+    // 组织含下级调整人数修改
+    private void adjustnumChange(Object newValue,Object oldValue,int row) {
+        // 获取现有编制人数
+        int nckdBrealnum =getIntValue(NCKD_BREALNUM,row);
+        int nckdAdjustlatenum = 0;
+        // 调整人数
+        int i = newValue == null ? 0 : (int) newValue;
+        nckdAdjustlatenum = nckdBrealnum +  i;
+        if(nckdAdjustlatenum<0){
+            this.getView().showErrorNotification("编制人数不能小于0！");
+            this.getModel().setValue(NCKD_ADJUSTNUM,oldValue,row);
+            return;
+        }
+        this.getModel().setValue(NCKD_ADJUSTLATENUM,nckdAdjustlatenum,row);
+    }
+
     private void adjusttype(Object newValue,Object oldValue,int row) {
         int nckdAdjustlatenum = 0;
         // 调整人数
@@ -423,7 +442,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             if(ObjectUtils.isNotEmpty(nckdAdminorg)){
                 // 编制人数
                 centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
-                centrydynamicObject.set("nckd_relbdirectnum",nckdAdminorg.get("staffNum"));
+                centrydynamicObject.set("NCKD_RELBDIRECTNUM",nckdAdminorg.get("staffNum"));
             }
         }
 
@@ -505,6 +524,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             ListShowParameter showParameter = (ListShowParameter)e.getFormShowParameter();
             //是否展示审核的改为false
             showParameter.setShowApproved(false);
+        }else if(StringUtils.equals(fieldKey, "org")){
+            ListShowParameter showParameter = (ListShowParameter)e.getFormShowParameter();
+            //是否展示审核的改为false
+            QFilter qFilter = new QFilter("orgpattern.number", "in", COMPANY_LIST);
+            showParameter.getListFilterParameter().setFilter(qFilter);
         }
 
 
@@ -531,7 +555,9 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         EntryGrid entryGrid = this.getView().getControl("nckd_bentryentity");
         entryGrid.addRowClickListener(this);
         BasedataEdit fieldEdit = this.getView().getControl(NCKD_HAOS_STAFF);//基础资料字段标识
+        BasedataEdit fieldEdit2 = this.getView().getControl("org");//基础资料字段标识
         fieldEdit.addBeforeF7SelectListener(this);
+        fieldEdit2.addBeforeF7SelectListener(this);
     }
 
 }

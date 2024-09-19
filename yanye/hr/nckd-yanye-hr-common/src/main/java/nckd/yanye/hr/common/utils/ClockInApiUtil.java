@@ -15,9 +15,6 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.hr.common.ClockInConst;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,16 +62,9 @@ public class ClockInApiUtil {
      *
      * @return 所有人员昨天到今天的打卡流水
      */
-    public static JSONArray getYunZhiJiaClockInList() {
+    public static JSONArray getYunZhiJiaClockInList(String yesterdayStr, String todayStr) {
         String url = "https://yunzhijia.com/gateway/smartatt-core/v2/clockIn/listByUpdateTime"
                 + "?accessToken=" + getYunZhiJiaAccessToken();
-
-        // 查询时间
-        LocalDateTime today = LocalDate.now().atStartOfDay();
-        LocalDateTime yesterday = today.minusDays(2);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String todayStr = today.format(formatter);
-        String yesterdayStr = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         QFilter qFilter = new QFilter("useropenid", QCP.not_equals, null);
@@ -295,16 +285,8 @@ public class ClockInApiUtil {
     /**
      * 钉钉-获取打卡详情
      */
-    public static JSONArray getDingDingClockInList() {
+    public static JSONArray getDingDingClockInList(String workDateFrom, String workDateTo) {
         String url = "https://oapi.dingtalk.com/attendance/listRecord?access_token=" + ClockInApiUtil.getDingDingAccessToken();
-
-        // 查询时间
-        LocalDateTime today = LocalDate.now().atStartOfDay();
-        LocalDateTime yesterday = today.minusDays(2);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String workDateTo = today.format(formatter);
-        String workDateFrom = yesterday.format(formatter);
 
         // 获取苍穹人员集合
         QFilter qFilter = new QFilter("nckd_dingdingid", QCP.not_equals, null);

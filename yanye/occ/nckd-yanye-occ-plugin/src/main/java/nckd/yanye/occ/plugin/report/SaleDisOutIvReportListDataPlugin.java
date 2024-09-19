@@ -249,13 +249,13 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                 //发票号
                 "invoiceno as sim_invoiceno," +
                         //发票日期
-                        "billdate as sim_billdate," +
+                        "issuetime as sim_billdate," +
                         //凭证号
                         "deductions.evidenceno as sim_evidenceno," +
                         //开票单位
                         "buyername as sim_buyername," +
                         //开票数量
-                        "sim_original_bill_item.num as sim_num," +
+                        "sim_original_bill_item.issuednum as sim_num," +
                         //来源单据体id
                         "sim_original_bill_item.srcentryid as sim_srcentryid",
                 new QFilter[]{new QFilter("sim_original_bill_item.srcentryid" ,QCP.in,finentryid.toArray(new Long[0]))}, null);

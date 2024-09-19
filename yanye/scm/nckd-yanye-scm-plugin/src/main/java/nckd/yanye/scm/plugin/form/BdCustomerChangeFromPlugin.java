@@ -161,6 +161,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
         if ("nckd_addcustomer".equals(fieldKey)){
             Object addcustomer = this.getModel().getValue("nckd_addcustomer", rowIndex);
             this.getModel().setValue("nckd_invoicename", addcustomer,rowIndex);
+            this.getModel().setValue("nckd_accountname", addcustomer,rowIndex);
         }
         //联系地址
         if ("nckd_address".equals(fieldKey)){

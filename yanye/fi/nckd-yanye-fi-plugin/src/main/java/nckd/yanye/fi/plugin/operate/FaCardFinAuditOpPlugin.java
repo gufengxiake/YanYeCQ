@@ -42,6 +42,7 @@ public class FaCardFinAuditOpPlugin extends AbstractOperationServicePlugIn {
         fieldKeys.add("createtime");
         fieldKeys.add("originalval");
         fieldKeys.add("org");
+        fieldKeys.add("realcard");
     }
 
     @Override
@@ -70,7 +71,7 @@ public class FaCardFinAuditOpPlugin extends AbstractOperationServicePlugIn {
             return;
         }
 
-        DynamicObject assetcat = dataEntity.getDynamicObject("assetcat");
+        DynamicObject realcard = dataEntity.getDynamicObject("realcard");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String createtime = simpleDateFormat.format(dataEntity.getDate("createtime"));
         //发送消息
@@ -94,7 +95,7 @@ public class FaCardFinAuditOpPlugin extends AbstractOperationServicePlugIn {
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"),dataEntity.getString("number"), dataEntity.getString("assetname"), createtime, dataEntity.getBigDecimal("originalval").toString());
+        String formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"),dataEntity.getString("number"), realcard.getString("assetname"), createtime, dataEntity.getBigDecimal("originalval").toString());
         //String contentMessage = "新增房产，资产编号：" + assetcat.getString("number") + ",资产名称：" + assetcat.getString("number") + ",新增时间：" + createtime + ",房产金额：" + dataEntity.getString("price");
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);
