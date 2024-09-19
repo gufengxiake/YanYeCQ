@@ -16,10 +16,10 @@ import kd.fi.cal.business.datacheck.item.DataEntityDataCheck;
 
 /**
  * @author husheng
- * @date 2024-09-09 10:18
- * @description 关账-检查项插件-校验是否存在未审核的财务应付单
+ * @date 2024-09-19 10:34
+ * @description 关账-检查项插件-校验是否存在未审核的财务应收单
  */
-public class ApFinapbillCheck extends DataEntityDataCheck {
+public class ArFinarbillCheck extends DataEntityDataCheck {
     @Override
     protected String getDataEntityType() {
         return "im_closeaccount";
@@ -41,16 +41,16 @@ public class ApFinapbillCheck extends DataEntityDataCheck {
         DynamicObjectCollection sysctrlentityEntry = sysctrlentity.getDynamicObjectCollection("entry");
         DynamicObject currentperiod = sysctrlentityEntry.get(0).getDynamicObject("currentperiod");
 
-        // 查询对应期间未审核的财务应付单
+        // 查询对应期间未审核的财务应收单
         QFilter qFilter = new QFilter("org", QCP.in, ownerIds)
                 .and("billstatus",QCP.not_equals,"C")
                 .and("bizdate",QCP.large_equals,currentperiod.getDate("begindate"))
                 .and("bizdate",QCP.less_equals,currentperiod.getDate("enddate"));
-        DynamicObject[] apFinapbills = BusinessDataServiceHelper.load("ap_finapbill", "id,billno", qFilter.toArray());
-        if(apFinapbills.length > 0){
-            for (DynamicObject dynamicObject : apFinapbills) {
+        DynamicObject[] apFinarbills = BusinessDataServiceHelper.load("ar_finarbill", "id,billno", qFilter.toArray());
+        if(apFinarbills.length > 0){
+            for (DynamicObject dynamicObject : apFinarbills) {
                 ExceptionObj exceptionObj = new ExceptionObj((Long) dynamicObject.getPkValue(), this.getDataEntityType());
-                exceptionObj.setDescription("存在未审核的财务应付单:" + dynamicObject.getString("billno"));
+                exceptionObj.setDescription("存在未审核的财务应收单:" + dynamicObject.getString("billno"));
                 exceptionObjs.add(exceptionObj);
             }
         }

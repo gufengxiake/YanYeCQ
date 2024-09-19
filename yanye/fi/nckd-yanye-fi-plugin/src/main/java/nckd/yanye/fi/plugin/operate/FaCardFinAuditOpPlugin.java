@@ -1,5 +1,6 @@
 package nckd.yanye.fi.plugin.operate;
 
+
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -24,23 +25,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 财务-资产变更单审核操作插件
- * 表单标识：fa_change_dept
+ * 财务-财务卡片审核操作插件
+ * 表单标识：nckd_fa_card_fin_ext
  * author：xiaoxiaopeng
- * date：2024-09-13
+ * date：2024-09-18
  */
-public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
+public class FaCardFinAuditOpPlugin extends AbstractOperationServicePlugIn {
 
-    private static Log logger = LogFactory.getLog(FaChangeDeptAuditOpPlugin.class);
+    private static Log logger = LogFactory.getLog(FaCardFinAuditOpPlugin.class);
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
         List<String> fieldKeys = e.getFieldKeys();
-        fieldKeys.add("changetype");
-        fieldKeys.add("main_changebillentry");
+        fieldKeys.add("assetcat");
         fieldKeys.add("createtime");
+        fieldKeys.add("originalval");
         fieldKeys.add("org");
+        fieldKeys.add("realcard");
     }
 
     @Override
@@ -48,32 +50,28 @@ public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
         super.afterExecuteOperationTransaction(e);
         DynamicObject[] dataEntities = e.getDataEntities();
         for (DynamicObject dataEntity : dataEntities) {
-            DynamicObject changeType = dataEntity.getDynamicObject("changetype");
-            DynamicObjectCollection changeBillEntry = dataEntity.getDynamicObjectCollection("main_changebillentry");
-            if (changeBillEntry.size() > 0) {
-                for (DynamicObject entry : changeBillEntry) {
-                    DynamicObject realCard = entry.getDynamicObject("m_realcard");
-                    realCard = BusinessDataServiceHelper.loadSingle(realCard.getPkValue(), "fa_card_real_base");
-                    DynamicObject assetcat = realCard.getDynamicObject("assetcat");
-                    assetcat = BusinessDataServiceHelper.loadSingle(assetcat.getPkValue(), "fa_assetcategory");
-                    String fixedassettype = assetcat.getString("nckd_fixedassettype");
-                    if ("1".equals(fixedassettype) && "002".equals(changeType.getString("number"))) {
-                        sedMessage(dataEntity, "房产原值变更", entry, assetcat, realCard, fixedassettype);
-                    } else if ("2".equals(fixedassettype) && "025".equals(changeType.getString("number"))) {
-                        sedMessage(dataEntity, "土地面积变更", entry, assetcat, realCard, fixedassettype);
-                    }
-                }
+            DynamicObject assetcat = dataEntity.getDynamicObject("assetcat");
+            String fixedassettype = assetcat.getString("nckd_fixedassettype");
+            if (StringUtils.isEmpty(fixedassettype) || "3".equals(fixedassettype)) {
+                continue;
+            }
+            if ("1".equals(fixedassettype)) {
+                sedMessage(dataEntity, "新增房产");
+            } else if ("2".equals(fixedassettype)) {
+                return;
+                //sedMessage(dataEntity, "新增土地");
             }
         }
     }
 
-    private void sedMessage(DynamicObject dataEntity, String messageInformersName, DynamicObject entry, DynamicObject assetcat, DynamicObject realCard, String fixedassettype) {
+    private void sedMessage(DynamicObject dataEntity, String messageInformersName) {
         //查维护税源信息消息通知人拿到模板
         DynamicObject messageInformers = BusinessDataServiceHelper.loadSingle("nckd_messageinformers", "id,name,nckd_user,nckd_mescontent", new QFilter[]{new QFilter("name", QCP.equals, messageInformersName)});
         if (messageInformers == null) {
             return;
         }
 
+        DynamicObject realcard = dataEntity.getDynamicObject("realcard");
         SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
         String createtime = simpleDateFormat.format(dataEntity.getDate("createtime"));
         //发送消息
@@ -92,17 +90,13 @@ public class FaChangeDeptAuditOpPlugin extends AbstractOperationServicePlugIn {
         String[] arr = contentMessage.split("：");
         String resultMes = "【%s】";
         for (String s : arr) {
-            if (s.equals(arr[arr.length - 1])) {
+            if (s.equals(arr[arr.length-1])){
                 continue;
             }
             resultMes = resultMes + s + "：%s";
         }
-        String formatMes = "";
-        if ("1".equals(fixedassettype)) {
-            formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"), realCard.getString("number"), realCard.getString("assetname"), createtime, entry.getString("m_bef_originalval"), entry.getString("m_aft_originalval"));
-        } else if ("2".equals(fixedassettype)) {
-            formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"), realCard.getString("number"), realCard.getString("assetname"), createtime, entry.getString("m_bef_nckd_textfield6"), entry.getString("m_aft_nckd_textfield6"));
-        }
+        String formatMes = String.format(resultMes, dataEntity.getDynamicObject("org").getString("name"),dataEntity.getString("number"), realcard.getString("assetname"), createtime, dataEntity.getBigDecimal("originalval").toString());
+        //String contentMessage = "新增房产，资产编号：" + assetcat.getString("number") + ",资产名称：" + assetcat.getString("number") + ",新增时间：" + createtime + ",房产金额：" + dataEntity.getString("price");
         String contentMessageEng = StringUtils.toEncodedString(formatMes.getBytes(), StandardCharsets.UTF_8);
         content.setLocaleValue_en(contentMessageEng);
         content.setLocaleValue_zh_CN(formatMes);

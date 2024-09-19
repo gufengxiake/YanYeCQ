@@ -54,7 +54,7 @@ public class BussprocessorderTask extends AbstractTask {
                 ",nckd_bussinessentries.nckd_quantity,nckd_bussinessentries.nckd_parameter,nckd_bussinessentries.nckd_isinventory," +
                 "nckd_bussinessentries.nckd_inventoryorg,nckd_bussinessentries.nckd_warehouse,nckd_bussinessentries.nckd_businessdocument," +
                 "nckd_bussinessentries.nckd_sideproduct,nckd_bussinessentries.nckd_mainproduce,nckd_bussinessentries.nckd_useworkshop," +
-                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield,nckd_bussinessentries.nckd_istakeeffect", new QFilter[]{qFilter});
+                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield,nckd_bussinessentries.nckd_istakeeffect,nckd_bussinessentries.nckd_startenddata", new QFilter[]{qFilter});
         //构建map,key:物料生产信息id，value:5G工厂返回数量
 //        Map<Object,BigDecimal> bigDecimalMap = new HashMap<>();
         for (DynamicObject dynamicObject : dynamicObjects){
@@ -166,18 +166,22 @@ public class BussprocessorderTask extends AbstractTask {
                     //班组  3:晚班   1:早班   2:中班
                     BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("1")).subtract(decimal));
+                    t.set("nckd_startenddata", decimal+ ","+ dataMap.get(parameter + "," + getMap().get("1")));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("2",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("1"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("2")).subtract(decimal));
+                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter + "," + getMap().get("2")));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("2"));
                     if (decimal == null){
                         decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     }
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("3")).subtract(decimal));
+                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter + "," + getMap().get("3")));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("4",t.getString("nckd_teamsgroups"))){
                     BigDecimal decimal = cumdataMap.get(parameter);
                     t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
+                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter));
                 }else {
                     t.set("nckd_quantity", dataMap.get(parameter+","+getMap().get(t.getString("nckd_teamsgroups"))));
                 }
@@ -225,6 +229,7 @@ public class BussprocessorderTask extends AbstractTask {
             //这一部分直接由物料-业务处理对应单 分录带过来
             DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
             negainventoryOrderEntry.set("nckd_teamsgroups", e.getString("nckd_teamsgroups"));
+            negainventoryOrderEntry.set("nckd_startenddata", e.getString("nckd_startenddata"));
             negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
             negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));
             negainventoryOrderEntry.set("nckd_isinventory", e.getBoolean("nckd_isinventory"));

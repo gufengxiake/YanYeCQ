@@ -1,22 +1,26 @@
 package nckd.yanye.occ.plugin.form;
 
+import kd.bos.algo.DataSet;
+import kd.bos.algo.Row;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
-import java.util.ArrayList;
-import java.util.EventObject;
-import java.util.List;
+import java.time.LocalDate;
+import java.util.*;
 
 /*
 要货订单表单插件
@@ -139,6 +143,11 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
             }
 
         }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
     }
 
 }
