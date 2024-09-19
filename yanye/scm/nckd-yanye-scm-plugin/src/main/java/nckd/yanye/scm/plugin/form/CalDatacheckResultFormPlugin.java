@@ -31,17 +31,22 @@ public class CalDatacheckResultFormPlugin extends AbstractBillPlugIn implements 
         super.afterBindData(e);
 
         DynamicObjectCollection entryentity = this.getModel().getEntryEntity("entryentity");
-        List<DynamicObject> objectList = entryentity.stream().filter(dynamicObject -> "DC-ITEM-46".equals(dynamicObject.getDynamicObject("checkitem").getString("number")))
+        List<DynamicObject> objectList = entryentity.stream().filter(dynamicObject -> "DC-ITEM-46".equals(dynamicObject.getDynamicObject("checkitem").getString("number")) || "DC-ITEM-47".equals(dynamicObject.getDynamicObject("checkitem").getString("number")))
                 .collect(Collectors.toList());
         boolean flag = false;
+        boolean flag2 = false;
         if (objectList.size() > 0) {
             String fentrystatus = objectList.get(0).getString("entrystatus");
             DynamicObject checkitem = entryentity.get(0).getDynamicObject("checkitem");
             if (fentrystatus.equals("B") && "DC-ITEM-46".equals(checkitem.getString("number"))) {
                 flag = true;
             }
+            if (fentrystatus.equals("B") && "DC-ITEM-47".equals(checkitem.getString("number"))) {
+                flag2 = true;
+            }
         }
         this.getView().setVisible(flag, "nckd_amend");
+        this.getView().setVisible(flag2, "nckd_update");
     }
 
 
@@ -51,12 +56,17 @@ public class CalDatacheckResultFormPlugin extends AbstractBillPlugIn implements 
         EntryGrid entryentity = this.getView().getControl("entryentity");
         int[] selectRows = entryentity.getSelectRows();
         boolean flag = false;
+        boolean flag2 = false;
         if (selectRows.length > 0) {
             DynamicObject rowEntity = this.getModel().getEntryRowEntity("entryentity", selectRows[0]);
             if ("DC-ITEM-46".equals(rowEntity.getDynamicObject("checkitem").getString("number")) && "B".equals(rowEntity.getString("entrystatus"))) {
                 flag = true;
             }
+            if ("DC-ITEM-47".equals(rowEntity.getDynamicObject("checkitem").getString("number")) && "B".equals(rowEntity.getString("entrystatus"))) {
+                flag2 = true;
+            }
         }
         this.getView().setVisible(flag, "nckd_amend");
+        this.getView().setVisible(flag2, "nckd_update");
     }
 }

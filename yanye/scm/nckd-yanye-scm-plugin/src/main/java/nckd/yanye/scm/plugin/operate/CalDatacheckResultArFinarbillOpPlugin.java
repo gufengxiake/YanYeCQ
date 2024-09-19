@@ -15,10 +15,10 @@ import kd.imsc.dmw.utils.DateUtils;
 
 /**
  * @author husheng
- * @date 2024-09-09 15:36
- * @description 检查结果（nckd_cal_datacheck_re_ext）的修改按钮--》财务应付单的业务日期及记账日期统一调整至下月1号
+ * @date 2024-09-19 10:39
+ * @description 检查结果（nckd_cal_datacheck_re_ext）的修改按钮--》财务应收单的业务日期及记账日期统一调整至下月1号
  */
-public class CalDatacheckResultOpPlugin extends AbstractOperationServicePlugIn {
+public class CalDatacheckResultArFinarbillOpPlugin extends AbstractOperationServicePlugIn {
     @Override
     public void endOperationTransaction(EndOperationTransactionArgs e) {
         super.endOperationTransaction(e);
@@ -37,14 +37,14 @@ public class CalDatacheckResultOpPlugin extends AbstractOperationServicePlugIn {
 
             // 获取校验是否存在未审核的财务应付单的检查项
             DynamicObject object = dynamicObject.getDynamicObjectCollection("entryentity").stream()
-                    .filter(d -> "DC-ITEM-46".equals(d.getDynamicObject("checkitem").getString("number")))
+                    .filter(d -> "DC-ITEM-47".equals(d.getDynamicObject("checkitem").getString("number")))
                     .findFirst().orElse(null);
 
             // 获取子单据
             object.getDynamicObjectCollection("subentryentity").stream().forEach(subentry -> {
                 String[] objdes = subentry.getString("objdes").split(":");
                 // 财务应付单
-                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("ap_finapbill", new QFilter[]{new QFilter("billno", QCP.equals, objdes[1])});
+                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("ar_finarbill", new QFilter[]{new QFilter("billno", QCP.equals, objdes[1])});
 
                 loadSingle.set("bizdate", getDate(currentperiod.getDate("enddate")));
                 loadSingle.set("bookdate", getDate(currentperiod.getDate("enddate")));
