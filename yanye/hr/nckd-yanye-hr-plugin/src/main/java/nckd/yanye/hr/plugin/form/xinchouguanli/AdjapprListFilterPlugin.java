@@ -1,7 +1,6 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.entity.MainEntityType;
 import kd.bos.form.IFormView;
 import kd.bos.form.events.SetFilterEvent;
 import kd.bos.orm.query.QCP;
@@ -9,9 +8,8 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.swc.hsbp.formplugin.web.SWCDataBaseList;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -35,9 +33,28 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         }
 
         List<QFilter> qFilters = event.getQFilters();
-        // 查询所有拥有上一年年度绩效考核记录的 员工
-        // 以及近三年拥有绩效记录的 中层管理人员
-        // 获取所有年度绩效Map <员工id, <考核年度, 考核结果>>
+
+
+        /*
+         * 查询所有拥有上一年年度绩效考核记录的 员工
+         * 以及近三年拥有绩效记录的 中层管理人员
+         */
+        Date effectivedate = new Date();
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(effectivedate);
+        // 上一年
+        calendar.add(Calendar.YEAR, -1);
+        String lastYearDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+
+        // 上上年
+        calendar.add(Calendar.YEAR, -1);
+        String lastTwoYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+
+        // 上上上年
+        calendar.add(Calendar.YEAR, -1);
+        String lastThreeYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+
+        // 获取所有年度绩效Map <员工工号, List<考核年度, 考核结果>>
         DynamicObject[] yearKaoheArray = BusinessDataServiceHelper.load(
                 "nckd_hspm_yearkaohe",
                 "person,nckd_kaoheyear,nckd_kaoheresult,nckd_pingjiaorg,nckd_wcjreason",
@@ -48,16 +65,61 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
                         new QFilter("iscurrentversion", QCP.equals, "1"),
                 }
         );
-        Map<Long, Map<String, String>> yearKaoheMap = Arrays.stream(yearKaoheArray)
-                .collect(Collectors.groupingBy(
-                        obj -> obj.getLong("person.id"),
-                        Collectors.toMap(
-                                obj -> obj.getString("nckd_kaoheyear"),
-                                obj -> obj.getString("nckd_kaoheresult.name") == null ? "" : obj.getString("nckd_kaoheresult.name")
-                        )
-                ));
+        Map<String, List<Map<String, String>>> yearKaoheMap = Arrays.stream(yearKaoheArray)
+                .collect(Collectors.groupingBy(obj -> obj.getString("person.number"),
+                        Collectors.mapping(obj -> {
+                            Map<String, String> map = new HashMap<>();
+                            map.put("nckd_kaoheyear", obj.getString("nckd_kaoheyear"));
+                            map.put("nckd_kaoheresult.name", obj.getString("nckd_kaoheresult.name"));
+                            return map;
+                        }, Collectors.toList())));
 
 
-        qFilters.add(new QFilter("employee.empnumber", QCP.in, new String[]{"003532"}));
+        // 获取所有任职经历Map <员工id, 职级名称>
+        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
+                "hrpi_empposorgrel",
+                "person,nckd_zhiji",
+                new QFilter[]{
+                        // 是否主任职：是
+                        new QFilter("isprimary", QCP.equals, "1"),
+                        // 开始日期小于今天
+                        new QFilter("startdate", QCP.less_than, new Date()),
+                        // 结束日期大于今天
+                        new QFilter("enddate", QCP.large_than, new Date()),
+                        // 业务状态：生效中
+                        new QFilter("businessstatus", QCP.equals, "1"),
+                        // 数据状态
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+        );
+
+        // 先初始化符合条件的员工集合
+        ArrayList<String> persons = new ArrayList<>();
+        for (DynamicObject jobPerson : jobExpArray) {
+            String personNumber = jobPerson.getString("person.number");
+            String zhiJi = jobPerson.getString("nckd_zhiji.name");
+            // 员工 上一年
+            if ("员工".equals(zhiJi)) {
+                List<Map<String, String>> maps = yearKaoheMap.get(personNumber);
+                if (maps != null && !maps.isEmpty()) {
+                    Map<String, String> lastYearKaoheResult = maps.get(0);
+                    String lastYearKaoHeResult = lastYearKaoheResult.get(lastYearDateString);
+                    if (lastYearKaoHeResult != null && !lastYearKaoHeResult.isEmpty()) {
+                        persons.add(personNumber);
+                    }
+                }
+            }
+
+            // 中层管理人员 近三年
+            if (!"其他".equals(zhiJi) && !"员工".equals(zhiJi)) {
+
+            }
+
+        }
+
+
+        qFilters.add(new QFilter("employee.empnumber", QCP.in, persons));
     }
 }

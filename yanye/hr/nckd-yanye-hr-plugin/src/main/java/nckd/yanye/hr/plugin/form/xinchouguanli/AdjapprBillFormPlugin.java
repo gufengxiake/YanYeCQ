@@ -146,7 +146,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         // fixme 假设已批量添加成功
         DynamicObjectCollection entryEntity = model.getEntryEntity("adjapprdetailentry");
         //  根据调薪单据日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
-        Date effectivedate = (Date) model.getValue("effectivedate");
+        Date effectivedate = new Date();
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(effectivedate);
         // 上一年
