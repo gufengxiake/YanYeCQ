@@ -58,7 +58,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
     // 编制信息单
     private static final String NCKD_HAOS_STAFF = "nckd_haos_staff";
     // 组织 直属调整人数
-    private static final String NCKD_ADJUSTDIRE = "NCKD_ADJUSTDIRE";
+    private static final String NCKD_ADJUSTDIRE = "nckd_adjustdire";
     // 组织 直属调整后人数
     private static final String NCKD_RELBDIRECTNUM = "nckd_relbdirectnum";
     // 组织 含下级调整人数
