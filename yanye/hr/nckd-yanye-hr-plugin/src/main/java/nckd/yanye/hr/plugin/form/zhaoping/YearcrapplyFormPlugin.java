@@ -48,6 +48,8 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
     // 公司类型
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"1020_S","1050_S","1060_S","1070_S"});
 
+    private final List<String> COMPANY_LIST2 = Arrays.asList(new String[]{"Orgform01","Orgform01-100","Orgform02","Orgform03"});
+
     // 定义日期格式
     private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
@@ -158,22 +160,13 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                 //是否展示审核的改为false
                 QFilter qFilter = new QFilter("adminorgtype.number", "in", COMPANY_LIST);
                 showParameter.getListFilterParameter().setFilter(qFilter);
-
                 break;
             case "nckd_recruitorg":
                 // 组织名称
                 ListShowParameter showParameter2 = (ListShowParameter)e.getFormShowParameter();
                 // 展示部门，如果选择了企业，展示企业下的部门
-                QFilter qFilter2 = new QFilter("adminorgtype.number", QCP.in, "1040_S");
-                EntryGrid treeEntryEntity = this.getControl("entryentity");
-                int[] rows = treeEntryEntity.getSelectRows();
-                if(rows.length > 0){
-                    // 企业不为null，添加企业筛选条件
-                    DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("nckd_recruitcompany", rows[0]);
-                    if(ObjectUtils.isNotEmpty(nckdRecruitcompany)){
-                        qFilter2.and("belongcompany.number", QCP.like, nckdRecruitcompany.getString("number")+"%");
-                    }
-                }
+                DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("org");
+                QFilter qFilter2 = new QFilter("adminorgtype.number", QCP.in, "1040_S").and("belongcompany.number", QCP.like, nckdRecruitcompany.getString("number")+"%");
                 showParameter2.getListFilterParameter().setFilter(qFilter2);
                 break;
             case "nckd_recruitpost":
@@ -182,20 +175,19 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                 // 展示部门，如果选择了企业，展示企业下的部门
                 EntryGrid treeEntryEntity2 = this.getControl("entryentity");
                 int[] rows2 = treeEntryEntity2.getSelectRows();
-                DynamicObject nckdRecruitcompany2 = (DynamicObject)this.getModel().getValue("nckd_recruitcompany", rows2[0]);
+                DynamicObject nckdRecruitcompany2 = (DynamicObject)this.getModel().getValue("org");
+                QFilter qFilter1 = new QFilter("adminorg.number", QCP.like, nckdRecruitcompany2.getString("number") + "%");
                 DynamicObject nckdRecruitorg = (DynamicObject)this.getModel().getValue("nckd_recruitorg", rows2[0]);
-                QFilter qFilter1 = null;
-                if(ObjectUtils.isNotEmpty(nckdRecruitcompany2)){
-                    qFilter1 = new QFilter("adminorg.number", QCP.like, nckdRecruitcompany2.getString("number") + "%");
-                }
                 if(ObjectUtils.isNotEmpty(nckdRecruitorg)){
-                    if(qFilter1 ==null){
-                        qFilter1 = new QFilter("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
-                    }else{
-                        qFilter1.and("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
-                    }
+                    qFilter1.and("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
                 }
                 showParameter3.getListFilterParameter().setFilter(qFilter1);
+                break;
+            case "org":
+                ListShowParameter showParameter4 = (ListShowParameter)e.getFormShowParameter();
+                // 去除部门
+                QFilter qFilter4 = new QFilter("orgpattern.number", "in", COMPANY_LIST2);
+                showParameter4.getListFilterParameter().setFilter(qFilter4);
                 break;
             default:
                 break;
@@ -209,10 +201,12 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         BasedataEdit fieldEdit = (BasedataEdit) this.getView().getControl("nckd_recruitcompany");
         BasedataEdit fieldEdit2 = (BasedataEdit) this.getView().getControl("nckd_recruitorg");
         BasedataEdit fieldEdit3 = (BasedataEdit) this.getView().getControl("nckd_recruitpost");
+        BasedataEdit fieldEdit4 = this.getView().getControl("org");
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit2.addBeforeF7SelectListener(this);
         fieldEdit3.addBeforeF7SelectListener(this);
+        fieldEdit4.addBeforeF7SelectListener(this);
     }
 
 
@@ -290,6 +284,12 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         FormOperate opreate = (FormOperate) args.getSource();
         switch (opreate.getOperateKey()) {
             case "submit":
+                // 判断是否存在年度招聘计划
+                StringBuilder errorMsg = new StringBuilder();
+                DynamicObject org =(DynamicObject) this.getModel().getValue("org");
+                if(!getErrorMsg(org)){
+                    errorMsg.append("招聘单位："+org.getString("org.name")+"：已生成该年度招聘计划，不允许新增该年度招聘申请！\n");
+                }
                 // 在此添加处理逻辑
                 int nckdSftaffcount = (int) this.getModel().getValue("nckd_sftaffcount");
                 // 实际人数
@@ -333,6 +333,15 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                 this.getView().getPageCache().remove("isDealed");
             }
         }
+    }
+
+    // 判断组织是否存在年度招聘计划表
+    public  boolean getErrorMsg(DynamicObject dynamicObject){
+        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id", new QFilter[]{new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())});
+        if(ObjectUtils.isNotEmpty(dynamicObject1)){
+            return false;
+        }
+        return true;
     }
 
 

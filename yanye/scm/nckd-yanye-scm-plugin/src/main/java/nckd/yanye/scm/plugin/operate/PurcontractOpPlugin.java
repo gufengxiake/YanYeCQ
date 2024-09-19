@@ -50,55 +50,59 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
             @Override
             public void validate() {
                 // 保存时校验，只有一条数据
-                for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
-                    //获得某一单据
-                    DynamicObject bill = rowDataEntity.getDataEntity();
-                    //获取条件
-                    Date biztimebegin = bill.getDate("biztimebegin");
-                    Date biztimeend = bill.getDate("biztimeend");
-                    DynamicObject org = bill.getDynamicObject("org");
-                    DynamicObject supplier = bill.getDynamicObject("supplier");
-                    //获取分录行
-                    DynamicObjectCollection entryColl = bill.getDynamicObjectCollection("billentry");
-                    //进行提示：第X行的“物料编码”与采购合同“合同编号”的第X行存在重复物料
-                    //构造成key = id ; value = 行号
-                    Map<Object, String> mapIdAndSeq = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
-                            .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getString("seq")));
-                    //构造成key = id ; value = 物料名称
-                    Map<Object, String> mapIdAndName = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
-                            .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getDynamicObject("material").getDynamicObject("masterid").getString("name")));
-                    //构造查询条件 ，这里没办法 每个合同的条件都不一样
-                    QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue())
-                            .and("billstatus", QCP.equals, "C")
-                            .and("validstatus", QCP.equals, "B")
-                            .and("closestatus", QCP.equals, "A")
-                            .and("billentry.material", QCP.in, mapIdAndSeq.keySet())
-                            .and(new QFilter("biztimebegin", QCP.less_equals, biztimebegin).and("biztimeend", QCP.large_equals, biztimebegin)
-                                    .or(new QFilter("biztimebegin", QCP.less_equals, biztimeend).and("biztimeend", QCP.large_equals, biztimeend))
-                                    .or(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
-                    if (ObjectUtil.isNotEmpty(supplier)) {
-                        qFilter.and("supplier", QCP.equals, supplier.getPkValue());
-                    }
-                    //String entityName, String selectProperties, QFilter[] filters
-                    DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.material,billentry.seq", qFilter.toArray());
-                    if (purcontractArr.length > 0) {
-                        for (DynamicObject purcontractBill : purcontractArr) {
-                            //获取命中的采购合同，并将其分录转换为map
-                            DynamicObjectCollection purcontractEntry = purcontractBill.getDynamicObjectCollection("billentry");
-                            //构造成key = id ; value = 行号
-                            Map<Object, String> mapIdAndSeq1 = purcontractEntry.stream().collect(Collectors.toMap(e -> e.getDynamicObject("material").getPkValue(), v -> v.getString("seq")));
-                            for (DynamicObject entryDy : entryColl) {
-                                Object pkValue = entryDy.getDynamicObject("material").getPkValue();
-                                //查询出来的单据有多个分录，不见得每个分录的物料都要拦截
-                                //如果mapIdAndLineno1.get()有值，说明有相同的
-                                String billNo = purcontractBill.getString("billno");
-                                String seq = mapIdAndSeq1.get(pkValue);
-                                if (StringUtil.isNotEmpty(billNo) && StringUtil.isNotEmpty(seq)) {
-                                    String materialSeq = mapIdAndSeq.get(pkValue);
-                                    String materialName = mapIdAndName.get(pkValue);
-                                    // 校验不通过，//进行提示：第X行的“物料名称”与采购合同“合同编号”的第X行存在重复物料
-                                    this.addErrorMessage(rowDataEntity, String.format("第(%s)行的物料名称 (%s) 与采购合同(%s)的第(%s)行存在重复物料",
-                                            materialSeq, materialName, billNo, seq));
+                String entityKey = this.getEntityKey();
+                if ("conm_purcontract".equals(entityKey)) {
+                    for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
+                        //获得某一单据
+                        DynamicObject bill = rowDataEntity.getDataEntity();
+                        //获取条件
+                        Date biztimebegin = bill.getDate("biztimebegin");
+                        Date biztimeend = bill.getDate("biztimeend");
+                        DynamicObject org = bill.getDynamicObject("org");
+                        DynamicObject supplier = bill.getDynamicObject("supplier");
+                        //获取分录行
+                        DynamicObjectCollection entryColl = bill.getDynamicObjectCollection("billentry");
+                        //进行提示：第X行的“物料编码”与采购合同“合同编号”的第X行存在重复物料
+                        //构造成key = id ; value = 行号
+                        Map<Object, String> mapIdAndSeq = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
+                                .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getString("seq")));
+                        //构造成key = id ; value = 物料名称
+                        Map<Object, String> mapIdAndName = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
+                                .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getDynamicObject("material").getDynamicObject("masterid").getString("name")));
+                        //构造查询条件 ，这里没办法 每个合同的条件都不一样
+                        QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue())
+                                .and("billstatus", QCP.equals, "C")
+                                .and("validstatus", QCP.equals, "B")
+                                .and("closestatus", QCP.equals, "A")
+                                .and("terminatestatus", QCP.equals, "A")
+                                .and("billentry.material", QCP.in, mapIdAndSeq.keySet())
+                                .and(new QFilter("biztimebegin", QCP.less_equals, biztimebegin).and("biztimeend", QCP.large_equals, biztimebegin)
+                                        .or(new QFilter("biztimebegin", QCP.less_equals, biztimeend).and("biztimeend", QCP.large_equals, biztimeend))
+                                        .or(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
+                        if (ObjectUtil.isNotEmpty(supplier)) {
+                            qFilter.and("supplier", QCP.equals, supplier.getPkValue());
+                        }
+                        //String entityName, String selectProperties, QFilter[] filters
+                        DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.material,billentry.seq", qFilter.toArray());
+                        if (purcontractArr.length > 0) {
+                            for (DynamicObject purcontractBill : purcontractArr) {
+                                //获取命中的采购合同，并将其分录转换为map
+                                DynamicObjectCollection purcontractEntry = purcontractBill.getDynamicObjectCollection("billentry");
+                                //构造成key = id ; value = 行号
+                                Map<Object, String> mapIdAndSeq1 = purcontractEntry.stream().collect(Collectors.toMap(e -> e.getDynamicObject("material").getPkValue(), v -> v.getString("seq")));
+                                for (DynamicObject entryDy : entryColl) {
+                                    Object pkValue = entryDy.getDynamicObject("material").getPkValue();
+                                    //查询出来的单据有多个分录，不见得每个分录的物料都要拦截
+                                    //如果mapIdAndLineno1.get()有值，说明有相同的
+                                    String billNo = purcontractBill.getString("billno");
+                                    String seq = mapIdAndSeq1.get(pkValue);
+                                    if (StringUtil.isNotEmpty(billNo) && StringUtil.isNotEmpty(seq)) {
+                                        String materialSeq = mapIdAndSeq.get(pkValue);
+                                        String materialName = mapIdAndName.get(pkValue);
+                                        // 校验不通过，//进行提示：第X行的“物料名称”与采购合同“合同编号”的第X行存在重复物料
+                                        this.addErrorMessage(rowDataEntity, String.format("第(%s)行的物料名称 (%s) 与采购合同(%s)的第(%s)行存在重复物料",
+                                                materialSeq, materialName, billNo, seq));
+                                    }
                                 }
                             }
                         }

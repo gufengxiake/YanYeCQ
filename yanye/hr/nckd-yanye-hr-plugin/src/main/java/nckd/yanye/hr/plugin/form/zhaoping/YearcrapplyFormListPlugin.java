@@ -13,6 +13,8 @@ import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.list.BillList;
 import kd.bos.list.plugin.AbstractListPlugin;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 
@@ -38,6 +40,7 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
             case "submit":
                 ListSelectedRowCollection selectCols = args.getListSelectedData();
                 StringBuffer exceedMsg = new StringBuffer();
+                StringBuffer errorMsg = new StringBuffer();
                 Object[] primaryKeyValues  = selectCols.getPrimaryKeyValues();
                 BillList billlistap = this.getView().getControl("billlistap");
                 EntityType entityType = billlistap.getEntityType();
@@ -46,6 +49,11 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
                 for (int i = 0; i < casPaybillArr.length; i++) {
                     // 在此添加处理逻辑
                     DynamicObject dynamicObject = casPaybillArr[i];
+                    // 获取组织，根据组织查询年度招聘计划表，判断该组织是否存在年度招聘计划表
+                    if(!getErrorMsg(dynamicObject.getDynamicObject("org"))){
+                        errorMsg.append("招聘单位："+dynamicObject.getString("org.name")+"：已生成该年度招聘计划，不允许提交该年度招聘申请！\n");
+                        continue;
+                    }
                     int nckdSftaffcount = dynamicObject.getInt("nckd_sftaffcount");
                     // 实际人数
                     int nckdRelnum = dynamicObject.getInt("nckd_relnum");
@@ -63,6 +71,11 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
                         }
                     }
                 }
+                if(ObjectUtils.isNotEmpty(errorMsg)){
+                    args.setCancel(true);
+                    this.getView().showConfirm(errorMsg.toString(),MessageBoxOptions.YesNo);
+                    return;
+                }
                 if(ObjectUtils.isNotEmpty(exceedMsg)){
                     args.setCancel(true);
                     exceedMsg.append("请注意，申请人数超编，是否继续提报？");
@@ -76,6 +89,15 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
             default:
                 break;
         }
+    }
+
+    // 判断组织是否存在年度招聘计划表
+    public  boolean getErrorMsg(DynamicObject dynamicObject){
+        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id", new QFilter[]{new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())});
+        if(ObjectUtils.isNotEmpty(dynamicObject1)){
+            return false;
+        }
+        return true;
     }
 
     @Override
