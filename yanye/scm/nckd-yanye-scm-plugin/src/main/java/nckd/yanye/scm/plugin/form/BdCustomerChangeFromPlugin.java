@@ -156,6 +156,11 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
         if ("nckd_phone".equals(fieldKey)){
             Object phone = this.getModel().getValue("nckd_phone", rowIndex);
             this.getModel().setValue("nckd_invoicephone", phone,rowIndex);
+            this.getModel().setValue("nckd_addressorphone","",rowIndex);
+            DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", rowIndex);
+            if (phone != null && address != null) {
+                this.getModel().setValue("nckd_addressorphone", address.getString("name")+" "+phone.toString(),rowIndex);
+            }
         }
         //新增客户名称
         if ("nckd_addcustomer".equals(fieldKey)){
@@ -187,6 +192,12 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
         if ("nckd_bankaccount".equals(fieldKey)){
             Object bankaccount = this.getModel().getValue("nckd_bankaccount", rowIndex);
             this.getModel().setValue("nckd_banknumber", bankaccount,rowIndex);
+        }
+        //供应商名称
+        if ("nckd_spname".equals(fieldKey)){
+            Object spname = this.getModel().getValue("nckd_spname", rowIndex);
+            this.getModel().setValue("nckd_invoicename", spname,rowIndex);
+            this.getModel().setValue("nckd_accountname", spname,rowIndex);
         }
     }
 
