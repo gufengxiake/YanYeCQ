@@ -174,7 +174,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 销售出库单
         String imSaloutbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
-                "nckd_carcontract nckd_shippingordernumber,nckd_freighttype nckd_cass,billentry.receiveaddress nckd_shipping_address,billentry.mainbillnumber nckd_order_serial_number,billentry.qty qty, billentry.nckd_signqty nckd_signqty,null nckd_damaged_quantity," +
+                "nckd_trancontractno nckd_shippingordernumber,nckd_freighttype nckd_cass,billentry.receiveaddress nckd_shipping_address,billentry.mainbillnumber nckd_order_serial_number,billentry.qty qty, billentry.nckd_signqty nckd_signqty,null nckd_damaged_quantity," +
                 "nckd_cartype nckd_direct_mode,nckd_carcustomer.name nckd_carrier,nckd_carcustomer.bizpartner_phone nckd_carrier_phone,nckd_driver.nckd_phonenumber nckd_phone,nckd_vehicle.name nckd_carnumber," +
                 "comment nckd_comment,billentry.materialmasterid materialmasterid,billentry.joinpriceqty nckd_qty,billentry.qty nckd_payablepriceqty,billentry.entrycomment nckd_entrycomment," +
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,customer.simplename nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";

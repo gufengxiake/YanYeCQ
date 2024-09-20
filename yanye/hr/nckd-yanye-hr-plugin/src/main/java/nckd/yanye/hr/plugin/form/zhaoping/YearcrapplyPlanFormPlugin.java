@@ -5,7 +5,11 @@ import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.db.DBRoute;
+import kd.bos.db.SqlBuilder;
+import kd.bos.entity.EntityMetadataCache;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
@@ -154,7 +158,7 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             // 删除分录数据，然后使用表单组织去拉去年度招聘计划中的数据，然后获取他的下级分录，然后添加到本单据分录中，然后刷新本单分录
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
-
+//            QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
             List<Long> longs = new ArrayList<Long>();
             longs.add((Long) org.getPkValue());
             // 获取组织历史查询
@@ -165,6 +169,7 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             QFilter qFilter = new QFilter("org.id", QCP.in, allSubordinateOrgs);
             // 年度招聘计划数据
             DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
+//            DynamicObject[] loads = QueryServiceHelper.query("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
             if(ObjectUtils.isEmpty(loads)){
                 return;
             }
@@ -181,12 +186,29 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
                     dynamicObjentryrow.set("nckd_recruitorg",object.getDynamicObject("nckd_recruitorg"));
                     dynamicObjentryrow.set("nckd_recruitpost",object.get("nckd_recruitpost"));
                     dynamicObjentryrow.set("nckd_recruitnum",object.get("nckd_recruitnum"));
-                    dynamicObjentryrow.set("nckd_majortype",object.get("nckd_majortype"));
+                    StringBuilder sqlBuilder = new StringBuilder("SELECT m.fbasedataid FROM tk_nckd_yearcrapp_major m WHERE m.fentryid = ?");
+
+                    Object[] param = new Object[]{object.getPkValue()};
+                    DataSet rows = HRDBUtil.queryDataSet("tk_nckd_yearcrapp_major", new DBRoute("tsc"), sqlBuilder.toString(), param);
+                    ORM orm = ORM.create();
+                    // 多选基础资料key
+                    DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(rows);
+                    MainEntityType type = EntityMetadataCache.getDataEntityType("nckd_specialityclass");
+                    DynamicObjectCollection newColList = dynamicObjentryrow.getDynamicObjectCollection("nckd_majortype");
+
+                    if(ObjectUtils.isNotEmpty(retDynCol)){
+                        // 创建多选基础资料，
+                        for (DynamicObject dynamicObject1 : retDynCol) {
+                            DynamicObject dynamicObject2 = newColList.addNew();
+                            dynamicObject2.set("fbasedataId", BusinessDataServiceHelper.loadSingle(dynamicObject1.get("fbasedataid"),type));
+                        }
+                    }
                     dynamicObjentryrow.set("nckd_qualification",object.get("nckd_qualification"));
                     dynamicObjentryrow.set("nckd_payrange",object.get("nckd_payrange"));
                     dynamicObjentryrow.set("nckd_employcategory",object.get("nckd_employcategory"));
                     dynamicObjentryrow.set("nckd_recruittype",object.get("nckd_recruittype"));
                     dynamicObjentryrow.set("nckd_yearapplyid",dynamicObject.getPkValue());
+
                 }
             }
 //            getModel().endInit();
