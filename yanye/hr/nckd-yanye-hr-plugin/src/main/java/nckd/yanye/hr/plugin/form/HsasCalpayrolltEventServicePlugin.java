@@ -6,6 +6,7 @@ import kd.bos.bec.model.EntityEvent;
 import kd.bos.bec.model.KDBizEvent;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import dm.jdbc.util.StringUtil;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
@@ -37,7 +38,9 @@ public class HsasCalpayrolltEventServicePlugin implements IEventServicePlugin {
             logger.info("薪资审批单id：{}",JSONObject.toJSONString(businesskeys));
             //查询薪资审批单
             DynamicObject hsasApprovebillObject = BusinessDataServiceHelper.loadSingle(Long.valueOf(businesskeys.get(0)), "hsas_approvebill");
-            getDynamicObject(hsasApprovebillObject);
+            if (StringUtil.isEmpty(hsasApprovebillObject.getString("description"))){
+                getDynamicObject(hsasApprovebillObject);
+            }
         }
         return null;
     }

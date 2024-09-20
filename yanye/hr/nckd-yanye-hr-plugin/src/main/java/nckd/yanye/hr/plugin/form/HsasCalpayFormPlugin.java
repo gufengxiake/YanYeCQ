@@ -1,6 +1,6 @@
 package nckd.yanye.hr.plugin.form;
 
-import com.kingdee.util.StringUtils;
+import dm.jdbc.util.StringUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -22,7 +22,7 @@ public class HsasCalpayFormPlugin extends AbstractFormPlugin {
         super.beforeBindData(e);
         Object pkValue = this.getModel().getValue("id");
         DynamicObject hsasApprovebillObject = BusinessDataServiceHelper.loadSingle(pkValue, "hsas_approvebill");
-        if (StringUtils.isEmpty(hsasApprovebillObject.getString("description"))){
+        if (StringUtil.isEmpty(hsasApprovebillObject.getString("description"))){
             HsasCalpayrolltEventServicePlugin hsasCalpayrolltEventServicePlugin = new HsasCalpayrolltEventServicePlugin();
             hsasCalpayrolltEventServicePlugin.getDynamicObject(hsasApprovebillObject);
             this.getModel().setValue("description",hsasApprovebillObject.get("description"));
