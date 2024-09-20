@@ -335,6 +335,13 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                     }
                 }
                 break;
+            case "save":
+                if(!getErrorMsg(this.getModel().getDataEntity())){
+                    args.setCancel(true);
+                    DynamicObject org2 =(DynamicObject) this.getModel().getValue("org");
+                    this.getView().showErrorNotification("招聘单位："+org2.getString("org.name")+"：已生成该年度招聘计划，不允许新增该年度招聘申请！\n");
+                }
+                break;
             default:
                 break;
         }
