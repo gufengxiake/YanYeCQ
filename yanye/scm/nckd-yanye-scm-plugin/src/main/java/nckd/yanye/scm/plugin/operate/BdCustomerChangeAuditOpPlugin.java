@@ -99,13 +99,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
                         bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
                         //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
-                        DynamicObject address = entity.getDynamicObject("nckd_address");
-                        if (address != null) {
-                            address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
-                            address.set("name", address.getString("name") + ";" + entity.getString("nckd_phone"));
-                            SaveServiceHelper.update(address);
-                        }
-                        bdCustomer.set("nckd_addtel", address);//客户联系人地址
+                        bdCustomer.set("nckd_addtel", entity.getDynamicObject("nckd_address"));//客户联系人地址
                         bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
                         bdCustomer.set("nckd_email2", entity.getString("nckd_customeremail"));//邮箱2
                         bdCustomer.set("nckd_email3", entity.getString("nckd_myemail"));//邮箱3
@@ -124,7 +118,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         linkman.set("phone", entity.get("nckd_phone"));//联系电话
                         linkman.set("isdefault_linkman", true);//默认
                         linkman.set("postalcode", entity.get("nckd_postalcode"));//邮政编码
-                        linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
+                        linkman.set("email", entity.getString("nckd_myemail"));//我方业务员邮箱
 
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdCustomer.getDynamicObjectCollection("entry_bank");
@@ -203,16 +197,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
                         bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
                         //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
-                        DynamicObject address = entity.getDynamicObject("nckd_address");
-                        if (address != null) {
-                            if (StringUtils.isNotEmpty(phone) && !phone.equals(entity.getString("nckd_phone"))) {
-                                address = BusinessDataServiceHelper.loadSingle(address.getPkValue(), "cts_address");
-                                String[] split = address.getString("name").split(";");
-                                address.set("name", split[0] + ";" + entity.getString("nckd_phone"));
-                                SaveServiceHelper.update(address);
-                            }
-                        }
-                        bdCustomer.set("nckd_addtel", address);//客户联系人地址
+                        bdCustomer.set("nckd_addtel", entity.getDynamicObject("nckd_address"));//客户联系人地址
                         bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
                         bdCustomer.set("nckd_email2", entity.getString("nckd_customeremail"));//邮箱2
                         bdCustomer.set("nckd_email3", entity.getString("nckd_myemail"));//邮箱3
@@ -232,7 +217,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                             linkman.set("phone", entity.get("nckd_phone"));//联系电话
                             linkman.set("isdefault_linkman", true);//默认
                             linkman.set("postalcode", entity.get("nckd_postalcode"));//邮政编码
-                            linkman.set("email", entity.getString("nckd_customeremail"));//客户业务员邮箱
+                            linkman.set("email", entity.getString("nckd_myemail"));//我方业务员邮箱
                         }
 
                         //银行分录信息保存

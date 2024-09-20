@@ -158,17 +158,14 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             // 删除分录数据，然后使用表单组织去拉去年度招聘计划中的数据，然后获取他的下级分录，然后添加到本单据分录中，然后刷新本单分录
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
-//            QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
+            QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
             List<Long> longs = new ArrayList<Long>();
             longs.add((Long) org.getPkValue());
             // 获取组织历史查询
-
-
             List<Long> allSubordinateOrgs = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
-
             QFilter qFilter = new QFilter("org.id", QCP.in, allSubordinateOrgs);
             // 年度招聘计划数据
-            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
+            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter,qBillstatus});
 //            DynamicObject[] loads = QueryServiceHelper.query("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
             if(ObjectUtils.isEmpty(loads)){
                 return;
