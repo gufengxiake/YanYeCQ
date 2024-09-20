@@ -13,6 +13,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
+ * 定调薪档案-单据列表插件
+ * 单据标识：nckd_hcdm_adjfileinfo_ext
+ * 年度绩效调薪添加人员时，过滤员工
+ *
  * @author ：luxiao
  * @since ：Created in 16:44 2024/9/19
  */
@@ -27,8 +31,8 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
             return;
         }
         // 判断是否传了参数
-        String s = this.getView().getParentView().getPageCache().get("isYear");
-        if (!"true".equals(s)) {
+        String isYear = this.getView().getParentView().getPageCache().get("isYear");
+        if (!"true".equals(isYear)) {
             return;
         }
 
@@ -44,38 +48,20 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         calendar.setTime(effectivedate);
         // 上一年
         calendar.add(Calendar.YEAR, -1);
-        String lastYearDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+        String lastYearDateString = new SimpleDateFormat("yyyy年").format(calendar.getTime());
 
         // 上上年
         calendar.add(Calendar.YEAR, -1);
-        String lastTwoYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+        String lastTwoYearsDateString = new SimpleDateFormat("yyyy年").format(calendar.getTime());
 
         // 上上上年
         calendar.add(Calendar.YEAR, -1);
-        String lastThreeYearsDateString = new SimpleDateFormat("yyyy").format(calendar.getTime());
+        String lastThreeYearsDateString = new SimpleDateFormat("yyyy年").format(calendar.getTime());
 
         // 获取所有年度绩效Map <员工工号, List<考核年度, 考核结果>>
-        DynamicObject[] yearKaoheArray = BusinessDataServiceHelper.load(
-                "nckd_hspm_yearkaohe",
-                "person,nckd_kaoheyear,nckd_kaoheresult,nckd_pingjiaorg,nckd_wcjreason",
-                new QFilter[]{
-                        // 数据状态
-                        new QFilter("datastatus", QCP.equals, "1"),
-                        // 当前版本
-                        new QFilter("iscurrentversion", QCP.equals, "1"),
-                }
-        );
-        Map<String, List<Map<String, String>>> yearKaoheMap = Arrays.stream(yearKaoheArray)
-                .collect(Collectors.groupingBy(obj -> obj.getString("person.number"),
-                        Collectors.mapping(obj -> {
-                            Map<String, String> map = new HashMap<>();
-                            map.put("nckd_kaoheyear", obj.getString("nckd_kaoheyear"));
-                            map.put("nckd_kaoheresult.name", obj.getString("nckd_kaoheresult.name"));
-                            return map;
-                        }, Collectors.toList())));
+        Map<String, List<Map<String, String>>> yearKaoheMap = getYearKaoheMap();
 
-
-        // 获取所有任职经历Map <员工id, 职级名称>
+        // 获取所有任职经历
         DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
                 "hrpi_empposorgrel",
                 "person,nckd_zhiji",
@@ -95,31 +81,69 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
                 }
         );
 
-        // 先初始化符合条件的员工集合
+        // 符合条件的员工集合
         ArrayList<String> persons = new ArrayList<>();
         for (DynamicObject jobPerson : jobExpArray) {
             String personNumber = jobPerson.getString("person.number");
             String zhiJi = jobPerson.getString("nckd_zhiji.name");
+            List<Map<String, String>> mapList = yearKaoheMap.get(personNumber);
+            if (Objects.isNull(mapList)) {
+                continue;
+            }
             // 员工 上一年
             if ("员工".equals(zhiJi)) {
-                List<Map<String, String>> maps = yearKaoheMap.get(personNumber);
-                if (maps != null && !maps.isEmpty()) {
-                    Map<String, String> lastYearKaoheResult = maps.get(0);
-                    String lastYearKaoHeResult = lastYearKaoheResult.get(lastYearDateString);
-                    if (lastYearKaoHeResult != null && !lastYearKaoHeResult.isEmpty()) {
-                        persons.add(personNumber);
-                    }
+                Map<String, String> lastYearKaoheResult = mapList.get(0);
+                String lastYearKaoHeResult = lastYearKaoheResult.get(lastYearDateString);
+                if (lastYearKaoHeResult != null && !lastYearKaoHeResult.isEmpty()) {
+                    persons.add(personNumber);
                 }
             }
 
             // 中层管理人员 近三年
             if (!"其他".equals(zhiJi) && !"员工".equals(zhiJi)) {
-
+                List<String> yearsToCheck = Arrays.asList(lastTwoYearsDateString, lastYearDateString);
+                boolean allYearsHaveData = yearsToCheck.stream()
+                        .allMatch(year -> mapList.stream()
+                                .anyMatch(map -> map.containsKey(year) && map.get(year) != null));
+                if (allYearsHaveData) {
+                    persons.add(personNumber);
+                }
             }
-
         }
-
-
         qFilters.add(new QFilter("employee.empnumber", QCP.in, persons));
     }
+
+    private Map<String, List<Map<String, String>>> getYearKaoheMap() {
+        // 绩效结果
+        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
+                "epa_performanceresult",
+                "id,name,number,person,activity,assessleveltext",
+                new QFilter[]{
+                        // 数据状态
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                        // 非历史绩效
+                        new QFilter("number", QCP.not_like, "%HI%"),
+                }
+        );
+        Map<String, List<Map<String, String>>> yearKaoheMap = Arrays.stream(jobExpArray)
+                .collect(Collectors.groupingBy(
+                        job -> job.getString("person.number"),
+                        Collectors.mapping(
+                                job -> {
+                                    Map<String, String> yearResultMap = new HashMap<>();
+                                    yearResultMap.put(
+                                            job.getString("activity.periodname"),
+                                            job.getString("assessleveltext")
+                                    );
+                                    return yearResultMap;
+                                },
+                                Collectors.toList()
+                        )
+                ));
+        return yearKaoheMap;
+    }
+
+
 }
