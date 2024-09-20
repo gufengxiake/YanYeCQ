@@ -42,7 +42,11 @@ public class PurorderbillSubmitOpPlugin2 extends AbstractOperationServicePlugIn 
                     if (totalprice == null) {
                         continue;
                     }
-                    if (!totalprice.equals(dataEntity.getValue("totalallamount"))) {
+                    BigDecimal totalallamount = (BigDecimal) dataEntity.getValue("totalallamount");
+                    if (totalallamount == null) {
+                        continue;
+                    }
+                    if (!totalprice.equals(totalallamount)) {
                         this.addErrorMessage(dataEntity, "价税合计和招采成交价税合计不一致，不允许提交！");
                     }
                 }
