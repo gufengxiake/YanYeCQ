@@ -166,22 +166,22 @@ public class BussprocessorderTask extends AbstractTask {
                     //班组  3:晚班   1:早班   2:中班
                     BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("1")).subtract(decimal));
-                    t.set("nckd_startenddata", decimal+ ","+ dataMap.get(parameter + "," + getMap().get("1")));
+                    t.set("nckd_startenddata", decimal.setScale(2)+ ","+ dataMap.get(parameter + "," + getMap().get("1")).setScale(2));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("2",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("1"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("2")).subtract(decimal));
-                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter + "," + getMap().get("2")));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter + "," + getMap().get("2")).setScale(2));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("2"));
                     if (decimal == null){
                         decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     }
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("3")).subtract(decimal));
-                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter + "," + getMap().get("3")));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter + "," + getMap().get("3")).setScale(2));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("4",t.getString("nckd_teamsgroups"))){
                     BigDecimal decimal = cumdataMap.get(parameter);
                     t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
-                    t.set("nckd_startenddata",decimal + ","+ dataMap.get(parameter));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter).setScale(2));
                 }else {
                     t.set("nckd_quantity", dataMap.get(parameter+","+getMap().get(t.getString("nckd_teamsgroups"))));
                 }
