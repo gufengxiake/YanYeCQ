@@ -9,10 +9,9 @@ import kd.bos.db.DBRoute;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.ConfirmCallBackListener;
-import kd.bos.form.MessageBoxOptions;
-import kd.bos.form.MessageBoxResult;
+import kd.bos.form.*;
 import kd.bos.form.control.EntryGrid;
+import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.MessageBoxClosedEvent;
@@ -76,7 +75,12 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
             long boid = query.get(0).getLong("id");
             QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
             DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            if(ObjectUtils.isEmpty(haosDutyorgdetail)){
+                this.getModel().setValue("nckd_sftaffcount",0);
+            }else{
+                this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            }
+//            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
         }
         this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
 
@@ -202,11 +206,25 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         BasedataEdit fieldEdit2 = (BasedataEdit) this.getView().getControl("nckd_recruitorg");
         BasedataEdit fieldEdit3 = (BasedataEdit) this.getView().getControl("nckd_recruitpost");
         BasedataEdit fieldEdit4 = this.getView().getControl("org");
+        this.addItemClickListeners("advcontoolbarap2");
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit.addBeforeF7SelectListener(this);
         fieldEdit2.addBeforeF7SelectListener(this);
         fieldEdit3.addBeforeF7SelectListener(this);
         fieldEdit4.addBeforeF7SelectListener(this);
+    }
+
+    public void beforeItemClick(BeforeItemClickEvent evt) {
+        super.beforeItemClick(evt);
+        String key = evt.getItemKey();
+        //监听分录引入按钮
+        if (key.equals("nckd_advconbaritemap1")) {
+            DynamicObject dataEntity = this.getModel().getDataEntity();
+            if(!getErrorMsg(dataEntity)){
+                evt.setCancel(true);     // 取消事件，不执行默认的分录引入功能
+                this.getView().showErrorNotification("招聘单位已生成该年度招聘计划，不允许新增该年度招聘申请！");
+            }
+        }
     }
 
 
@@ -287,7 +305,8 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                 // 判断是否存在年度招聘计划
                 StringBuilder errorMsg = new StringBuilder();
                 DynamicObject org =(DynamicObject) this.getModel().getValue("org");
-                if(!getErrorMsg(org)){
+                DynamicObject dataEntity = this.getModel().getDataEntity();
+                if(!getErrorMsg(dataEntity)){
                     errorMsg.append("招聘单位："+org.getString("org.name")+"：已生成该年度招聘计划，不允许新增该年度招聘申请！\n");
                 }
                 // 在此添加处理逻辑
@@ -296,6 +315,11 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
                 int nckdRelnum = (int) this.getModel().getValue("nckd_relnum");
                 // 申请人数
                 int nckdApplynum = (int) this.getModel().getValue("nckd_applynum");
+                if(ObjectUtils.isNotEmpty(errorMsg)){
+                    args.setCancel(true);
+                    this.getView().showErrorNotification(errorMsg.toString());
+                    return;
+                }
                 if(nckdSftaffcount < nckdRelnum + nckdApplynum){
                     // 判断是否处理过
                     String isDealed = this.getView().getPageCache().get("isDealed");
@@ -337,7 +361,11 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
 
     // 判断组织是否存在年度招聘计划表
     public  boolean getErrorMsg(DynamicObject dynamicObject){
-        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id", new QFilter[]{new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())});
+        Object nckdYear = dynamicObject.get("nckd_year");
+        QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
+        QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
+        QFilter qFilter = new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue());
+        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id,billstatus,nckd_year", new QFilter[]{nckdYear1,qBillstatus,qFilter});
         if(ObjectUtils.isNotEmpty(dynamicObject1)){
             return false;
         }
