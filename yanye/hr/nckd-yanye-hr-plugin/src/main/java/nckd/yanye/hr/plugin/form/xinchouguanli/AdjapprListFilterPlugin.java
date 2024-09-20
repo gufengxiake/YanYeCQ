@@ -8,6 +8,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.swc.hsbp.formplugin.web.SWCDataBaseList;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,18 +33,23 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         }
         // 判断是否传了参数
         String isYear = this.getView().getParentView().getPageCache().get("isYear");
-        if (!"true".equals(isYear)) {
+        if ("false".equals(isYear)) {
             return;
         }
 
         List<QFilter> qFilters = event.getQFilters();
-
-
         /*
          * 查询所有拥有上一年年度绩效考核记录的 员工
          * 以及近三年拥有绩效记录的 中层管理人员
          */
-        Date effectivedate = new Date();
+        // 默认生效日期
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        Date effectivedate = null;
+        try {
+            effectivedate = sdf.parse(isYear);
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(effectivedate);
         // 上一年
@@ -86,26 +92,61 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         for (DynamicObject jobPerson : jobExpArray) {
             String personNumber = jobPerson.getString("person.number");
             String zhiJi = jobPerson.getString("nckd_zhiji.name");
-            List<Map<String, String>> mapList = yearKaoheMap.get(personNumber);
-            if (Objects.isNull(mapList)) {
+            List<Map<String, String>> yearKaoheResult = yearKaoheMap.get(personNumber);
+            if (Objects.isNull(yearKaoheResult)) {
                 continue;
             }
-            // 员工 上一年
-            if ("员工".equals(zhiJi)) {
-                Map<String, String> lastYearKaoheResult = mapList.get(0);
-                String lastYearKaoHeResult = lastYearKaoheResult.get(lastYearDateString);
-                if (lastYearKaoHeResult != null && !lastYearKaoHeResult.isEmpty()) {
-                    persons.add(personNumber);
-                }
+            // 员工近三年的年度绩效考核成绩
+            String lastYearKaoHeResult = yearKaoheResult.stream()
+                    .map(map -> map.get(lastYearDateString))
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+            String lastTwoYearsKaoHeResult = yearKaoheResult.stream()
+                    .map(map -> map.get(lastTwoYearsDateString))
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+            String lastThreeYearsKaoHeResult = yearKaoheResult.stream()
+                    .map(map -> map.get(lastThreeYearsDateString))
+                    .filter(Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+
+
+            if (Objects.isNull(lastYearKaoHeResult)) {
+                continue;
             }
 
-            // 中层管理人员 近三年
+            // 员工 上一年
+            if ("员工".equals(zhiJi)) {
+                persons.add(personNumber);
+            }
+
+            // 中层管理人员 优秀：一年；良好：连续两年；不称职：一年；基本称职：三年累计两次；
             if (!"其他".equals(zhiJi) && !"员工".equals(zhiJi)) {
-                List<String> yearsToCheck = Arrays.asList(lastTwoYearsDateString, lastYearDateString);
-                boolean allYearsHaveData = yearsToCheck.stream()
-                        .allMatch(year -> mapList.stream()
-                                .anyMatch(map -> map.containsKey(year) && map.get(year) != null));
-                if (allYearsHaveData) {
+                boolean flag = false;
+                switch (lastYearKaoHeResult) {
+                    case "优秀":
+                        flag = true;
+                        break;
+                    case "良好":
+                        if ("良好".equals(lastTwoYearsKaoHeResult)) {
+                            flag = true;
+                        }
+                        break;
+                    case "不称职":
+                        flag = true;
+                        break;
+                    case "基本称职":
+                        if ("基本称职".equals(lastTwoYearsKaoHeResult) || "基本称职".equals(lastThreeYearsKaoHeResult)) {
+                            flag = true;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                if (flag) {
                     persons.add(personNumber);
                 }
             }

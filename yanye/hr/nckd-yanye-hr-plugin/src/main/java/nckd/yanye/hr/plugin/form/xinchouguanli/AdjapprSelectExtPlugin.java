@@ -45,15 +45,17 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
             DynamicObject org = adjapprBill.getDynamicObject("org");
             String orgName = org.getString("name");
             String salaryadjrsnName = salaryadjrsn.getString("name");
+            // 生效日期
+            Date effectivedate = adjapprBill.getDate("effectivedate");
             if ("年度绩效调薪".equals(salaryadjrsnName) &&
                     ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
-                addAllYearPerson(adjObj);
+                addAllYearPerson(adjObj, effectivedate);
             }
         }
     }
 
 
-    private void addAllYearPerson(DynamicObject adjObj) {
+    private void addAllYearPerson(DynamicObject adjObj, Date effectivedate) {
         Map<String, List<Map<String, String>>> yearKaoheMap = getYearKaoheMap();
 
         // 获取所有任职经历Map <员工id, 职级名称>
@@ -82,8 +84,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                 ));
 
         DynamicObjectCollection entryEntity = adjObj.getDynamicObjectCollection("entryentity");
-        //  根据调薪单据日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
-        Date effectivedate = new Date();
+        //  根据调薪单默认生效日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
         Calendar calendar = Calendar.getInstance();
         calendar.setTime(effectivedate);
         // 上一年
@@ -222,8 +223,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                         break;
                     case "基本称职":
                         // 连续三年内累计两次基本称职
-                        if ("基本称职".equals(lastTwoYearsKaoHeResult) ||
-                                "基本称职".equals(lastThreeYearsKaoHeResult)) {
+                        if ("基本称职".equals(lastTwoYearsKaoHeResult) || "基本称职".equals(lastThreeYearsKaoHeResult)) {
                             changeRank = -1;
                         }
                         break;

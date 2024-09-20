@@ -8,10 +8,6 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.plugin.AbstractFormPlugin;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.util.StringUtils;
 import kd.sdk.swc.hcdm.common.Pair;
 import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchParam;
 import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchResult;
@@ -103,12 +99,17 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
             if ("年度绩效调薪".equals(salaryadjrsnName) &&
                     ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
-                this.getView().getPageCache().put("isYear", "true");
+                // 默认生效日期
+                Date defaultEffectiveDate = (Date) this.getModel().getValue("effectivedate");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                String dateString = sdf.format(defaultEffectiveDate);
+                this.getView().getPageCache().put("isYear", dateString);
             } else {
                 this.getView().getPageCache().put("isYear", "false");
             }
         }
     }
+
     /**
      * 调动调薪：自动生成薪档
      *
