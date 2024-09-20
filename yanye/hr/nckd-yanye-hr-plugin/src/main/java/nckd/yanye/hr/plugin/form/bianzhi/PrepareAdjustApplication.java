@@ -134,7 +134,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         nckdAdjustlatenum = nckdBrealnum +  i;
         if(nckdAdjustlatenum<0){
             this.getView().showErrorNotification("编制人数不能小于0！");
-            this.getModel().setValue(NCKD_RELBDIRECTNUM,oldValue,row);
+            this.getModel().setValue(NCKD_ADJUSTDIRE,oldValue,row);
             return;
         }
         this.getModel().setValue(NCKD_RELBDIRECTNUM,nckdAdjustlatenum,row);

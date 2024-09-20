@@ -73,7 +73,7 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
                 }
                 if(ObjectUtils.isNotEmpty(errorMsg)){
                     args.setCancel(true);
-                    this.getView().showConfirm(errorMsg.toString(),MessageBoxOptions.YesNo);
+                    this.getView().showErrorNotification(errorMsg.toString());
                     return;
                 }
                 if(ObjectUtils.isNotEmpty(exceedMsg)){
@@ -93,7 +93,11 @@ public class YearcrapplyFormListPlugin extends AbstractListPlugin {
 
     // 判断组织是否存在年度招聘计划表
     public  boolean getErrorMsg(DynamicObject dynamicObject){
-        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id", new QFilter[]{new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue())});
+        Object nckdYear = dynamicObject.get("nckd_year");
+        QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
+        QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
+        QFilter qFilter = new QFilter("org.id", QCP.equals, dynamicObject.getDynamicObject("org").getPkValue());
+        DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("nckd_yearcasreplan", "id,org,org.id", new QFilter[]{nckdYear1, qBillstatus, qFilter});
         if(ObjectUtils.isNotEmpty(dynamicObject1)){
             return false;
         }

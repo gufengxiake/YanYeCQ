@@ -9,22 +9,27 @@ import kd.bos.db.DBRoute;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.control.events.BeforeItemClickEvent;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.form.operate.FormOperate;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /**
  * Module           :人才供应云-招聘直通车-首页-年度招聘计划
@@ -70,7 +75,11 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             long boid = query.get(0).getLong("id");
             QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
             DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            if(ObjectUtils.isEmpty(haosDutyorgdetail)){
+                this.getModel().setValue("nckd_sftaffcount",0);
+            }else{
+                this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            }
         }
         this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
 
@@ -144,9 +153,18 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             entryentity.clear();
             // 删除分录数据，然后使用表单组织去拉去年度招聘计划中的数据，然后获取他的下级分录，然后添加到本单据分录中，然后刷新本单分录
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
-            QFilter nckdYear1 = new QFilter("org.id", QCP.equals, org.getPkValue()).and("nckd_year", QCP.equals, nckdYear);
+            QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
+
+            List<Long> longs = new ArrayList<Long>();
+            longs.add((Long) org.getPkValue());
+            // 获取组织历史查询
+
+
+            List<Long> allSubordinateOrgs = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
+
+            QFilter qFilter = new QFilter("org.id", QCP.in, allSubordinateOrgs);
             // 年度招聘计划数据
-            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1});
+            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
             if(ObjectUtils.isEmpty(loads)){
                 return;
             }
@@ -168,7 +186,7 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
                     dynamicObjentryrow.set("nckd_payrange",object.get("nckd_payrange"));
                     dynamicObjentryrow.set("nckd_employcategory",object.get("nckd_employcategory"));
                     dynamicObjentryrow.set("nckd_recruittype",object.get("nckd_recruittype"));
-//                    entryentity.add(dynamicObjentryrow);
+                    dynamicObjentryrow.set("nckd_yearapplyid",dynamicObject.getPkValue());
                 }
             }
 //            getModel().endInit();
@@ -178,6 +196,82 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
 
         }
     }
+
+
+    // 校验
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        FormOperate opreate = (FormOperate) args.getSource();
+        switch (opreate.getOperateKey()) {
+            case "save":
+                if(!planValidator((DynamicObject) this.getModel().getValue("org"))){
+                    args.setCancel(true);
+                }
+                break;
+            default:
+                break;
+        }
+    }
+
+    private boolean planValidator(DynamicObject org){
+        Object nckdYear = this.getModel().getValue("nckd_year");
+        QFilter nckdYear1 = new QFilter("nckd_year", QCP.equals, nckdYear);
+        QFilter qBillstatus = new QFilter("billstatus", QCP.equals, "C");
+        // 获取所有下级组织 org.getPkValue()
+        String selectFields = "id,org,org.id,org.name,longnumber,parent,orgpattern";
+        QFilter numberFilter = new QFilter("number", "=", "01");
+        DynamicObject viewObj = BusinessDataServiceHelper.loadSingleFromCache("bos_org_viewschema", "id", new QFilter[]{numberFilter});
+        QFilter viewFilter = new QFilter("view", "=", viewObj.getPkValue());
+        QFilter viewFilter2 = new QFilter("parent.id", "=", org.getPkValue());
+//        QFilter qFilter4 = new QFilter("orgpattern.number", "in", COMPANY_LIST2);
+        QFilter[] filters = new QFilter[]{viewFilter,viewFilter2};
+        // 获取组织所有直属下级组织
+        DynamicObject[] bosOrgStructures = BusinessDataServiceHelper.load("bos_org_structure", selectFields, filters);
+        if(ObjectUtils.isNotEmpty(bosOrgStructures)){
+            // 存在下级组织，使用下级组织查询
+            Set<Long> allSubOrgIds = new HashSet(10000);
+            for (int i = 0; i < bosOrgStructures.length; i++) {
+                allSubOrgIds.add((Long) bosOrgStructures[i].get("org.id"));
+            }
+            QFilter qFilter4 = new QFilter("orgpattern.number", "in", COMPANY_LIST2).and("id", QCP.in, allSubOrgIds);
+            DynamicObject[] bosOrgs = BusinessDataServiceHelper.load("bos_org", "id,name,orgpattern", new QFilter[]{qFilter4});
+            Set<Long> allSubOrgIds2 = new HashSet(10000);
+            for (DynamicObject bosOrg : bosOrgs) {
+                allSubOrgIds2.add((Long) bosOrg.get("id"));
+            }
+            // 获取所有下级组织的招聘计划
+            QFilter bosOrgFilter = new QFilter("org.id", QCP.in, allSubOrgIds2);
+            StringBuilder errBuilder = new StringBuilder();
+            DynamicObject[] nckdYearcasreplans = BusinessDataServiceHelper.load("nckd_yearcasreplan", "id,org,", new QFilter[]{nckdYear1,bosOrgFilter, qBillstatus});
+            if(ObjectUtils.isEmpty(nckdYearcasreplans)){
+                errBuilder.append("直属下级组织未配置完年度招聘计划");
+//                    this.getView().showErrorNotification("直属下级组织未配置完年度招聘计划");
+            }else{
+                Map<Object, DynamicObject> resultMap = Arrays.stream(nckdYearcasreplans)
+                        .collect(Collectors.toMap(
+                                obj -> obj.get("org.id"), // 使用 org.id 作为 key
+                                obj -> obj, // 使用 DynamicObject 本身作为 value
+                                (existing, replacement) -> existing // 如果键冲突，保留现有值
+                        ));
+                for (DynamicObject bosOrgStructure : bosOrgStructures) {
+                    DynamicObject dynamicObject = resultMap.get(bosOrgStructure.get("org.id"));
+                    if(ObjectUtils.isEmpty(dynamicObject)){
+                        errBuilder.append("组织["+bosOrgStructure.get("org.name")+"]未配置完年度招聘计划");
+                    }
+                }
+            }
+            if(ObjectUtils.isNotEmpty(errBuilder)){
+                // 未通过校验
+                this.getView().showErrorNotification(errBuilder.toString());
+                return false;
+            }
+
+        }
+
+        return true;
+    }
+
 
 
     public static boolean isNotEmpty(Object  key) {

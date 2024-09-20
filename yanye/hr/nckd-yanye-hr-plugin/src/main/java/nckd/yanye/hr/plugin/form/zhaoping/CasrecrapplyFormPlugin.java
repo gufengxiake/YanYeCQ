@@ -75,7 +75,12 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
             long boid = query.get(0).getLong("id");
             QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
             DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            if(ObjectUtils.isEmpty(haosDutyorgdetail)){
+                this.getModel().setValue("nckd_sftaffcount",0);
+            }else{
+                this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
+            }
+//            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
         }
         // 实际人数
         this.getModel().setValue("nckd_relnum",YearcrapplyFormPlugin.getStaffCount(org.getPkValue()));
