@@ -266,7 +266,7 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         DynamicObject vehicle = BusinessDataServiceHelper.loadSingle( "nckd_vehicle","id,name",new QFilter[]{new QFilter("name",QCP.equals,carno)});
                         eleweigh.set("nckd_carsysno",nckd_carsysno);//派车单号
                         eleweigh.set("nckd_driver",driver);//司机
-                        eleweigh.set("carno",vehicle);//车号
+                        eleweigh.set("nckd_vehicle",vehicle);//车号
                         DynamicObjectCollection entryentity = eleweigh.getDynamicObjectCollection("entryentity");
                         DynamicObject entry = entryentity.get(0);
                         entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
