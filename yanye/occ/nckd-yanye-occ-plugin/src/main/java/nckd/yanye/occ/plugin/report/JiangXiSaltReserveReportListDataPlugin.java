@@ -6,9 +6,11 @@ import kd.bos.entity.report.AbstractReportColumn;
 import kd.bos.entity.report.AbstractReportListDataPlugin;
 import kd.bos.entity.report.ReportColumn;
 import kd.bos.entity.report.ReportQueryParam;
-import kd.fi.cal.report.queryplugin.StockGatherRptQueryPlugin;
+import kd.scmc.im.report.algox.util.ImReportQueryHelper;
+import kd.scmc.im.report.algox.util.ReqParam;
 import kd.sdk.plugin.Plugin;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -22,14 +24,33 @@ public class JiangXiSaltReserveReportListDataPlugin extends AbstractReportListDa
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
-        StockGatherRptQueryPlugin StockGatherRptQueryPlugin = new StockGatherRptQueryPlugin();
-        DataSet query = StockGatherRptQueryPlugin.query(reportQueryParam, o);
-        return query;
+        ReqParam reqParam = new ReqParam();
+        List<Long> orgIds = new ArrayList<>();
+        orgIds.add(1956460855902094336L);
+
+        reqParam.setOrgIds(orgIds);
+//        reqParam.setqFilter(qFilter);
+        reqParam.setBeginDate("2024-08-01");
+        reqParam.setEndDate("2024-10-01");
+
+        DataSet dataSet = ImReportQueryHelper.query(reqParam);
+        dataSet.filter("");
+
+        return dataSet;
     }
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
-        return super.getColumns(columns);
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"仓库名称"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"类别名称"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"期初库存"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"总收入"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"总发出"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"期末库存"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"计划"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"完成率"));
+
+        return columns;
     }
 
     public ReportColumn createReportColumn(String fileKey, String fileType, String name) {

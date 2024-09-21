@@ -115,12 +115,12 @@ public class ProductExportSettlementReportListDataPlugin extends AbstractReportL
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
 
-//        columns.add(createReportColumn("orgname", ReportColumn.TYPE_TEXT, "销售组织"));
-//        columns.add(createReportColumn("suppliername", ReportColumn.TYPE_TEXT, "运费单位"));
-//        columns.add(createReportColumn("customername", ReportColumn.TYPE_TEXT, "收货单位"));
         columns.add(createReportColumn("materielnumber", ReportColumn.TYPE_TEXT, "物料编码"));
         columns.add(createReportColumn("materielname", ReportColumn.TYPE_TEXT, "物料名称"));
         columns.add(createReportColumn("materielmodelnum", ReportColumn.TYPE_TEXT, "规格型号"));
+        //        columns.add(createReportColumn("orgname", ReportColumn.TYPE_TEXT, "销售组织"));
+        columns.add(createReportColumn("suppliername", ReportColumn.TYPE_TEXT, "运费单位"));
+        columns.add(createReportColumn("customername", ReportColumn.TYPE_TEXT, "收货单位"));
         columns.add(createReportColumn("biztime", ReportColumn.TYPE_DATE, "发货日期"));
         columns.add(createReportColumn("nckd_sale", ReportColumn.TYPE_TEXT, "发货单号"));
         columns.add(createReportColumn("nckd_outstockqty", ReportColumn.TYPE_DECIMAL, "发货数"));
