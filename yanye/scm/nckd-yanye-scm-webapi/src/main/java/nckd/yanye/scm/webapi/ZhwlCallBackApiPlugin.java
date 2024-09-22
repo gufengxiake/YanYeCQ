@@ -272,12 +272,23 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
                         entry.set("nckd_srcbillentity",nckd_srcbillentity);//来源单据主实体
 
-                        SaveServiceHelper.update(eleweigh);
+                        //SaveServiceHelper.update(eleweigh);
+                        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());
+                        if (!saveOperationResult.isSuccess()){
+                            return CustomApiResult.fail("false","生成电子磅单失败");
+                        }
                         //构建下推参数，下推销售出库单
                         PushArgs pushArgs_a = getPushArgs(eleweigh, "im_transdirbill");
                         // 调用下推引擎，下推目标单并保存
                         ConvertOperationResult pushResult_a = ConvertServiceHelper.push(pushArgs_a);
                         if (!pushResult_a.isSuccess()){
+                            return CustomApiResult.fail("false","生成直接调拨单失败");
+                        }
+                        MainEntityType mainEntityType_a = EntityMetadataCache.getDataEntityType(pushResult_a.getTargetEntityNumber());
+                        List<DynamicObject> targetDos_a = pushResult_a.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType_a);
+                        DynamicObject saloutbill = targetDos_a.get(0);
+                        OperationResult saveOperationResult_a = OperationServiceHelper.executeOperate("save", "im_transdirbill", new DynamicObject[]{saloutbill}, OperateOption.create());
+                        if (!saveOperationResult_a.isSuccess()){
                             return CustomApiResult.fail("false","生成直接调拨单失败");
                         }
                         return CustomApiResult.success("success");
