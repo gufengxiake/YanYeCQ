@@ -27,9 +27,6 @@ import kd.tmc.fbp.common.helper.TmcOrgDataHelper;
  * @description 交易汇总表（nckd_transaction_summary）报表查询插件
  */
 public class TransactionSummaryPlugin extends AbstractReportListDataPlugin {
-    private Map<String, Object> paramMap = null;
-    //所有结果的组织id
-    private Set<Long> allOrgIds = new HashSet<>(16);
     //符合要求的所有公司管理树节点的id
     private Set<Long> allOrgTreeIds = new HashSet<>(16);
 
@@ -56,6 +53,15 @@ public class TransactionSummaryPlugin extends AbstractReportListDataPlugin {
         // 重构树形
         this.queryOrgTreeNodeIds(orgDateSet, allOrgTreeIds);
         DataSet dataSet = orgDateSet.filter("rowid in allOrgTreeIds", Collections.singletonMap("allOrgTreeIds", allOrgTreeIds));
+
+        DynamicObjectCollection dynamicObjectCollection = ORM.create().toPlainDynamicObjectCollection(dataSet.copy());
+        List<Long> pids = dynamicObjectCollection.stream().map(t -> t.getLong("pid")).collect(Collectors.toList());
+        dynamicObjectCollection.forEach(t -> {
+            if("1".equals(t.getString("isgroupnode")) && !pids.contains(t.getLong("orgid"))){
+                t.set("isgroupnode","0");
+            }
+        });
+        dataSet = buildDataByObjCollection("algoKey", dataSet.getRowMeta().getFields(), dynamicObjectCollection);
 
         // 本期间收取
         dataSet = this.getCurrentcollection(dataSet, filter);
