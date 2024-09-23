@@ -122,20 +122,15 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
         RowMeta rowMeta = dataSet.getRowMeta();
         List<String> qty = Arrays.asList("yearbegindebitqty", "yearbegincreditqty", "begindebitqty", "begincreditqty", "debitqty", "creditqty", "yeardebitqty", "yearcreditqty", "enddebitqty", "endcreditqty");
         if (assvalList.size() > 1) {
-            dataSet.map(new MapFunction() {
-                @Override
-                public RowMeta getResultRowMeta() {
-                    return rowMeta;
-                }
-
+            dataSet = dataSet.map(new MapFunction() {
                 @Override
                 public Object[] map(Row row) {
                     Object[] data = ((AbstractRow) row).values();
-                    if (getRowResult(assvalList,row)) {
+                    if (row.getString("assval") != null) {
                         log.info("判断结果{}",getRowResult(assvalList,row));
                         String account = row.getString("account");
                         List<Row> rows = accountQtyRowsMap.get(getAssval(assvalList,row)+account);
-                        if (rows.size() <= 1) {
+                        if (rows == null || rows.size() <= 1) {
                             return data;
                         }
                         Map<String, BigDecimal> qtymap = initQtyMap(qty);
@@ -148,34 +143,16 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
                             );
                         });
                         if ("Account".equals(data[0])){
-                            qty.stream().forEach(field -> data[rowMeta.getFieldIndex(field)] = qtymap.get(field));
+                            qty.stream().forEach(field -> data[rowMeta.getFieldIndex(field)] = qtymap.get(field));//
                         }
                     }
                     log.info("最后返回数据{}",data);
                     return data;
                 }
 
-                private String getAssval(List<String> assvalList,Row row) {
-                    String result = "";
-                    for (String s : assvalList) {
-                        if (StringUtils.isEmpty(result)) {
-                            result = s;
-                        }else {
-                            result += row.getString(s);
-                        }
-                    }
-                    return result;
-                }
-
-                private boolean getRowResult(List<String> assvalList,Row row) {
-                    Boolean result = true;
-                    for (String s : assvalList) {
-                        result = row.get(s) != null;
-                        if (!result){
-                            return false;
-                        }
-                    }
-                    return true;
+                @Override
+                public RowMeta getResultRowMeta() {
+                    return rowMeta;
                 }
             });
         }else {
@@ -217,12 +194,23 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
         event.setDataSet(dataSet);
 
     }
+    private boolean getRowResult(List<String> assvalList,Row row) {
+        Boolean result = true;
+        for (String s : assvalList) {
+            result = row.get(s) != null;
+            if (!result){
+                return false;
+            }
+        }
+        return true;
+    }
+
 
     private String getAssval(List<String> assvalList,Row row) {
         String result = "";
         for (String s : assvalList) {
             if (StringUtils.isEmpty(result)) {
-                result = s;
+                result = row.getString(s);
             }else {
                 result += row.getString(s);
             }
