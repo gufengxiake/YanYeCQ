@@ -172,12 +172,25 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         if (StringUtils.equals(itemKey, "tb_new")) {
             Object data = this.getModel().getValue("nckd_plan_month");
             if (data != null) {
+                //获取所在月份最后一天
+                SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                SimpleDateFormat simpleDateFormat_day = new SimpleDateFormat("yyyy-MM-dd");
+                Calendar cal = Calendar.getInstance();
+                cal.setTime((Date) data);
+                int last = cal.getActualMaximum(Calendar.DAY_OF_MONTH);
+                cal.set(Calendar.DAY_OF_MONTH, last);
+                Date formatData = null;
+                try {
+                    formatData = simpleDateFormat.parse((simpleDateFormat_day.format(cal.getTime())) + " 23:59:59");
+                } catch (ParseException e) {
+                    throw new RuntimeException(e);
+                }
                 EntryGrid treeEntryEntity = this.getControl("pom_planning_entry");
                 int[] rows = treeEntryEntity.getSelectRows();
                 if (rows != null && rows.length > 0) {
                     for (int row : rows) {
                         this.getModel().setValue("nckd_planstarttime", data, row);
-                        this.getModel().setValue("nckd_planendtime", data, row);
+                        this.getModel().setValue("nckd_planendtime", formatData, row);
                     }
                 }
             }
@@ -411,7 +424,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             return;
         }
 
-        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,nckd_builds,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_merge,nckd_planentryid,nckd_planorg,nckd_planmaterial",
+        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,nckd_builds,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_merge,nckd_planentryid,nckd_planorg,nckd_planmaterial,treeentryentity.baseqty",
                 new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno")).and("nckd_builds", QCP.equals, true)});
         Map<String, List<DynamicObject>> map = new HashMap<>();
         for (DynamicObject p : pom) {
@@ -453,6 +466,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     if (i == 0) {
                         DynamicObject treeentry = dynamicObject.getDynamicObjectCollection("treeentryentity").get(0);
                         treeentry.set("qty", qty);
+                        treeentry.set("baseqty", qty);
                         dynamicObject.set("nckd_merge", true);
                         dynamicObject.set("nckd_planentryid", pk);
                         SaveServiceHelper.update(new DynamicObject[]{dynamicObject});
