@@ -3,16 +3,22 @@ package nckd.yanye.scm.plugin.form;
 import com.icbc.api.internal.apache.http.impl.cookie.S;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.coderule.api.CodeRuleInfo;
+import kd.bos.data.BusinessDataReader;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.metadata.IDataEntityType;
 import kd.bos.db.DB;
+import kd.bos.entity.EntityMetadataCache;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.IRefrencedataProvider;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Toolbar;
@@ -239,7 +245,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder.set("org", dataEntity.getDynamicObject("org"));
             pomMftorder.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));
             pomMftorder.set("billdate", new Date());
-            pomMftorder.set("billstatus", "C");
+            pomMftorder.set("billstatus", "A");
             pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));
             pomMftorder.set("billtype", pmf);//单据类型
             pomMftorder.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
@@ -317,30 +323,50 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
              * 再次下推生成组件清单
              */
             //构建选中行数据包
-            List<ListSelectedRow> selectedRows = new ArrayList();
-            ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder.getPkValue());
-            selectedRows.add(selectedRow);
-            //获取转换规则id
-            ConvertRuleReader read = new ConvertRuleReader();
-            List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-            // 创建下推参数
-            PushArgs pushArgs = new PushArgs();
-            // 源单标识，必填
-            pushArgs.setSourceEntityNumber("pom_mftorder");
-            // 目标单据标识，必填
-            pushArgs.setTargetEntityNumber("pom_mftstock");
-            // 生成转换结果报告，必填
-            pushArgs.setBuildConvReport(true);
-            //不检查目标单新增权限,非必填
-            pushArgs.setHasRight(true);
-            //传入下推使用的转换规则id，不填则使用默认规则
-            pushArgs.setRuleId("2027100530894974976");
-            //下推默认保存，必填
-            pushArgs.setAutoSave(true);
-            // 设置源单选中的数据包，必填
-            pushArgs.setSelectedRows(selectedRows);
-            // 执行下推操作
-            ConvertServiceHelper.push(pushArgs);
+            //List<ListSelectedRow> selectedRows = new ArrayList();
+            //ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder.getPkValue());
+            //selectedRows.add(selectedRow);
+            ////获取转换规则id
+            //ConvertRuleReader read = new ConvertRuleReader();
+            //List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
+            //// 创建下推参数
+            //PushArgs pushArgs = new PushArgs();
+            //// 源单标识，必填
+            //pushArgs.setSourceEntityNumber("pom_mftorder");
+            //// 目标单据标识，必填
+            //pushArgs.setTargetEntityNumber("pom_mftstock");
+            //// 生成转换结果报告，必填
+            //pushArgs.setBuildConvReport(true);
+            ////不检查目标单新增权限,非必填
+            //pushArgs.setHasRight(true);
+            ////传入下推使用的转换规则id，不填则使用默认规则
+            ////pushArgs.setRuleId("2027100530894974976");
+            ////下推默认保存，必填
+            //pushArgs.setAutoSave(false);
+            //// 设置源单选中的数据包，必填
+            //pushArgs.setSelectedRows(selectedRows);
+            //// 执行下推操作
+            //ConvertOperationResult operationResult = ConvertServiceHelper.push(pushArgs);
+            //if (operationResult.isSuccess()) {
+            //    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+            //    List<DynamicObject> targetBillObjs = operationResult.loadTargetDataObjects(new IRefrencedataProvider() {
+            //        @Override
+            //        public void fillReferenceData(Object[] objs, IDataEntityType dType) {
+            //            BusinessDataReader.loadRefence(objs, dType);
+            //        }
+            //    }, mainEntityType);
+            //    DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
+            //    OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftstock", saveDynamicObject, OperateOption.create());
+            //    if (result.isSuccess()){
+            //        OperateOption auditOption = OperateOption.create();
+            //        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+            //        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+            //        OperationResult result2 = OperationServiceHelper.executeOperate("submit", "pom_mftstock", saveDynamicObject, OperateOption.create());
+            //        if (result2.isSuccess()) {
+            //            OperationServiceHelper.executeOperate("audit", "pom_mftstock", saveDynamicObject, OperateOption.create());
+            //        }
+            //    }
+            //}
 
 
             //TODO
@@ -373,6 +399,15 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         }
         long count = deptIdList.stream().distinct().count();
         if (deptIdList.size() == count) {
+            DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_planentryid,nckd_merge,nckd_planorg,nckd_planmaterial",
+                    new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
+            for (DynamicObject p : pom) {
+                p = BusinessDataServiceHelper.loadSingle(p.getPkValue(),"pom_mftorder");
+                OperationResult result1 = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
+                if (result1.isSuccess()) {
+                    OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
+                }
+            }
             return;
         }
 
@@ -430,6 +465,13 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         }
         pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_planentryid,nckd_merge,nckd_planorg,nckd_planmaterial",
                 new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno"))});
+        for (DynamicObject p : pom) {
+            p = BusinessDataServiceHelper.loadSingle(p.getPkValue(),"pom_mftorder");
+            OperationResult result1 = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
+            if (result1.isSuccess()) {
+                OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
+            }
+        }
         for (int i = 0; i < entity.size(); i++) {
             DynamicObject d = entity.get(i);
             if (!"C".equals(d.get("nckd_producttype"))) {
@@ -487,7 +529,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     pomMftorder_a.set("org", dataEntity.getDynamicObject("org"));
                     pomMftorder_a.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));
                     pomMftorder_a.set("billdate", new Date());
-                    pomMftorder_a.set("billstatus", "C");
+                    pomMftorder_a.set("billstatus", "A");
                     pomMftorder_a.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
                     pomMftorder_a.set("billtype", pmf);//单据类型
                     pomMftorder_a.set("nckd_builds", true);
@@ -557,30 +599,40 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                      * 再次下推生成组件清单
                      */
                     //构建选中行数据包
-                    List<ListSelectedRow> selectedRows = new ArrayList();
-                    ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder_a.getPkValue());
-                    selectedRows.add(selectedRow);
-                    //获取转换规则id
-                    ConvertRuleReader read = new ConvertRuleReader();
-                    List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-                    // 创建下推参数
-                    PushArgs pushArgs = new PushArgs();
-                    // 源单标识，必填
-                    pushArgs.setSourceEntityNumber("pom_mftorder");
-                    // 目标单据标识，必填
-                    pushArgs.setTargetEntityNumber("pom_mftstock");
-                    // 生成转换结果报告，必填
-                    pushArgs.setBuildConvReport(true);
-                    //不检查目标单新增权限,非必填
-                    pushArgs.setHasRight(true);
-                    //传入下推使用的转换规则id，不填则使用默认规则
-                    pushArgs.setRuleId("2027100530894974976");
-                    //下推默认保存，必填
-                    pushArgs.setAutoSave(true);
-                    // 设置源单选中的数据包，必填
-                    pushArgs.setSelectedRows(selectedRows);
-                    // 执行下推操作
-                    ConvertServiceHelper.push(pushArgs);
+                    //List<ListSelectedRow> selectedRows = new ArrayList();
+                    //ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder_a.getPkValue());
+                    //selectedRows.add(selectedRow);
+                    ////获取转换规则id
+                    //ConvertRuleReader read = new ConvertRuleReader();
+                    //List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
+                    //// 创建下推参数
+                    //PushArgs pushArgs = new PushArgs();
+                    //// 源单标识，必填
+                    //pushArgs.setSourceEntityNumber("pom_mftorder");
+                    //// 目标单据标识，必填
+                    //pushArgs.setTargetEntityNumber("pom_mftstock");
+                    //// 生成转换结果报告，必填
+                    //pushArgs.setBuildConvReport(true);
+                    ////不检查目标单新增权限,非必填
+                    //pushArgs.setHasRight(true);
+                    ////传入下推使用的转换规则id，不填则使用默认规则
+                    //pushArgs.setRuleId("2027100530894974976");
+                    ////下推默认保存，必填
+                    //pushArgs.setAutoSave(false);
+                    //// 设置源单选中的数据包，必填
+                    //pushArgs.setSelectedRows(selectedRows);
+                    //// 执行下推操作
+                    //ConvertOperationResult operationResult = ConvertServiceHelper.push(pushArgs);
+                    //if (operationResult.isSuccess()) {
+                    //    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+                    //    List<DynamicObject> targetDos = operationResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+                    //    DynamicObject targe = targetDos.get(0);
+                    //    targe.set("billstatus","C");
+                    //    OperationResult result1 = OperationServiceHelper.executeOperate("submit", "pom_mftstock", new DynamicObject[]{targe}, OperateOption.create());
+                    //    if (!result1.isSuccess()) {
+                    //        OperationServiceHelper.executeOperate("audit", "pom_mftstock", new DynamicObject[]{targe}, OperateOption.create());
+                    //    }
+                    //}
                     //this.getModel().setValue("nckd_pom", "工单1：" + number + ",工单2：" + number_a, i);
                     setProducts(pdm, oldEntity, pmf, pomMftorder_a,newQty);
                 }
@@ -631,7 +683,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             pomMftorder.set("org", dataEntity.getDynamicObject("org"));
             pomMftorder.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));
             pomMftorder.set("billdate", new Date());
-            pomMftorder.set("billstatus", "C");
+            pomMftorder.set("billstatus", "A");
             pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
             pomMftorder.set("billtype", pmf);//单据类型
             pomMftorder.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
@@ -777,36 +829,12 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     this.getView().showMessage(result.getMessage());
                     return;
                 }
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (submit.isSuccess()) {
+                    OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                }
                 this.getModel().setValue("nckd_pom", number, 0);
 
-                /**
-                 * 再次下推生成组件清单
-                 */
-                //构建选中行数据包
-                List<ListSelectedRow> selectedRows = new ArrayList();
-                ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder.getPkValue());
-                selectedRows.add(selectedRow);
-                //获取转换规则id
-                ConvertRuleReader read = new ConvertRuleReader();
-                List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-                // 创建下推参数
-                PushArgs pushArgs = new PushArgs();
-                // 源单标识，必填
-                pushArgs.setSourceEntityNumber("pom_mftorder");
-                // 目标单据标识，必填
-                pushArgs.setTargetEntityNumber("pom_mftstock");
-                // 生成转换结果报告，必填
-                pushArgs.setBuildConvReport(true);
-                //不检查目标单新增权限,非必填
-                pushArgs.setHasRight(true);
-                //传入下推使用的转换规则id，不填则使用默认规则
-                pushArgs.setRuleId("2027100530894974976");
-                //下推默认保存，必填
-                pushArgs.setAutoSave(true);
-                // 设置源单选中的数据包，必填
-                pushArgs.setSelectedRows(selectedRows);
-                // 执行下推操作
-                ConvertServiceHelper.push(pushArgs);
             }
 
         }
@@ -822,7 +850,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 pomMftorder.set("org", dataEntity.getDynamicObject("org"));
                 pomMftorder.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));
                 pomMftorder.set("billdate", new Date());
-                pomMftorder.set("billstatus", "C");
+                pomMftorder.set("billstatus", "A");
                 pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据
                 pomMftorder.set("billtype", pmf);//单据类型
 
@@ -880,37 +908,13 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     this.getView().showMessage(result.getMessage());
                     return;
                 }
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (submit.isSuccess()) {
+                    OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                }
                 this.getModel().setValue("nckd_pom", number, i);
                 this.getView().updateView();
 
-                /**
-                 * 再次下推生成组件清单
-                 */
-                //构建选中行数据包
-                List<ListSelectedRow> selectedRows = new ArrayList();
-                ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder.getPkValue());
-                selectedRows.add(selectedRow);
-                //获取转换规则id
-                ConvertRuleReader read = new ConvertRuleReader();
-                List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-                // 创建下推参数
-                PushArgs pushArgs = new PushArgs();
-                // 源单标识，必填
-                pushArgs.setSourceEntityNumber("pom_mftorder");
-                // 目标单据标识，必填
-                pushArgs.setTargetEntityNumber("pom_mftstock");
-                // 生成转换结果报告，必填
-                pushArgs.setBuildConvReport(true);
-                //不检查目标单新增权限,非必填
-                pushArgs.setHasRight(true);
-                //传入下推使用的转换规则id，不填则使用默认规则
-                pushArgs.setRuleId("2027100530894974976");
-                //下推默认保存，必填
-                pushArgs.setAutoSave(true);
-                // 设置源单选中的数据包，必填
-                pushArgs.setSelectedRows(selectedRows);
-                // 执行下推操作
-                ConvertServiceHelper.push(pushArgs);
             }
         }
 
