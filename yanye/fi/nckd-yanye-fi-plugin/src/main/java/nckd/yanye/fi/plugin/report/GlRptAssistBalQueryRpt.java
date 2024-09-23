@@ -61,7 +61,6 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
         log.info("单据体过滤条件查询字段{}",assvalList);
         DataSet copyDataSet = dataSet.copy();
         Map<String, List<Row>> accountQtyRowsMap = new HashMap<>();
-        log.info("报表分组数据{}",accountQtyRowsMap);
 
         copyDataSet.forEachRemaining(row -> {
             if (assvalList.size() > 1){
@@ -89,6 +88,7 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
                 }
             }
         });
+        log.info("报表分组数据{}",accountQtyRowsMap);
 
         /**
          * yearbdebitlocal 年初余额-借方金额
@@ -132,6 +132,7 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
                 public Object[] map(Row row) {
                     Object[] data = ((AbstractRow) row).values();
                     if (getRowResult(assvalList,row)) {
+                        log.info("判断结果{}",getRowResult(assvalList,row));
                         String account = row.getString("account");
                         List<Row> rows = accountQtyRowsMap.get(getAssval(assvalList,row)+account);
                         if (rows.size() <= 1) {
@@ -150,13 +151,18 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
                             qty.stream().forEach(field -> data[rowMeta.getFieldIndex(field)] = qtymap.get(field));
                         }
                     }
+                    log.info("最后返回数据{}",data);
                     return data;
                 }
 
                 private String getAssval(List<String> assvalList,Row row) {
                     String result = "";
                     for (String s : assvalList) {
-                        result += row.getString(s);
+                        if (StringUtils.isEmpty(result)) {
+                            result = s;
+                        }else {
+                            result += row.getString(s);
+                        }
                     }
                     return result;
                 }
@@ -180,6 +186,7 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
                     if (row.get("assval") != null) {
                         String account = row.getString("account");
                         List<Row> rows = accountQtyRowsMap.get(row.getString("assval")+account);
+                        log.info("每行处理{}",rows);
                         if (rows.size() <= 1) {
                             return data;
                         }
@@ -214,7 +221,11 @@ public class GlRptAssistBalQueryRpt extends AbstractReportListDataPluginExt {
     private String getAssval(List<String> assvalList,Row row) {
         String result = "";
         for (String s : assvalList) {
-            result += row.getString(s);
+            if (StringUtils.isEmpty(result)) {
+                result = s;
+            }else {
+                result += row.getString(s);
+            }
         }
         return result;
     }
