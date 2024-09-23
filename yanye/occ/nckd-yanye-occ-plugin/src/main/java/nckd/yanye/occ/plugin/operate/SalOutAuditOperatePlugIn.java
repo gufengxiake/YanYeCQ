@@ -50,6 +50,9 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
+        e.getFieldKeys().add("nckd_carsysno");//电子磅单
+        e.getFieldKeys().add("nckd_vehicle");//车辆
+        e.getFieldKeys().add("nckd_driver");//司机
         e.getFieldKeys().add("mainbillentryid");//核心单据行Id
         e.getFieldKeys().add("qty");//数量
         e.getFieldKeys().add("lotnumber");//批号
@@ -100,10 +103,21 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         Map<String, String> outLot = new HashMap<>();
         Map<String, Date> outProduceDate = new HashMap<>();
         Map<String, Date> outExpiryDate = new HashMap<>();
+        //记录核心单据Id对应的 编码，电子磅单，车辆，司机
+        Map<String, String> outNumber = new HashMap<>();
+        Map<String, String> outcarsysno = new HashMap<>();
+        Map<String,DynamicObject>outVehicle=new HashMap<>();
+        Map<String,DynamicObject>outDriver=new HashMap<>();
+
         for (DynamicObject dataObject : e.getDataEntities()) {
+            String number=dataObject.getString("billno");//单据编号
+            String carsysno =dataObject.getString("nckd_carsysno");//电子磅单
+            DynamicObject vehicle =dataObject.getDynamicObject("nckd_vehicle");//车辆
+            DynamicObject driver =dataObject.getDynamicObject("nckd_driver");//司机
             //获取单据体数据的集合
             DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
             for (DynamicObject entryObj : billentry) {
+                String mainbillid=entryObj.getString("mainbillid");//核心单据Id
                 String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
                 Object entryId = entryObj.getPkValue();
                 BigDecimal qty = entryObj.getBigDecimal("qty");//出库数量
@@ -119,6 +133,11 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                 outLot.put(mainbillentryid, lot);
                 outProduceDate.put(mainbillentryid, produceDate);
                 outExpiryDate.put(mainbillentryid, expirydate);
+
+                outNumber.put(mainbillid,number);
+                outcarsysno.put(mainbillid,carsysno);
+                outVehicle.put(mainbillid,vehicle);
+                outDriver.put(mainbillid,driver);
             }
         }
 
@@ -186,7 +205,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                     for (DynamicObject entryObj : goodsEntities) {
                         //获取某行数据的id
                         Object entryId = entryObj.getPkValue();
-                        BigDecimal qty = entryObj.getBigDecimal("joinqty");
+                        BigDecimal qty = entryObj.getBigDecimal("joinqty");//关联数量
                         if (qty.compareTo(BigDecimal.ZERO) == 0) {
                             ListSelectedRow row = new ListSelectedRow();
                             //必填，设置源单单据id
@@ -280,6 +299,17 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                         depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
                                     }
                                 }
+                                String billno=outNumber.get(pk.toString());
+                                String carsysno=outcarsysno.get(pk.toString());
+                                DynamicObject vehicle=outVehicle.get(pk.toString());
+                                DynamicObject driver=outDriver.get(pk.toString());
+                                mode.beginInit();
+                                mode.setValue("nckd_seloutbillno",billno);
+                                mode.setValue("nckd_carsysno",carsysno);
+                                mode.setValue("nckd_vehicle",vehicle);
+                                mode.setValue("nckd_driver",driver);
+                                mode.endInit();
+
                                 DynamicObjectCollection entry = dataObj.getDynamicObjectCollection("billentry");
                                 int row = 0;
                                 for (DynamicObject entryRow : entry) {
