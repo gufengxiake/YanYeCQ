@@ -92,6 +92,10 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                          "nckd_freighttype as nckd_freighttype," +
                         //签收基本数量
                          "billentry.nckd_signbaseqty as nckd_signqty," +
+                //      销售合同号
+                        "nckd_salecontractno as nckd_salecontractno," +
+                //        运输合同号
+                        "nckd_trancontractno as nckd_trancontractno," +
 //                      销售出库表体id
                         "billentry.id as saleoutbodyid," +
 //                        核心单据行id
@@ -99,25 +103,25 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
         im_saloutbill = this.linkSignAtureBill(im_saloutbill);
 
-        return im_saloutbill.orderBy(new String[]{"nckd_bizorg","nckd_fhdate"});
+        return im_saloutbill.orderBy(new String[]{"nckd_bizorg","nckd_fhdate","nckd_fhbillno"});
     }
 
     //获取签收单  nckd_signaturebill
     public DataSet linkSignAtureBill(DataSet ds) {
         List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
         if (mainbillentryidToList.isEmpty()) return ds;
-
-        //关联销售订单
-        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryidToList.toArray(new Long[0]));
-        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder",
-                //      销售合同号
-                "nckd_salecontractno as nckd_salecontractno," +
-                //        运输合同号
-                        "nckd_trancontractno as nckd_trancontractno," +
-//                        销售订单表体id
-                        "billentry.id as orderbodyid",
-                new QFilter[]{orderFilter}, null);
-        ds = ds.leftJoin(sm_salorder).on("mainbillentryid","orderbodyid").select(ds.getRowMeta().getFieldNames(),sm_salorder.getRowMeta().getFieldNames()).finish();
+//
+//        //关联销售订单
+//        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryidToList.toArray(new Long[0]));
+//        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder",
+//                //      销售合同号
+////                "nckd_salecontractno as nckd_salecontractno," +
+//                //        运输合同号
+//                        "nckd_trancontractno as nckd_trancontractno," +
+////                        销售订单表体id
+//                        "billentry.id as orderbodyid",
+//                new QFilter[]{orderFilter}, null);
+//        ds = ds.leftJoin(sm_salorder).on("mainbillentryid","orderbodyid").select(ds.getRowMeta().getFieldNames(),sm_salorder.getRowMeta().getFieldNames()).finish();
 
 //        关联签收单
         QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryidToList.toArray(new Long[0]));
