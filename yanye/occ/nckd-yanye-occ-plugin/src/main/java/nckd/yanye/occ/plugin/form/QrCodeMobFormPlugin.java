@@ -70,7 +70,7 @@ public class QrCodeMobFormPlugin extends AbstractMobBillPlugIn {
         com.alibaba.fastjson.JSONObject saleorgid = (com.alibaba.fastjson.JSONObject) customParams.get("saleorgid");
         JSONObject name = JSONUtil.parseObj(saleorgid.getString("name"));
         this.getModel().setValue("nckd_supplier", name.getStr("zh_CN"));
-        this.getModel().setValue("nckd_sumunrecamount", Convert.toBigDecimal(customParams.get("sumunrecamount")));
+        this.getModel().setValue("nckd_sumunrecamount", Convert.toBigDecimal(customParams.get("payamount")));
     }
 
     /**
