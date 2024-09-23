@@ -8,8 +8,11 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.StringUtils;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.IDecAdjApprExtPlugin;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.event.AfterF7PersonSelectEvent;
+import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
+import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
 
+import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -230,6 +233,8 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                     default:
                         break;
                 }
+
+                // 赋值薪等
                 entry.set("grade", preGrade);
                 int thisRankIndex = preRankIndex + changeRank;
                 Long thisRankId = thisRankMap.get(thisRankIndex);
@@ -279,4 +284,22 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                 ));
         return yearKaoheMap;
     }
+
+    private StdAmountQueryParam getStdAmountQueryParam(Long salaryStdId, Long itemId, Long gradeId, Long rankId1, String unionId) {
+        // 构建查询参数
+        StdAmountQueryParam queryParam = new StdAmountQueryParam();
+        // 对应薪酬标准表id
+        queryParam.setStdTabId(salaryStdId);
+        // 定调薪项目id
+        queryParam.setItemId(itemId);
+        // 薪等id
+        queryParam.setGradeId(gradeId);
+        // 薪档id
+        queryParam.setRankId(rankId1);
+        // UnionId 代表这组参数的唯一标识，通过该参数将入参和返回值对应起来，必传
+        queryParam.setUnionId(unionId);
+        return queryParam;
+    }
+
+
 }

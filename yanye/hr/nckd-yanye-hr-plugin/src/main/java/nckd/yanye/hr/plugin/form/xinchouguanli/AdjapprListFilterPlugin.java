@@ -33,7 +33,7 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         }
         // 判断是否传了参数
         String isYear = this.getView().getParentView().getPageCache().get("isYear");
-        if ("false".equals(isYear)) {
+        if ("false".equals(isYear) || Objects.isNull(isYear)) {
             return;
         }
 
@@ -43,7 +43,7 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
          * 以及近三年拥有绩效记录的 中层管理人员
          */
         // 默认生效日期
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
         Date effectivedate = null;
         try {
             effectivedate = sdf.parse(isYear);
@@ -128,15 +128,13 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
                 boolean flag = false;
                 switch (lastYearKaoHeResult) {
                     case "优秀":
+                    case "不称职":
                         flag = true;
                         break;
                     case "良好":
                         if ("良好".equals(lastTwoYearsKaoHeResult)) {
                             flag = true;
                         }
-                        break;
-                    case "不称职":
-                        flag = true;
                         break;
                     case "基本称职":
                         if ("基本称职".equals(lastTwoYearsKaoHeResult) || "基本称职".equals(lastThreeYearsKaoHeResult)) {

@@ -67,9 +67,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
         // 监听字段：本次调薪信息：薪等
         String propertyName = e.getProperty().getName();
-        if (!"dy_grade".equals(propertyName)) {
-            return;
-        }
+
         DynamicObject salaryadjrsn = (DynamicObject) model.getValue("salaryadjrsn");
         if (salaryadjrsn == null) {
             return;
@@ -79,9 +77,11 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         String orgName = org.getString("name");
         String salaryadjrsnName = salaryadjrsn.getString("name");
 
-        if ("年度绩效调薪".equals(salaryadjrsnName) &&
-                ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
-            autoGetRank(model, changeRowIndex);
+        if ("dy_grade".equals(propertyName)) {
+            if ("调动调薪".equals(salaryadjrsnName) &&
+                    ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
+                autoGetRank(model, changeRowIndex);
+            }
         }
     }
 
@@ -101,7 +101,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
                 // 默认生效日期
                 Date defaultEffectiveDate = (Date) this.getModel().getValue("effectivedate");
-                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 String dateString = sdf.format(defaultEffectiveDate);
                 this.getView().getPageCache().put("isYear", dateString);
             } else {
