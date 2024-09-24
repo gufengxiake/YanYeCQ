@@ -13,14 +13,20 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
-import kd.fi.fa.common.util.DateUtil;
-import kd.taxc.tdm.common.util.ObjectUtils;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
-
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+
+/**
+ * @author guozhiwei
+ * @date 2024-09-23 9:10
+ * @description 交易汇总表（nckd_transaction_summary）报表查询插件
+ */
+
 
 public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
 
@@ -35,19 +41,23 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
         List<FilterItemInfo> itemInfos=filterInfo.getFilterItems();
 
         for (FilterItemInfo item:itemInfos) {
-            if(item.getPropName().equals("nckd_company")){
-                item.getValue();
+            String propName = item.getPropName();
+            if("nckd_nckd_company_list".equals(propName)){
                 if(ObjectUtils.isNotEmpty(item.getValue())){
-                    qFilter1 = new QFilter("company.id", QCP.equals, ((DynamicObject)item.getValue()).getPkValue());
+                    DynamicObjectCollection collection = (DynamicObjectCollection) item.getValue();
+                    List<Object> list = new ArrayList<Object>();
+                    collection.forEach((DynamicObject obj) -> {
+                        list.add(obj.getPkValue());
+                    });
+                    qFilter1 = new QFilter("company.id", QCP.in, list);
                 }
-
             }
         }
         String select =  "id,company,bizdate,draftbillno,subbillrange,drawername,issuedate,draftbillexpiredate,amount," +
                 "draftbilltype,draftbilltype.number,receivername,delivername,issplit,istransfer,eledraftstatusnew," +
                 "elccirculatestatus,accepterbebank,acceptername,'否' as nckd_istransferred,accepterbebank.nckd_bankcredit_type," +
                 "draftbillstatus,bizfinishdate";
-        DataSet dataSet = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cdm_receivablebill", select, new QFilter[]{qFilter1}, null);
+        DataSet dataSet = QueryServiceHelper.queryDataSet(this.getClass().getName(), "cdm_receivablebill", select, new QFilter[]{qFilter1}, "company");
         ORM orm = ORM.create();
         dataSet = dataSet.addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"nckd_issueticket")
                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"nckd_paymentnature")
@@ -60,7 +70,6 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
                .addField(ResManager.loadKDString("''", "ReportListHelper_2", "wtc-wtte-business"),"nckd_paymentdate")
                .addField(ResManager.loadKDString("0", "ReportListHelper_2", "wtc-wtte-business"),"nckd_dueacceptamount")
                .addField(ResManager.loadKDString("0", "ReportListHelper_2", "wtc-wtte-business"),"nckd_dis_rate");
-
 
         DynamicObjectCollection dynamicObjects = orm.toPlainDynamicObjectCollection(dataSet.copy());
 
@@ -101,12 +110,10 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
             }else if(StringUtils.equals(draftbillstatus,"collected")){
                 // 已托收，设置到期承兑金额,收款日期
                 dynamicObject.set("nckd_dueacceptamount",dynamicObject.get("amount"));
-//                dynamicObject.set("nckd_paymentdate",dynamicObject.getDate("bizfinishdate"));
                 dynamicObject.set("nckd_paymentdate",parse);
             }else if(StringUtils.equals(draftbillstatus,"ebdorsed")){
                 //已背书，设置金额，背书日期，被背书人
                 dynamicObject.set("nckd_endorseamount",dynamicObject.get("amount"));
-//                dynamicObject.set("nckd_endorsedate",dynamicObject.getDate("bizfinishdate"));
                 dynamicObject.set("nckd_endorsedate",parse);
                 if(isflag){
                     dynamicObject.set("nckd_beendorsortext",cdmDraftTradeBill.get("beendorsortext"));
@@ -116,7 +123,6 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
                 dynamicObject.set("nckd_prepaymentamount",dynamicObject.get("amount"));
                 dynamicObject.set("nckd_prepaymentdate",parse);
                 if(isflag){
-//                    cdmDraftTradeBill.get("beendorsortext");
                     DynamicObjectCollection entrys = cdmDraftTradeBill.getDynamicObjectCollection("discountentry");
                     for (DynamicObject entry : entrys) {
                         if(entry.getDynamicObject("dis_selectbillid").getPkValue().equals(dynamicObject.get("id"))){
@@ -131,10 +137,6 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
         Field[] rowFields = dataSet.getRowMeta().getFields();
         //DynamicObjectCollection 转换为 DataSet
         DataSet retuenDataSet = buildDataByObjCollection("algoKey", rowFields, dynamicObjects);
-
-
-
-
         return retuenDataSet;
     }
 
@@ -152,4 +154,6 @@ public class TransactionDetailsPlugin extends AbstractReportListDataPlugin {
         }
         return dataSetBuilder.build();
     }
+
+
 }
