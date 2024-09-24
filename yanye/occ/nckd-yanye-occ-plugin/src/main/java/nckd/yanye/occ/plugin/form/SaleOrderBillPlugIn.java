@@ -9,6 +9,7 @@ import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
 import kd.bos.form.control.Control;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.form.field.TextEdit;
 import kd.bos.list.ListFilterParameter;
@@ -16,10 +17,14 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 //import kd.mmc.pdm.common.constants.BomBatchSearchConst;
 
 import java.math.BigDecimal;
 import java.util.EventObject;
+import java.util.HashSet;
+import java.util.Map;
 
 /*
  *销售订单表单插件，获取销售合同和运输合同
@@ -132,6 +137,87 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
         }
         //this.getView().invokeOperation("save");//保存单据
         super.closedCallBack(evt);
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        switch (e.getOperateKey()) {
+            case "save":
+                if (e.getOperationResult().isSuccess()) {
+                    String targetEntityNumber = this.getModel().getDataEntityType().getName();
+                    Object pkId=this.getModel().getValue("id");
+                    String trancontractNo = this.getModel().getValue("nckd_trancontractno").toString();
+                    String salecontractNo = this.getModel().getValue("nckd_salecontractno").toString();
+                    if (!trancontractNo.trim().equals("") && !salecontractNo.trim().equals("")) {
+                        Map<String, HashSet<Long>> targetBills = BFTrackerServiceHelper.findTargetBills(targetEntityNumber, new Long[]{(Long) pkId});
+                        //发货通知单
+                        if (targetBills.containsKey("sm_delivernotice")) {
+                            HashSet<Long> targetBillIds = targetBills.get("sm_delivernotice");
+                            this.updateContractNo("sm_delivernotice", targetBillIds, trancontractNo, salecontractNo);
+                        }
+                        //电子磅单
+                        if (targetBills.containsKey("nckd_eleweighing")) {
+                            HashSet<Long> targetBillIds = targetBills.get("nckd_eleweighing");
+                            this.updateContractNo("nckd_eleweighing", targetBillIds, trancontractNo, salecontractNo);
+                        }
+                        //销售出库单
+                        if (targetBills.containsKey("im_saloutbill")) {
+                            HashSet<Long> targetBillIds = targetBills.get("im_saloutbill");
+                            this.updateContractNo("im_saloutbill", targetBillIds, trancontractNo, salecontractNo);
+                        }
+                        //签收单
+                        if (targetBills.containsKey("nckd_signaturebill")) {
+                            HashSet<Long> targetBillIds = targetBills.get("nckd_signaturebill");
+                            this.updateContractNo("nckd_signaturebill", targetBillIds, trancontractNo, null);
+                        }
+                        //暂估应付单
+                        if (targetBills.containsKey("ap_busbill")) {
+                            HashSet<Long> targetBillIds = targetBills.get("ap_busbill");
+                            this.updateApContractNo("ap_busbill", targetBillIds,"entry", trancontractNo );
+                        }
+                        //财务应付单
+                        if (targetBills.containsKey("ap_finapbill")) {
+                            HashSet<Long> targetBillIds = targetBills.get("ap_finapbill");
+                            this.updateApContractNo("ap_finapbill", targetBillIds,"detailentry", trancontractNo );
+                        }
+
+                    }
+
+                }
+
+        }
+
+    }
+
+    /*
+    更新下游单据的销售合同和运输合同号
+     */
+    private void updateContractNo(String targetBill, HashSet<Long> targetBillIds, String trancontractNo, String salecontractNo) {
+
+        DynamicObject[] targetDynamic = (DynamicObject[]) BusinessDataServiceHelper.load(targetBillIds.toArray(), BusinessDataServiceHelper.newDynamicObject(targetBill).getDataEntityType());
+        if (targetDynamic != null) {
+            for (DynamicObject targetData : targetDynamic) {
+                if (salecontractNo != null) {
+                    targetData.set("nckd_salecontractno", salecontractNo);
+                }
+                targetData.set("nckd_trancontractno", trancontractNo);
+            }
+            SaveServiceHelper.update(targetDynamic);
+        }
+    }
+    //更新暂估应付和财务应付
+    private void updateApContractNo(String targetBill, HashSet<Long> targetBillIds,String entryName, String trancontractNo) {
+        DynamicObject[] targetDynamic = (DynamicObject[]) BusinessDataServiceHelper.load(targetBillIds.toArray(), BusinessDataServiceHelper.newDynamicObject(targetBill).getDataEntityType());
+        if (targetDynamic != null) {
+            for (DynamicObject targetData : targetDynamic) {
+                DynamicObjectCollection entry=targetData.getDynamicObjectCollection(entryName);
+                for(DynamicObject entryRow:entry){
+                    entryRow.set("nckd_carriagenumber",trancontractNo);
+                }
+            }
+            SaveServiceHelper.update(targetDynamic);
+        }
     }
 
 }

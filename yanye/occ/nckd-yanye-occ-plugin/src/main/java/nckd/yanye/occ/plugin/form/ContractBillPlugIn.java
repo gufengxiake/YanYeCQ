@@ -1,0 +1,37 @@
+package nckd.yanye.occ.plugin.form;
+
+import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.QueryServiceHelper;
+
+import java.util.EventObject;
+
+/*
+采购/销售合同新增自动携带合同主体
+author:wgq
+date:2024/09/24
+ */
+public class ContractBillPlugIn extends AbstractBillPlugIn {
+    @Override
+    public void afterCreateNewData(EventObject e) {
+        Object orgId = ((DynamicObject)this.getModel().getValue("org")).getPkValue();
+        if (orgId != null) {
+            // 构造QFilter  org  业务组织   enable 可用
+            QFilter qFilter = new QFilter("org.id", QCP.equals, orgId)
+                    .and("enable", QCP.equals, "1");
+            //查找合同主体
+            DynamicObjectCollection collections = QueryServiceHelper.query("conm_contparties",
+                    "id", qFilter.toArray(), "");
+            if (!collections.isEmpty()) {
+                DynamicObject contpartiesItem = collections.get(0);
+                long contpartiesItemId = (long) contpartiesItem.get("id");
+                this.getModel().setItemValueByID("contparties", contpartiesItemId);
+
+            }
+
+        }
+    }
+}
