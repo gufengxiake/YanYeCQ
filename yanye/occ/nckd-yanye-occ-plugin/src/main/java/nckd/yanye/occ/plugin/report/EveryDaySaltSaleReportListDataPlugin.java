@@ -88,20 +88,14 @@ public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListData
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
 //        ReportColumn bizorg = ReportColumn.createBaseDataColumn("bizorg","bos_org");
-        ReportColumn xl = createReportColumn("xl", ReportColumn.TYPE_DECIMAL, "销量");
+        columns.add(createReportColumn("xl", ReportColumn.TYPE_DECIMAL, "销量"));
 
-        ReportColumn gd = createReportColumn("gd", ReportColumn.TYPE_DECIMAL, "高端");
-        ReportColumn jp = createReportColumn("jp", ReportColumn.TYPE_DECIMAL, "竞品");
+        columns.add(createReportColumn("gd", ReportColumn.TYPE_DECIMAL, "高端"));
+        columns.add(createReportColumn("jp", ReportColumn.TYPE_DECIMAL, "竞品"));
 
-        ReportColumn customer = createReportColumn("customer", ReportColumn.TYPE_TEXT, "盐客户数");
-        ReportColumn bizoperator = createReportColumn("bizoperator", ReportColumn.TYPE_TEXT, "业务员数");
+        columns.add(createReportColumn("customer", ReportColumn.TYPE_TEXT, "盐客户数"));
+        columns.add(createReportColumn("bizoperator", ReportColumn.TYPE_TEXT, "业务员数"));
 
-
-        columns.add(xl);
-        columns.add(gd);
-        columns.add(jp);
-        columns.add(customer);
-        columns.add(bizoperator);
         return columns;
     }
 

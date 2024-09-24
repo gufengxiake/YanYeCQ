@@ -44,7 +44,6 @@ public class KeySaltPriceReportFormPlugin extends AbstractReportFormPlugin imple
 
         Iterator<DynamicObject> iterator = rowData.iterator();
         Long[] id = material.keySet().toArray(new Long[0]);
-        String[] name = material.values().toArray(new String[0]);
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             BigDecimal sumQty = BigDecimal.ZERO;
@@ -69,7 +68,10 @@ public class KeySaltPriceReportFormPlugin extends AbstractReportFormPlugin imple
                 next.set(materialName+"amount",price);
             }
             next.set("sumqty",sumQty);
-//            next
+            if (next.getString("nckd_bizorgname").equals("小计间隔")){
+                next.set("nckd_bizorgname","");
+                next.set("nckd_qj","小计间隔");
+            }
 
         }
         bd_material.close();

@@ -113,20 +113,12 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
     }
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-
-        ReportColumn nckd_qty = createReportColumn("nckd_qty", ReportColumn.TYPE_DECIMAL, "销售出库数");
-        ReportColumn nckd_outamount = createReportColumn("nckd_outamount", ReportColumn.TYPE_DECIMAL, "销售出库金额");
-        ReportColumn nckd_invnum = createReportColumn("nckd_invnum", ReportColumn.TYPE_DECIMAL, "销售开票数");
-        ReportColumn nckd_invamount = createReportColumn("nckd_invamount", ReportColumn.TYPE_DECIMAL, "销售开票金额");
-        ReportColumn nckd_outinvqty = createReportColumn("nckd_outinvqty", ReportColumn.TYPE_DECIMAL, "数量差额");
-        ReportColumn nckd_outinvamount = createReportColumn("nckd_outinvamount", ReportColumn.TYPE_DECIMAL, "金额差额");
-
-        columns.add(nckd_qty);
-        columns.add(nckd_outamount);
-        columns.add(nckd_invnum);
-        columns.add(nckd_invamount);
-        columns.add(nckd_outinvqty);
-        columns.add(nckd_outinvamount);
+        columns.add(createReportColumn("nckd_qty", ReportColumn.TYPE_DECIMAL, "销售出库数"));
+        columns.add(createReportColumn("nckd_outamount", ReportColumn.TYPE_DECIMAL, "销售出库金额"));
+        columns.add(createReportColumn("nckd_invnum", ReportColumn.TYPE_DECIMAL, "销售开票数"));
+        columns.add(createReportColumn("nckd_invamount", ReportColumn.TYPE_DECIMAL, "销售开票金额"));
+        columns.add(createReportColumn("nckd_outinvqty", ReportColumn.TYPE_DECIMAL, "数量差额"));
+        columns.add(createReportColumn("nckd_outinvamount", ReportColumn.TYPE_DECIMAL, "金额差额"));
         return columns;
     }
 
@@ -138,7 +130,7 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
         column.setCaption(new LocaleString(caption));
         if (fieldType.equals(ReportColumn.TYPE_DECIMAL)) {
             column.setScale(2);
-            column.setZeroShow(true);
+//            column.setZeroShow(true);
         }
         return column;
     }

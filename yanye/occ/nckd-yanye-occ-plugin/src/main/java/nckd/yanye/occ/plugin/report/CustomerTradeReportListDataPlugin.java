@@ -104,24 +104,14 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-        ReportColumn nckd_entrytelephone = createReportColumn("nckd_entrytelephone", ReportColumn.TYPE_TEXT, "电话");
-        ReportColumn nckd_entrycontactname = createReportColumn("nckd_entrycontactname", ReportColumn.TYPE_TEXT, "联系人");
-        ReportColumn nckd_reqbaseqty = createReportColumn("nckd_reqbaseqty", ReportColumn.TYPE_DECIMAL, "数量");
-        ReportColumn nckd_sumtaxamount = createReportColumn("nckd_sumtaxamount", ReportColumn.TYPE_DECIMAL, "金额");
-        ReportColumn nckd_pricetax = createReportColumn("nckd_pricetax", ReportColumn.TYPE_DECIMAL, "含税单价");
-        ReportColumn notradedays = createReportColumn("notradedays", ReportColumn.TYPE_TEXT, "无交易天数");
-        ReportColumn max_orderdate = createReportColumn("max_orderdate", ReportColumn.TYPE_DATE, "最后交易日期");
-        ReportColumn countorder = createReportColumn("countorder", ReportColumn.TYPE_TEXT, "累计订单数");
-
-        columns.add(nckd_entrytelephone);
-        columns.add(nckd_entrycontactname);
-        columns.add(nckd_reqbaseqty);
-        columns.add(nckd_sumtaxamount);
-        columns.add(nckd_pricetax);
-        columns.add(notradedays);
-        columns.add(max_orderdate);
-        columns.add(countorder);
-
+        columns.add(createReportColumn("nckd_entrytelephone", ReportColumn.TYPE_TEXT, "电话"));
+        columns.add(createReportColumn("nckd_entrycontactname", ReportColumn.TYPE_TEXT, "联系人"));
+        columns.add(createReportColumn("nckd_reqbaseqty", ReportColumn.TYPE_DECIMAL, "数量"));
+        columns.add(createReportColumn("nckd_sumtaxamount", ReportColumn.TYPE_DECIMAL, "金额"));
+        columns.add(createReportColumn("nckd_pricetax", ReportColumn.TYPE_DECIMAL, "含税单价"));
+        columns.add(createReportColumn("notradedays", ReportColumn.TYPE_TEXT, "无交易天数"));
+        columns.add(createReportColumn("max_orderdate", ReportColumn.TYPE_DATE, "最后交易日期"));
+        columns.add(createReportColumn("countorder", ReportColumn.TYPE_TEXT, "累计订单数"));
         return columns;
     }
 

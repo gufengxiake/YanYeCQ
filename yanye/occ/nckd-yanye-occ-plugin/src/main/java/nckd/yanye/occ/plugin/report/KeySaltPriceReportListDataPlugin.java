@@ -183,20 +183,14 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-        ReportColumn nckd_bizorg = createReportColumn("nckd_bizorgname",  ReportColumn.TYPE_TEXT, "公司");
-//        nckd_bizorg.setCaption(new LocaleString("公司"));
-        columns.add(nckd_bizorg);
-        ReportColumn nckd_qj = createReportColumn("nckd_qj", ReportColumn.TYPE_TEXT, "期间");
-        columns.add(nckd_qj);
+        columns.add(createReportColumn("nckd_bizorgname",  ReportColumn.TYPE_TEXT, "公司"));
+        columns.add(createReportColumn("nckd_qj", ReportColumn.TYPE_TEXT, "期间"));
 
         Long[] id = material.keySet().toArray(new Long[0]);
         String[] array = material.values().toArray(new String[0]);
         if(id.length == 1){
-            ReportColumn materialnameqty = createReportColumn(id[0]  + "qty", ReportColumn.TYPE_DECIMAL, array[0]+"的数量");
-            ReportColumn materialnameamount = createReportColumn(id[0]  + "amount", ReportColumn.TYPE_DECIMAL, array[0]+"的单价");
-            columns.add(materialnameqty);
-            columns.add(materialnameamount);
-
+            columns.add(createReportColumn(id[0]  + "qty", ReportColumn.TYPE_DECIMAL, array[0]+"的数量"));
+            columns.add(createReportColumn(id[0]  + "amount", ReportColumn.TYPE_DECIMAL, array[0]+"的单价"));
         }else{
             //创建数量分组
             ReportColumnGroup qtyReportColumnGroup = new ReportColumnGroup();
@@ -207,10 +201,8 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
             amountReportColumnGroup.setFieldKey("amount");
             amountReportColumnGroup.setCaption(new LocaleString("含税单价"));
             for (int i = 0; i < array.length; i++) {
-                ReportColumn materialnameqty = createReportColumn(id[i]  + "qty", ReportColumn.TYPE_DECIMAL, array[i]);
-                qtyReportColumnGroup.getChildren().add(materialnameqty);
-                ReportColumn materialnameamount = createReportColumn(id[i]  + "amount", ReportColumn.TYPE_DECIMAL, array[i]);
-                amountReportColumnGroup.getChildren().add(materialnameamount);
+                qtyReportColumnGroup.getChildren().add(createReportColumn(id[i]  + "qty", ReportColumn.TYPE_DECIMAL, array[i]));
+                amountReportColumnGroup.getChildren().add(createReportColumn(id[i]  + "amount", ReportColumn.TYPE_DECIMAL, array[i]));
             }
             columns.add(qtyReportColumnGroup);
             columns.add(amountReportColumnGroup);
@@ -219,9 +211,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         //清空防止误用
         material.clear();
 
-        ReportColumn sumQty = createReportColumn("sumqty", ReportColumn.TYPE_DECIMAL, "数量合计");
-        columns.add(sumQty);
-
+        columns.add(createReportColumn("sumqty", ReportColumn.TYPE_DECIMAL, "数量合计"));
         return columns;
     }
 

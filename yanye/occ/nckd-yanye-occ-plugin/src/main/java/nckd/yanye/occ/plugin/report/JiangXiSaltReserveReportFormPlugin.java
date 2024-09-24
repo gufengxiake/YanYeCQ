@@ -7,7 +7,7 @@ import kd.sdk.plugin.Plugin;
 
 /**
  * 江西省政府食盐储备-报表界面插件
- * 表单标识：
+ * 表单标识：nckd_jxsaltreserve_rpt
  * author:zhangzhilong
  * date:2024/09/14
  */

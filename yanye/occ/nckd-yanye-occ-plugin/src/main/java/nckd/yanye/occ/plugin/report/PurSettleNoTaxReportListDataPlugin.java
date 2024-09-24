@@ -116,15 +116,10 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-        ReportColumn sumbaseqty = createReportColumn("sumbaseqty", ReportColumn.TYPE_DECIMAL, "累计结算数量");
-        ReportColumn sumamount = createReportColumn("sumamount", ReportColumn.TYPE_DECIMAL, "累计本位币结算金额");
-        ReportColumn notaxprice = createReportColumn("notaxprice", ReportColumn.TYPE_DECIMAL, "结算无税价");
-        ReportColumn taxprice = createReportColumn("taxprice", ReportColumn.TYPE_DECIMAL, "含税价");
-
-        columns.add(sumbaseqty);
-        columns.add(sumamount);
-        columns.add(notaxprice);
-        columns.add(taxprice);
+        columns.add(createReportColumn("sumbaseqty", ReportColumn.TYPE_DECIMAL, "累计结算数量"));
+        columns.add(createReportColumn("sumamount", ReportColumn.TYPE_DECIMAL, "累计本位币结算金额"));
+        columns.add(createReportColumn("notaxprice", ReportColumn.TYPE_DECIMAL, "结算无税价"));
+        columns.add(createReportColumn("taxprice", ReportColumn.TYPE_DECIMAL, "含税价"));
 
         return columns;
     }
