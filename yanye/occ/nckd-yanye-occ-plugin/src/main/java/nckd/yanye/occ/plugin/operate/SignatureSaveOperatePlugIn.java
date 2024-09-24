@@ -40,9 +40,10 @@ public class SignatureSaveOperatePlugIn extends AbstractOperationServicePlugIn {
                     if (sourceBillIds.containsKey("im_saloutbill")) {
                         HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_saloutbill");
                         for (long id:botpbill1_Ids){
+                            //获取上游单据数据包
                             DynamicObject date= BusinessDataServiceHelper.loadSingle(id,"im_saloutbill");
                             date.set("nckd_signdate",signdate);
-                            SaveServiceHelper.save(new DynamicObject[]{date});
+                            SaveServiceHelper.update(new DynamicObject[]{date});
                         }
                     }
                 }

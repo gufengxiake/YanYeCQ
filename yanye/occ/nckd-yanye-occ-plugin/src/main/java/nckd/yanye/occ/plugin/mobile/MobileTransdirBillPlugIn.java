@@ -32,6 +32,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
@@ -120,6 +121,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                 if (e.getOperationResult().isSuccess()) {
                     Long pkId = this.getPkId();
                     if (pkId != 0) {
+                        this.update(pkId);
                         OperateOption submitOption = OperateOption.create();
                         submitOption.setVariableValue("ignorewarn", String.valueOf(true));
                         OperationResult result = OperationServiceHelper.executeOperate("submit", targetBill, new Long[]{pkId}, submitOption);
@@ -338,6 +340,17 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
             formView.close();
         }
 
+    }
+
+    /*
+    更新调拨申请单
+     */
+    private void update(Long pkId) {
+        DynamicObject dataObj=BusinessDataServiceHelper.loadSingle(pkId,targetBill);
+        //业务员
+        DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        dataObj.set("nckd_ywy",ywy);
+        SaveServiceHelper.update(dataObj);
     }
 
     private static String getAppId(String entityNumber, MainEntityType dt) {

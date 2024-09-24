@@ -31,7 +31,7 @@ public class TransactionSummaryPlugin extends AbstractReportListDataPlugin {
     private Set<Long> allOrgTreeIds = new HashSet<>(16);
 
     //汇总字段
-    private static final String[] sumFields = new String[]{"nckd_amount1", "nckd_amount2", "nckd_amount3", "nckd_amountsum1",
+    private static final String[] sumFields = new String[]{"nckd_amount1", "nckd_amount2", "nckd_amount3", "nckd_amountsum1", "nckd_duecollection",
             "nckd_amount4", "nckd_amount5", "nckd_amount6", "nckd_amountsum2",
             "nckd_amount7", "nckd_amount8", "nckd_amount9", "nckd_amountsum3",
             "nckd_amount10", "nckd_amount11", "nckd_amount12", "nckd_amountsum4",
@@ -57,8 +57,8 @@ public class TransactionSummaryPlugin extends AbstractReportListDataPlugin {
         DynamicObjectCollection dynamicObjectCollection = ORM.create().toPlainDynamicObjectCollection(dataSet.copy());
         List<Long> pids = dynamicObjectCollection.stream().map(t -> t.getLong("pid")).collect(Collectors.toList());
         dynamicObjectCollection.forEach(t -> {
-            if("1".equals(t.getString("isgroupnode")) && !pids.contains(t.getLong("orgid"))){
-                t.set("isgroupnode","0");
+            if ("1".equals(t.getString("isgroupnode")) && !pids.contains(t.getLong("orgid"))) {
+                t.set("isgroupnode", "0");
             }
         });
         dataSet = buildDataByObjCollection("algoKey", dataSet.getRowMeta().getFields(), dynamicObjectCollection);

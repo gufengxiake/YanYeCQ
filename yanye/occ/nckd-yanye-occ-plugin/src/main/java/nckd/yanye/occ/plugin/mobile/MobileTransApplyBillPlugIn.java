@@ -37,6 +37,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.util.CommonUtils;
 import kd.occ.ocbase.common.util.DynamicObjectUtils;
@@ -126,6 +127,7 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                 if (e.getOperationResult().isSuccess()) {
                     Long pkId = this.getPkId();
                     if (pkId != 0) {
+                        this.update(pkId);
                         OperateOption submitOption = OperateOption.create();
                         submitOption.setVariableValue("ignorewarn", String.valueOf(true));
                         OperationResult result = OperationServiceHelper.executeOperate("submit", targetBill, new Long[]{pkId}, submitOption);
@@ -347,7 +349,7 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
             // 设置视图应用id和数据模型
             formView.getFormShowParameter().setAppId(appId);
             formView.getModel().createNewData();
-            formView.updateView();
+            //formView.updateView();
         }
         BillModel mode = (BillModel) formView.getModel();
         mode.setPKValue(pkId);
@@ -373,6 +375,17 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
             formView.close();
         }
 
+    }
+
+    /*
+    更新调拨申请单
+     */
+    private void update(Long pkId) {
+        DynamicObject dataObj=BusinessDataServiceHelper.loadSingle(pkId,targetBill);
+        //业务员
+        DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        dataObj.set("nckd_ywy",ywy);
+        SaveServiceHelper.update(dataObj);
     }
 
     private static String getAppId(String entityNumber, MainEntityType dt) {
