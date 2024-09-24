@@ -2,6 +2,7 @@ package nckd.yanye.tmc.plugin.task;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
@@ -23,7 +24,7 @@ import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
 /**
  * @author husheng
  * @date 2024-09-24 9:43
- * @description  交易汇总记录
+ * @description 交易汇总记录
  */
 public class TransactionrecordsTask extends AbstractTask {
     @Override
@@ -37,6 +38,10 @@ public class TransactionrecordsTask extends AbstractTask {
         // 上个月最后一天
         int lastDayOfLastMonth = firstDayOfCurrentMonth.minusDays(1).getDayOfMonth();
         LocalDate lastDayOfLastMonthDate = firstDayOfLastMonth.withDayOfMonth(lastDayOfLastMonth);
+
+        // 所属年月
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM");
+        String years = firstDayOfLastMonth.format(formatter);
 
         QFilter qFilter = new QFilter("billstatus", QCP.equals, "C")
                 .and("bizdate", QCP.large_equals, firstDayOfLastMonth)
@@ -124,6 +129,7 @@ public class TransactionrecordsTask extends AbstractTask {
             dynamicObject.set("nckd_amount12", nckdamount12);
             dynamicObject.set("nckd_amountsum4", nckd_amountsum4);
             dynamicObject.set("nckd_receivablebalance", nckdreceivablebalance);
+            dynamicObject.set("nckd_years", years);
             SaveServiceHelper.save(new DynamicObject[]{dynamicObject});
         });
     }
