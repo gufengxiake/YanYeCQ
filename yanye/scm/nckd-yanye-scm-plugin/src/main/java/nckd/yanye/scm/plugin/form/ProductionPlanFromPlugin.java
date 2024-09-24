@@ -424,7 +424,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             return;
         }
 
-        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,nckd_builds,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_merge,nckd_planentryid,nckd_planorg,nckd_planmaterial,treeentryentity.baseqty",
+        DynamicObject[] pom = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,nckd_sourcebill,nckd_builds,treeentryentity,treeentryentity.producedept,treeentryentity.material,treeentryentity.qty,nckd_merge,nckd_planentryid,nckd_planorg,nckd_planmaterial,treeentryentity.baseqty,treeentryentity.planqty,treeentryentity.planbaseqty",
                 new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.get("billno")).and("nckd_builds", QCP.equals, true)});
         Map<String, List<DynamicObject>> map = new HashMap<>();
         for (DynamicObject p : pom) {
@@ -467,6 +467,8 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         DynamicObject treeentry = dynamicObject.getDynamicObjectCollection("treeentryentity").get(0);
                         treeentry.set("qty", qty);
                         treeentry.set("baseqty", qty);
+                        treeentry.set("planbaseqty", qty);
+                        treeentry.set("planqty", qty);
                         dynamicObject.set("nckd_merge", true);
                         dynamicObject.set("nckd_planentryid", pk);
                         SaveServiceHelper.update(new DynamicObject[]{dynamicObject});
