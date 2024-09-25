@@ -1,6 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
@@ -10,6 +11,7 @@ import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
@@ -17,6 +19,7 @@ import kd.bos.entity.property.UserProp;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.ComboEdit;
@@ -27,6 +30,7 @@ import kd.bos.imageplatform.axis.IScanWebServiceImplServiceStub;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -652,6 +656,41 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         if (stringBuilder.length() > 0){
             this.getView().showErrorNotification(stringBuilder.toString());
             args.setCancel(true);
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_entry");
+        String key = e.getOperateKey();
+        if ("audit".equals(key)){
+            OperationResult operationResult = e.getOperationResult();
+            if (operationResult.isSuccess()){
+                if (entity.size() > 0){
+                    for (DynamicObject entry : entity) {
+                        String changeAfter = entry.getString("nckd_changeafter");
+                        if (StringUtils.isEmpty(changeAfter)){
+                            String addSupplier = entry.getString("nckd_addsupplier");
+                            DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name",QCP.equals,addSupplier)});
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                            }
+                            continue;
+                        }
+                        if ("2".equals(changeAfter)){
+                            DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
+                            supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

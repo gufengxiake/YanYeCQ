@@ -3,6 +3,7 @@ package nckd.yanye.scm.common.utils;
 import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
@@ -40,6 +41,8 @@ public class HttpRequestUtils {
         DefaultHttpClient httpClient = new DefaultHttpClient();
         JSONObject jsonResult = null;
         HttpPost method = new HttpPost(url);
+        RequestConfig requestConfig = RequestConfig.custom().setSocketTimeout(4000).setConnectTimeout(5000).build();//设置请求和传输超时时间
+        method.setConfig(requestConfig);
         if (token != null) {
             method.setHeader("Authorization","Bearer\n" + token);
             if (null != jsonParam) {

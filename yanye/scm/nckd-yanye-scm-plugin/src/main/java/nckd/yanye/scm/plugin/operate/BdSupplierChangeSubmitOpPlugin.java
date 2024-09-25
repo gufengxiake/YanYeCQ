@@ -33,6 +33,27 @@ public class BdSupplierChangeSubmitOpPlugin extends AbstractOperationServicePlug
         fieldKeys.add("nckd_merchanttype");
         fieldKeys.add("nckd_changeafter");
         fieldKeys.add("nckd_merchanttype");
+        fieldKeys.add("nckd_suppliermodify");
+        fieldKeys.add("nckd_group");
+        fieldKeys.add("nckd_spname");
+        fieldKeys.add("nckd_societycreditcode");
+        fieldKeys.add("nckd_artificialperson");
+        fieldKeys.add("nckd_regcapital");
+        fieldKeys.add("nckd_basedatafield");
+        fieldKeys.add("nckd_linkman");
+        fieldKeys.add("nckd_phone");
+        fieldKeys.add("nckd_address");
+        fieldKeys.add("nckd_postalcode");
+        fieldKeys.add("nckd_risk");
+        fieldKeys.add("nckd_bankaccount");
+        fieldKeys.add("nckd_accountname");
+        fieldKeys.add("nckd_bank");
+        fieldKeys.add("nckd_acceptingaccount");
+        fieldKeys.add("nckd_acceptingbank");
+        fieldKeys.add("nckd_currency");
+        fieldKeys.add("nckd_licensenumber");
+        fieldKeys.add("nckd_transporttype");
+        fieldKeys.add("nckd_rate");
 
     }
 
