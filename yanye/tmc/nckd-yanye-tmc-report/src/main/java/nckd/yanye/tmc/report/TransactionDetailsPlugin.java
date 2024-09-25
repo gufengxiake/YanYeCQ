@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * @author guozhiwei
  * @date 2024-09-23 9:10
- * @description 交易汇总表（nckd_transaction_summary）报表查询插件
+ * @description 交易明细表（nckd_transaction_detail）报表查询插件
  */
 
 

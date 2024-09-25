@@ -87,16 +87,16 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                         useOrgEntryBoList.stream().forEach(useOrgEntryBo -> {
                             DynamicObject dynamicObject = resultMap.get(useOrgEntryBo.getAdminOrgBoId());
                             if(ObjectUtils.isNotEmpty(dynamicObject)){
+                                // 含上级的编制人数
                                 Object nckdAdjustlatenum = dynamicObject.get("nckd_adjustlatenum");
-                                if(ObjectUtils.isNotEmpty(nckdAdjustlatenum)){
-                                    if(!StringUtils.equals("A", (String) dynamicObject.get("nckd_lowermost"))){
-                                        // 更新组织编制人数
-                                        useOrgEntryBo.setYearStaffNumWithSub((int) nckdAdjustlatenum);
-                                        // 直属人数
-                                        useOrgEntryBo.setYearStaff((int)dynamicObject.get("nckd_relbdirectnum"));
-                                    }else{
-                                        useOrgEntryBo.setYearStaff((int)dynamicObject.get("nckd_relbdirectnum"));
-                                    }
+                                // 直属人数
+                                Object nckdRelbdirectnum = dynamicObject.get("nckd_relbdirectnum");
+                                if(!StringUtils.equals("A", (String) dynamicObject.get("nckd_lowermost"))){
+                                    // 更新组织编制人数
+                                    useOrgEntryBo.setYearStaffNumWithSub(ObjectUtils.isNotEmpty(nckdAdjustlatenum) ? (int) nckdRelbdirectnum : null);
+                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (int) nckdRelbdirectnum : null);
+                                }else{
+                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (int) nckdRelbdirectnum : null);
                                 }
                                 // 更新岗位编制人数,如果不存在岗位则跳过
                                 DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");
@@ -112,10 +112,7 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                                         DynamicObject centerDynamicObject = centrMap.get(positionDimensionBo.getKeyFieldId());
                                         if(ObjectUtils.isNotEmpty(centerDynamicObject)){
                                             Object nckdPostadjustlatenum = centerDynamicObject.get("nckd_postadjustlatenum");
-                                            if(ObjectUtils.isNotEmpty(nckdPostadjustlatenum)){
-                                                // 更新岗位编制人数
-                                                positionDimensionBo.setYearStaff((int) nckdPostadjustlatenum);
-                                            }
+                                            positionDimensionBo.setYearStaff(ObjectUtils.isNotEmpty(nckdPostadjustlatenum) ? (int) nckdPostadjustlatenum : null);
                                         }
                                     });
                                 }
