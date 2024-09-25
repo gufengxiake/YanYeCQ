@@ -51,36 +51,8 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormDrawEdit {
 
         // 二开部分--start
         IDataModel model = this.getModel();
-        String nckd_type = (String)model.getValue("nckd_type");
-        // 当“类型”字段选择码值为“职称”(zhicheng)后，展示“是否公司聘任”该字段，
-        if("zhicheng".equals(nckd_type)) {
-            // 显示“是否公司聘任”该字段
-            this.getView().setVisible(true , "nckd_ispinren");
-        } else {
-            // 隐藏,“是否公司聘任”该字段
-            this.getView().setVisible(false , "nckd_ispinren");
-            // 隐藏：聘任单位
-            this.getView().setVisible(false , "nckd_pinrenorg");
-            // 隐藏：聘任日期
-            this.getView().setVisible(false , "nckd_pinrendate");
-            // API地址设置为非必填，页面上的必填和数据校验的必填中去掉
-            DateEdit apiaddressProperty = (DateEdit)this.getControl("nckd_pinrendate");
-            apiaddressProperty.setMustInput(false);
-            DateProp prop = (DateProp)this.getModel().getDataEntityType().getProperty("nckd_pinrendate");
-            prop.setMustInput(false);
 
-            // 隐藏：聘任终止日期
-            this.getView().setVisible(false , "nckd_pinrenenddaten");
-
-            // 隐藏：聘任单位
-            this.getView().setVisible(false , "nckd_pinrenorg");
-            BasedataEdit apiaddressProperty3 = (BasedataEdit)this.getControl("nckd_pinrenorg");
-            apiaddressProperty3.setMustInput(false);
-            BasedataProp prop3 = (BasedataProp)this.getModel().getDataEntityType().getProperty("nckd_pinrenorg");
-            prop3.setMustInput(false);
-        }
-
-        Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren");
+        Boolean nckd_ispinren = (Boolean)model.getValue("nckd_ispinren"); // 是否聘任
         if(nckd_ispinren) {
             // 勾选了“是否聘任”，显示：聘任日期
             this.getView().setVisible(true , "nckd_pinrendate");
@@ -163,18 +135,6 @@ public class EmpZhiChengHrpiPlugin extends AbstractFormDrawEdit {
         String fieldKey = e.getProperty().getName();
         IDataModel model = this.getModel();
         // 1)
-        if(StringUtils.equals("nckd_type", fieldKey)) {
-            // 类型 值切换
-            String nckd_type = (String)model.getValue("nckd_type");
-            // 当“类型”字段选择码值为“职称”(zhicheng)后，展示“是否公司聘任”该字段，
-            if("zhicheng".equals(nckd_type)) {
-                // 显示“是否公司聘任”该字段
-                this.getView().setVisible(true , "nckd_ispinren");
-            } else {
-                // 隐藏,“是否公司聘任”该字段
-                this.getView().setVisible(false , "nckd_ispinren");
-            }
-        }
         // 2)
         if(StringUtils.equals("nckd_iszuigao", fieldKey)) {
             // 是否最高 值切换

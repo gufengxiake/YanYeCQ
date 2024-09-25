@@ -133,16 +133,16 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         Long groupId = material.getDynamicObject("group").getLong("id");
         QFilter qFilter = new QFilter("nckd_entryentity.nckd_materialclassify", QCP.equals, groupId)
                 .and("nckd_entryentity.nckd_org", QCP.equals, org.getLong("id"));
-        DynamicObject[] objects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialcategory", qFilter.toArray());
+        DynamicObject[] objects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialclassify,nckd_entryentity.nckd_materialcategory,nckd_entryentity.nckd_org", qFilter.toArray());
         if (objects.length > 0) {
             List<DynamicObject> collect = objects[0].getDynamicObjectCollection("nckd_entryentity").stream()
-                    .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == groupId && t.getDynamicObject("nckd_org").getLong("id") == org.getLong("id"))
+                    .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == groupId && t.getDynamicObject("nckd_org") != null && t.getDynamicObject("nckd_org").getLong("id") == org.getLong("id"))
                     .collect(Collectors.toList());
             materialcategory = collect.get(0).getDynamicObject("nckd_materialcategory").getLong("id");
         } else {
             QFilter filter = new QFilter("nckd_entryentity.nckd_materialclassify", QCP.equals, groupId)
-                    .and("nckd_entryentity.nckd_org", QCP.is_null, null);
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialcategory", filter.toArray());
+                    .and("nckd_entryentity.nckd_org", QCP.equals, 0);
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialclassify,nckd_entryentity.nckd_materialcategory", filter.toArray());
             if (dynamicObjects.length > 0) {
                 List<DynamicObject> collect = dynamicObjects[0].getDynamicObjectCollection("nckd_entryentity").stream()
                         .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == groupId)
@@ -153,13 +153,14 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
 
         // 设置存货类别并提交审核
         if (materialcategory != null) {
-            QFilter qFilter1 = new QFilter("nckd_materialnumber", QCP.equals, material.getLong("id"))
+            QFilter qFilter1 = new QFilter("nckd_materialnumber", QCP.equals, material.getString("id"))
                     .and("org", QCP.equals, org.getLong("id"))
-                    .and("nckd_materialmaintunit", QCP.equals, "and")
+                    .and("nckd_materialmaintunit", QCP.equals, "add")
                     .and("nckd_documenttype", QCP.equals, "3");
             DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", qFilter1.toArray());
             if (dynamicObject != null) {
-                dynamicObject.set("nckd_group", materialcategory);
+                DynamicObject object = BusinessDataServiceHelper.loadSingle(materialcategory, "bd_materialcategory");
+                dynamicObject.set("nckd_group", object);
                 MaterialAttributeInformationUtils.processData(dynamicObject);
             }
         }
