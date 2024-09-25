@@ -58,7 +58,6 @@ public class BizdatabillFormPlugin extends AbstractFormPlugin {
     }
 
 
-
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         IDataModel model = this.getModel();
@@ -67,15 +66,14 @@ public class BizdatabillFormPlugin extends AbstractFormPlugin {
         int changeRowIndex = changeData.getRowIndex();
 
         String errMsg = null;
-        if ("jh004".equals(propertyName) || "jh038".equals(propertyName)) {
-            BizdatabillnewentryFormPlugin.autoGetProportion(model, changeRowIndex);
+        if ("jh004".equals(propertyName) || "jh038".equals(propertyName) || "jh037".equals(propertyName)) {
+            errMsg = BizdatabillnewentryFormPlugin.autoGetProportion(model, changeRowIndex);
         }
         if ("bizdate".equals(propertyName)) {
             errMsg = BizdatabillnewentryFormPlugin.autoGetCardinal(model, changeRowIndex);
         }
-
         if (errMsg != null) {
-            this.getView().showErrorNotification("注意：" + errMsg);
+            this.getView().showErrorNotification(String.format("注意：“业务数据”第%s行，%s", changeRowIndex + 1, errMsg));
         }
     }
 }

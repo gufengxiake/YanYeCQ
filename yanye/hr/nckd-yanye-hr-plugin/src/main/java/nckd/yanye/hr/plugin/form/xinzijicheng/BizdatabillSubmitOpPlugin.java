@@ -1,12 +1,12 @@
 package nckd.yanye.hr.plugin.form.xinzijicheng;
 
-import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.validate.AbstractValidator;
+import kd.bos.util.StringUtils;
 
 import java.util.List;
 
@@ -38,16 +38,12 @@ public class BizdatabillSubmitOpPlugin extends AbstractOperationServicePlugIn {
             public void validate() {
                 ExtendedDataEntity[] dataEntities = this.getDataEntities();
                 for (ExtendedDataEntity dataEntity : dataEntities) {
-                    boolean flag = false;
                     DynamicObjectCollection entryEntity = (DynamicObjectCollection) dataEntity.getValue("entryentity");
-                    for (DynamicObject entry : entryEntity) {
-                        String remark = entry.getString("remark");
-                        if (remark.contains("分配比例超限")) {
-                            flag = true;
-                        }
-                    }
+                    boolean flag = entryEntity.stream()
+                            .map(entry -> entry.getString("remark"))
+                            .anyMatch(remark -> !StringUtils.isEmpty(remark));
                     if (flag) {
-                        this.addErrorMessage(dataEntity, "分配比例超限，请检查分配比例是否正确！");
+                        this.addErrorMessage(dataEntity, "业务数据异常，请参照备注进行修改！");
                     }
                 }
             }

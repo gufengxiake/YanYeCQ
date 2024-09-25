@@ -3,7 +3,6 @@ package nckd.yanye.hr.plugin.form.xinzijicheng;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
-import kd.bos.entity.datamodel.events.AfterAddRowEventArgs;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.plugin.AbstractFormPlugin;
@@ -40,18 +39,6 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
     }
 
     @Override
-    public void afterAddRow(AfterAddRowEventArgs e) {
-        super.afterAddRow(e);
-        lockField();
-    }
-
-    @Override
-    public void afterCreateNewData(EventObject e) {
-        super.afterCreateNewData(e);
-        lockField();
-    }
-
-    @Override
     public void propertyChanged(PropertyChangedArgs e) {
         IDataModel model = this.getModel();
         String propertyName = e.getProperty().getName();
@@ -62,15 +49,14 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
         String isYear = this.getView().getParentView().getPageCache().get("isJH001");
         if ("true".equals(isYear)) {
             String errMsg = null;
-            if ("jh004".equals(propertyName) || "jh038".equals(propertyName)) {
-                autoGetProportion(model, changeRowIndex);
+            if ("jh004".equals(propertyName) || "jh038".equals(propertyName) || "jh037".equals(propertyName)) {
+                errMsg = autoGetProportion(model, changeRowIndex);
             }
             if ("bizdate".equals(propertyName)) {
                 errMsg = autoGetCardinal(model, changeRowIndex);
             }
-
             if (errMsg != null) {
-                this.getView().showErrorNotification("注意：" + errMsg);
+                this.getView().showErrorNotification(String.format("注意：“业务数据”第%s行，%s", changeRowIndex + 1, errMsg));
             }
         }
 
@@ -81,8 +67,9 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
      *
      * @param model
      * @param changeRowIndex
+     * @return
      */
-    public static void autoGetProportion(IDataModel model, int changeRowIndex) {
+    public static String autoGetProportion(IDataModel model, int changeRowIndex) {
         DynamicObjectCollection entryentity = model.getEntryEntity("entryentity");
         DynamicObject entry = entryentity.get(changeRowIndex);
         // 月度绩效
@@ -93,7 +80,7 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
             // 当月绩效工资基数
             jxgzjds = entry.getBigDecimal("JH038");
         } catch (Exception e) {
-            return;
+            return null;
         }
         if (ydjx != null && jxgzjds != null) {
             // 当月绩效工资分配比例：计算，=月度绩效/当月绩效工资基数
@@ -101,8 +88,10 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
             String errMsg = checkProportion(entry, jxgzfb);
             model.setValue("JH039", jxgzfb, changeRowIndex);
             model.setValue("remark", errMsg, changeRowIndex);
+            return errMsg;
         }
 
+        return null;
     }
 
     /**
@@ -116,7 +105,7 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
         // 当月绩效考核等级
         String level = entry.getString("JH037");
         if (StringUtils.isBlank(level)) {
-            return level;
+            return null;
         }
         // 获取所有任职经历Map <员工工号, 职级名称>
         DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
@@ -147,26 +136,40 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
         String userNumber = empposorgrel.getString("person.number");
 
         String zhiJi = jobExpMap.get(userNumber);
-        if (StringUtils.isBlank(zhiJi)) {
-            // todo 找不到职级信息
-            return level;
-        }
-        if ("员工".equals(zhiJi)) {
-            if ("良好".equals(level)) {
-                // 员工：比例必须大于等于1.1小于1.2
-                if (!(jxgzfb.compareTo(new BigDecimal("1.1")) >= 0 && jxgzfb.compareTo(new BigDecimal("1.2")) < 0)) {
-                    return "分配比例超限";
-                }
-            }
+        if (StringUtils.isEmpty(zhiJi)) {
+            return "找不到该人员的职级信息";
         }
 
-        if (!"员工".equals(zhiJi) && !"其他".equals(zhiJi)) {
-            if ("良好".equals(level)) {
-                // 中层：比例必须等于1.1
-                if (jxgzfb.compareTo(new BigDecimal("1.1")) != 0) {
-                    return "分配比例超限";
+        // 查出晶昊分配比例限制
+        DynamicObject ygLimit = BusinessDataServiceHelper.loadSingle(
+                "nckd_proplimits",
+                new QFilter[]{
+                        new QFilter("nckd_zhiji.fbasedataid.name", QCP.in, zhiJi),
+                        new QFilter("enable", QCP.equals, "1"),
                 }
-            }
+        );
+
+        if (ygLimit == null) {
+            return "找不到该人员对应的分配比例限制，请维护！";
+        }
+
+        // 找到对应等级的 分配比例限制
+        DynamicObjectCollection entryentity = ygLimit.getDynamicObjectCollection("nckd_entryentity");
+        DynamicObject result = entryentity.stream()
+                .filter(dynamicObject -> level.equals(dynamicObject.getString("nckd_perflevelhr.name")))
+                .findFirst()
+                .orElse(null);
+        if (result == null) {
+            return String.format("该人员对应的分配比例限制中找不到绩效等级为“%s”的数据，请维护！", level);
+        }
+        // 最低限制（大于等于）
+        BigDecimal minLimit = result.getBigDecimal("nckd_minlimit");
+        // 最大限制（小于）
+        BigDecimal maxLimit = result.getBigDecimal("nckd_maxlimit");
+
+        // 比例校验
+        if (!(jxgzfb.compareTo(minLimit) >= 0 && jxgzfb.compareTo(maxLimit) < 0)) {
+            return "分配比例超限";
         }
         return null;
     }
