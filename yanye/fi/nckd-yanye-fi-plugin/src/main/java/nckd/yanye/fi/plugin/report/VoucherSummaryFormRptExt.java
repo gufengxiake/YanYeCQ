@@ -14,7 +14,13 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.QueryServiceHelper;
 
-
+/**
+ * Module           :财务云-总账-凭证汇总
+ * Description      :凭证汇总表报表插件
+ * nckd_gl_vouchersummar_ext
+ * @author : yaosijie
+ * @date : 2024/9/25
+ */
 public class VoucherSummaryFormRptExt extends AbstractReportFormPlugin {
 	@Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {

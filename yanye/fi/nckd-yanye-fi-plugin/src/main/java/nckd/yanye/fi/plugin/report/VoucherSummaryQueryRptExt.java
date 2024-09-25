@@ -12,7 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+/**
+ * Module           :财务云-总账-凭证汇总
+ * Description      :凭证汇总表报表插件
+ * nckd_gl_vouchersummar_ext
+ * @author : yaosijie
+ * @date : 2024/9/25
+ */
 public class VoucherSummaryQueryRptExt extends AbstractReportListDataPluginExt {
 
     @Override
