@@ -44,6 +44,29 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
     }
 
     @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+
+        String propName = e.getProperty().getName();
+        //订货渠道
+        if("orderchannelid".equalsIgnoreCase(propName)){
+            DynamicObject orderchannel= (DynamicObject) e.getChangeSet()[0].getNewValue();
+            DynamicObject psy=null;
+            if(orderchannel!=null){
+                //销售片区
+                DynamicObject pq=orderchannel.getDynamicObject("nckd_regiongroup");
+                if(pq!=null){
+                    Object pqId=pq.getPkValue();
+                    DynamicObject pqData=BusinessDataServiceHelper.loadSingle(pqId,"nckd_regiongroup");
+                    //配送员
+                    psy=pqData.getDynamicObject("nckd_deliveryman");
+
+                }
+            }
+            this.getModel().setValue("nckd_deliveryman",psy);
+        }
+    }
+
+    @Override
     public void beforeF7Select(BeforeF7SelectEvent evt) {
         String name = evt.getProperty().getName();
         if (name.equalsIgnoreCase("nckd_operatorgroup")) {

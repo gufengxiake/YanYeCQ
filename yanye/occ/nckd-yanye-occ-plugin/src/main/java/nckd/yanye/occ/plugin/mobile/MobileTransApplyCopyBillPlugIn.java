@@ -157,6 +157,8 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         String ys = this.getModel().getValue("nckd_cartype") != null ? this.getModel().getValue("nckd_cartype").toString() : null;
         //物料
         DynamicObject material = (DynamicObject) this.getModel().getValue("nckd_material");
+        //计量单位
+        DynamicObject unit = (DynamicObject) this.getModel().getValue("nckd_unit");
         //数量
         Object qty = this.getModel().getValue("nckd_qty");
         //调出仓库
@@ -207,6 +209,7 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         mode.batchCreateNewEntryRow("billentry", 1);
         int row = 0;
         mode.setValue("material", material, row);
+        mode.setValue("unit", unit, row);
         mode.setValue("qty", qty, row);
         mode.setValue("warehouse", warehouse, row);
         mode.setValue("inwarehouse", inwarehouse, row);

@@ -328,6 +328,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
         int row = 0;
         for (DynamicObject entryRow : entry) {
             mode.setValue("material", entryRow.getDynamicObject("material"), row);
+            mode.setValue("unit",entryRow.getDynamicObject("unit"),row);
             mode.setValue("qty", entryRow.getBigDecimal("qty"), row);
             mode.setValue("outwarehouse", entryRow.getDynamicObject("outwarehouse"), row);
             mode.setValue("warehouse", entryRow.getDynamicObject("warehouse"), row);
