@@ -187,7 +187,11 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
             signCard.set("org", attFileMap.get(clockInfo.getString("workNum")).get("org"));
 
             // 打卡时间
-            signCard.set("signpoint", clockInfo.getString("clockInTime"));
+            Date clockInTime = clockInfo.getDate("clockInTime");
+            signCard.set("signpoint", clockInTime);
+
+            // 打卡具体时间-0时区(打卡事件-8小时)
+            signCard.set("signpointutc", clockInTime.getTime() - 8 * 60 * 60 * 1000);
 
             // 打卡地点
             signCard.set("nckd_position", clockInfo.getString("positionName"));
