@@ -172,7 +172,7 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
         MobileSearch search = (MobileSearch)this.getControl("ordersearch");
         String searchText = search.getText();
         if (searchText != null && !"".equals(searchText.trim())) {
-            filter = filter.and(QMatches.ftlike(new String[]{searchText}, new String[]{"billno,itementry.itemid.name,itementry.itemid.number"}));
+            filter = filter.and(QMatches.ftlike(new String[]{searchText}, new String[]{"billno,itementry.itemid.name,itementry.itemid.number,nckd_salerid.operatorname"}));
         }
 
         this.setDateFilter(filter);

@@ -262,7 +262,7 @@ public class yingcaichengCallBackApiPlugin implements Serializable {
                 // 税率
                 addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_TAXRATE, item.getBigDecimal("offerTaxRate").divide(new BigDecimal(100), RoundingMode.HALF_UP));
                 // 价税合计
-                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, offerPrice.multiply(item.getBigDecimal("awardNum")));
+                addNew.set(InforeceivebillConst.ENTRYENTITY_NCKD_AMOUNTANDTAX, offerPrice.multiply(item.getBigDecimal("awardNum")).divide(new BigDecimal(100), RoundingMode.HALF_UP));
             }
         }
         // 查看供应商是否存在

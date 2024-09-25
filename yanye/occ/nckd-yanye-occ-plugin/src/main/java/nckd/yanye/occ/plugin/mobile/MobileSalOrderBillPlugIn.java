@@ -6,6 +6,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.FieldEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.BillList;
@@ -75,6 +76,13 @@ public class MobileSalOrderBillPlugIn extends OcbaseFormMobPlugin implements Bef
     @Override
     public void afterCreateNewData(EventObject e) {
         //super.afterCreateNewData(e);
+        String home= this.getView().getParentView().getParentView().getFormShowParameter().getFormId();
+        //父页面为经销商门户主页
+        if("ocdma_homeindex".equals(home)){
+            //单据类型默认
+            this.getModel().setItemValueByNumber("nckd_billtype","ocbsoc_saleorder_BT001");
+        }
+
         DynamicObject orderchannelid= (DynamicObject) this.getModel().getValue("orderchannelid");
         if(orderchannelid!=null){
             //纳税人类型
@@ -142,6 +150,21 @@ public class MobileSalOrderBillPlugIn extends OcbaseFormMobPlugin implements Bef
         }
 
     }
+    @Override
+    public void afterBindData(EventObject e) {
+        super.afterBindData(e);
+        String home= this.getView().getParentView().getParentView().getFormShowParameter().getFormId();
+        //父页面为经销商门户主页
+        if("ocdma_homeindex".equals(home)){
+            //设置业务员非必录
+            this.getControl("lago_attachmentfield1");
+            //设置业务员不可见
+            BasedataEdit ywy =this.getControl("nckd_salerid");
+            ywy.setMustInput(false);
+            ywy.setVisible("",false);
+        }
+    }
+
 
     @Override
     public void afterDoOperation(AfterDoOperationEventArgs e) {

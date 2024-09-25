@@ -112,7 +112,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
         if (outdate_end != null) {
             saleOrder = saleOrder.filter("nckd_outdate <= to_date('" + outdate_end + "','yyyy-MM-dd hh:mm:ss')");
         }
-        return saleOrder.orderBy(saleOrder.getRowMeta().getFieldNames());
+        return saleOrder.orderBy(new String[]{"nckd_saleorgid","nckd_orderdate","nckd_billno"});
     }
 
 

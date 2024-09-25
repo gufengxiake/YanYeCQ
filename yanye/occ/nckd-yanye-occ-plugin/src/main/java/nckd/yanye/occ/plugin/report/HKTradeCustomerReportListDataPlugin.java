@@ -133,23 +133,13 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
 //        ReportColumn nckd_materialgroup = createReportColumn("nckd_materialgroup", ReportColumn.TYPE_TEXT, "分类");
-        ReportColumn sumxbybaseqty = createReportColumn("sumxbybaseqty", ReportColumn.TYPE_DECIMAL, "小包盐销量");
-        ReportColumn sumxbyamountandtax = createReportColumn("sumxbyamountandtax", ReportColumn.TYPE_DECIMAL, "小包交易金额");
-        ReportColumn sumsjybaseqty = createReportColumn("sumsjybaseqty", ReportColumn.TYPE_DECIMAL, "深井盐销量");
-        ReportColumn sumsjyamountandtax = createReportColumn("sumsjyamountandtax", ReportColumn.TYPE_DECIMAL, "深井盐交易金额");
-        ReportColumn sjyavgprice = createReportColumn("sjyavgprice", ReportColumn.TYPE_DECIMAL, "深井盐均价");
-        ReportColumn sumfyamountandtax = createReportColumn("sumfyamountandtax", ReportColumn.TYPE_DECIMAL, "非盐交易金额");
-        ReportColumn sumdbybaseqty = createReportColumn("sumdbybaseqty", ReportColumn.TYPE_DECIMAL, "大包盐销量");
-
-//        columns.add(nckd_materialgroup);
-        columns.add(sumxbybaseqty);
-        columns.add(sumxbyamountandtax);
-        columns.add(sumsjybaseqty);
-        columns.add(sumsjyamountandtax);
-        columns.add(sjyavgprice);
-        columns.add(sumfyamountandtax);
-        columns.add(sumdbybaseqty);
-
+        columns.add(createReportColumn("sumxbybaseqty", ReportColumn.TYPE_DECIMAL, "小包盐销量"));
+        columns.add(createReportColumn("sumxbyamountandtax", ReportColumn.TYPE_DECIMAL, "小包交易金额"));
+        columns.add(createReportColumn("sumsjybaseqty", ReportColumn.TYPE_DECIMAL, "深井盐销量"));
+        columns.add(createReportColumn("sumsjyamountandtax", ReportColumn.TYPE_DECIMAL, "深井盐交易金额"));
+        columns.add(createReportColumn("sjyavgprice", ReportColumn.TYPE_DECIMAL, "深井盐均价"));
+        columns.add(createReportColumn("sumfyamountandtax", ReportColumn.TYPE_DECIMAL, "非盐交易金额"));
+        columns.add(createReportColumn("sumdbybaseqty", ReportColumn.TYPE_DECIMAL, "大包盐销量"));
 
         return columns;
     }

@@ -13,6 +13,11 @@ import kd.bos.servicehelper.QueryServiceHelper;
 
 import java.util.HashSet;
 
+/**
+ * 销售出库单反审核校验采购订单是否已下推收货
+ * 表单标识：nckd_im_saloutbill_ext
+ * author:吴国强 2024-09-12
+ */
 public class SalOutUnditCheckOperatePlugIn extends AbstractOperationServicePlugIn {
     /**
      * 操作执行前，准备加载单据数据之前，触发此事件

@@ -24,6 +24,9 @@ public class FreightSettlementReportFormPlugin extends AbstractReportFormPlugin 
         Long curLoginOrg = RequestContext.get().getOrgId();
         //给组织默认值
         filter.addFilterItem("nckd_org_q", curLoginOrg);
+        //默认供应商
+        filter.addFilterItem("nckd_freightclass_q","bd_supplier");
+
     }
 
     @Override

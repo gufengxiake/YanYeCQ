@@ -8,8 +8,10 @@ import kd.bos.form.MobileFormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.Label;
+import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.helper.CUserHelper;
 import kd.occ.ocbase.common.status.Status;
 import kd.occ.ocbase.common.util.CommonUtils;
@@ -19,6 +21,7 @@ import kd.occ.ocsaa.formplugin.OcsaaFormMobPlugin;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 
 /*
@@ -36,11 +39,16 @@ public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
         super.afterCreateNewData(e);
         //获取不同状态订单的数量
         this.initSaleOrderCount();
+        //获取拜访数据
+        this.initBf();
     }
 
     public void propertyChanged(PropertyChangedArgs e) {
         if (e.getProperty().getName().equals("nckd_dateselect")) {
             this.initSaleOrderCount();
+        } else if (e.getProperty().getName().equals("nckd_bfdateselect")) {
+            //获取拜访数据
+            this.initBf();
         }
         super.propertyChanged(e);
     }
@@ -178,6 +186,57 @@ public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
         }
     }
 
+    private void initBf() {
+        //获取当前用户
+        Long currentUserId = UserServiceHelper.getCurrentUserId();
+        //查询拜访目标--开始
+        String month = String.format("%02d", LocalDateTime.now().getMonthValue());
+        QFilter tragetFilter = new QFilter("nckd_flow_user", QCP.equals, currentUserId)
+                .and("nckd_obj_year", ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().with(TemporalAdjusters.firstDayOfYear()))))
+                .and("nckd_month", "=", month);
+        DynamicObjectCollection tragetInfoList = QueryServiceHelper.query("nckd_bf_target", "nckd_trage", tragetFilter.toArray());
+        int tragetCount = 0;
+        if (tragetInfoList != null && !tragetInfoList.isEmpty()) {
+            for (DynamicObject tragetInfo : tragetInfoList) {
+                tragetCount += tragetInfo.getInt("nckd_trage");
+            }
+        }
+        //设置标签名称 显示对应数量
+        Label traget = (Label) this.getControl("nckd_traget");
+        traget.setText(String.valueOf(tragetCount));
+        this.getView().getPageCache().put("traget", String.valueOf(traget));
+        //查询拜访目标--结束
+
+
+        //查询拜访记录--开始
+        String selectFields = "id";
+        QFilter filter = new QFilter("hmua_principal.id", QCP.equals, currentUserId)
+                .and("billstatus", "=", "B");
+        this.setBfDateFilter(filter, "hmua_bf_date");
+        DynamicObjectCollection orderInfoList = QueryServiceHelper.query("hmua_sfa_bf_record", selectFields, filter.toArray());
+        int all = 0;
+        if (orderInfoList != null && !orderInfoList.isEmpty()) {
+            all = orderInfoList.size();
+        }
+        //设置标签名称 显示对应数量
+        Label channelorder = (Label) this.getControl("nckd_jh");
+        channelorder.setText(String.valueOf(all));
+        this.getView().getPageCache().put("jh", String.valueOf(all));
+        //查询拜访记录--结束
+
+        //完成率
+        if(tragetCount!=0){
+            double result = (double) all / tragetCount * 100;
+            String formattedResult = String.format("%.2f%%", result);
+            //设置标签名称 显示对应数量
+            Label rate = (Label) this.getControl("nckd_rate");
+            rate.setText(String.valueOf(formattedResult));
+            //this.getView().getPageCache().put("jh", String.valueOf(all));
+        }
+
+
+    }
+
     //日期过滤
     private void setDateFilter(QFilter filter) {
         Object orderDateSpan = this.getValue("nckd_dateselect");
@@ -211,6 +270,43 @@ public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
             default:
                 filter.and("orderdate", ">=", DateUtil.getDayFirst(DateUtil.getNowDate()));
                 filter.and("orderdate", "<", DateUtil.getDayLast(DateUtil.getNowDate()));
+        }
+
+
+    }
+
+    private void setBfDateFilter(QFilter filter, String dateFile) {
+        Object orderDateSpan = this.getValue("nckd_bfdateselect");
+        String selectDate = "F";
+        if (!CommonUtils.isNull(orderDateSpan)) {
+            selectDate = orderDateSpan.toString();
+        }
+        switch (selectDate) {
+            case "A"://最近七天
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().minusDays(6L))));
+                break;
+            case "B"://本月
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.getFirstDayOfMonth()));
+                break;
+            case "C"://过去三个月
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().minusDays(90L))));
+                break;
+            case "D"://前天
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().minusDays(2L))));
+                filter.and(dateFile, "<", DateUtil.getDayLast(DateUtil.asDate(LocalDateTime.now().minusDays(2L))));
+                break;
+            case "E"://昨天
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().minusDays(1L))));
+                filter.and(dateFile, "<", DateUtil.getDayLast(DateUtil.asDate(LocalDateTime.now().minusDays(1L))));
+                break;
+            case "G"://明天
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.asDate(LocalDateTime.now().plusDays(1L))));
+                filter.and(dateFile, "<", DateUtil.getDayLast(DateUtil.asDate(LocalDateTime.now().plusDays(1L))));
+                break;
+            case "F"://今天
+            default:
+                filter.and(dateFile, ">=", DateUtil.getDayFirst(DateUtil.getNowDate()));
+                filter.and(dateFile, "<", DateUtil.getDayLast(DateUtil.getNowDate()));
         }
 
 

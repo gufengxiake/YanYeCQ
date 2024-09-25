@@ -46,7 +46,7 @@ public class PurcontractbillSubmitOpPlugin extends AbstractOperationServicePlugI
                     if (totalallamount == null) {
                         continue;
                     }
-                    if (!totalprice.equals(totalallamount)) {
+                    if (totalprice.compareTo(totalallamount) != 0) {
                         this.addErrorMessage(dataEntity, "价税合计和招采成交价税合计不一致，不允许提交！");
                     }
                 }
