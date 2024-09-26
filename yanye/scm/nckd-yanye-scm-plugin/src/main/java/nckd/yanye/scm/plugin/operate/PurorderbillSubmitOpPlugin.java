@@ -374,8 +374,10 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                     //以下字段来源于采购合同
                     DynamicObject purcontractBillEntryDy = purcontractBillEntryMap.get(materialId);
                     // 带参数
-                    insertTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
-                    insertTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
+                    boolean result = insertTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
+                    if (result) {
+                        insertTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
+                    }
                 }
             }
         }
@@ -399,7 +401,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
     /**
      * 插入botp规则表
      */
-    private static void insertTBotpBilltracker(Object sbillid, Object tbillid) {
+    private static boolean insertTBotpBilltracker(Object sbillid, Object tbillid) {
         String botpSql = "INSERT INTO t_botp_billtracker (fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime) VALUES (?, ?, ?, ?, ?, ?);";
         Long fid = DBServiceHelper.genGlobalLongId();
         Long fstableid = 719529409035381761L;
@@ -407,6 +409,14 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         Long fttableid = 602924326097811460L;
         Long ftbillid = Convert.toLong(tbillid);
         Date fcreatetime = new Date();
-        DB.execute(DBRoute.basedata, botpSql, new Object[]{fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime});
+        //先判断有没有这个botp关系，有就不再添加
+        QFilter qFilter = new QFilter("stableid", QCP.equals, 719529409035381761L).and("sbillid", QCP.equals, sbillid)
+                .and("ttableid", QCP.equals, 602924326097811460L).and("tbillid", QCP.equals, tbillid);
+        DynamicObject botpBilltracker = BusinessDataServiceHelper.loadSingle("botp_billtracker", "id,stableid,sbillid,ttableid,tbillid,createtime", qFilter.toArray());
+        if (ObjectUtil.isNotEmpty(botpBilltracker)) {
+            return false;
+        }
+        boolean result = DB.execute(DBRoute.basedata, botpSql, new Object[]{fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime});
+        return result;
     }
 }
