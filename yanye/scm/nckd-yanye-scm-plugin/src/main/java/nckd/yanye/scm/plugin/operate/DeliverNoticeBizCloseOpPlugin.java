@@ -9,6 +9,7 @@ import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
 import org.apache.commons.lang3.StringUtils;
 
@@ -88,6 +89,8 @@ public class DeliverNoticeBizCloseOpPlugin extends AbstractOperationServicePlugI
             }
             String erpStatus = getErpStatus(resultMsg);
             if (!"0".equals(erpStatus)){
+                dataEntity.set("nckd_erpstatus", erpStatus);
+                SaveServiceHelper.update(dataEntity);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许关闭");
                 continue;

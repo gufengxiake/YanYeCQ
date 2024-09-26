@@ -17,13 +17,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 供应链-发货通知单删除操作插件
- * 表单标识：sm_delivernotice
+ * 供应链-调拨申请单删除操作插件
+ * 表单标识：im_transapply
  * author：xiaoxiaopeng
  * date：2024-09-26
  */
 
-public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn {
+public class TransApplyDeleteOpPlugin extends AbstractOperationServicePlugIn {
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

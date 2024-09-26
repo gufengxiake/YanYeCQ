@@ -17,13 +17,13 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 供应链-发货通知单删除操作插件
- * 表单标识：sm_delivernotice
+ * 供应链-调拨申请单关闭操作插件
+ * 表单标识：im_transapply
  * author：xiaoxiaopeng
  * date：2024-09-26
  */
 
-public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn {
+public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
@@ -51,7 +51,7 @@ public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn 
             String erpstatus = dataEntity.getString("nckd_erpstatus");
             if (StringUtils.isEmpty(erpstatus) || !"0".equals(erpstatus)) {
                 e.setCancel(true);
-                e.setCancelMessage("单据" + dataEntity.getString("billno") + "物流状态非未执行，不允许删除");
+                e.setCancelMessage("单据" + dataEntity.getString("billno") + "物流状态非未执行，不允许关闭");
                 continue;
             }
             //获取token
@@ -91,13 +91,13 @@ public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn 
                 dataEntity.set("nckd_erpstatus", erpStatus);
                 SaveServiceHelper.update(dataEntity);
                 e.setCancel(true);
-                e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许删除");
+                e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许关闭");
                 continue;
             }
             JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/Dispatch/EndSaleBill", bodyJson, accessToken);
             if (deResult != null && "1".equals(deResult.get("errCode").toString())){
                 e.setCancel(true);
-                e.setCancelMessage("单据" + dataEntity.getString("billno") + "删除派车单失败，不允许删除");
+                e.setCancelMessage("单据" + dataEntity.getString("billno") + "删除派车单失败，不允许关闭");
             }else if (result == null) {
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "接口调用失败，请稍后再试");
