@@ -23,7 +23,7 @@ public class DeliverNoticeListPlugin extends AbstractListPlugin {
         super.afterDoOperation(e);
         ListSelectedRowCollection selectedRows = this.getSelectedRows();
         String key = e.getOperateKey();
-        if ("submit".equals(key)) {
+        if ("audit".equals(key)) {
             OperationResult operationResult = e.getOperationResult();
             if (operationResult.isSuccess()){
                 for (ListSelectedRow row : selectedRows) {
