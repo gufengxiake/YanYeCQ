@@ -29,7 +29,6 @@ public class BizdatabillFormPlugin extends AbstractFormPlugin {
         String itemNumber = item.getString("number");
         if ("jh001".equals(itemNumber)) {
             BizdatabillnewentryFormPlugin.lockField(this.getModel(), this.getView());
-            this.getView().updateView();
         }
     }
 
