@@ -114,6 +114,8 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         for (String billType : list) {
             DynamicObject materialmaintenanObject = BusinessDataServiceHelper.newDynamicObject("nckd_materialmaintenan");
             /**制单信息**/
+            materialmaintenanObject.set("nckd_sourceid", object.getLong("id"));//源单id
+            materialmaintenanObject.set("nckd_sourcenumber", object.getString("billno"));//源单编码
             materialmaintenanObject.set("creator", RequestContext.get().getCurrUserId());
             materialmaintenanObject.set("createtime", new Date());
             materialmaintenanObject.set("modifier", RequestContext.get().getCurrUserId());
