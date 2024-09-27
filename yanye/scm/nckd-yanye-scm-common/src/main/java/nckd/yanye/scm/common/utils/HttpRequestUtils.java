@@ -1,6 +1,12 @@
 package nckd.yanye.scm.common.utils;
 
 import com.alibaba.fastjson.JSONObject;
+import kd.bos.dataentity.OperateOption;
+import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.config.RequestConfig;
@@ -85,5 +91,22 @@ public class HttpRequestUtils {
             logger.error("post请求提交失败:" + url, e);
         }
         return jsonResult;
+    }
+
+
+    public static void setGeneralLog(Map<String,Object> map){
+        DynamicObject generalLog = BusinessDataServiceHelper.newDynamicObject("nckd_general_log");
+        generalLog.set("number", map.get("number"));
+        generalLog.set("name", map.get("name"));
+        generalLog.set("creator", map.get("creator"));
+        generalLog.set("nckd_system", map.get("nckd_system"));
+        generalLog.set("nckd_interfaceurl", map.get("nckd_interfaceurl"));
+        generalLog.set("createtime", map.get("createtime"));
+        generalLog.set("nckd_parameter", map.get("nckd_parameter"));
+        generalLog.set("nckd_returnparameter", map.get("nckd_returnparameter"));
+        generalLog.set("status", "C");
+        generalLog.set("enable", "1");
+
+        OperationServiceHelper.executeOperate("save", map.get("number").toString(), new DynamicObject[]{generalLog}, OperateOption.create());
     }
 }
