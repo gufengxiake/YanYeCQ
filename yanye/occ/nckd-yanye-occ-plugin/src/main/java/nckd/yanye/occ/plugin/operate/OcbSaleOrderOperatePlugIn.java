@@ -46,6 +46,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
         e.getFieldKeys().add("sub_warehouseid");//
         e.getFieldKeys().add("nckd_autosign");//自动签收
         e.getFieldKeys().add("itemid");//商品
+        e.getFieldKeys().add("orderchannelid");//订货渠道
     }
 
     /**
@@ -132,7 +133,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             //携带仓库信息---结束
 
             //设置是否发货记录自动签收--开始
-            this.setAutoSign(dataEntity);
+            //this.setAutoSign(dataEntity);
             //设置是否发货记录自动签收--结束
 
             //SaveServiceHelper.update(dataEntity);
@@ -153,7 +154,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
             //联系人电话
             String contactphone = orderchannelid.getString("contactphone");
             for (DynamicObject itemEntryRow : itemEntry) {
-                if (itemEntryRow.get("entryaddressid")==null) {
+                if (itemEntryRow.get("entryaddressid") == null) {
                     itemEntryRow.set("entryaddressid", area);
                 }
                 if (Objects.equals(itemEntryRow.get("entrydetailaddress").toString(), "")) {
@@ -193,23 +194,70 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
     private void setStock(DynamicObject dataEntity) {
         DynamicObject billType = dataEntity.getDynamicObject("billtypeid");//单据类型
         if (billType != null) {
-            String name = billType.getString("name");
-            Object id = billType.getPkValue();
-            if (name.equalsIgnoreCase("车销订单") || id.toString().equalsIgnoreCase("100000")) {
-                //车销订单默认仓库，为当前组织指定的默认借货仓
-                DynamicObject org = dataEntity.getDynamicObject("saleorgid");
-                Object orgId = org.getPkValue();
+            String number = billType.getString("number");
+            //Object id = billType.getPkValue();
+
+            // 赊销订单、访销订单、自提订单 按部门设置对应仓库
+            DynamicObject org = dataEntity.getDynamicObject("saleorgid");
+            Object orgId = org.getPkValue();
+            //销售部门
+            DynamicObject dept = dataEntity.getDynamicObject("departmentid");
+            if (dept != null) {
+                Object deptId = dept.getPkValue();
+
+                //从部门 仓库设置基础资料中获取对应仓库
                 // 构造QFilter
                 QFilter qFilter = new QFilter("createorg", QCP.equals, orgId)
                         .and("status", QCP.equals, "C")
-                        .and("nckd_isjh", QCP.equals, "1");
+                        .and("nckd_bm", QCP.equals, deptId);
 
-                //查找借货仓
-                DynamicObjectCollection collections = QueryServiceHelper.query("bd_warehouse",
-                        "id,number", qFilter.toArray(), "audittime");
+                boolean pqSelect=false;
+                //订货渠道
+                DynamicObject orderchannelid = dataEntity.getDynamicObject("orderchannelid");
+                if (orderchannelid != null) {
+                    //销售片区
+                    DynamicObject pq=orderchannelid.getDynamicObject("nckd_regiongroup");
+                    if(pq!=null){
+                        Object pqPkId=pq.getPkValue();
+                        qFilter.and("nckd_regiongroup",QCP.equals,pqPkId);
+                        pqSelect=true;
+                    }
+                }
+                //车销订单
+                if(number.equalsIgnoreCase("ocbsoc_saleorder_sys001")){
+                    qFilter.and("nckd_isjh",QCP.equals,"1");//借货仓
+                }else {
+                    qFilter.and("nckd_isjh",QCP.equals,"0");//借货仓
+                }
+                //查找部门对应仓库
+                DynamicObjectCollection collections = QueryServiceHelper.query("nckd_bmcksz",
+                        "id,nckd_ck.id stockId", qFilter.toArray(), "modifytime");
+                String stockId="";
                 if (!collections.isEmpty()) {
                     DynamicObject stockItem = collections.get(0);
-                    String stockId = stockItem.getString("id");
+                     stockId = stockItem.getString("stockId");
+
+                }else if(pqSelect){
+                    // 构造QFilter
+                    QFilter nFilter = new QFilter("createorg", QCP.equals, orgId)
+                            .and("status", QCP.equals, "C")
+                            .and("nckd_bm", QCP.equals, deptId);
+                    //车销订单
+                    if(number.equalsIgnoreCase("ocbsoc_saleorder_sys001")){
+                        nFilter.and("nckd_isjh",QCP.equals,"1");//借货仓
+                    }else {
+                        qFilter.and("nckd_isjh",QCP.equals,"0");//借货仓
+                    }
+                    //查找部门对应仓库
+                    DynamicObjectCollection query = QueryServiceHelper.query("nckd_bmcksz",
+                            "id,nckd_ck.id stockId", nFilter.toArray(), "modifytime");
+                    if (!query.isEmpty()) {
+                        DynamicObject stockItem = query.get(0);
+                         stockId = stockItem.getString("stockId");
+                    }
+
+                }
+                if(stockId!=""){
                     DynamicObject stock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
                     DynamicObjectCollection plane_entry = dataEntity.getDynamicObjectCollection("plane_entry");
                     for (DynamicObject planRow : plane_entry) {
@@ -224,57 +272,23 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                     }
                 }
 
-            } else if (name.equalsIgnoreCase("赊销订单") || name.equalsIgnoreCase("访销订单") || name.equalsIgnoreCase("自提订单")) {
-                // 赊销订单、访销订单、自提订单 按部门设置对应仓库
-                DynamicObject org = dataEntity.getDynamicObject("saleorgid");
-                Object orgId = org.getPkValue();
-                //销售部门
-                DynamicObject dept = dataEntity.getDynamicObject("departmentid");
-                if (dept != null) {
-                    Object deptId = dept.getPkValue();
-
-                    //从部门 仓库设置基础资料中获取对应仓库
-                    // 构造QFilter
-                    QFilter qFilter = new QFilter("createorg", QCP.equals, orgId)
-                            .and("status", QCP.equals, "C")
-                            .and("nckd_bm", QCP.equals, deptId);
-
-                    //查找部门对应仓库
-                    DynamicObjectCollection collections = QueryServiceHelper.query("nckd_bmcksz",
-                            "id,nckd_ck.id stockId", qFilter.toArray(), "modifytime");
-                    if (!collections.isEmpty()) {
-                        DynamicObject stockItem = collections.get(0);
-                        String stockId = stockItem.getString("stockId");
-                        DynamicObject stock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
-                        DynamicObjectCollection plane_entry = dataEntity.getDynamicObjectCollection("plane_entry");
-                        for (DynamicObject planRow : plane_entry) {
-                            planRow.set("sub_warehouseid1", stock);
-                        }
-                        DynamicObjectCollection itementry = dataEntity.getDynamicObjectCollection("itementry");
-                        for (DynamicObject itemObj : itementry) {
-                            DynamicObjectCollection subentryentity = itemObj.getDynamicObjectCollection("subentryentity");
-                            for (DynamicObject sub : subentryentity) {
-                                sub.set("sub_warehouseid", stock);
-                            }
-                        }
-                    }
-                }
             }
+
         }
     }
 
-    private void setAutoSign(DynamicObject dataEntity) {
-        DynamicObject billType = dataEntity.getDynamicObject("billtypeid");//单据类型
-        if (billType != null) {
-            String name = billType.getString("name");
-            Object id = billType.getPkValue();
-            if ("车销订单".equalsIgnoreCase(name) || "自提订单".equalsIgnoreCase(name) || "企业寄售订单".equalsIgnoreCase(name)) {
-                dataEntity.set("nckd_autosign", true);
-            } else {
-                dataEntity.set("nckd_autosign", false);
-            }
-        }
-    }
+//    private void setAutoSign(DynamicObject dataEntity) {
+//        DynamicObject billType = dataEntity.getDynamicObject("billtypeid");//单据类型
+//        if (billType != null) {
+//            String name = billType.getString("name");
+//            Object id = billType.getPkValue();
+//            if ("车销订单".equalsIgnoreCase(name) || "自提订单".equalsIgnoreCase(name) || "企业寄售订单".equalsIgnoreCase(name)) {
+//                dataEntity.set("nckd_autosign", true);
+//            } else {
+//                dataEntity.set("nckd_autosign", false);
+//            }
+//        }
+//    }
 
 
 }

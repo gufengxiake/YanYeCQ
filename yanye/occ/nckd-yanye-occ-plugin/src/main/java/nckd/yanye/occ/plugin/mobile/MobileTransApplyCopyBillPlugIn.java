@@ -167,64 +167,70 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         DynamicObject inwarehouse = (DynamicObject) this.getModel().getValue("nckd_inwarehouse");
 
         //是否集装箱
-        String iscontainer=this.getModel().getValue("nckd_iscontainer").toString();
+        String iscontainer = this.getModel().getValue("nckd_iscontainer").toString();
         //业务类型
-        String biztype1=this.getModel().getValue("nckd_biztype1").toString();
+        String biztype1 = this.getModel().getValue("nckd_biztype1").toString();
+        IFormView formView = null;
+        try {
+            MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
+            String appId = getAppId(targetBill, dt);
+            // 设置单据显示参数
+            BillShowParameter para = new BillShowParameter();
+            para.setFormId(targetBill);
+            para.setPkId(0);
+            para.setAppId(appId);
+
+            // 创建单据配置
+            FormConfigFactory.createConfigInCurrentAppService(para);
+            // 获取单据页面视图
+            final SessionManager sm = SessionManager.getCurrent();
+            formView = sm.getView(para.getPageId());
+            if (formView != null) {
+                // 设置视图应用id和数据模型
+                formView.getFormShowParameter().setAppId(appId);
+                formView.getModel().createNewData();
+                //formView.updateView();
+            }
+            BillModel mode = (BillModel) formView.getModel();
+            mode.setPKValue(pkId);
+            if (pkId > 0) {
+                mode.load(pkId);
+            }
+
+            mode.setValue("org", org);
+            mode.setValue("billtype", billtype);
+            mode.setValue("nckd_combofield", jsType);
+            mode.setValue("nckd_applyuser", supplier);
+            mode.setValue("nckd_dirver", nckd_dirver);
+            mode.setValue("nckd_car", nckd_car);
+            mode.setValue("nckd_cartype", ys);
+
+            mode.deleteEntryData("billentry");
+            mode.batchCreateNewEntryRow("billentry", 1);
+            int row = 0;
+            mode.setValue("material", material, row);
+            mode.setValue("unit", unit, row);
+            mode.setValue("qty", qty, row);
+            mode.setValue("warehouse", warehouse, row);
+            mode.setValue("inwarehouse", inwarehouse, row);
+            mode.setValue("nckd_biztype", biztype1);
+            mode.setValue("nckd_iscontainer", iscontainer);
 
 
-        MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
-        String appId = getAppId(targetBill, dt);
-        // 设置单据显示参数
-        BillShowParameter para = new BillShowParameter();
-        para.setFormId(targetBill);
-        para.setPkId(0);
-        para.setAppId(appId);
-
-        // 创建单据配置
-        FormConfigFactory.createConfigInCurrentAppService(para);
-        // 获取单据页面视图
-        final SessionManager sm = SessionManager.getCurrent();
-        final IFormView formView = sm.getView(para.getPageId());
-        if (formView != null) {
-            // 设置视图应用id和数据模型
-            formView.getFormShowParameter().setAppId(appId);
-            formView.getModel().createNewData();
-            //formView.updateView();
+            OperationResult saveOp = formView.invokeOperation("save");
+            if (saveOp.isSuccess()) {
+                formView.close();
+                Map<Object, String> billnos = saveOp.getBillNos();
+                Object Key = billnos.keySet().iterator().next();
+                String no = billnos.get(Key);
+                this.getModel().setValue("nckd_billno", no);
+            }
+        } finally {
+            if (formView != null) {
+                formView.close();
+            }
         }
-        BillModel mode = (BillModel) formView.getModel();
-        mode.setPKValue(pkId);
-        if (pkId > 0) {
-            mode.load(pkId);
-        }
 
-        mode.setValue("org", org);
-        mode.setValue("billtype", billtype);
-        mode.setValue("nckd_combofield", jsType);
-        mode.setValue("nckd_applyuser", supplier);
-        mode.setValue("nckd_dirver", nckd_dirver);
-        mode.setValue("nckd_car", nckd_car);
-        mode.setValue("nckd_cartype", ys);
-
-        mode.deleteEntryData("billentry");
-        mode.batchCreateNewEntryRow("billentry", 1);
-        int row = 0;
-        mode.setValue("material", material, row);
-        mode.setValue("unit", unit, row);
-        mode.setValue("qty", qty, row);
-        mode.setValue("warehouse", warehouse, row);
-        mode.setValue("inwarehouse", inwarehouse, row);
-        mode.setValue("nckd_biztype",biztype1);
-        mode.setValue("nckd_iscontainer",iscontainer);
-
-
-        OperationResult saveOp = formView.invokeOperation("save");
-        if (saveOp.isSuccess()) {
-            formView.close();
-            Map<Object, String> billnos = saveOp.getBillNos();
-            Object Key = billnos.keySet().iterator().next();
-            String no = billnos.get(Key);
-            this.getModel().setValue("nckd_billno", no);
-        }
 
     }
 
