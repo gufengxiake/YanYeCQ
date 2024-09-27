@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.operate;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
@@ -12,6 +13,7 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -55,37 +57,69 @@ public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn 
                 continue;
             }
             //获取token
+            JSONObject tokenjson = new JSONObject();
+            tokenjson.put("UserName","30001");
+            tokenjson.put("Password","123456");
+            tokenjson.put("grant_type","password");
+            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenjson,null);
+
             Map<String,Object> tokenMap = new HashMap<>();
-            tokenMap.put("UserName","30001");
-            tokenMap.put("Password","123456");
-            tokenMap.put("grant_type","password");
-            String tokenJson = JSON.toJSONString(tokenMap);//map转String
-            JSONObject tokenJsonObject = JSON.parseObject(tokenJson);//String转json
-            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenJsonObject,null);
+            tokenMap.put("number","sm_delivernotice");
+            tokenMap.put("name","发货通知单");
+            tokenMap.put("creator", RequestContext.get().getCurrUserId());
+            tokenMap.put("nckd_system", "zhwl");
+            tokenMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/token");
+            tokenMap.put("createtime", new Date());
+            tokenMap.put("nckd_parameter", tokenjson.toJSONString());
+
             if (resultToken == null){
+                tokenMap.put("nckd_returnparameter",null);
+                HttpRequestUtils.setGeneralLog(tokenMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "获取物流状态失败，请稍后再试");
                 continue;
             }
+            tokenMap.put("nckd_returnparameter",resultToken.toJSONString());
+            HttpRequestUtils.setGeneralLog(tokenMap);
+
             String accessToken = resultToken.getString("access_token");
             JSONObject bodyJson = new JSONObject();
             bodyJson.put("DeliveryOrderCode", dataEntity.getString("billno"));
             JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/Dispatch/GetSaleBillState", bodyJson, accessToken);
+
+            Map<String,Object> parmMap = new HashMap<>();
+            parmMap.put("number","sm_delivernotice");
+            parmMap.put("name","发货通知单");
+            parmMap.put("creator", RequestContext.get().getCurrUserId());
+            parmMap.put("nckd_system", "zhwl");
+            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/Dispatch/GetSaleBillState");
+            parmMap.put("createtime", new Date());
+            parmMap.put("nckd_parameter", bodyJson.toJSONString());
+
             if (result != null && "1".equals(result.get("errCode").toString())){
+                parmMap.put("nckd_returnparameter",result.toJSONString());
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "获取物流状态失败，请稍后再试");
                 continue;
             }else if (result == null){
+                parmMap.put("nckd_returnparameter",null);
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "获取物流状态失败，请稍后再试");
                 continue;
             }
             String resultMsg = result.getString("result");
             if (StringUtils.isEmpty(resultMsg)){
+                parmMap.put("nckd_returnparameter",result.toJSONString());
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "获取物流状态失败，请稍后再试");
                 continue;
             }
+            parmMap.put("nckd_returnparameter",result.toJSONString());
+            HttpRequestUtils.setGeneralLog(parmMap);
+
             String erpStatus = getErpStatus(resultMsg);
             if (!"0".equals(erpStatus)){
                 dataEntity.set("nckd_erpstatus", erpStatus);
@@ -95,13 +129,31 @@ public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn 
                 continue;
             }
             JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/Dispatch/EndSaleBill", bodyJson, accessToken);
+
+            Map<String,Object> deMap = new HashMap<>();
+            deMap.put("number","sm_delivernotice");
+            deMap.put("name","发货通知单");
+            deMap.put("creator", RequestContext.get().getCurrUserId());
+            deMap.put("nckd_system", "zhwl");
+            deMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/Dispatch/EndSaleBill");
+            deMap.put("createtime", new Date());
+            deMap.put("nckd_parameter", bodyJson.toJSONString());
+
             if (deResult != null && "1".equals(deResult.get("errCode").toString())){
+                parmMap.put("nckd_returnparameter",deResult.toJSONString());
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "删除派车单失败，不允许删除");
-            }else if (result == null) {
+                continue;
+            }else if (deResult == null) {
+                parmMap.put("nckd_returnparameter",null);
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancel(true);
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "接口调用失败，请稍后再试");
+                continue;
             }
+            parmMap.put("nckd_returnparameter",deResult.toJSONString());
+            HttpRequestUtils.setGeneralLog(parmMap);
         }
 
     }

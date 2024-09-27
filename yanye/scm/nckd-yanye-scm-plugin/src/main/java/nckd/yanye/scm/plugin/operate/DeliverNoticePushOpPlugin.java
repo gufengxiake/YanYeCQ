@@ -2,6 +2,7 @@ package nckd.yanye.scm.plugin.operate;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.ExtendedDataEntity;
@@ -144,31 +145,57 @@ public class DeliverNoticePushOpPlugin extends AbstractOperationServicePlugIn {
             map.put("MainUnit",unit.getString("name"));//计量单位
 
             //获取token
+            JSONObject tokenjson = new JSONObject();
+            tokenjson.put("UserName","30001");
+            tokenjson.put("Password","123456");
+            tokenjson.put("grant_type","password");
+            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenjson,null);
+
             Map<String,Object> tokenMap = new HashMap<>();
-            tokenMap.put("UserName","30001");
-            tokenMap.put("Password","123456");
-            tokenMap.put("grant_type","password");
-            String tokenJson = JSON.toJSONString(tokenMap);//map转String
-            JSONObject tokenJsonObject = JSON.parseObject(tokenJson);//String转json
-            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenJsonObject,null);
+            tokenMap.put("number","sm_delivernotice");
+            tokenMap.put("name","发货通知单");
+            tokenMap.put("creator", RequestContext.get().getCurrUserId());
+            tokenMap.put("nckd_system", "zhwl");
+            tokenMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/token");
+            tokenMap.put("createtime", new Date());
+            tokenMap.put("nckd_parameter", tokenjson.toJSONString());
             if (resultToken == null){
                 log.error("调用智慧物流接口失败{}",resultToken);
+                tokenMap.put("nckd_returnparameter",null);
+                HttpRequestUtils.setGeneralLog(tokenMap);
                 e.setCancelMessage("调用智慧物流接口失败");
                 e.setCancel(true);
                 return;
             }
+            tokenMap.put("nckd_returnparameter",resultToken.toJSONString());
+            HttpRequestUtils.setGeneralLog(tokenMap);
+
             Map<String, Object> resultMap = resultToken.getInnerMap();
             String accessToken = resultMap.get("access_token").toString();
 
             //推送发货通知单
             String json = JSON.toJSONString(map);//map转String
             JSONObject jsonObject = JSON.parseObject(json);//String转json
+
+            Map<String,Object> parmMap = new HashMap<>();
+            parmMap.put("number","sm_delivernotice");
+            parmMap.put("name","发货通知单");
+            parmMap.put("creator", RequestContext.get().getCurrUserId());
+            parmMap.put("nckd_system", "zhwl");
+            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/PushDelivery");
+            parmMap.put("createtime", new Date());
+            parmMap.put("nckd_parameter", jsonObject.toJSONString());
+
             JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/PushDelivery", jsonObject, accessToken);
             if (result != null && "1".equals(result.get("errCode").toString())){
+                parmMap.put("nckd_returnparameter",result.toJSONString());
+                HttpRequestUtils.setGeneralLog(parmMap);
                 e.setCancelMessage("推送智慧物流派车单失败：" + result.getString("errMsg"));
                 e.setCancel(true);
                 return;
             }
+            parmMap.put("nckd_returnparameter",result.toJSONString());
+            HttpRequestUtils.setGeneralLog(parmMap);
         }
     }
 
