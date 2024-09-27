@@ -181,7 +181,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         //维护类型
         if ("nckd_maintenancetype".equals(fieldKey)) {
             String maintenanceType = this.getModel().getValue("nckd_maintenancetype").toString();
-            String merchanttype = this.getModel().getValue("nckd_merchanttype").toString();
+            Object merchanttype = this.getModel().getValue("nckd_merchanttype");
             
             
             TextEdit maintenanceTypeEdit = this.getControl("nckd_addsupplier");
@@ -280,56 +280,56 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                     rateProp.setMustInput(true);
                 }
             }else {
-                maintenanceTypeEdit.setMustInput(false);
+                maintenanceTypeEdit.setMustInput(true);
                 maintenanceTypeProp.setMustInput(false);
 
-                changetypeEdit.setMustInput(false);
+                changetypeEdit.setMustInput(true);
                 changetypeProp.setMustInput(false);
-                groupEdit.setMustInput(false);
+                groupEdit.setMustInput(true);
                 groupProp.setMustInput(false);
-                societycreditcodeEdit.setMustInput(false);
+                societycreditcodeEdit.setMustInput(true);
                 societycreditcodeProp.setMustInput(false);
-                artificialpersonEdit.setMustInput(false);
+                artificialpersonEdit.setMustInput(true);
                 artificialpersonProp.setMustInput(false);
-                regcapitalEdit.setMustInput(false);
+                regcapitalEdit.setMustInput(true);
                 regcapitalProp.setMustInput(false);
-                basedatafieldEdit.setMustInput(false);
+                basedatafieldEdit.setMustInput(true);
                 basedatafieldProp.setMustInput(false);
-                linkmanEdit.setMustInput(false);
+                linkmanEdit.setMustInput(true);
                 linkmanProp.setMustInput(false);
-                phoneEdit.setMustInput(false);
+                phoneEdit.setMustInput(true);
                 phoneProp.setMustInput(false);
-                addressEdit.setMustInput(false);
+                addressEdit.setMustInput(true);
                 addressProp.setMustInput(false);
-                postalcodeEdit.setMustInput(false);
+                postalcodeEdit.setMustInput(true);
                 postalcodeProp.setMustInput(false);
-                riskEdit.setMustInput(false);
+                riskEdit.setMustInput(true);
                 riskProp.setMustInput(false);
-                bankaccountEdit.setMustInput(false);
+                bankaccountEdit.setMustInput(true);
                 bankaccountProp.setMustInput(false);
-                accountnameEdit.setMustInput(false);
+                accountnameEdit.setMustInput(true);
                 accountnameProp.setMustInput(false);
-                bankEdit.setMustInput(false);
+                bankEdit.setMustInput(true);
                 bankProp.setMustInput(false);
-                acceptingaccountEdit.setMustInput(false);
+                acceptingaccountEdit.setMustInput(true);
                 acceptingaccountProp.setMustInput(false);
-                acceptingbankEdit.setMustInput(false);
+                acceptingbankEdit.setMustInput(true);
                 acceptingbankProp.setMustInput(false);
-                currencyEdit.setMustInput(false);
+                currencyEdit.setMustInput(true);
                 currencyProp.setMustInput(false);
-                if ("supplier".equals(merchanttype)){
+                if (merchanttype != null && "supplier".equals(merchanttype.toString())){
                     licenseNumberEdit.setMustInput(false);
                     licenseNumberProp.setMustInput(false);
                     transportTypeEdit.setMustInput(false);
                     transportTypeProp.setMustInput(false);
                     rateEdit.setMustInput(false);
                     rateProp.setMustInput(false);
-                } else if ("carrier".equals(merchanttype)) {
-                    licenseNumberEdit.setMustInput(false);
+                } else if (merchanttype != null && "carrier".equals(merchanttype.toString())) {
+                    licenseNumberEdit.setMustInput(true);
                     licenseNumberProp.setMustInput(false);
-                    transportTypeEdit.setMustInput(false);
+                    transportTypeEdit.setMustInput(true);
                     transportTypeProp.setMustInput(false);
-                    rateEdit.setMustInput(false);
+                    rateEdit.setMustInput(true);
                     rateProp.setMustInput(false);
                 }
             }

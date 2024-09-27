@@ -213,7 +213,7 @@ public class MobileTransApplyCopyBillPlugIn extends AbstractMobFormPlugin {
         mode.setValue("qty", qty, row);
         mode.setValue("warehouse", warehouse, row);
         mode.setValue("inwarehouse", inwarehouse, row);
-        mode.setValue("nckd_biztype1",biztype1);
+        mode.setValue("nckd_biztype",biztype1);
         mode.setValue("nckd_iscontainer",iscontainer);
 
 

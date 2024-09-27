@@ -19,7 +19,7 @@ public class DeliverNoticeBillFromPlugin extends AbstractBillPlugIn {
     public void afterDoOperation(AfterDoOperationEventArgs e) {
         super.afterDoOperation(e);
         String key = e.getOperateKey();
-        if ("submit".equals(key)) {
+        if ("audit".equals(key)) {
             OperationResult operationResult = e.getOperationResult();
             if (operationResult.isSuccess()){
                 OperationResult pushzzwl = OperationServiceHelper.executeOperate("pushzzwl", "sm_delivernotice", new DynamicObject[]{this.getModel().getDataEntity()}, OperateOption.create());

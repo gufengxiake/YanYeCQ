@@ -18,8 +18,6 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
-import kd.bos.servicehelper.operation.SaveServiceHelper;
-import kd.bos.util.CollectionUtils;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 
 import java.util.*;
@@ -134,6 +132,8 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                     MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(material, org);
                 }
             });
+
+            this.getView().showSuccessNotification("操作成功");
         }
     }
 
