@@ -5,6 +5,10 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.form.IFormView;
+import kd.bos.form.control.EntryGrid;
+import kd.bos.form.control.events.CellClickEvent;
+import kd.bos.form.control.events.CellClickListener;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -27,14 +31,14 @@ import java.util.stream.Collectors;
  * @author ：luxiao
  * @since ：Created in 14:19 2024/9/23
  */
-public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
+public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin implements CellClickListener {
     @Override
     public void afterBindData(EventObject e) {
         super.afterBindData(e);
-        // 判断是否传了参数
+        // 锁定列
         String isYear = this.getView().getParentView().getPageCache().get("isJH001");
         if ("true".equals(isYear)) {
-            lockField();
+            lockField(this.getModel(), this.getView());
         }
     }
 
@@ -232,15 +236,40 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin {
     }
 
 
-    private void lockField() {
-        int rowCount = this.getModel().getEntryRowCount("entryentity");
+    public static void lockField(IDataModel model, IFormView view) {
+        int rowCount = model.getEntryRowCount("entryentity");
         for (int i = 0; i < rowCount; i++) {
-            // 锁定3个字段：当月绩效工资基数、当月绩效考核等级、绩效工资分配比例
-            this.getView().setEnable(false, i,
+            // 锁定3个字段：当月绩效工资基数、当月绩效考核等级、绩效工资分配比例、备注
+            view.setEnable(false, i,
                     "JH038",
 //                        "JH037",
-                    "JH039"
+                    "JH039",
+                    "remark"
             );
         }
+    }
+
+
+    @Override
+    public void registerListener(EventObject e) {
+        super.registerListener(e);
+
+        EntryGrid entryGrid = this.getView().getControl("entryentity");
+        entryGrid.addCellClickListener(this);
+    }
+
+    @Override
+    public void cellClick(CellClickEvent cellClickEvent) {
+        String fieldKey = cellClickEvent.getFieldKey();
+        // 锁定列
+        String isYear = this.getView().getParentView().getPageCache().get("isJH001");
+        if ("true".equals(isYear)) {
+            lockField(this.getModel(), this.getView());
+        }
+    }
+
+    @Override
+    public void cellDoubleClick(CellClickEvent cellClickEvent) {
+
     }
 }

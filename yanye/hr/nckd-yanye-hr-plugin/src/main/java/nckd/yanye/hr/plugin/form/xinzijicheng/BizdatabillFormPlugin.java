@@ -5,8 +5,8 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.form.events.LoadCustomControlMetasArgs;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.form.plugin.AbstractFormPlugin;
 
@@ -28,15 +28,8 @@ public class BizdatabillFormPlugin extends AbstractFormPlugin {
         DynamicObject item = (DynamicObject) this.getModel().getValue("bizitemgroup");
         String itemNumber = item.getString("number");
         if ("jh001".equals(itemNumber)) {
-            int rowCount = this.getModel().getEntryRowCount("entryentity");
-            for (int i = 0; i < rowCount; i++) {
-                // 锁定3个字段：当月绩效工资基数、当月绩效考核等级、绩效工资分配比例
-                this.getView().setEnable(false, i,
-                        "JH038",
-//                        "JH037",
-                        "JH039"
-                );
-            }
+            BizdatabillnewentryFormPlugin.lockField(this.getModel(), this.getView());
+            this.getView().updateView();
         }
     }
 
