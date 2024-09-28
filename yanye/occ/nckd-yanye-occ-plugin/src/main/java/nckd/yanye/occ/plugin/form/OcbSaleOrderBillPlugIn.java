@@ -59,7 +59,6 @@ public class OcbSaleOrderBillPlugIn extends AbstractBillPlugIn implements Before
                     DynamicObject pqData=BusinessDataServiceHelper.loadSingle(pqId,"nckd_regiongroup");
                     //配送员
                     psy=pqData.getDynamicObject("nckd_deliveryman");
-
                 }
             }
             this.getModel().setValue("nckd_deliveryman",psy);

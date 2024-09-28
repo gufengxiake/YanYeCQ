@@ -72,15 +72,14 @@ public class SalOutSaveOperationPlugIn extends AbstractOperationServicePlugIn im
                     //配送结算基本数量=溢价金额/配送单价
                     entryRow.set("nckd_basicqtyps", purContractPrice.compareTo(BigDecimal.ZERO) > 0 ? premiumamount.divide(purContractPrice) : BigDecimal.ZERO);
                 } else {
-                    entryRow.set("nckd_premiumamount", 0);
-                    entryRow.set("nckd_remainpayamount", 0);
-                    entryRow.set("nckd_basicqtyps", 0);
+                    entryRow.set("nckd_premiumamount", 1);
+                    entryRow.set("nckd_remainpayamount", 1);
+                    entryRow.set("nckd_basicqtyps", 1);
                 }
-
-
             }
         }
-        SaveServiceHelper.update(dataEntities);
+
+        //SaveServiceHelper.update(dataEntities);
     }
 
     @Override

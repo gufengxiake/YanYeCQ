@@ -222,7 +222,11 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                         qFilter.and("nckd_regiongroup",QCP.equals,pqPkId);
                         pqSelect=true;
                     }
+                    else {
+                        qFilter.and("nckd_regiongroup", QCP.equals, 0L);
+                    }
                 }
+
                 //车销订单
                 if(number.equalsIgnoreCase("ocbsoc_saleorder_sys001")){
                     qFilter.and("nckd_isjh",QCP.equals,"1");//借货仓
@@ -241,7 +245,8 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                     // 构造QFilter
                     QFilter nFilter = new QFilter("createorg", QCP.equals, orgId)
                             .and("status", QCP.equals, "C")
-                            .and("nckd_bm", QCP.equals, deptId);
+                            .and("nckd_bm", QCP.equals, deptId)
+                            .and("nckd_regiongroup", QCP.equals, 0L);
                     //车销订单
                     if(number.equalsIgnoreCase("ocbsoc_saleorder_sys001")){
                         nFilter.and("nckd_isjh",QCP.equals,"1");//借货仓
