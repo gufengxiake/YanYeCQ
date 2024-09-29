@@ -1,7 +1,6 @@
 package nckd.yanye.hr.plugin.workflow;
 
-import cn.hutool.core.util.ObjectUtil;
-import com.alibaba.fastjson.JSON;
+import cn.hutool.core.convert.Convert;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.logging.Log;
@@ -21,14 +20,9 @@ public class WorkRankImpl implements IExtExpressionParse {
 
     @Override
     public Object parseExpression(AgentExecution agentExecution, Object param) {
+        logger.info("进入：WorkRankImpl职级扩展");
         if(param == null) {
             return null;
-        }
-        logger.info("进入：WorkRankImpl");
-        try {
-            logger.info("进入：WorkRankImpl param"+ JSON.toJSONString(param));
-        }catch (Exception e){
-
         }
         //传入考勤人的id
         Long uid = 0L;
@@ -41,18 +35,21 @@ public class WorkRankImpl implements IExtExpressionParse {
             uid = Long.parseLong(param.toString());
         }
         logger.info("传入的值："+uid);
-        //查询<考勤人详情>数据
         String name = "";
-        DynamicObjectCollection query = QueryServiceHelper.query("nckd_wtp_attendperdet_ext", "empposorgrelhr.name as names", new QFilter[]{new QFilter("attendperson.id", QCP.equals, uid)}, null);
-        if(ObjectUtil.isNotNull(query)){
-            try {
-                logger.info("查询的对象："+ JSON.toJSONString(query));
-            }catch (Exception e){
-
-            }
-            name = query.get(0).getString("names");
-        }
-        logger.info("返回的值："+name);
+        //1、获取工号
+        DynamicObjectCollection queryNumber = QueryServiceHelper.query("wtp_attendperson", "number", new QFilter[]{new QFilter("id", QCP.equals, uid)}, null);
+        String number = Convert.toStr(queryNumber.get(0).get("number"));
+        //2、通过工号获取HR人员信息(hrpi_person)
+        DynamicObjectCollection queryPerson = QueryServiceHelper.query("hrpi_person", "id", new QFilter[]{new QFilter("number", QCP.equals, number)}, null);
+        Long id = Convert.toLong(queryPerson.get(0).get("id"));
+        //3、通过HR人员信息id 获取  任职经历基础页面-过滤条件 hr人员信息id、生效中、主任职、当前版本
+        DynamicObjectCollection query = QueryServiceHelper.query("hrpi_empposorgrel", "nckd_zhiji.name as name", new QFilter[]{
+                new QFilter("person.id", QCP.equals, id),
+                new QFilter("businessstatus", QCP.equals, "1"),
+                new QFilter("isprimary", QCP.equals, "1"),
+                new QFilter("iscurrentversion", QCP.equals, "1")}, null);
+        name = Convert.toStr(query.get(0).get("name"));
+        logger.info("返回的职级值："+name);
         return name;
     }
 }
