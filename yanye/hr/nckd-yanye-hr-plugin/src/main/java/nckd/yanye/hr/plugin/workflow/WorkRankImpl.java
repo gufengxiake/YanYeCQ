@@ -2,6 +2,7 @@ package nckd.yanye.hr.plugin.workflow;
 
 import cn.hutool.core.util.ObjectUtil;
 import com.alibaba.fastjson.JSON;
+import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -23,12 +24,26 @@ public class WorkRankImpl implements IExtExpressionParse {
         if(param == null) {
             return null;
         }
+        logger.info("进入：WorkRankImpl");
+        try {
+            logger.info("进入：WorkRankImpl param"+ JSON.toJSONString(param));
+        }catch (Exception e){
+
+        }
         //传入考勤人的id
-        Long id = (Long)param;
-        logger.info("传入的值："+id);
+        Long uid = 0L;
+        if(param instanceof Long){
+            uid = (Long)param;
+        }else if(param instanceof DynamicObject){
+            DynamicObject dynObj = (DynamicObject) param;
+            uid = dynObj.getLong("id");
+        }else if(param instanceof String && !param.toString().contains(",")){
+            uid = Long.parseLong(param.toString());
+        }
+        logger.info("传入的值："+uid);
         //查询<考勤人详情>数据
         String name = "";
-        DynamicObjectCollection query = QueryServiceHelper.query("nckd_wtp_attendperdet_ext", "empposorgrelhr.name as names", new QFilter[]{new QFilter("attendperson.id", QCP.equals, id)}, null);
+        DynamicObjectCollection query = QueryServiceHelper.query("nckd_wtp_attendperdet_ext", "empposorgrelhr.name as names", new QFilter[]{new QFilter("attendperson.id", QCP.equals, uid)}, null);
         if(ObjectUtil.isNotNull(query)){
             try {
                 logger.info("查询的对象："+ JSON.toJSONString(query));

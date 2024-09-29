@@ -32,7 +32,7 @@ public class PositionBillListplugin extends AbstractListPlugin  {
     @Override
     public void setFilter(SetFilterEvent e) {
         super.setFilter(e);
-        String order = "adminorg.sortcode asc,nckd_sortnum asc,adminorg.number asc,isleader asc";
+        String order = "adminorg.sortcode asc,adminorg.number asc,nckd_sortnum asc,isleader asc";
         //先按单据状态升序，再按日期降序
         e.setOrderBy(order);
     }

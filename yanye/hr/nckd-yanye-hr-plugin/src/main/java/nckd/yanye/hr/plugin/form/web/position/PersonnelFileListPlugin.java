@@ -21,8 +21,7 @@ public class PersonnelFileListPlugin extends AbstractListPlugin {
         super.setFilter(e);
         // 排序规则 任职经历中，行政组织排序号，岗位排序号，行政组织编号，人员当前岗位的任职开始时间，
 //        hrpi_empposorgrel.position.nckd_sortnum asc
-        String order = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.position.number,hrpi_empposorgrel.adminorg.number asc,empentrel.startdate asc";
-
+        String order = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.adminorg.number asc,hrpi_empposorgrel.position.number,empentrel.startdate asc";
         e.setOrderBy(order);
 
     }
