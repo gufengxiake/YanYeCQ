@@ -24,12 +24,23 @@ public class ContractBillPlugIn extends AbstractBillPlugIn {
                     .and("enable", QCP.equals, "1");
             //查找合同主体
             DynamicObjectCollection collections = QueryServiceHelper.query("conm_contparties",
-                    "id", qFilter.toArray(), "");
+                    "id,name,contacts,phone", qFilter.toArray(), "");
             if (!collections.isEmpty()) {
                 DynamicObject contpartiesItem = collections.get(0);
                 long contpartiesItemId = (long) contpartiesItem.get("id");
                 this.getModel().setItemValueByID("contparties", contpartiesItemId);
-
+                if (contpartiesItem != null) {
+                    //甲方
+                    this.getModel().setValue("party1st", contpartiesItem.getString("name"));
+                    //甲方联系人
+                    this.getModel().setValue("contactperson1st", contpartiesItem.getString("contacts"));
+                    //联系人电话
+                    this.getModel().setValue("phone1st", contpartiesItem.get("phone"));
+                } else {
+                    this.getModel().setValue("party1st", (Object)null);
+                    this.getModel().setValue("contactperson1st", (Object)null);
+                    this.getModel().setValue("phone1st", (Object)null);
+                }
             }
 
         }

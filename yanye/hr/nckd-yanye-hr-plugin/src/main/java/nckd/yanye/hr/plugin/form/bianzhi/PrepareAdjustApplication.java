@@ -3,6 +3,8 @@ package nckd.yanye.hr.plugin.form.bianzhi;
 
 import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.bill.BillShowParameter;
+import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.DBRoute;
@@ -15,6 +17,7 @@ import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.control.events.RowClickEvent;
 import kd.bos.form.control.events.RowClickEventListener;
+import kd.bos.form.events.PreOpenFormEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
@@ -29,13 +32,16 @@ import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.hr.haos.business.servicehelper.OrgBatchBillHelper;
 import kd.hr.haos.common.constants.masterdata.AdminOrgConstants;
 import kd.hr.hbp.common.model.org.staff.StaffResponse;
+import kd.hr.hbp.common.util.DatePattern;
+import kd.hr.hbp.common.util.DateUtils;
 import kd.hr.hbp.common.util.HRDBUtil;
+import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-
+import kd.bos.db.DB;
 
 /**
  * Module           :HR中控服务云-HR基础组织-人力编制-编制调整申请
@@ -49,6 +55,8 @@ import java.util.stream.Collectors;
 
 public class PrepareAdjustApplication extends AbstractBillPlugIn implements BeforeF7SelectListener, RowClickEventListener {
 
+
+    private static List<String> approval = new ArrayList<>();
 
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"Orgform01","Orgform01-100","Orgform02","Orgform03"});
 
@@ -99,31 +107,98 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 this.getModel().deleteEntryData("nckd_bentryentity");
                 this.initEntry(model.getValue("org"),newValue);
                 break;
-            case NCKD_ADJUSTNUM:
-                // 调整人数
-                this.adjustnumChange(newValue,oldValue,iRow);
+//            case NCKD_ADJUSTNUM:
+//                // 调整人数
+////                this.adjustnumChange(newValue,oldValue,iRow);
+//                break;
+//            case NCKD_ADJUSTDIRE:
+//                // 直属调整人数
+////                this.adjustdireChange(newValue,oldValue,iRow);
+//                break;
+//            case NCKD_ADJUSTTYPE:
+//                //调整类型
+////                this.adjusttype(newValue,oldValue,iRow);
+//                break;
+//            case NCKD_POSTADJUSTTYPE:
+//                //岗位调整类型
+////                this.postadjusttypeChange(newValue,oldValue,iRow);
+//                break;
+//            case NCKD_POSTADJUSTNUM:
+//                // 岗位调整人数
+////                this.postadjustnumChange(newValue,oldValue,iRow);
+//                break;
+
+            case "nckd_adjustlatenum":
+                // 组织调整后含下级编制人数
+                this.nckdadjustlatenum(newValue,oldValue,iRow);
                 break;
-            case NCKD_ADJUSTDIRE:
-                // 直属调整人数
-                this.adjustdireChange(newValue,oldValue,iRow);
+            case "nckd_relbdirectnum":
+                // 组织调整后直属编制人数
+                this.relbdirectnum(newValue,oldValue,iRow);
                 break;
-            case NCKD_ADJUSTTYPE:
-                //调整类型
-                this.adjusttype(newValue,oldValue,iRow);
-                break;
-            case NCKD_POSTADJUSTTYPE:
-                //岗位调整类型
-                this.postadjusttypeChange(newValue,oldValue,iRow);
-                break;
-            case NCKD_POSTADJUSTNUM:
-                // 岗位调整人数
-                this.postadjustnumChange(newValue,oldValue,iRow);
+            case "nckd_postadjustlatenum":
+                // 岗位调整后直属编制人数
+                this.adjustlatenum(newValue,oldValue,iRow);
                 break;
             default:
                 break;
         }
 
     }
+    // 岗位计算调整人数
+    private void adjustlatenum(Object newValue,Object oldValue,int row){
+
+        if(ObjectUtils.isEmpty(newValue)){
+            // 调整后编制人数为空，给调整人数也为空
+            this.getModel().setValue("nckd_postadjustnum",null,row);
+        }else{
+            // 调整后编制人数不为空，计算调整人数,获取现有编制人数
+            int relcyearstaff = getIntValue("nckd_relcyearstaff", row);
+            int newValueInt = (int) newValue;
+            if(newValueInt<0){
+                this.getView().showErrorNotification("编制人数不能小于0！");
+                this.getModel().setValue("nckd_postadjustlatenum",oldValue,row);
+                return;
+            }
+            this.getModel().setValue("nckd_postadjustnum",newValueInt - relcyearstaff,row);
+        }
+    }
+
+    // 组织调整后直属编制人数
+    private void relbdirectnum(Object newValue,Object oldValue,int row){
+        if(ObjectUtils.isEmpty(newValue)){
+            // 调整后编制人数为空，给调整人数也为空
+            this.getModel().setValue("nckd_adjustdire",null,row);
+        }else{
+            int relcyearstaff = getIntValue("nckd_adjustdire", row);
+            int newValueInt = (int) newValue;
+            if(newValueInt<0){
+                this.getView().showErrorNotification("编制人数不能小于0！");
+                this.getModel().setValue("nckd_relbdirectnum",oldValue,row);
+                return;
+            }
+            this.getModel().setValue("nckd_adjustdire",newValueInt - relcyearstaff,row);
+        }
+    }
+
+    // 组织调整后直属编制人数
+    private void nckdadjustlatenum(Object newValue,Object oldValue,int row){
+        if(ObjectUtils.isEmpty(newValue)){
+            // 调整后编制人数为空，给调整人数也为空
+            this.getModel().setValue("nckd_adjustnum",null,row);
+        }else{
+            int relcyearstaff = getIntValue("nckd_brealnum", row);
+            int newValueInt = (int) newValue;
+            if(newValueInt<0){
+                this.getView().showErrorNotification("编制人数不能小于0！");
+                this.getModel().setValue("nckd_adjustlatenum",oldValue,row);
+                return;
+            }
+            this.getModel().setValue("nckd_adjustnum",newValueInt - relcyearstaff,row);
+        }
+    }
+
+
     // 组织 直属调整人数修改
     private void adjustdireChange(Object newValue,Object oldValue,int row) {
         // 获取直属编制人数
@@ -265,17 +340,42 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 //            HRMServiceResult haosStaffResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IStaffExternalService","queryStaffById",objects3);
 
             Date date = new Date();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             String dateStr = sdf.format(date);
 
             // 拼接 SQL 查询
             StringBuilder sql = new StringBuilder("SELECT a.fid AS id, a.fboid AS boid, A.fparentid as parentorg, "
                     + "t.flevel as level1, t.fstructlongnumber as structlongnumber, ST.fcount as count,ST.fcontainsubcount as containsubcount, "
 //                    + "(select top 1 N.fstaffcount  from t_haos_adminorg M where a.fparentid = M.fboid ) as "
-                    + "(select top 1 N.fstaffcount  from t_haos_adminorg M left join t_haos_dutyorgdetail N on N.fdutyorgid = M.fid "
-                    + "where M.fenable ='1'  and M.fboid  =a.fboid "
-                    + "AND M.fbsed <= '" + dateStr + "' AND M.fbsled >= '" + dateStr + "'  "
-                    + "order by M.fhisversion desc) as staffcount "
+//                    + " (select top 1 CASE WHEN N.fstaffcount IS NULL THEN 999999 ELSE N.fstaffcount END AS fstaffcount  "
+//                    + "from t_haos_adminorg M left join t_haos_dutyorgdetail N on N.fdutyorgid = M.fid "
+//                    + "where M.fenable ='1'  and M.fboid  =a.fboid and N.fenable = '1' and N.fleffdt >='" + dateStr + "' "
+//                    + "AND M.fbsed <= '" + dateStr + "' AND M.fbsled >= '" + dateStr + "'  "
+//                    + "order by M.fhisversion desc) as staffcount "
+                    + "CASE "
+                    + "    WHEN (SELECT TOP 1 CASE WHEN N.fstaffcount IS NULL THEN 999999 ELSE N.fstaffcount END "
+                    + "          FROM t_haos_adminorg M "
+                    + "          LEFT JOIN t_haos_dutyorgdetail N ON N.fdutyorgid = M.fid "
+                    + "          WHERE M.fenable = '1' "
+                    + "          AND M.fboid = a.fboid "
+                    + "          AND N.fenable = '1' "
+                    + "          AND N.fleffdt >= '" + dateStr + "' "
+                    + "          AND M.fbsed <= '" + dateStr + "' "
+                    + "          AND M.fbsled >= '" + dateStr + "' "
+                    + "          ORDER BY M.fhisversion DESC) IS NULL "
+                    + "    THEN 999999 "
+                    + "    ELSE (SELECT TOP 1 CASE WHEN N.fstaffcount IS NULL THEN 999999 ELSE N.fstaffcount END "
+                    + "          FROM t_haos_adminorg M "
+                    + "          LEFT JOIN t_haos_dutyorgdetail N ON N.fdutyorgid = M.fid "
+                    + "          WHERE M.fenable = '1' "
+                    + "          AND M.fboid = a.fboid "
+                    + "          AND N.fenable = '1' "
+                    + "          AND N.fleffdt >= '" + dateStr + "' "
+                    + "          AND M.fbsed <= '" + dateStr + "' "
+                    + "          AND M.fbsled >= '" + dateStr + "' "
+                    + "          ORDER BY M.fhisversion DESC) "
+                    + "END AS staffcount "
+
                     + "FROM T_HAOS_ADMINORG A "
                     + "LEFT JOIN T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
                     + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON A.fboid = T.fadminorgid "
@@ -296,9 +396,10 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 //            Object[] param = new Object[]{(Long) orgid,haosStaff.getPkValue()};
             Object[] param = new Object[]{(Long) orgid};
             DataSet dataSet = HRDBUtil.queryDataSet("haos_adminOrgHisSearch", new DBRoute("hr"), sql.toString(), param);
+//            DataSet dataSet = DB.queryDataSet("leaseContractPushCard", DBRoute.of("hr"), sql);
 
             ORM orm = ORM.create();
-            DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet);
+            DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet.copy());
             List<Long> collect2 = new ArrayList<Long>();
             Set<Long> longSet = new HashSet<Long>();
             for (int i = 0; i < retDynCol.size(); i++) {
@@ -306,8 +407,10 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 this.getModel().setValue("nckd_adminorg",retDynCol.get(i).get("BOID"),index);
                 this.getModel().setValue("nckd_parentorg",retDynCol.get(i).get("parentorg"),index);
                 // 编制人数
-                this.getModel().setValue("nckd_brealnum",retDynCol.get(i).get("staffcount"),index);
-                this.getModel().setValue("nckd_adjustlatenum",retDynCol.get(i).get("staffcount"),index);
+                int staffcount = (int)retDynCol.get(i).get("staffcount");
+                Object staffcountobj = staffcount == 999999 ? null : staffcount;
+                this.getModel().setValue("nckd_brealnum",staffcountobj,index);
+                this.getModel().setValue("nckd_adjustlatenum",staffcountobj,index);
                 // 实际人数
 //                this.getModel().setValue("nckd_rellownum",retDynCol.get(i).get("containsubcount"),index);
                 this.getModel().setValue("nckd_relnum",retDynCol.get(i).get("count"),index);
@@ -315,7 +418,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 longSet.add((Long) retDynCol.get(i).get("parentorg"));
             }
             // 获取到部门key，根据部门key获取到岗位信息,HR岗位hbpm_positionhr
-            DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{new QFilter("adminorg.id", QCP.in, collect2)}, "number,createtime desc,hisversion");
+            QFilter qFilter = new QFilter("adminorg.id", QCP.in, collect2);
+
+            Date date2 = DateUtils.stringToDate(dateStr, DatePattern.YYYY_MM_DD_HH_MM_SS);
+            qFilter.and(new QFilter("bsled", QCP.large_equals, date2)).and("disabler",QCP.equals,0);
+            DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{qFilter}, "number,createtime desc,hisversion");
             // 岗位id
             List<Long> positionIds = new ArrayList<Long>();
             //  创建一个Map来存储结果
@@ -404,6 +511,8 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     Map<String, Object> positionMap = staffpositionResponse.getData().get(String.valueOf(object.get("id")));
                     if(ObjectUtils.isNotEmpty(positionMap)){
                         dynamicObject.set("nckd_relcyearstaff",positionMap.get("staffNum"));
+                        // todo 岗位调整后人数
+//                        dynamicObject.set("nckd_postadjustlatenum",positionMap.get("staffNum"));
                     }
                     cntryEntity.add(dynamicObject);
                 }

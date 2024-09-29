@@ -185,7 +185,11 @@ public class SyncDingDingClockInTask extends AbstractTask {
             signCard.set("org", attFileMap.get(user.getString("number")).get("org"));
 
             // 打卡时间
-            signCard.set("signpoint", clockInfo.getString("userCheckTime"));
+            Date userCheckTime = clockInfo.getDate("userCheckTime");
+            signCard.set("signpoint", userCheckTime);
+
+            // 打卡具体时间-0时区(打卡事件-8小时)
+            signCard.set("signpointutc", userCheckTime.getTime() - 8 * 60 * 60 * 1000);
 
             // 打卡地点
             signCard.set("nckd_position", clockInfo.getString("userAddress"));

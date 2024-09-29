@@ -1,6 +1,9 @@
 package nckd.yanye.scm.common.utils;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import com.alibaba.druid.support.logging.Log;
 import com.alibaba.druid.support.logging.LogFactory;
@@ -10,6 +13,7 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
+import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
@@ -23,6 +27,70 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
  */
 public class MaterialAttributeInformationUtils {
     private static final Log logger = LogFactory.getLog(MaterialAttributeInformationUtils.class);
+
+    /**
+     * 【物料类型】为‘物资’+【物料属性】为‘自制’+【自制物料类型】“产成品”时
+     * 集合中的参数代表单据类型
+     */
+    public static List<String> finishedGoodsList = Arrays.asList("1", "2", "3", "4");
+    /**
+     * 【物料类型】为‘物资’+【物料属性】为‘自制’+【自制物料类型】“半成品”时
+     */
+    public static List<String> semiFinishedList = Arrays.asList("1", "2", "3");
+    /**
+     * 【物料类型】为‘物资’或‘资产’+【物料属性】为‘外购’时
+     */
+    public static List<String> outsourcingList = Arrays.asList("1", "2", "3", "5");
+    /**
+     * 【物料类型】为‘费用’+【物料属性】为‘外购’时
+     */
+    public static List<String> feeOutsourcingList = Arrays.asList("3", "5");
+
+    /**
+     * 核算信息设置存货类别并提交审核
+     *
+     * @param material
+     * @param org
+     */
+    public static void setCheckInfoMaterialcategory(DynamicObject material, DynamicObject org) {
+        Long materialcategory = null;
+
+        // 根据物料分类与存货类别关系配置获取存货类别
+        Long groupId = material.getDynamicObject("group").getLong("id");
+        QFilter qFilter = new QFilter("nckd_entryentity.nckd_materialclassify", QCP.equals, groupId)
+                .and("nckd_entryentity.nckd_org", QCP.equals, org.getLong("id"));
+        DynamicObject[] objects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialclassify,nckd_entryentity.nckd_materialcategory,nckd_entryentity.nckd_org", qFilter.toArray());
+        if (objects.length > 0) {
+            List<DynamicObject> collect = objects[0].getDynamicObjectCollection("nckd_entryentity").stream()
+                    .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == groupId && t.getDynamicObject("nckd_org") != null && t.getDynamicObject("nckd_org").getLong("id") == org.getLong("id"))
+                    .collect(Collectors.toList());
+            materialcategory = collect.get(0).getDynamicObject("nckd_materialcategory").getLong("id");
+        } else {
+            QFilter filter = new QFilter("nckd_entryentity.nckd_materialclassify", QCP.equals, groupId)
+                    .and("nckd_entryentity.nckd_org", QCP.equals, 0);
+            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_materialcategorymap", "nckd_entryentity.nckd_materialclassify,nckd_entryentity.nckd_materialcategory", filter.toArray());
+            if (dynamicObjects.length > 0) {
+                List<DynamicObject> collect = dynamicObjects[0].getDynamicObjectCollection("nckd_entryentity").stream()
+                        .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == groupId)
+                        .collect(Collectors.toList());
+                materialcategory = collect.get(0).getDynamicObject("nckd_materialcategory").getLong("id");
+            }
+        }
+
+        // 设置存货类别并提交审核
+        if (materialcategory != null) {
+            QFilter qFilter1 = new QFilter("nckd_materialnumber", QCP.equals, material.getLong("id"))
+                    .and("org", QCP.equals, org.getLong("id"))
+                    .and("nckd_materialmaintunit", QCP.equals, "add")
+                    .and("nckd_documenttype", QCP.equals, "3");
+            DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", qFilter1.toArray());
+            if (dynamicObject != null) {
+                DynamicObject object = BusinessDataServiceHelper.loadSingle(materialcategory, "bd_materialcategory");
+                dynamicObject.set("nckd_group", object);
+                MaterialAttributeInformationUtils.processData(dynamicObject);
+            }
+        }
+    }
 
     /**
      * 生产基本信息

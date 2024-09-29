@@ -64,6 +64,10 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
 
         //设置业务员
         Long orgId = RequestContext.get().getOrgId();
+        DynamicObject org= (DynamicObject) this.getModel().getValue("org");
+        if(org!=null){
+            orgId= (Long) org.getPkValue();
+        }
         if (orgId != 0) {
             // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
             QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
@@ -331,49 +335,57 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
         DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype");
         //业务员
         DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        IFormView formView = null;
+        try {
+            MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
+            String appId = getAppId(targetBill, dt);
+            // 设置单据显示参数
+            BillShowParameter para = new BillShowParameter();
+            para.setFormId(targetBill);
+            para.setPkId(0);
+            para.setAppId(appId);
 
-        MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
-        String appId = getAppId(targetBill, dt);
-        // 设置单据显示参数
-        BillShowParameter para = new BillShowParameter();
-        para.setFormId(targetBill);
-        para.setPkId(0);
-        para.setAppId(appId);
+            // 创建单据配置
+            FormConfigFactory.createConfigInCurrentAppService(para);
+            // 获取单据页面视图
+            final SessionManager sm = SessionManager.getCurrent();
+            formView = sm.getView(para.getPageId());
+            if (formView != null) {
+                // 设置视图应用id和数据模型
+                formView.getFormShowParameter().setAppId(appId);
+                formView.getModel().createNewData();
+                //formView.updateView();
+            }
+            BillModel mode = (BillModel) formView.getModel();
+            mode.setPKValue(pkId);
+            if (pkId > 0) {
+                mode.load(pkId);
+            }
+            mode.setValue("billtype", billtype);
+            mode.setValue("nckd_ywy", ywy);
+            mode.deleteEntryData("billentry");
+            DynamicObjectCollection entry = this.getModel().getEntryEntity("billentry");
+            mode.batchCreateNewEntryRow("billentry", entry.size());
+            int row = 0;
+            for (DynamicObject entryRow : entry) {
+                mode.setValue("material", entryRow.getDynamicObject("material"), row);
+                mode.setValue("unit", entryRow.getDynamicObject("unit"), row);
+                mode.setValue("qty", entryRow.getBigDecimal("qty"), row);
+                mode.setValue("warehouse", entryRow.getDynamicObject("warehouse"), row);
+                mode.setValue("inwarehouse", entryRow.getDynamicObject("inwarehouse"), row);
+                mode.setValue("lotnumber", entryRow.getString("lotnumber"), row);
+                row++;
+            }
+            OperationResult saveOp = formView.invokeOperation("save");
+            if (saveOp.isSuccess()) {
+                formView.close();
+            }
+        } finally {
+            if (formView != null) {
+                formView.close();
+            }
+        }
 
-        // 创建单据配置
-        FormConfigFactory.createConfigInCurrentAppService(para);
-        // 获取单据页面视图
-        final SessionManager sm = SessionManager.getCurrent();
-        final IFormView formView = sm.getView(para.getPageId());
-        if (formView != null) {
-            // 设置视图应用id和数据模型
-            formView.getFormShowParameter().setAppId(appId);
-            formView.getModel().createNewData();
-            //formView.updateView();
-        }
-        BillModel mode = (BillModel) formView.getModel();
-        mode.setPKValue(pkId);
-        if (pkId > 0) {
-            mode.load(pkId);
-        }
-        mode.setValue("billtype", billtype);
-        mode.setValue("nckd_ywy", ywy);
-        mode.deleteEntryData("billentry");
-        DynamicObjectCollection entry = this.getModel().getEntryEntity("billentry");
-        mode.batchCreateNewEntryRow("billentry", entry.size());
-        int row = 0;
-        for (DynamicObject entryRow : entry) {
-            mode.setValue("material", entryRow.getDynamicObject("material"), row);
-            mode.setValue("qty", entryRow.getBigDecimal("qty"), row);
-            mode.setValue("warehouse", entryRow.getDynamicObject("warehouse"), row);
-            mode.setValue("inwarehouse", entryRow.getDynamicObject("inwarehouse"), row);
-            mode.setValue("lotnumber", entryRow.getString("lotnumber"), row);
-            row++;
-        }
-        OperationResult saveOp = formView.invokeOperation("save");
-        if (saveOp.isSuccess()) {
-            formView.close();
-        }
 
     }
 

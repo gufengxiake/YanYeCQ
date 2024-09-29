@@ -4,6 +4,7 @@ import kd.bos.coderule.api.CodeRuleInfo;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
@@ -115,7 +116,12 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
                             if (!result.isSuccess()) {
-                                throw new KDBizException("保存信息到供应商失败：" + result.getMessage());
+                                StringBuilder stringBuilder = new StringBuilder();
+                                List<IOperateInfo> allErrorOrValidateInfo = result.getAllErrorOrValidateInfo();
+                                for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                    stringBuilder.append(iOperateInfo.getMessage());
+                                }
+                                throw new KDBizException("保存信息到供应商失败：" + stringBuilder);
                             }
                             DynamicObject bd_address = BusinessDataServiceHelper.newDynamicObject("bd_address");
                             bd_address.set("number", number);
@@ -184,7 +190,13 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         }
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdSupplier.getDynamicObjectCollection("entry_bank");
-                        DynamicObject bank = entryBank.get(0);
+                        DynamicObject bank = null;
+                        if (entryBank.size() > 0){
+                            bank = entryBank.get(0);
+                        }else {
+                            bank = entryBank.addNew();
+                        }
+
                         bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
                         bank.set("accountname", entity.get("nckd_accountname"));//账户名称
                         bank.set("isdefault_bank", true);//默认
@@ -235,7 +247,12 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_supplier", new DynamicObject[]{bdSupplier}, OperateOption.create());
                             if (!result.isSuccess()) {
-                                throw new KDBizException("更新信息到供应商失败：" + result.getMessage());
+                                StringBuilder stringBuilder = new StringBuilder();
+                                List<IOperateInfo> allErrorOrValidateInfo = result.getAllErrorOrValidateInfo();
+                                for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                    stringBuilder.append(iOperateInfo.getMessage());
+                                }
+                                throw new KDBizException("更新信息到供应商失败：" + stringBuilder);
                             }
                             DynamicObject address = BusinessDataServiceHelper.loadSingle("bd_address","id,number,name,detailaddress,phone,zipcode,modifier,modifytime,supplierid",new QFilter[]{new QFilter("supplierid",QCP.equals,bdSupplier.getPkValue().toString())});
                             if (address != null) {

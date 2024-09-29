@@ -1,6 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
@@ -10,6 +11,7 @@ import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
@@ -17,6 +19,7 @@ import kd.bos.entity.property.UserProp;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.ComboEdit;
@@ -27,6 +30,7 @@ import kd.bos.imageplatform.axis.IScanWebServiceImplServiceStub;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -177,7 +181,7 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         //维护类型
         if ("nckd_maintenancetype".equals(fieldKey)) {
             String maintenanceType = this.getModel().getValue("nckd_maintenancetype").toString();
-            String merchanttype = this.getModel().getValue("nckd_merchanttype").toString();
+            Object merchanttype = this.getModel().getValue("nckd_merchanttype");
             
             
             TextEdit maintenanceTypeEdit = this.getControl("nckd_addsupplier");
@@ -276,56 +280,56 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                     rateProp.setMustInput(true);
                 }
             }else {
-                maintenanceTypeEdit.setMustInput(false);
+                maintenanceTypeEdit.setMustInput(true);
                 maintenanceTypeProp.setMustInput(false);
 
-                changetypeEdit.setMustInput(false);
+                changetypeEdit.setMustInput(true);
                 changetypeProp.setMustInput(false);
-                groupEdit.setMustInput(false);
+                groupEdit.setMustInput(true);
                 groupProp.setMustInput(false);
-                societycreditcodeEdit.setMustInput(false);
+                societycreditcodeEdit.setMustInput(true);
                 societycreditcodeProp.setMustInput(false);
-                artificialpersonEdit.setMustInput(false);
+                artificialpersonEdit.setMustInput(true);
                 artificialpersonProp.setMustInput(false);
-                regcapitalEdit.setMustInput(false);
+                regcapitalEdit.setMustInput(true);
                 regcapitalProp.setMustInput(false);
-                basedatafieldEdit.setMustInput(false);
+                basedatafieldEdit.setMustInput(true);
                 basedatafieldProp.setMustInput(false);
-                linkmanEdit.setMustInput(false);
+                linkmanEdit.setMustInput(true);
                 linkmanProp.setMustInput(false);
-                phoneEdit.setMustInput(false);
+                phoneEdit.setMustInput(true);
                 phoneProp.setMustInput(false);
-                addressEdit.setMustInput(false);
+                addressEdit.setMustInput(true);
                 addressProp.setMustInput(false);
-                postalcodeEdit.setMustInput(false);
+                postalcodeEdit.setMustInput(true);
                 postalcodeProp.setMustInput(false);
-                riskEdit.setMustInput(false);
+                riskEdit.setMustInput(true);
                 riskProp.setMustInput(false);
-                bankaccountEdit.setMustInput(false);
+                bankaccountEdit.setMustInput(true);
                 bankaccountProp.setMustInput(false);
-                accountnameEdit.setMustInput(false);
+                accountnameEdit.setMustInput(true);
                 accountnameProp.setMustInput(false);
-                bankEdit.setMustInput(false);
+                bankEdit.setMustInput(true);
                 bankProp.setMustInput(false);
-                acceptingaccountEdit.setMustInput(false);
+                acceptingaccountEdit.setMustInput(true);
                 acceptingaccountProp.setMustInput(false);
-                acceptingbankEdit.setMustInput(false);
+                acceptingbankEdit.setMustInput(true);
                 acceptingbankProp.setMustInput(false);
-                currencyEdit.setMustInput(false);
+                currencyEdit.setMustInput(true);
                 currencyProp.setMustInput(false);
-                if ("supplier".equals(merchanttype)){
+                if (merchanttype != null && "supplier".equals(merchanttype.toString())){
                     licenseNumberEdit.setMustInput(false);
                     licenseNumberProp.setMustInput(false);
                     transportTypeEdit.setMustInput(false);
                     transportTypeProp.setMustInput(false);
                     rateEdit.setMustInput(false);
                     rateProp.setMustInput(false);
-                } else if ("carrier".equals(merchanttype)) {
-                    licenseNumberEdit.setMustInput(false);
+                } else if (merchanttype != null && "carrier".equals(merchanttype.toString())) {
+                    licenseNumberEdit.setMustInput(true);
                     licenseNumberProp.setMustInput(false);
-                    transportTypeEdit.setMustInput(false);
+                    transportTypeEdit.setMustInput(true);
                     transportTypeProp.setMustInput(false);
-                    rateEdit.setMustInput(false);
+                    rateEdit.setMustInput(true);
                     rateProp.setMustInput(false);
                 }
             }
@@ -652,6 +656,41 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         if (stringBuilder.length() > 0){
             this.getView().showErrorNotification(stringBuilder.toString());
             args.setCancel(true);
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_entry");
+        String key = e.getOperateKey();
+        if ("audit".equals(key)){
+            OperationResult operationResult = e.getOperationResult();
+            if (operationResult.isSuccess()){
+                if (entity.size() > 0){
+                    for (DynamicObject entry : entity) {
+                        String changeAfter = entry.getString("nckd_changeafter");
+                        if (StringUtils.isEmpty(changeAfter)){
+                            String addSupplier = entry.getString("nckd_addsupplier");
+                            DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name",QCP.equals,addSupplier)});
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                            }
+                            continue;
+                        }
+                        if ("2".equals(changeAfter)){
+                            DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
+                            supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

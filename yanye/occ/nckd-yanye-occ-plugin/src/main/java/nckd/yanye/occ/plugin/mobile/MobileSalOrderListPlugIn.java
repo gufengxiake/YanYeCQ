@@ -1,9 +1,13 @@
 package nckd.yanye.occ.plugin.mobile;
 
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.db.DB;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.OperateOptionConst;
+import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.*;
 import kd.bos.form.cardentry.CardEntry;
 import kd.bos.form.container.Tab;
@@ -56,32 +60,102 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
             Map<String, HashSet<Long>> targetBillIds = BFTrackerServiceHelper.findTargetBills("ocbsoc_saleorder", new Long[]{(Long) id});
             // 从所有下游单中寻找需要的
             HashSet<Long> botpbill1_Ids = new HashSet<>();
-            String botpbill1_EntityNumber = "ocbsoc_delivery_record";//要货记录
+            String botpbill1_EntityNumber = "im_saloutbill";//销售出库单
             if (targetBillIds.containsKey(botpbill1_EntityNumber)) {
                 botpbill1_Ids = targetBillIds.get(botpbill1_EntityNumber);
             } else {
-                this.getView().showErrorNotification("当前要货订单还未生成发货记录，无法拒签！");
+                this.getView().showErrorNotification("当前要货订单还未生成出库记录，无法拒签！");
                 return;
             }
             for (Long deliveryBillId : botpbill1_Ids) {
                 DynamicObject dataObject = BusinessDataServiceHelper.loadSingle(deliveryBillId, botpbill1_EntityNumber);
                 String billstatus = dataObject.getString("billstatus");
-                if ("C".equalsIgnoreCase(billstatus)) {
-                    this.getView().showErrorNotification("当前要货订单已签收，无法拒签！");
-                    return;
-                } else if ("E".equalsIgnoreCase(billstatus)) {
-                    this.getView().showErrorNotification("当前要货订单已拒签，无法拒签！");
+                if (!"B".equalsIgnoreCase(billstatus)) {
+                    this.getView().showErrorNotification("当前要货订单的出库状态未提交，无法拒签！");
                     return;
                 }
-                //执行发货记录拒签
-                OperationResult unsign= OperationServiceHelper.executeOperate("unsign", "ocbsoc_delivery_record", new DynamicObject[]{dataObject});
-                if(unsign.isSuccess()){
-                    //刷新列表
-                    billList.refresh();
-                    this.getView().showSuccessNotification("拒签成功！");
+                dataObject.set("nckd_autosign",false);
+                OperateOption auditOption = OperateOption.create();
+                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                //审核
+                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", botpbill1_EntityNumber, new DynamicObject[]{dataObject}, auditOption);
+                if (!auditResult.isSuccess()) {
+                    String detailMessage = auditResult.getMessage();
+                    // 演示提取保存详细错误
+                    for (IOperateInfo errInfo : auditResult.getAllErrorOrValidateInfo()) {
+                        detailMessage += errInfo.getMessage();
+                    }
+                    this.getView().showErrorNotification("出库单审核失败：" + detailMessage);
+                    return;
+                }
+                Object pkId=dataObject.getPkValue();
+                Map<String, HashSet<Long>> targetBills = BFTrackerServiceHelper.findTargetBills("im_saloutbill", new Long[]{(Long) pkId});
+                String  delivery_record= "ocbsoc_delivery_record";//发货记录
+                if (targetBills.containsKey(delivery_record)) {
+                    HashSet<Long> delivery_Ids = targetBills.get(delivery_record);
+                    for (Long Id : delivery_Ids) {
+                        DynamicObject delivery = BusinessDataServiceHelper.loadSingle(Id, delivery_record);
+                        OperationResult unsignResult = OperationServiceHelper.executeOperate("unsign", delivery_record, new DynamicObject[]{delivery});
+                        if (!unsignResult.isSuccess()) {
+                            String detailMessage = "";
+                            // 演示提取保存详细错误
+                            for (IOperateInfo errInfo : unsignResult.getAllErrorOrValidateInfo()) {
+                                detailMessage += errInfo.getMessage();
+                            }
+                            this.getView().showErrorNotification("发货记录拒签失败：" + detailMessage);
+                            return;
+                        }
+                    }
+
                 }
             }
+            //刷新列表
+            billList.refresh();
+            this.getView().showSuccessNotification("拒签成功！");
 
+        }
+        //自定义签收处理
+        else if(e.getOperateKey().equalsIgnoreCase("nckdsign")){
+            BillList billList = this.getControl("billlistap");
+            Object id = billList.getCurrentSelectedRowInfo().getPrimaryKeyValue();
+            //获取下游单据
+            Map<String, HashSet<Long>> targetBillIds = BFTrackerServiceHelper.findTargetBills("ocbsoc_saleorder", new Long[]{(Long) id});
+            // 从所有下游单中寻找需要的
+            HashSet<Long> botpbill1_Ids = new HashSet<>();
+            String botpbill1_EntityNumber = "im_saloutbill";//销售出库单
+            if (targetBillIds.containsKey(botpbill1_EntityNumber)) {
+                botpbill1_Ids = targetBillIds.get(botpbill1_EntityNumber);
+            } else {
+                this.getView().showErrorNotification("当前要货订单还未生成出库记录，无法签收！");
+                return;
+            }
+            for (Long deliveryBillId : botpbill1_Ids) {
+                DynamicObject dataObject = BusinessDataServiceHelper.loadSingle(deliveryBillId, botpbill1_EntityNumber);
+                String billstatus = dataObject.getString("billstatus");
+                if (!"B".equalsIgnoreCase(billstatus)) {
+                    this.getView().showErrorNotification("当前要货订单的出库状态未提交，无法签收！");
+                    return;
+                }
+                dataObject.set("nckd_autosign",true);
+                OperateOption auditOption = OperateOption.create();
+                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                //审核
+                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", botpbill1_EntityNumber, new DynamicObject[]{dataObject}, auditOption);
+                if (!auditResult.isSuccess()) {
+                    String detailMessage = auditResult.getMessage();
+                    // 演示提取保存详细错误
+                    for (IOperateInfo errInfo : auditResult.getAllErrorOrValidateInfo()) {
+                        detailMessage += errInfo.getMessage();
+                    }
+                    this.getView().showErrorNotification("出库单审核失败：" + detailMessage);
+                    return;
+                }
+            }
+            //刷新列表
+            billList.refresh();
+            this.getView().showSuccessNotification("签收成功！");
         }
     }
 

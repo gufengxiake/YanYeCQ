@@ -3,6 +3,7 @@ package nckd.yanye.scm.plugin.form;
 import kd.bd.sbd.enums.EndDateCalTypeEnum;
 import kd.bd.sbd.servicehelper.BDServiceHelper;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.bill.BillShowParameter;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
@@ -12,6 +13,9 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.OrgProp;
 import kd.bos.exception.KDBizException;
+import kd.bos.form.ShowType;
+import kd.bos.form.control.Control;
+import kd.bos.form.control.Label;
 import kd.bos.form.field.*;
 import kd.bos.form.field.events.AfterF7SelectEvent;
 import kd.bos.form.field.events.AfterF7SelectListener;
@@ -54,6 +58,8 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         salesunit.addBeforeF7SelectListener(this);
         BasedataEdit mftunit = this.getControl("nckd_mftunit");
         mftunit.addBeforeF7SelectListener(this);
+
+        this.addClickListeners("nckd_sourcenumberv");
     }
 
     @Override
@@ -64,6 +70,23 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         this.getModel().setValue("nckd_createorganiza", dynamicObject);
         this.getModel().setValue("nckd_initiatingdepart", RequestContext.get().getOrgId());
         super.afterCreateNewData(e);
+    }
+
+    @Override
+    public void click(EventObject evt) {
+        super.click(evt);
+
+        Control source = (Control) evt.getSource();
+        String key = source.getKey();
+        if (key.equals("nckd_sourcenumberv")) {
+
+            BillShowParameter billShowParameter = new BillShowParameter();
+            billShowParameter.setFormId("nckd_materialrequest");
+            billShowParameter.setPkId(this.getModel().getValue("nckd_sourceid"));
+            // 打开方式
+            billShowParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
+            this.getView().showForm(billShowParameter);
+        }
     }
 
     @Override
@@ -89,9 +112,9 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 // 物料属性
                 String materialattribute = (String) this.getModel().getValue("nckd_materialattribute");
                 String materialattri = null;
-                if("1".equals(materialattribute)){
+                if ("1".equals(materialattribute)) {
                     materialattri = "10030";
-                }else if ("2".equals(materialattribute)){
+                } else if ("2".equals(materialattribute)) {
                     materialattri = "10040";
                 }
                 this.getModel().setValue("nckd_materialattri", materialattri);
@@ -120,6 +143,10 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         } else {
             this.setEditShow(true);
         }
+
+        // 来源编码标签
+        Label sourcenumberv = this.getControl("nckd_sourcenumberv");
+        sourcenumberv.setText((String) this.getModel().getValue("nckd_sourcenumber"));
     }
 
     @Override

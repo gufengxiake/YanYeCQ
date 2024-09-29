@@ -2,17 +2,20 @@ package nckd.yanye.scm.plugin.form;
 
 import com.icbc.api.internal.apache.http.nio.protocol.D;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.ComboEdit;
 import kd.bos.form.field.TextEdit;
@@ -22,6 +25,7 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -396,6 +400,41 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             List<QFilter> qFilters = new ArrayList<>();
             qFilters.add(new QFilter("number", QCP.in, NUMBERS));
             formShowParameter.getListFilterParameter().setQFilters(qFilters);
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_entry");
+        String key = e.getOperateKey();
+        if ("audit".equals(key)){
+            OperationResult operationResult = e.getOperationResult();
+            if (operationResult.isSuccess()){
+                if (entity.size() > 0){
+                    for (DynamicObject entry : entity) {
+                        String changeAfter = entry.getString("nckd_changeafter");
+                        if (StringUtils.isEmpty(changeAfter)){
+                            String addCustomer = entry.getString("nckd_addcustomer");
+                            DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer","id",new QFilter[]{new QFilter("name",QCP.equals,addCustomer)});
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_customer", new DynamicObject[]{customer}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                            }
+                            continue;
+                        }
+                        if ("2".equals(changeAfter)){
+                            DynamicObject customer = entry.getDynamicObject("nckd_customermodify");
+                            customer = BusinessDataServiceHelper.loadSingle(customer.getPkValue(),"bd_customer");
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_customer", new DynamicObject[]{customer}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
