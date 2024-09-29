@@ -5,6 +5,7 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
 
 import java.util.Date;
@@ -25,6 +26,7 @@ public class SupplierPushOpPlugin extends AbstractOperationServicePlugIn {
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
         List<String> fieldKeys = e.getFieldKeys();
+        fieldKeys.add("group");
     }
 
     @Override
@@ -58,11 +60,12 @@ public class SupplierPushOpPlugin extends AbstractOperationServicePlugIn {
 
         String accessToken = resultToken.getString("access_token");
         for (DynamicObject dataEntity : dataEntities) {
+            dataEntity = BusinessDataServiceHelper.loadSingle(dataEntity.getPkValue(), "bd_supplier");
             JSONObject bodyJson = new JSONObject();
             bodyJson.put("VenCode", dataEntity.getString("number"));
             bodyJson.put("VenName", dataEntity.getString("name"));
             bodyJson.put("VenPK", dataEntity.getPkValue().toString());
-            bodyJson.put("VenCCode", dataEntity.getDynamicObjectCollection("entry_groupstandard").size() < 1 ? null : dataEntity.getDynamicObjectCollection("entry_groupstandard").get(0).getDynamicObject("standardid").getString("number"));
+            bodyJson.put("VenCCode", dataEntity.getDynamicObject("group") == null ? null : dataEntity.getDynamicObject("group").getString("number"));
             bodyJson.put("Status", "0");
             JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/PushSupply", bodyJson, accessToken);
 

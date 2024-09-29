@@ -7,6 +7,7 @@ import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.basedata.BaseDataResponse;
+import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
@@ -121,13 +122,16 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         linkman.set("email", entity.getString("nckd_myemail"));//我方业务员邮箱
 
                         //银行分录信息保存
-                        DynamicObjectCollection entryBank = bdCustomer.getDynamicObjectCollection("entry_bank");
-                        DynamicObject bank = entryBank.addNew();
-                        bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
-                        bank.set("accountname", entity.get("nckd_accountname"));//账户名称
-                        bank.set("isdefault_bank", true);//默认
-                        bank.set("bank", entity.getDynamicObject("nckd_bank"));//开户银行
-                        bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
+                        DynamicObject nckdBank = entity.getDynamicObject("nckd_bank");
+                        if (nckdBank != null) {
+                            DynamicObjectCollection entryBank = bdCustomer.getDynamicObjectCollection("entry_bank");
+                            DynamicObject bank = entryBank.addNew();
+                            bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
+                            bank.set("accountname", entity.get("nckd_accountname"));//账户名称
+                            bank.set("isdefault_bank", true);//默认
+                            bank.set("bank", nckdBank);//开户银行
+                            bank.set("currency", entity.getDynamicObject("nckd_currency"));//币种
+                        }
 
                         //客户分类
                         DynamicObjectCollection groupStandard = bdCustomer.getDynamicObjectCollection("entry_groupstandard");
@@ -139,6 +143,14 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
 
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
+                            if (!result.isSuccess()) {
+                                StringBuilder stringBuilder = new StringBuilder();
+                                List<IOperateInfo> allErrorOrValidateInfo = result.getAllErrorOrValidateInfo();
+                                for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                    stringBuilder.append(iOperateInfo.getMessage()+",");
+                                }
+                                throw new KDBizException("保存信息到客户失败：" + stringBuilder);
+                            }
                             if (date.getDynamicObject("org").getLong("id") != 100000) {
                                 Set<Long> dataIdsTemp = new HashSet<>();
                                 dataIdsTemp.add(bdCustomer.getLong("id"));
@@ -148,9 +160,6 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 if (!assign.isSuccess()) {
                                     throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
                                 }
-                            }
-                            if (!result.isSuccess()) {
-                                throw new KDBizException("保存信息到客户失败：" + result.getMessage());
                             }
                         } catch (Exception ex) {
                             throw new RuntimeException("保存信息客户失败：" + ex);
@@ -265,7 +274,12 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         try {
                             OperationResult result = OperationServiceHelper.executeOperate("save", "bd_customer", new DynamicObject[]{bdCustomer}, OperateOption.create());
                             if (!result.isSuccess()) {
-                                throw new KDBizException("更新信息到客户失败：" + result.getMessage());
+                                StringBuilder stringBuilder = new StringBuilder();
+                                List<IOperateInfo> allErrorOrValidateInfo = result.getAllErrorOrValidateInfo();
+                                for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                    stringBuilder.append(iOperateInfo.getMessage()+",");
+                                }
+                                throw new KDBizException("更新信息到客户失败：" + stringBuilder);
                             }
                         } catch (Exception ex) {
                             throw new RuntimeException("保存信息到客户失败：" + ex);
