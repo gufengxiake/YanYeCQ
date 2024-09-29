@@ -172,7 +172,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             if (!botpbill1_Ids.isEmpty()) {
                 String sourceBill = "pm_purorderbill";//采购订单
                 String targetBill = "im_purreceivebill";//采购收货单
-                String ruleId = "2025459918533834752";//单据转换Id
+                String ruleId = "1985077720819698688";//单据转换Id
                 // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
                 for (Object pk : botpbill1_Ids) {
 
