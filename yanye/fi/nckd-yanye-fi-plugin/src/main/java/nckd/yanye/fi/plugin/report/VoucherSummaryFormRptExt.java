@@ -7,12 +7,14 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.report.ReportQueryParam;
+import kd.bos.form.control.FilterGrid;
 import kd.bos.form.field.ComboEdit;
 import kd.bos.form.field.ComboItem;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.fi.gl.report.VoucherSummaryFormRpt;
 
 /**
  * Module           :财务云-总账-凭证汇总
@@ -21,7 +23,7 @@ import kd.bos.servicehelper.QueryServiceHelper;
  * @author : yaosijie
  * @date : 2024/9/25
  */
-public class VoucherSummaryFormRptExt extends AbstractReportFormPlugin {
+public class VoucherSummaryFormRptExt extends VoucherSummaryFormRpt {
 	@Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         for (DynamicObject row : rowData) {
@@ -31,6 +33,24 @@ public class VoucherSummaryFormRptExt extends AbstractReportFormPlugin {
                 row.set("number", row.get("nckd_accountnumber"));
             }
         }
+    }
+
+    @Override
+    public void initialize() {
+	    super.initialize();
+
+        FilterGrid filterGrid = this.getControl("voucherfiltergridap");
+        filterGrid.setEntityNumber("gl_voucher");
+        this.setVoucherFilterFields(filterGrid);
+    }
+
+    private void setVoucherFilterFields(FilterGrid filterGrid) {
+        List<String> filterFileds = new ArrayList();
+        filterFileds.add("billno");
+        filterFileds.add("vouchertype.number");
+        filterFileds.add("submitter.name");
+        filterFileds.add("edescription");
+        filterGrid.setFilterFieldKeys(filterFileds);
     }
 
     @Override
