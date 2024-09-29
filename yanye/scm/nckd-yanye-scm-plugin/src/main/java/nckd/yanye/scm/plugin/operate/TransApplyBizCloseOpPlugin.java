@@ -85,14 +85,14 @@ public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
             String accessToken = resultToken.getString("access_token");
             JSONObject bodyJson = new JSONObject();
             bodyJson.put("DeliveryOrderCode", dataEntity.getString("billno"));
-            JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/Dispatch/GetSaleBillState", bodyJson, accessToken);
+            JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState", bodyJson, accessToken);
 
             Map<String,Object> parmMap = new HashMap<>();
             parmMap.put("number","im_transapply");
             parmMap.put("name","调拨申请单");
             parmMap.put("creator", RequestContext.get().getCurrUserId());
             parmMap.put("nckd_system", "zhwl");
-            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/Dispatch/GetSaleBillState");
+            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState");
             parmMap.put("createtime", new Date());
             parmMap.put("nckd_parameter", bodyJson.toJSONString());
 
@@ -128,14 +128,14 @@ public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许关闭");
                 continue;
             }
-            JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/Dispatch/EndSaleBill", bodyJson, accessToken);
+            JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill", bodyJson, accessToken);
 
             Map<String,Object> deMap = new HashMap<>();
             deMap.put("number","im_transapply");
             deMap.put("name","调拨申请单");
             deMap.put("creator", RequestContext.get().getCurrUserId());
             deMap.put("nckd_system", "zhwl");
-            deMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/Dispatch/EndSaleBill");
+            deMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill");
             deMap.put("createtime", new Date());
             deMap.put("nckd_parameter", bodyJson.toJSONString());
 
