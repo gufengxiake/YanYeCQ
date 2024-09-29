@@ -8,6 +8,7 @@ import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityType;
+import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.db.DB;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
@@ -423,6 +424,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 if (result1.isSuccess()) {
                     OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
                 }
+                BusinessDataServiceHelper.removeCache(p.getDynamicObjectType());
             }
             return;
         }
@@ -489,6 +491,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
             OperationResult result1 = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
             if (result1.isSuccess()) {
                 OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{p}, OperateOption.create());
+                BusinessDataServiceHelper.removeCache(p.getDynamicObjectType());
             }
         }
         for (int i = 0; i < entity.size(); i++) {
