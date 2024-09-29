@@ -190,7 +190,13 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         }
                         //银行分录信息保存
                         DynamicObjectCollection entryBank = bdSupplier.getDynamicObjectCollection("entry_bank");
-                        DynamicObject bank = entryBank.get(0);
+                        DynamicObject bank = null;
+                        if (entryBank.size() > 0){
+                            bank = entryBank.get(0);
+                        }else {
+                            bank = entryBank.addNew();
+                        }
+
                         bank.set("bankaccount", entity.get("nckd_bankaccount"));//银行账号
                         bank.set("accountname", entity.get("nckd_accountname"));//账户名称
                         bank.set("isdefault_bank", true);//默认
