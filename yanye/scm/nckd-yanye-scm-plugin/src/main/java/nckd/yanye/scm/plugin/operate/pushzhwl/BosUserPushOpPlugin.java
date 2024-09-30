@@ -71,8 +71,8 @@ public class BosUserPushOpPlugin extends AbstractOperationServicePlugIn {
             JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/PushUser", bodyJson, accessToken);
 
             Map<String,Object> parmMap = new HashMap<>();
-            parmMap.put("number","bd_materialgroup");
-            parmMap.put("name","物料分类");
+            parmMap.put("number","bos_user");
+            parmMap.put("name","人员");
             parmMap.put("creator", RequestContext.get().getCurrUserId());
             parmMap.put("nckd_system", "zhwl");
             parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/PushUser");

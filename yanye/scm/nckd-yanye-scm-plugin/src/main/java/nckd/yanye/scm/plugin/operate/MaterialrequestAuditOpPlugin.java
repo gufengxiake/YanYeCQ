@@ -3,6 +3,12 @@ package nckd.yanye.scm.plugin.operate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import kd.bd.master.helper.GroupStandardHelper;
+import kd.bd.master.util.GroupStandardUtils;
+import kd.bd.master.util.MasterDataUtil;
+import kd.bd.master.vo.GroupStandMap;
+import kd.bd.master.vo.GroupStandVo;
+import kd.bd.master.vo.GroupVo;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -15,6 +21,7 @@ import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.DeleteServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
@@ -94,12 +101,91 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
 
                 // 核算信息设置存货类别并提交审核
                 MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(material, org);
+
+                // 物料分类
+                DynamicObjectCollection groupstandard = material.getDynamicObjectCollection("entry_groupstandard");
+//                GroupStandardHelper.saveGroupStandard(material, groupstandard, "bd_material");
+                this.saveGroupStandard(material, groupstandard, "bd_material", dynamicObject.getDynamicObject("nckd_materialclassify"));
             }
             if (CollectionUtils.isNotEmpty(errorMsg)) {
                 throw new KDBizException(errorMsg.stream().collect(Collectors.joining(",")));
             }
             SaveServiceHelper.update(t);
         });
+    }
+
+    /*
+        保存物料分类
+     */
+    public void saveGroupStandard(DynamicObject dataEntity, DynamicObjectCollection groupstandards, String type, DynamicObject nckdMaterialclassify) {
+        long masterId = (Long) dataEntity.getPkValue();
+        List<DynamicObject> entityGroupDetails = new ArrayList();
+        Set<Long> deleteIds = new HashSet();
+        Long defGroupid = 0L;
+        Iterator<DynamicObject> it = groupstandards.iterator();
+        Map<Long, DynamicObject> newDynamicObject = new HashMap();
+        HashSet standardSet = new HashSet();
+
+        DynamicObject entityGroupDetail;
+        Long defGroupOrgId;
+        DynamicObject groupdetail;
+        while (it.hasNext()) {
+            entityGroupDetail = it.next();
+            Long standard = GroupStandardUtils.getDataByType(entityGroupDetail.get("standardid"));
+            standardSet.add(standard);
+            defGroupOrgId = GroupStandardUtils.getDataByType(entityGroupDetail.get("groupid"));
+            if (defGroupOrgId != 0L) {
+                if ((GroupStandMap.getGroupstandmap().get(type)).getJbflbz().equals(standard)) {
+                    defGroupid = defGroupOrgId;
+                }
+
+                Long groupCreatOrgId = MasterDataUtil.getDataPkByType(entityGroupDetail.getDynamicObject("groupid").get("createorg"));
+                groupdetail = BusinessDataServiceHelper.newDynamicObject((GroupStandMap.getGroupstandmap().get(type)).getGroupdetailType());
+                groupdetail.set("standard", standard);
+                groupdetail.set("group", defGroupOrgId);
+                groupdetail.set("createorg", groupCreatOrgId);
+                groupdetail.set((GroupStandMap.getGroupstandmap().get(type)).getName(), masterId);
+                newDynamicObject.put(standard, groupdetail);
+            }
+        }
+
+        if (defGroupid != 0L) {
+            dataEntity.set("group", defGroupid);
+        }
+
+        if (newDynamicObject == null || !newDynamicObject.containsKey((GroupStandMap.getGroupstandmap().get(type)).getJbflbz())) {
+            entityGroupDetail = BusinessDataServiceHelper.newDynamicObject(((GroupVo) GroupStandMap.getGroupmap().get(type)).getGroupDetail());
+            standardSet.add((GroupStandMap.getGroupstandmap().get(type)).getJbflbz());
+            entityGroupDetail.set("standard", (GroupStandMap.getGroupstandmap().get(type)).getJbflbz());
+            entityGroupDetail.set("group", nckdMaterialclassify);
+            DynamicObject defGroup = BusinessDataServiceHelper.loadSingleFromCache(1L, type + "group", "createorg");
+            defGroupOrgId = GroupStandardUtils.getDataByType(defGroup.get("createorg"));
+            entityGroupDetail.set("createorg", defGroupOrgId);
+            entityGroupDetail.set((GroupStandMap.getGroupstandmap().get(type)).getName(), dataEntity.getPkValue());
+            newDynamicObject.put((GroupStandMap.getGroupstandmap().get(type)).getJbflbz(), entityGroupDetail);
+        }
+
+        DynamicObject[] load = BusinessDataServiceHelper.load((GroupStandMap.getGroupstandmap().get(type)).getGroupdetailType(), "id,standard,group," + (GroupStandMap.getGroupstandmap().get(type)).getName(), new QFilter[]{new QFilter((GroupStandMap.getGroupstandmap().get(type)).getName(), "=", dataEntity.getPkValue())});
+        DynamicObject[] var19 = load;
+        int var20 = load.length;
+
+        for (int var21 = 0; var21 < var20; ++var21) {
+            groupdetail = var19[var21];
+            Long standard = GroupStandardUtils.getDataByType(groupdetail.get("standard"));
+            if (standardSet != null && standardSet.contains(standard)) {
+                deleteIds.add(groupdetail.getLong("id"));
+            }
+        }
+
+        entityGroupDetails.addAll(newDynamicObject.values());
+        SaveServiceHelper.update(dataEntity);
+        if (deleteIds.size() > 0) {
+            DeleteServiceHelper.delete((GroupStandMap.getGroupstandmap().get(type)).getGroupdetailType(), new QFilter[]{new QFilter("id", "in", deleteIds)});
+        }
+
+        if (entityGroupDetails.size() > 0) {
+            SaveServiceHelper.save(entityGroupDetails.toArray(new DynamicObject[0]));
+        }
     }
 
     /**

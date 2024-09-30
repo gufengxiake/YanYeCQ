@@ -1,8 +1,12 @@
 package nckd.yanye.occ.plugin.mobile;
 
+import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.db.DB;
+import kd.bos.entity.botp.runtime.ConvertOperationResult;
+import kd.bos.entity.botp.runtime.PushArgs;
+import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.IOperateInfo;
@@ -26,6 +30,7 @@ import kd.bos.orm.query.fulltext.QMatches;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
+import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.occ.ocbase.common.util.*;
 import kd.occ.ocdma.business.order.SaleOrderHelper;
@@ -156,7 +161,75 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
             //刷新列表
             billList.refresh();
             this.getView().showSuccessNotification("签收成功！");
+
         }
+        //自定义退货申请
+        else if(e.getOperateKey().equalsIgnoreCase("return")){
+            BillList billList = this.getControl("billlistap");
+            Object id = billList.getCurrentSelectedRowInfo().getPrimaryKeyValue();
+            String sourceBill = "ocbsoc_saleorder";//要货订单
+            String targetBill = "ocbsoc_returnorder";//退货申请
+            //String ruleId = "2025459918533834752";//单据转换Id
+
+            List<ListSelectedRow> selectedRows = new ArrayList<>();
+            ListSelectedRow row = new ListSelectedRow();
+            //必填，设置源单单据id
+            row.setPrimaryKeyValue(id);
+            //可选，设置源单分录标识
+            //row.setEntryEntityKey("billentry");
+            //可选，设置源单分录id
+            //row.setEntryPrimaryKeyValue(entryId);
+            selectedRows.add(row);
+
+            // 创建下推参数
+            PushArgs pushArgs = new PushArgs();
+            // 必填，源单标识
+            pushArgs.setSourceEntityNumber(sourceBill);
+            // 必填，目标单标识
+            pushArgs.setTargetEntityNumber(targetBill);
+            // 可选，传入true，不检查目标单新增权
+            pushArgs.setHasRight(true);
+            // 可选，传入目标单验权使用的应用编码
+            //pushArgs.setAppId("");
+            // 可选，传入目标单主组织默认值
+            //pushArgs.setDefOrgId(orgId);
+            //可选，转换规则id
+            pushArgs.setRuleId("");
+            //自动保存
+            pushArgs.setAutoSave(true);
+            // 可选，是否输出详细错误报告
+            pushArgs.setBuildConvReport(true);
+            // 必选，设置需要下推的源单及分录内码
+            pushArgs.setSelectedRows(selectedRows);
+            // 调用下推引擎，下推目标单
+            ConvertOperationResult pushResult = ConvertServiceHelper.pushAndSave(pushArgs);
+            Set<Object> targetBillIds = pushResult.getTargetBillIds();
+            if (targetBillIds.isEmpty()){
+                String message = pushResult.getMessage();
+                if (StringUtils.isEmpty(message)){
+                    if (pushResult.getBillReports()!=null&&!pushResult.getBillReports().isEmpty()){
+                        message=pushResult.getBillReports().get(0).getFailMessage();
+                    }
+                }
+                this.getView().showErrorNotification(message);
+                return;
+            }
+            for(Object pkId:targetBillIds){
+                MobileFormShowParameter mobileFormShowParameter = new MobileFormShowParameter();
+                mobileFormShowParameter.getOpenStyle().setShowType(ShowType.Floating);
+                mobileFormShowParameter.setFormId("ocbsoc_returnmobedit");
+                mobileFormShowParameter.setStatus(OperationStatus.EDIT);
+                mobileFormShowParameter.setCustomParam("returnorderid", pkId);
+                String supplierIdStr = (String)this.getView().getParentView().getFormShowParameter().getCustomParam("supplierid");
+                if (StringUtils.isNotNull(supplierIdStr)) {
+                    mobileFormShowParameter.setCustomParam("supplierid", supplierIdStr);
+                }
+
+                mobileFormShowParameter.setCloseCallBack(new CloseCallBack(this, "modify"));
+                this.getView().showForm(mobileFormShowParameter);
+            }
+        }
+
     }
 
     public void afterBindData(EventObject e) {
