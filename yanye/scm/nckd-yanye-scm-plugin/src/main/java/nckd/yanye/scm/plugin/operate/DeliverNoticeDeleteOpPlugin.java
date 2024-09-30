@@ -161,7 +161,7 @@ public class DeliverNoticeDeleteOpPlugin extends AbstractOperationServicePlugIn 
     private String getErpStatus(String status){
         String newStatus = "";
         switch (status){
-            case "未执行":
+            case "未使用":
                 newStatus = "0";
                 break;
             case "司机签到排队中":
