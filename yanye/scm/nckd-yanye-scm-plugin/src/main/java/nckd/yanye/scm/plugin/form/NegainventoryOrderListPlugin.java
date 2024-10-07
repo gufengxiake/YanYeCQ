@@ -21,6 +21,7 @@ import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
+import nckd.yanye.scm.plugin.task.BussprocessorderTask;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
@@ -37,6 +38,15 @@ import java.util.stream.Collectors;
  */
 public class NegainventoryOrderListPlugin extends AbstractListPlugin {
 
+    private static Map<String,String> map = new HashMap<>();
+
+    private static Map<String,String> getMap(){
+        map.put("1","早班");
+        map.put("2","中班");
+        map.put("3","晚班");
+        map.put("4","不分班次");
+        return map;
+    }
 
     @Override
     public void registerListener(EventObject e) {
@@ -58,97 +68,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
             DynamicObject[] bussProcessOrderArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
-            //选中列的所有分录
-            DynamicObjectCollection dynamicObjectCollection = new DynamicObjectCollection();
-            //构造map, key:负库存物料检查单分录id，value:负库存物料检查单
-            Map<Long,DynamicObject> dynamicObjectMap = new HashMap<>();
-
-            Arrays.asList(bussProcessOrderArr).forEach(t->{
-                if (t.getBoolean("nckd_isgenerate")) {
-                    this.getView().showErrorNotification("负库存物料检查单编号："+t.getString("billno") + "已存在下游单据，不允许重复生成");
-                    return;
-                }
-                DynamicObjectCollection dynamicObjects = t.getDynamicObjectCollection("nckd_negainentries");
-                for (DynamicObject dynamicObject : dynamicObjects){
-                    dynamicObjectMap.put(dynamicObject.getLong("id"),t);
-                }
-                dynamicObjectCollection.addAll(dynamicObjects);
-            });
-
-            //查询所有的库存组织
-            Set<Object> idSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_inventoryorg")).map(t->t.getDynamicObject("nckd_inventoryorg").getPkValue()).collect(Collectors.toSet());
-            //查询所有的物料编码
-            Set<Object> codeSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_mainproduce")).map(t->t.getString("nckd_mainproduce.masterid.number")).collect(Collectors.toSet());
-            //找到对应的物料生产信息
-            codeSet.addAll(dynamicObjectCollection.stream().map(t->t.getString("nckd_materielfield.masterid.number")).collect(Collectors.toSet()));
-            List<DynamicObject> objects = new ArrayList<>();
-            //构造查询生产工单分录条件 未关闭，非完工
-            QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
-                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C")
-                    .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
-            DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{qFilter});
-            if (dynamicObjects != null && dynamicObjects.length > 0){
-                objects.addAll(Arrays.asList(dynamicObjects));
-            }
-            //构造查询生产工单分录条件 已完工，未关闭
-            QFilter filter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
-                    .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C")
-                    .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
-            DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{filter});
-            if (dynamicObj != null && dynamicObj.length > 0){
-                objects.addAll(Arrays.asList(dynamicObj));
-            }
-            //key,物料生产信息，value:生产工单
-            Map<Object,DynamicObject> map = new HashMap<>();
-            //key,物料生产信息，value:生产工单物料信息分录
-//            Map<Object,DynamicObject> masterMap = new HashMap<>();
-            for (DynamicObject dynamicObject :objects){
-                DynamicObjectCollection dynamics = dynamicObject.getDynamicObjectCollection("treeentryentity");
-                for (DynamicObject dynami : dynamics){
-                    map.put(dynami.getString("material.masterid.number")+dateFormat(dynami.getDate("planbegintime")),dynamicObject);
-//                    masterMap.put(dynami.getDynamicObject("material").getPkValue(),dynami);
-                }
-            }
-            //构造map, key负库存物料检查单分录id，分录数据
-            Map<Long,DynamicObject> dyMap = dynamicObjectCollection.stream().collect(Collectors.toMap(t->t.getLong("id"),t->t));
-            for (Map.Entry<Long,DynamicObject> entry : dyMap.entrySet()){
-                //负库存物料检查单分录
-                DynamicObject dynamicObject = entry.getValue();
-                //负库存物料检查单
-                DynamicObject inventoryDynamicObject = dynamicObjectMap.get(entry.getKey());
-
-                /**
-                 *  生成完工入库单条件
-                 * 1、完工入库单+副产品+【对应生产主产品】
-                 * 2、完工入库单+联产品+【对应生产主产品】
-                 */
-                if (("1".equals(dynamicObject.getString("nckd_businessdocument")) && "B".equals(dynamicObject.getString("nckd_sideproduct")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")))
-                        ||("1".equals(dynamicObject.getString("nckd_businessdocument")) && "A".equals(dynamicObject.getString("nckd_sideproduct")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")))){
-                    generateCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
-                }else if ("1".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
-                    //下推生成完工入库单（完工入库单+【入库单对应车间】）
-                    pushDownCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
-
-                }else if ("2".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
-                    /**
-                     *  生成生产入库单条件
-                     * 1、生产入库单+【入库单对应车间】
-                     */
-                    generateProductionReceipt(dynamicObject,inventoryDynamicObject);
-                }else if ("4".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_useworkshop"))){
-                    /**
-                     *  生成领料出库单条件
-                     * 1、领料出库单+正库存领用车间
-                     */
-                    generateMaterialReceipt(dynamicObject,inventoryDynamicObject);
-                }else if ("3".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_useworkshop"))){
-                    /**
-                     *  生成生产领料单条件
-                     * 1、生产领料单+对应生产主产品+正库存领用车间
-                     */
-                    pushDownProductionMaterialReceipt(dynamicObject,map,inventoryDynamicObject);
-                }
-            }
+            handleBussProcessOrder(bussProcessOrderArr,"1");
         }
     }
     //完工入库单（新增）
@@ -202,29 +122,38 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 .stream().filter(t-> "C".equals(t.getString("producttype"))).collect(Collectors.toList());;
         negainventoryOrderEntry.set("manuentryid", CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("id") : 0);//生产工单行ID
         negainventoryOrderEntry.set("producedept",CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("producedept.masterid") : 0);//来源单据编号
-
+        negainventoryOrderEntry.set("shift",queryMpdmWorkshifts(dynamicObject.getDynamicObject("nckd_org").getPkValue()
+                ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_mdc_mftmanuinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
+        BussprocessorderTask task = new BussprocessorderTask();
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的完工入库单新增失败");
         }else {
-            //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!submit.isSuccess()){
-                //提交失败删除生成的下游单据
-                OperationResult delete = OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败"+submit.getMessage());
-                return;
+            if ("B".equals(dynamicObject.getString("nckd_documentstatus")) || "C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    //提交失败删除生成的下游单据
+                    OperationResult delete = OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    task.saveLog(submit,inventoryDynamicObject);
+                    this.getView().showErrorNotification("发起提交失败"+submit.getMessage());
+                    return;
+                }
+                if ("C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                    OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    if(!audit.isSuccess()){
+                        //已提交的数据需要先撤销提交再执行删除操作
+                        OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        task.saveLog(audit,inventoryDynamicObject);
+                        this.getView().showErrorNotification("发起审核失败");
+                        return;
+                    }
+                    updateInventory(inventoryDynamicObject);
+                }
+
             }
-            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!audit.isSuccess()){
-                //已提交的数据需要先撤销提交再执行删除操作
-                OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起审核失败");
-                return;
-            }
-            updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的完工入库单新增成功");
         }
     }
@@ -257,24 +186,34 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 collections.get(0).set("warehouse",nckdWarehouseDy);//仓库
                 collections.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
                 collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
+
+                collections.get(0).set("shift",queryMpdmWorkshifts(dynamicObject.getDynamicObject("nckd_org").getPkValue()
+                        ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
             }
+            BussprocessorderTask task = new BussprocessorderTask();
             SaveServiceHelper.update(imMdcMftmanuinbillObject);
-            //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
-            if(!submit.isSuccess()){
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败");
-                return;
-            }
-            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
-            if(!audit.isSuccess()){
-                //已提交的数据需要先撤销提交再执行删除操作
-                OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起审核失败");
-                return;
-            }
+            if ("B".equals(dynamicObject.getString("nckd_documentstatus")) || "C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
+                    task.saveLog(submit,inventoryDynamicObject);
+                    this.getView().showErrorNotification("发起提交失败");
+                    return;
+                }
+                if ("C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                    OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
+                    if(!audit.isSuccess()){
+                        //已提交的数据需要先撤销提交再执行删除操作
+                        OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
+                        OperationServiceHelper.executeOperate("delete", "im_mdc_mftmanuinbill", new Object[]{imMdcMftmanuinbillObject.getPkValue()}, OperateOption.create());
+                        task.saveLog(audit,inventoryDynamicObject);
+                        this.getView().showErrorNotification("发起审核失败");
+                        return;
+                    }
+                }
 //            SaveServiceHelper.update(imMdcMftmanuinbillObject);
+            }
             updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification("下推成功");
         }
@@ -303,25 +242,34 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         negainventoryOrderEntry.set("ownertype","bos_org");//入库货主类型
         negainventoryOrderEntry.set("owner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库货主
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
+        negainventoryOrderEntry.set("nckd_teamsgroups",queryMpdmWorkshifts(dynamicObject.getDynamicObject("nckd_org").getPkValue()
+                ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_productinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
+        BussprocessorderTask task = new BussprocessorderTask();
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的生产入库单新增失败");
         }else {
-            //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!submit.isSuccess()){
-                //提交失败删除生成的下游单据
-                OperationServiceHelper.executeOperate("delete", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败");
-                return;
-            }
-            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!audit.isSuccess()){
-                //已提交的数据需要先撤销提交再执行删除操作
-                OperationServiceHelper.executeOperate("unsubmit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                OperationServiceHelper.executeOperate("delete", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起审核失败");
-                return;
+            if ("B".equals(dynamicObject.getString("nckd_documentstatus")) || "C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    //提交失败删除生成的下游单据
+                    OperationServiceHelper.executeOperate("delete", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    task.saveLog(submit,inventoryDynamicObject);
+                    this.getView().showErrorNotification("发起提交失败");
+                    return;
+                }
+                if ("C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                    OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    if(!audit.isSuccess()){
+                        //已提交的数据需要先撤销提交再执行删除操作
+                        OperationServiceHelper.executeOperate("unsubmit", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        OperationServiceHelper.executeOperate("delete", "im_productinbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        task.saveLog(audit,inventoryDynamicObject);
+                        this.getView().showErrorNotification("发起审核失败");
+                        return;
+                    }
+                }
             }
             updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的生产入库单新增成功");
@@ -357,26 +305,35 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         negainventoryOrderEntry.set("outowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库货主
         negainventoryOrderEntry.set("outkeepertype","bos_org");//出库保管者类型
         negainventoryOrderEntry.set("outkeeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库保管者
-
+        negainventoryOrderEntry.set("nckd_teamsgroups",queryMpdmWorkshifts(dynamicObject.getDynamicObject("nckd_org").getPkValue()
+                ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
+        BussprocessorderTask task = new BussprocessorderTask();
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_materialreqoutbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
             this.getView().showErrorNotification(invcountscheme.getString("billno") + "对应的领料出库单新增失败");
         }else {
-            //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!submit.isSuccess()){
-                OperationServiceHelper.executeOperate("delete", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败");
-                return;
+            if ("B".equals(dynamicObject.getString("nckd_documentstatus")) || "C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    OperationServiceHelper.executeOperate("delete", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    task.saveLog(submit,inventoryDynamicObject);
+                    this.getView().showErrorNotification("发起提交失败");
+                    return;
+                }
+                if ("C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                    OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                    if(!audit.isSuccess()){
+                        //已提交的数据需要先撤销提交再执行删除操作
+                        OperationServiceHelper.executeOperate("unsubmit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        OperationServiceHelper.executeOperate("delete", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
+                        task.saveLog(audit,inventoryDynamicObject);
+                        this.getView().showErrorNotification("发起审核失败");
+                        return;
+                    }
+                }
             }
-            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-            if(!audit.isSuccess()){
-                //已提交的数据需要先撤销提交再执行删除操作
-                OperationServiceHelper.executeOperate("unsubmit", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                OperationServiceHelper.executeOperate("delete", "im_materialreqoutbill", new Object[]{invcountscheme.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起审核失败");
-                return;
-            }
+
             updateInventory(inventoryDynamicObject);
             this.getView().showSuccessNotification(invcountscheme.getString("billno") + "对应的领料出库单新增成功");
         }
@@ -408,6 +365,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         SaveServiceHelper.update(pomMftstocks);
         PushArgs pushArgs = getPushArgs(pomMftstocks,"pom_mftstock","im_mdc_mftproorder","2011830481036776448");
         ConvertOperationResult result = ConvertServiceHelper.pushAndSave(pushArgs);
+        BussprocessorderTask task = new BussprocessorderTask();
         if (!result.isSuccess()) {
             this.getView().showErrorNotification("下推失败");
         }else {
@@ -415,26 +373,37 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             Object[] ids = id.stream().toArray();
             //查询生产领料单
             DynamicObject imMdcMftproorderObject  = BusinessDataServiceHelper.loadSingle(ids[0], "im_mdc_mftproorder");
-            //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
-            if(!submit.isSuccess()){
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起提交失败");
-                return;
+
+            if ("B".equals(dynamicObject.getString("nckd_documentstatus")) || "C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                //提交审批
+                OperationResult submit = OperationServiceHelper.executeOperate("submit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
+                if(!submit.isSuccess()){
+                    OperationServiceHelper.executeOperate("delete", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
+                    task.saveLog(submit,inventoryDynamicObject);
+                    this.getView().showErrorNotification("发起提交失败");
+                    return;
+                }
+                if ("C".equals(dynamicObject.getString("nckd_documentstatus"))){
+                    OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
+                    if(!audit.isSuccess()){
+                        //已提交的数据需要先撤销提交再执行删除操作
+                        OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
+                        OperationServiceHelper.executeOperate("delete", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
+                        task.saveLog(audit,inventoryDynamicObject);
+                        this.getView().showErrorNotification("发起审核失败");
+                        return;
+                    }
+                }
+
             }
-            OperationResult audit = OperationServiceHelper.executeOperate("audit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
-            if(!audit.isSuccess()){
-                //已提交的数据需要先撤销提交再执行删除操作
-                OperationServiceHelper.executeOperate("unsubmit", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
-                OperationServiceHelper.executeOperate("delete", "im_mdc_mftproorder", new Object[]{imMdcMftproorderObject.getPkValue()}, OperateOption.create());
-                this.getView().showErrorNotification("发起审核失败");
-                return;
-            }
+
             //完工入库单分录
             DynamicObjectCollection collections = imMdcMftproorderObject.getDynamicObjectCollection("billentry");
             if (CollectionUtils.isNotEmpty(collections)){
                 collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
                 collections.get(0).set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+                collections.get(0).set("nckd_teamsgroups",queryMpdmWorkshifts(dynamicObject.getDynamicObject("nckd_org").getPkValue()
+                        ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
             }
             SaveServiceHelper.update(imMdcMftproorderObject);
             updateInventory(inventoryDynamicObject);
@@ -463,7 +432,7 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         return pushArgs;
     }
 
-    private static void getDynamicObject(DynamicObject negainventoryOrderEntry,DynamicObject dynamicObject){
+    private void getDynamicObject(DynamicObject negainventoryOrderEntry,DynamicObject dynamicObject){
         DynamicObject linetype = BusinessDataServiceHelper.loadSingle(1194150915045641216l, "bd_linetype");
         negainventoryOrderEntry.set("linetype",linetype);//行类型
         DynamicObject materielObject = dynamicObject.getDynamicObject("nckd_materiel");
@@ -516,5 +485,107 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
     private String dateFormat(Date date){
         SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM");
         return sdf.format(date);
+    }
+
+    //type 1：手动点击按钮生成下游单据，2：定时任务生成下游单据
+    public void handleBussProcessOrder(DynamicObject[] bussProcessOrderArr,String type){
+        //选中列的所有分录
+        DynamicObjectCollection dynamicObjectCollection = new DynamicObjectCollection();
+        //构造map, key:负库存物料检查单分录id，value:负库存物料检查单
+        Map<Long,DynamicObject> dynamicObjectMap = new HashMap<>();
+
+        Arrays.asList(bussProcessOrderArr).forEach(t->{
+            if (t.getBoolean("nckd_isgenerate")) {
+                this.getView().showErrorNotification("负库存物料检查单编号："+t.getString("billno") + "已存在下游单据，不允许重复生成");
+                return;
+            }
+            DynamicObjectCollection dynamicObjects = t.getDynamicObjectCollection("nckd_negainentries");
+            for (DynamicObject dynamicObject : dynamicObjects){
+                dynamicObjectMap.put(dynamicObject.getLong("id"),t);
+            }
+            dynamicObjectCollection.addAll(dynamicObjects);
+        });
+
+        //查询所有的库存组织
+        Set<Object> idSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_inventoryorg")).map(t->t.getDynamicObject("nckd_inventoryorg").getPkValue()).collect(Collectors.toSet());
+        //查询所有的物料编码
+        Set<Object> codeSet = dynamicObjectCollection.stream().filter(t->null !=  t.getDynamicObject("nckd_mainproduce")).map(t->t.getString("nckd_mainproduce.masterid.number")).collect(Collectors.toSet());
+        //找到对应的物料生产信息
+        codeSet.addAll(dynamicObjectCollection.stream().map(t->t.getString("nckd_materielfield.masterid.number")).collect(Collectors.toSet()));
+        List<DynamicObject> objects = new ArrayList<>();
+        //构造查询生产工单分录条件 未关闭，非完工
+        QFilter qFilter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
+                .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.not_equals,"C")
+                .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
+        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{qFilter});
+        if (dynamicObjects != null && dynamicObjects.length > 0){
+            objects.addAll(Arrays.asList(dynamicObjects));
+        }
+        //构造查询生产工单分录条件 已完工，未关闭
+        QFilter filter = new QFilter("treeentryentity.material.masterid.number", QCP.in, codeSet)
+                .and("treeentryentity.bizstatus",QCP.not_equals,"C").and("treeentryentity.taskstatus",QCP.equals,"C")
+                .and("org.id",QCP.in,idSet).and("treeentryentity.planbegintime",QCP.is_notnull,null);
+        DynamicObject[] dynamicObj = BusinessDataServiceHelper.load("pom_mftorder", "id,billno,entrustdept,treeentryentity,treeentryentity.material,org,entrustdept,treeentryentity.producttype,treeentryentity.producedept,nckd_warehouse,treeentryentity.beginbookdate,treeentryentity.planbegintime", new QFilter[]{filter});
+        if (dynamicObj != null && dynamicObj.length > 0){
+            objects.addAll(Arrays.asList(dynamicObj));
+        }
+        //key,物料生产信息，value:生产工单
+        Map<Object,DynamicObject> map = new HashMap<>();
+        //key,物料生产信息，value:生产工单物料信息分录
+//            Map<Object,DynamicObject> masterMap = new HashMap<>();
+        for (DynamicObject dynamicObject :objects){
+            DynamicObjectCollection dynamics = dynamicObject.getDynamicObjectCollection("treeentryentity");
+            for (DynamicObject dynami : dynamics){
+                map.put(dynami.getString("material.masterid.number")+dateFormat(dynami.getDate("planbegintime")),dynamicObject);
+//                    masterMap.put(dynami.getDynamicObject("material").getPkValue(),dynami);
+            }
+        }
+        //构造map, key负库存物料检查单分录id，分录数据
+        Map<Long,DynamicObject> dyMap = dynamicObjectCollection.stream().collect(Collectors.toMap(t->t.getLong("id"),t->t));
+        for (Map.Entry<Long,DynamicObject> entry : dyMap.entrySet()){
+            //负库存物料检查单分录
+            DynamicObject dynamicObject = entry.getValue();
+            //负库存物料检查单
+            DynamicObject inventoryDynamicObject = dynamicObjectMap.get(entry.getKey());
+
+            /**
+             *  生成完工入库单条件
+             * 1、完工入库单+副产品+【对应生产主产品】
+             * 2、完工入库单+联产品+【对应生产主产品】
+             */
+            if (("1".equals(dynamicObject.getString("nckd_businessdocument")) && "B".equals(dynamicObject.getString("nckd_sideproduct")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")))
+                    ||("1".equals(dynamicObject.getString("nckd_businessdocument")) && "A".equals(dynamicObject.getString("nckd_sideproduct")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")))){
+                generateCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
+            }else if ("1".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
+                //下推生成完工入库单（完工入库单+【入库单对应车间】）
+                pushDownCompletedWarehouseReceipt(dynamicObject,inventoryDynamicObject,map);
+
+            }else if ("2".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_wareorderworkshop"))){
+                /**
+                 *  生成生产入库单条件
+                 * 1、生产入库单+【入库单对应车间】
+                 */
+                generateProductionReceipt(dynamicObject,inventoryDynamicObject);
+            }else if ("4".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_useworkshop"))){
+                /**
+                 *  生成领料出库单条件
+                 * 1、领料出库单+正库存领用车间
+                 */
+                generateMaterialReceipt(dynamicObject,inventoryDynamicObject);
+            }else if ("3".equals(dynamicObject.getString("nckd_businessdocument")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_mainproduce")) && StringUtils.isNotEmpty(dynamicObject.getString("nckd_useworkshop"))){
+                /**
+                 *  生成生产领料单条件
+                 * 1、生产领料单+对应生产主产品+正库存领用车间
+                 */
+                pushDownProductionMaterialReceipt(dynamicObject,map,inventoryDynamicObject);
+            }
+        }
+    }
+    //根据负库存的适用组织、班组信息查询班次基础资料
+    public Object queryMpdmWorkshifts(Object orgId,String teamGroup){
+        QFilter qFilter = new QFilter("createorg",QCP.equals,orgId)
+                .and("name",QCP.equals,teamGroup);
+        DynamicObject[] shift = BusinessDataServiceHelper.load("mpdm_workshifts","id",new QFilter[]{qFilter});
+        return shift[0].getPkValue();
     }
 }

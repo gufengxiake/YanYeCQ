@@ -258,6 +258,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             negainventoryOrder.set("nckd_invcountschemeno", schemenumber);
             negainventoryOrder.set("billstatus", "A");
             negainventoryOrder.set("nckd_datasources", bussProcessOrder.getString("nckd_datasources"));
+            negainventoryOrder.set("nckd_org", bussProcessOrder.getString("org"));//适用组织
             long currUserId = RequestContext.get().getCurrUserId();
             negainventoryOrder.set("creator", currUserId);
             negainventoryOrder.set("createtime", date);
@@ -278,6 +279,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                 DynamicObject nckdWarehouse = e.getDynamicObject("nckd_warehouse");
                 negainventoryOrderEntry.set("nckd_warehouse", nckdWarehouse);
                 negainventoryOrderEntry.set("nckd_businessdocument", e.getString("nckd_businessdocument"));
+                negainventoryOrderEntry.set("nckd_documentstatus", e.getString("nckd_documentstatus"));
                 negainventoryOrderEntry.set("nckd_sideproduct", e.getString("nckd_sideproduct"));
                 negainventoryOrderEntry.set("nckd_mainproduce", e.getDynamicObject("nckd_mainproduce"));
                 negainventoryOrderEntry.set("nckd_useworkshop", e.getDynamicObject("nckd_useworkshop"));

@@ -54,11 +54,12 @@ public class BussprocessorderTask extends AbstractTask {
                 ",nckd_bussinessentries.nckd_quantity,nckd_bussinessentries.nckd_parameter,nckd_bussinessentries.nckd_isinventory," +
                 "nckd_bussinessentries.nckd_inventoryorg,nckd_bussinessentries.nckd_warehouse,nckd_bussinessentries.nckd_businessdocument," +
                 "nckd_bussinessentries.nckd_sideproduct,nckd_bussinessentries.nckd_mainproduce,nckd_bussinessentries.nckd_useworkshop," +
-                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield,nckd_bussinessentries.nckd_istakeeffect,nckd_bussinessentries.nckd_startenddata", new QFilter[]{qFilter});
+                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield,nckd_bussinessentries.nckd_istakeeffect,nckd_bussinessentries.nckd_startenddata," +
+                "nckd_bussinessentries.nckd_documentstatus", new QFilter[]{qFilter});
         //构建map,key:物料生产信息id，value:5G工厂返回数量
 //        Map<Object,BigDecimal> bigDecimalMap = new HashMap<>();
         for (DynamicObject dynamicObject : dynamicObjects){
-            Date date = new Date();
+//            Date date = new Date();
             DynamicObjectCollection dynamicObjectCollection = dynamicObject.getDynamicObjectCollection("nckd_bussinessentries");
             //取出生效的分录数据
             List<DynamicObject> entityObjects = dynamicObjectCollection.stream().filter(t->t.getBoolean("nckd_istakeeffect")).collect(Collectors.toList());
@@ -192,7 +193,7 @@ public class BussprocessorderTask extends AbstractTask {
             //更新
             SaveServiceHelper.update(dynamicObject);
             //调用生产负库存的操作(负库存需要判断是5G工厂类型还是默认类型)  操作按钮：generate
-            OperationResult operationResult = saveNegainventoryOrder(date,dynamicObject);
+            OperationResult operationResult = saveNegainventoryOrder(dateTime,dynamicObject);
             //插入日志表
             saveLog(operationResult,dynamicObject);
 
@@ -229,6 +230,7 @@ public class BussprocessorderTask extends AbstractTask {
             //这一部分直接由物料-业务处理对应单 分录带过来
             DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
             negainventoryOrderEntry.set("nckd_teamsgroups", e.getString("nckd_teamsgroups"));
+            negainventoryOrderEntry.set("nckd_documentstatus", e.getString("nckd_documentstatus"));
             negainventoryOrderEntry.set("nckd_startenddata", e.getString("nckd_startenddata"));
             negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
             negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));
