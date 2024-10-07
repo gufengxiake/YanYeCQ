@@ -14,6 +14,8 @@ import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +57,7 @@ public class DeliverNoticePushOpPlugin extends AbstractOperationServicePlugIn {
         fieldKeys.add("billentry.warehouse");
         fieldKeys.add("billentry.qty");
         fieldKeys.add("billentry.unit");
+        fieldKeys.add("auxpty");
     }
 
     @Override
@@ -108,6 +111,7 @@ public class DeliverNoticePushOpPlugin extends AbstractOperationServicePlugIn {
             DynamicObject warehouse = billentry.getDynamicObject("warehouse");
             BigDecimal qty = billentry.getBigDecimal("qty");
             DynamicObject unit = billentry.getDynamicObject("unit");
+            DynamicObject auxpty = billentry.getDynamicObject("auxpty");
 
 
             map.put("DocType", "发货通知单");//单据类型
@@ -138,11 +142,18 @@ public class DeliverNoticePushOpPlugin extends AbstractOperationServicePlugIn {
             map.put("MaterialCode",masterid.getString("number"));//物料编号
             map.put("MaterialName",masterid.getString("name"));//物料名称
             map.put("SpecificationsModel",masterid.getString("modelnum"));//规格型号
-            //map.put("LevelName",);//品级规格
             map.put("WarehouseCode",warehouse.getString("number"));//仓库编号
             map.put("WarehouseName",warehouse.getString("name"));//仓库名称
             map.put("Quantity",qty);//到货数量
             map.put("MainUnit",unit.getString("name"));//计量单位
+            if (auxpty != null && "004".equals(auxpty.getDynamicObjectType().getName())){
+                DynamicObject flexauxprop = BusinessDataServiceHelper.loadSingle("bd_flexauxprop_bd", "hg,auxproptype,auxpropval",new QFilter[]{new QFilter("hg",QCP.equals,auxpty.getPkValue())});
+                DynamicObject flex = BusinessDataServiceHelper.loadSingle("bos_flex_property", "valuesource", new QFilter[]{new QFilter("flexfield", QCP.equals, flexauxprop.get("auxproptype"))});
+                String dateType = flex.getDynamicObject("valuesource").getString("number");
+                String dateTypeId = flexauxprop.getString("auxpropval");
+                DynamicObject dy = BusinessDataServiceHelper.loadSingle(dateTypeId,dateType);
+                map.put("LevelName",dy.getString("name"));//品级规格
+            }
 
             //获取token
             JSONObject tokenjson = new JSONObject();

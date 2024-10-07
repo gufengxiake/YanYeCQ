@@ -14,6 +14,8 @@ import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
@@ -43,7 +45,7 @@ public class TransApplyPushOpPlugin extends AbstractOperationServicePlugIn {
         fieldKeys.add("billno");
         fieldKeys.add("nckd_biztype");
         fieldKeys.add("createtime");
-        fieldKeys.add("nckd_transporttype");
+        fieldKeys.add("nckd_cartype");
         fieldKeys.add("nckd_address");
         fieldKeys.add("nckd_car");
         fieldKeys.add("nckd_dirver");
@@ -52,7 +54,8 @@ public class TransApplyPushOpPlugin extends AbstractOperationServicePlugIn {
         fieldKeys.add("comment");
         fieldKeys.add("billentry");
         fieldKeys.add("billentry.material");
-        fieldKeys.add("billentry.bd_warehouse");
+        fieldKeys.add("billentry.inwarehouse");
+        fieldKeys.add("auxpty");
     }
 
     @Override
@@ -86,7 +89,7 @@ public class TransApplyPushOpPlugin extends AbstractOperationServicePlugIn {
             String bizType = dataEntity.getString("nckd_biztype");
             String billno = dataEntity.getString("billno");
             Date createtime = dataEntity.getDate("createtime");
-            String tranSportType = setSendName(dataEntity.getString("nckd_transporttype"));
+            String tranSportType = setSendName(dataEntity.getString("nckd_cartype"));
             DynamicObject address = dataEntity.getDynamicObject("nckd_address");
             DynamicObject vehicle = dataEntity.getDynamicObject("nckd_car");
             DynamicObject driver = dataEntity.getDynamicObject("nckd_dirver");
@@ -101,7 +104,9 @@ public class TransApplyPushOpPlugin extends AbstractOperationServicePlugIn {
             //material = BusinessDataServiceHelper.loadSingle(material.getPkValue(), "bd_materialsalinfo");
             DynamicObject masterid = material.getDynamicObject("masterid");
             masterid = BusinessDataServiceHelper.loadSingle(masterid.getPkValue(), "bd_material");
-            DynamicObject warehouse = billentry.getDynamicObject("bd_warehouse");
+            DynamicObject warehouse = billentry.getDynamicObject("inwarehouse");
+            DynamicObject auxpty = billentry.getDynamicObject("auxpty");
+
 
 
             map.put("DocType", "调拨申请单");//单据类型
@@ -125,11 +130,19 @@ public class TransApplyPushOpPlugin extends AbstractOperationServicePlugIn {
             map.put("MaterialPK",masterid.getString("id"));//物料主键
             map.put("MaterialCode",masterid.getString("number"));//物料编号
             map.put("MaterialName",masterid.getString("name"));//物料名称
-            map.put("SpecificationsModel",material.getString("modelnum"));//规格型号
+            map.put("SpecificationsModel",masterid.getString("modelnum"));//规格型号
             //map.put("LevelName",);//品级规格
             map.put("ZRStorPK",warehouse.getString("id"));//转入仓库主键
             map.put("ZRStorCode",warehouse.getString("number"));//转入仓库编号
             map.put("ZRStorName",warehouse.getString("name"));//转入仓库名称
+            if (auxpty != null && "004".equals(auxpty.getDynamicObjectType().getName())){
+                DynamicObject flexauxprop = BusinessDataServiceHelper.loadSingle("bd_flexauxprop_bd", "hg,auxproptype,auxpropval",new QFilter[]{new QFilter("hg", QCP.equals,auxpty.getPkValue())});
+                DynamicObject flex = BusinessDataServiceHelper.loadSingle("bos_flex_property", "valuesource", new QFilter[]{new QFilter("flexfield", QCP.equals, flexauxprop.get("auxproptype"))});
+                String dateType = flex.getDynamicObject("valuesource").getString("number");
+                String dateTypeId = flexauxprop.getString("auxpropval");
+                DynamicObject dy = BusinessDataServiceHelper.loadSingle(dateTypeId,dateType);
+                map.put("LevelName",dy.getString("name"));//品级规格
+            }
 
 
             //获取token

@@ -132,7 +132,8 @@ public class ZhwlCallBackApiPlugin implements Serializable {
             @ApiParam(value = "毛重", required = true) BigDecimal nckd_grossweight,
             @ApiParam(value = "皮重", required = true) BigDecimal nckd_tare,
             @ApiParam(value = "净重", required = true) BigDecimal nckd_netweight,
-            @ApiParam(value = "发货数量", required = true) BigDecimal nckd_qty
+            @ApiParam(value = "发货数量", required = true) BigDecimal nckd_qty,
+            @ApiParam(value = "车皮号", required = true) BigDecimal nckd_railwaywagon
     ) {
         //业务类型
         if (Objects.isNull(nckd_billtype)){
@@ -267,6 +268,7 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         eleweigh.set("nckd_carsysno",nckd_carsysno);//派车单号
                         eleweigh.set("nckd_driver",driver);//司机
                         eleweigh.set("nckd_vehicle",vehicle);//车号
+                        eleweigh.set("nckd_railwaywagon",nckd_railwaywagon);//车皮号
                         DynamicObjectCollection entryentity = eleweigh.getDynamicObjectCollection("entryentity");
                         DynamicObject entry = entryentity.get(0);
                         entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
