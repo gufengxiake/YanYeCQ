@@ -29,6 +29,7 @@ public class SalOutUnditCheckOperatePlugIn extends AbstractOperationServicePlugI
         // 要求加载预计送货日期、最迟送货日期字段
         e.getFieldKeys().add(SalOutCheckValidator.KEY_MAINBILLID);
         e.getFieldKeys().add(SalOutCheckValidator.KEY_MAINBILLENTITY);
+        e.getFieldKeys().add(SalOutCheckValidator.KEY_ISVIRTUALBILL);
     }
 
     /**
@@ -55,6 +56,7 @@ public class SalOutUnditCheckOperatePlugIn extends AbstractOperationServicePlugI
         public final static String KEY_MAINBILLID = "mainbillentryid";
         //核心单据实体
         public final static String KEY_MAINBILLENTITY = "mainbillentity";
+        public final static String KEY_ISVIRTUALBILL = "isvirtualbill";
 
         /**
          * 返回校验器的主实体：系统将自动对此实体数据，逐行进行校验
@@ -101,10 +103,14 @@ public class SalOutUnditCheckOperatePlugIn extends AbstractOperationServicePlugI
             for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
                 rowDataModel.setRowContext(rowDataEntity.getDataEntity());
                 String srcbillentity = rowDataModel.getValue(KEY_MAINBILLENTITY).toString();
-                //判断源单分类Id是否已下推销售出库单
-                if ("pm_purorderbill".equalsIgnoreCase(srcbillentity)) {
-                    Object sourceentryid = rowDataModel.getValue(KEY_MAINBILLID);
-                    sourentryIdList.add(sourceentryid);
+                //是否虚单
+                boolean isvirtualbill= (boolean) rowDataModel.getValue(KEY_ISVIRTUALBILL);
+                if(!isvirtualbill){
+                    //判断源单分类Id是否已下推销售出库单
+                    if ("pm_purorderbill".equalsIgnoreCase(srcbillentity)) {
+                        Object sourceentryid = rowDataModel.getValue(KEY_MAINBILLID);
+                        sourentryIdList.add(sourceentryid);
+                    }
                 }
             }
             if (!sourentryIdList.isEmpty()) {
