@@ -94,7 +94,6 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin implements
             model.setValue("remark", errMsg, changeRowIndex);
             return errMsg;
         }
-
         return null;
     }
 

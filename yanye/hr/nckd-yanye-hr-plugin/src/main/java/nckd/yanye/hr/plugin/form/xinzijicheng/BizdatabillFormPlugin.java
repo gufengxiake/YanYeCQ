@@ -35,7 +35,6 @@ public class BizdatabillFormPlugin extends AbstractFormPlugin {
     @Override
     public void beforeDoOperation(BeforeDoOperationEventArgs args) {
         super.beforeDoOperation(args);
-
         FormOperate formOperate = (FormOperate) args.getSource();
         if ("donothing_newentry".equals(formOperate.getOperateKey())) {
             // 业务数据模板
