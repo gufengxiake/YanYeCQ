@@ -23,7 +23,7 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 /**
  * @author husheng
  * @date 2024-08-22 14:00
- * @description  物料属性信息
+ * @description 物料属性信息
  */
 public class MaterialAttributeInformationUtils {
     private static final Log logger = LogFactory.getLog(MaterialAttributeInformationUtils.class);
@@ -45,6 +45,31 @@ public class MaterialAttributeInformationUtils {
      * 【物料类型】为‘费用’+【物料属性】为‘外购’时
      */
     public static List<String> feeOutsourcingList = Arrays.asList("3", "5");
+
+    public static List<String> list = Arrays.asList("1", "2", "3", "4", "5");
+
+    /**
+     * 生成单位信息
+     * @param material
+     * @param dynamicObject
+     */
+    public static void saveBdMultimeasureunit(DynamicObject material, DynamicObject dynamicObject) {
+        DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_multimeasureunit");
+        // 物料
+        newDynamicObject.set("materialid", material);
+        // 计量单位
+        newDynamicObject.set("measureunitid", dynamicObject.get("nckd_measureunitid"));
+        // 换算分母
+        newDynamicObject.set("denominator", dynamicObject.get("nckd_denominator"));
+        // 换算分子
+        newDynamicObject.set("numerator", dynamicObject.get("nckd_numerator"));
+        // 换算类型
+        newDynamicObject.set("converttype", dynamicObject.get("nckd_converttype"));
+        // 单位精度
+        newDynamicObject.set("precision", dynamicObject.get("nckd_precision"));
+
+        SaveServiceHelper.save(new DynamicObject[]{newDynamicObject});
+    }
 
     /**
      * 核算信息设置存货类别并提交审核
@@ -94,14 +119,15 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 生产基本信息
-     * @param org   申请组织
-     * @param material  物料
+     *
+     * @param org      申请组织
+     * @param material 物料
      */
-    public static void defaultProductionInfo(DynamicObject org,DynamicObject material) {
+    public static void defaultProductionInfo(DynamicObject org, DynamicObject material) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialmftinfo");
 
         // 物料
-        newDynamicObject.set("masterid",material);
+        newDynamicObject.set("masterid", material);
         // 编码
         newDynamicObject.set("number", material.getString("number"));
         // 生产信息创建组织
@@ -153,10 +179,11 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 计划基本信息
-     * @param org   申请组织
-     * @param material  物料
+     *
+     * @param org      申请组织
+     * @param material 物料
      */
-    public static void defaultPlanInfo(DynamicObject org,DynamicObject material) {
+    public static void defaultPlanInfo(DynamicObject org, DynamicObject material) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("mpdm_materialplan");
 
         // 物料
@@ -228,10 +255,11 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 库存基本信息
-     * @param org   申请组织
-     * @param material  物料
+     *
+     * @param org      申请组织
+     * @param material 物料
      */
-    public static void defaultStockInfo(DynamicObject org,DynamicObject material) {
+    public static void defaultStockInfo(DynamicObject org, DynamicObject material) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialinventoryinfo");
 
         // 物料
@@ -273,10 +301,11 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 销售基本信息
-     * @param org   申请组织
-     * @param material  物料
+     *
+     * @param org      申请组织
+     * @param material 物料
      */
-    public static void defaultMarketInfo(DynamicObject org,DynamicObject material) {
+    public static void defaultMarketInfo(DynamicObject org, DynamicObject material) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialsalinfo");
 
         // 物料
@@ -302,10 +331,11 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 采购基本信息
-     * @param org   申请组织
-     * @param material  物料
+     *
+     * @param org      申请组织
+     * @param material 物料
      */
-    public static void defaultPurchaseInfo(DynamicObject org,DynamicObject material) {
+    public static void defaultPurchaseInfo(DynamicObject org, DynamicObject material) {
         DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_materialpurchaseinfo");
 
         // 物料
@@ -352,21 +382,22 @@ public class MaterialAttributeInformationUtils {
 
     /**
      * 数据处理
-     * @param dynamicObject  单据数据
+     *
+     * @param dynamicObject 单据数据
      */
-    public static void processData(DynamicObject dynamicObject){
+    public static void processData(DynamicObject dynamicObject) {
         // 单据标识
         String entityNumber = dynamicObject.getDataEntityType().getName();
 
         // 保存
         OperationResult saveOperate = SaveServiceHelper.saveOperate(entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
-        if(saveOperate.isSuccess()){
+        if (saveOperate.isSuccess()) {
             // 提交
-            OperationResult submitOperate =  OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
-            if(submitOperate.isSuccess()){
+            OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+            if (submitOperate.isSuccess()) {
                 // 审核
                 OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
-                if(!auditOperate.isSuccess()){
+                if (!auditOperate.isSuccess()) {
                     logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                     throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                 }
@@ -389,14 +420,16 @@ public class MaterialAttributeInformationUtils {
         DynamicObject rule = BusinessDataServiceHelper.loadSingleFromCache("bd_bomversionrule_new", "id", qFilter.toArray());
         return rule;
     }
+
     /**
      * 数据处理(反审核)
-     * @param dynamicObject  单据数据
+     *
+     * @param dynamicObject 单据数据
      */
-    public static void reverseprocessData(DynamicObject dynamicObject){
+    public static void reverseprocessData(DynamicObject dynamicObject) {
         // 单据标识
         String entityNumber = dynamicObject.getDataEntityType().getName();
         //反审核
-         OperationServiceHelper.executeOperate("unaudit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+        OperationServiceHelper.executeOperate("unaudit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
     }
 }

@@ -44,9 +44,9 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         String itemKey = evt.getItemKey();
         if (itemKey.equals("nckd_materialcontinue")) {
             ListSelectedRowCollection selectedRows = this.getSelectedRows();
-            if (selectedRows.size() == 0) {
-                throw new KDBizException("请选择数据!");
-            }
+//            if (selectedRows.size() == 0) {
+//                throw new KDBizException("请选择数据!");
+//            }
 
             Object[] keyValues = selectedRows.getPrimaryKeyValues();
             QFilter qFilter = new QFilter("id", QCP.in, keyValues)
@@ -58,8 +58,12 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 
             // 获取选择的数据
             DynamicObjectCollection materialrequest = QueryServiceHelper.query("nckd_materialrequest", "org,nckd_materialentries.nckd_materialnumber", new QFilter[]{new QFilter("id", QCP.in, keyValues)});
-            List<Long> orgIds = materialrequest.stream().map(t -> t.getLong("org")).distinct().collect(Collectors.toList());
-            List<String> materialnumberList = materialrequest.stream().map(t -> t.getString("nckd_materialentries.nckd_materialnumber")).distinct().collect(Collectors.toList());
+            List<Long> orgIds = null;
+            List<String> materialnumberList = null;
+            if(materialrequest.size() > 0){
+                orgIds = materialrequest.stream().map(t -> t.getLong("org")).distinct().collect(Collectors.toList());
+                materialnumberList = materialrequest.stream().map(t -> t.getString("nckd_materialentries.nckd_materialnumber")).distinct().collect(Collectors.toList());
+            }
 
             FormShowParameter parameter = new FormShowParameter();
             parameter.setFormId("nckd_selectorg");
@@ -96,21 +100,22 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                      * 物料属性nckd_materialattribute(1:自制、2：外购)
                      * 自制物料类型nckd_selfmaterialtype(1：产成品、2：半成品)
                      */
-                    if ("1".equals(dynamicObject.getString("nckd_materialtype"))
-                            && "1".equals(dynamicObject.getString("nckd_materialattribute"))
-                            && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.finishedGoodsList, loadSingle, org, material);
-                    } else if ("1".equals(dynamicObject.getString("nckd_materialtype"))
-                            && "1".equals(dynamicObject.getString("nckd_materialattribute"))
-                            && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.semiFinishedList, loadSingle, org, material);
-                    } else if (Arrays.asList("1", "8").contains(dynamicObject.getString("nckd_materialtype"))
-                            && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.outsourcingList, loadSingle, org, material);
-                    } else if ("7".equals(dynamicObject.getString("nckd_materialtype"))
-                            && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.feeOutsourcingList, loadSingle, org, material);
-                    }
+//                    if ("1".equals(dynamicObject.getString("nckd_materialtype"))
+//                            && "1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                            && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
+//                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.finishedGoodsList, loadSingle, org, material);
+//                    } else if ("1".equals(dynamicObject.getString("nckd_materialtype"))
+//                            && "1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                            && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
+//                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.semiFinishedList, loadSingle, org, material);
+//                    } else if (Arrays.asList("1", "8").contains(dynamicObject.getString("nckd_materialtype"))
+//                            && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+//                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.outsourcingList, loadSingle, org, material);
+//                    } else if ("7".equals(dynamicObject.getString("nckd_materialtype"))
+//                            && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+//                        getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.feeOutsourcingList, loadSingle, org, material);
+//                    }
+                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.list, loadSingle, org, material);
 
                     // 生成物料属性信息
                     if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
