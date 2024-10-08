@@ -33,12 +33,12 @@ public class CityWarehouseReportListDataPlugin extends AbstractReportListDataPlu
                 "nckd_storages," +
                 "nckd_storageb," +
                 "id";
-        DataSet bd_warehouse = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet bdWarehouse = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "bd_warehouse", sFields,
                         qFilters.toArray(new QFilter[0]) ,
                         null);
 
-        return bd_warehouse.orderBy(new String[]{"createorgname"});
+        return bdWarehouse.orderBy(new String[]{"createorgname"});
     }
 
     @Override

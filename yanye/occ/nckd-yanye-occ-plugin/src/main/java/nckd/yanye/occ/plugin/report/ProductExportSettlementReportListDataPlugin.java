@@ -98,10 +98,10 @@ public class ProductExportSettlementReportListDataPlugin extends AbstractReportL
 
         //获取签收单来源单据id
         List<Long> nckdSourcebillid = DataSetToList.getOneToList(dataSet, "nckd_sourcebillid");
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", "id,biztime", new QFilter[]{new QFilter("id", QCP.in, nckdSourcebillid.toArray(new Long[0]))}, null);
 
-        dataSet = dataSet.leftJoin(im_saloutbill).on("nckd_sourcebillid","id").select(dataSet.getRowMeta().getFieldNames(),new String[]{"biztime"}).finish();
+        dataSet = dataSet.leftJoin(imSaloutbill).on("nckd_sourcebillid","id").select(dataSet.getRowMeta().getFieldNames(),new String[]{"biztime"}).finish();
         //根据发货日期过滤
         if(filter.getDate("fhdate_s") != null && filter.getDate("fhdate_e") != null ){
             DateTime begin = DateUtil.beginOfDay(filter.getDate("fhdate_s"));

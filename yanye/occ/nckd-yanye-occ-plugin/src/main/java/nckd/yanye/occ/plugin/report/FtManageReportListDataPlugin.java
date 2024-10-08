@@ -37,16 +37,16 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
             switch (filterItem.getPropName()) {
                 case "nckd_org_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_org_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        QFilter qFilter = new QFilter("bizorg", QCP.equals, nckd_org_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        QFilter qFilter = new QFilter("bizorg", QCP.equals, pkValue);
                         qFilters.add(qFilter);
                     }
                     break;
                 // 查询条件收货单位,标识如不一致,请修改
                 case "nckd_customer_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_customer_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        QFilter qFilter = new QFilter("customer", QCP.equals, nckd_customer_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        QFilter qFilter = new QFilter("customer", QCP.equals, pkValue);
                         qFilters.add(qFilter);
                     }
                     break;
@@ -100,16 +100,18 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
                         "billentry.id as saleoutbodyid," +
 //                        核心单据行id
                         "billentry.mainbillentryid as mainbillentryid";
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
-        im_saloutbill = this.linkSignAtureBill(im_saloutbill);
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]) , null);
+        imSaloutbill = this.linkSignAtureBill(imSaloutbill);
 
-        return im_saloutbill.orderBy(new String[]{"nckd_bizorg","nckd_fhdate","nckd_fhbillno"});
+        return imSaloutbill.orderBy(new String[]{"nckd_bizorg","nckd_fhdate","nckd_fhbillno"});
     }
 
     //获取签收单  nckd_signaturebill
     public DataSet linkSignAtureBill(DataSet ds) {
         List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
-        if (mainbillentryidToList.isEmpty()) return ds;
+        if (mainbillentryidToList.isEmpty()) {
+            return ds;
+        }
 //
 //        //关联销售订单
 //        QFilter orderFilter = new QFilter("billentry.id", QCP.in, mainbillentryidToList.toArray(new Long[0]));
@@ -127,7 +129,7 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
         QFilter signFilter = new QFilter("entryentity.nckd_mainentrybill", QCP.in, mainbillentryidToList.toArray(new Long[0]));
         //限定单据为已审核
         signFilter.and("billstatus", QCP.equals, "C");
-        DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
+        DataSet nckdSignaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_signaturebill",
 //                发货日期
 //                "nckd_signdate as nckd_fhdate," +
 //                       出库数量-签收数量 = 途损数量
@@ -147,8 +149,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
 //                        来源单据行id
                         "entryentity.nckd_sourceentryid as nckd_sourceentryid",
                 new QFilter[]{signFilter}, null);
-        ds = ds.leftJoin(nckd_signaturebill).on("saleoutbodyid","nckd_sourceentryid")
-                .select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
+        ds = ds.leftJoin(nckdSignaturebill).on("saleoutbodyid","nckd_sourceentryid")
+                .select(ds.getRowMeta().getFieldNames(),nckdSignaturebill.getRowMeta().getFieldNames()).finish();
 
         //关联开票申请单
         QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryidToList.toArray(new Long[0]));

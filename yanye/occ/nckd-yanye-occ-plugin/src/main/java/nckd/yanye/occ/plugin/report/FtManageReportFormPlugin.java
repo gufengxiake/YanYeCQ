@@ -37,9 +37,9 @@ public class FtManageReportFormPlugin extends AbstractReportFormPlugin implement
             //运价
             BigDecimal nckdPricefieldyf1 = next.getBigDecimal("nckd_pricefieldyf1") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_pricefieldyf1");
             //客户签收数量
-            BigDecimal nckd_signqty = next.getBigDecimal("nckd_signqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_signqty");
+            BigDecimal nckdSignqty = next.getBigDecimal("nckd_signqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_signqty");
            //计算价税合计
-            BigDecimal multiply = nckd_signqty.multiply(nckdPricefieldyf1);
+            BigDecimal multiply = nckdSignqty.multiply(nckdPricefieldyf1);
             next.set("nckd_e_pricetaxtotal",multiply);
             //组织名称需要改变
             if (next.getString("nckd_bizorg").equals("晶昊本部")){

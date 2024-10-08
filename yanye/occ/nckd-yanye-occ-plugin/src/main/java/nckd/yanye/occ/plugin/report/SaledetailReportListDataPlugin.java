@@ -38,7 +38,7 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         DataSet imSaleDS = this.getSaleOutBill(reportQueryParam);
         imSaleDS = this.linkSaleOrder(imSaleDS);
-        return imSaleDS;
+        return imSaleDS.orderBy(new String[]{"nckd_bizorg","nckd_material"});
     }
 
     //获取销售出库单
@@ -95,8 +95,8 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 // 查询条件仓库,标识如不一致,请修改
                 case "nckd_warehouse_q":
                     if(! (filterItem.getValue() == null) ){
-                        Long nckd_warehouse_q =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilters.add(new QFilter("billentry.warehouse", QCP.equals, nckd_warehouse_q));
+                        Long pkValue =  (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("billentry.warehouse", QCP.equals, pkValue));
                     }
                     break;
             }
@@ -113,10 +113,10 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 "billentry.mainbillentryid as nckd_mainbillentryid , billentry.mainbillentity as nckd_mainbillentity";
 
 
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]),null);
 
-        return im_saloutbill;
+        return imSaloutbill;
     }
 
     //连接要货订单
@@ -130,8 +130,10 @@ public class SaledetailReportListDataPlugin extends AbstractReportListDataPlugin
                 mainbillentryid.add(next.getLong("nckd_mainbillentryid"));
             }
         }
-        if(mainbillentryid.isEmpty())
+        if(mainbillentryid.isEmpty()){
             return ds;
+        }
+
 
         //取要货订单交付明细主键，省市区，详细地址，电话，收货人
         String sFields = "itementry.id as fdetailid,itementry.entryaddressid as nckd_entryaddressid ,itementry.entrydetailaddress as nckd_entrydetailaddress," +

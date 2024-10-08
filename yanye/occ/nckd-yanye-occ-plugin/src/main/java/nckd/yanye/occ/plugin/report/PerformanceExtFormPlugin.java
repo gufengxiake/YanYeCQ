@@ -96,12 +96,12 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
         }
 
         //根据条件匹配对应的销售出库单的核心来源单据行id
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                         "im_saloutbill", "billentry.mainbillentryid as mainbillentryid", new QFilter[]{qFilter},null);
 
         ArrayList<Long> mainbillentryid = new ArrayList<>();
-        while (im_saloutbill.hasNext()) {
-            mainbillentryid.add(im_saloutbill.next().getLong("mainbillentryid"));
+        while (imSaloutbill.hasNext()) {
+            mainbillentryid.add(imSaloutbill.next().getLong("mainbillentryid"));
         }
 
         QFilter orderFilter = new QFilter("itementry.id",QCP.in,mainbillentryid.toArray(new Long[0]));

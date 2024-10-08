@@ -84,19 +84,21 @@ public class SaleInvOutDifReportListDataPlugin extends AbstractReportListDataPlu
 //                核心单据行id
                 "billentry.mainbillentryid as mainbillentryid";
 
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
 
-        im_saloutbill = this.linkOriginal(im_saloutbill);
+        imSaloutbill = this.linkOriginal(imSaloutbill);
 
-        return im_saloutbill;
+        return imSaloutbill;
 
     }
 
     //关联开票申请单
     public DataSet linkOriginal(DataSet ds){
         List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
-        if (mainbillentryidToList.isEmpty()) return ds;
+        if (mainbillentryidToList.isEmpty()) {
+            return ds;
+        }
 
         QFilter aimFilter = new QFilter("sim_original_bill_item.corebillentryid" , QCP.in , mainbillentryidToList.toArray(new Long[0]));
         DataSet originalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),

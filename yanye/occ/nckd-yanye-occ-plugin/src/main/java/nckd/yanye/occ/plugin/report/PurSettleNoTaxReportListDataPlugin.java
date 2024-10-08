@@ -100,7 +100,9 @@ public class PurSettleNoTaxReportListDataPlugin extends AbstractReportListDataPl
                 materialid.add(next.getLong("nckd_material"));
             }
         }
-        if(materialid.isEmpty()) return ds;
+        if(materialid.isEmpty()) {
+            return ds;
+        }
 
         DataSet material = QueryServiceHelper.queryDataSet(this.getClass().getName(), "bd_material",
                 "id," +

@@ -33,7 +33,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
         qFilters.add(qFilter);
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        DateTime outdate_start = null, outdate_end = null;
+        DateTime outdateStart = null, outdateEnd = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
                 // 查询条件销售组织,标识如不一致,请修改
@@ -62,23 +62,23 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
                 // 查询条件单据日期,标识如不一致,请修改
                 case "orderdate_start":
                     if(filterItem.getDate() != null){
-                        DateTime orderdate_start =  DateUtil.beginOfDay(filterItem.getDate());
-                        qFilters.add(new QFilter("orderdate",QCP.large_equals,orderdate_start));
+                        DateTime orderdateStart =  DateUtil.beginOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("orderdate",QCP.large_equals,orderdateStart));
                     }
                     break;
                 case "orderdate_end":
                     if(filterItem.getDate() != null){
-                        DateTime orderdate_end =  DateUtil.endOfDay(filterItem.getDate());
-                        qFilters.add(new QFilter("orderdate",QCP.less_equals,orderdate_end));
+                        DateTime orderdateEnd =  DateUtil.endOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("orderdate",QCP.less_equals,orderdateEnd));
                     }
                     break;
                 // 查询出库日期,标识如不一致,请修改
                 case "outdate_start":
-                    outdate_start = (filterItem.getDate() == null) ? null : DateUtil.beginOfDay(filterItem.getDate());
+                    outdateStart = (filterItem.getDate() == null) ? null : DateUtil.beginOfDay(filterItem.getDate());
                     break;
                 //
                 case "outdate_end":
-                    outdate_end = (filterItem.getDate() == null) ? null : DateUtil.endOfDay(filterItem.getDate());
+                    outdateEnd = (filterItem.getDate() == null) ? null : DateUtil.endOfDay(filterItem.getDate());
                     break;
             }
         }
@@ -105,12 +105,12 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
             return saleOrder;
         }
         //根据出库起始日期条件过滤
-        if (outdate_start != null) {
-            saleOrder = saleOrder.filter("nckd_outdate >= to_date('" + outdate_start + "','yyyy-MM-dd hh:mm:ss')");
+        if (outdateStart != null) {
+            saleOrder = saleOrder.filter("nckd_outdate >= to_date('" + outdateStart + "','yyyy-MM-dd hh:mm:ss')");
         }
         //根据出库截止日期条件过滤
-        if (outdate_end != null) {
-            saleOrder = saleOrder.filter("nckd_outdate <= to_date('" + outdate_end + "','yyyy-MM-dd hh:mm:ss')");
+        if (outdateEnd != null) {
+            saleOrder = saleOrder.filter("nckd_outdate <= to_date('" + outdateEnd + "','yyyy-MM-dd hh:mm:ss')");
         }
         return saleOrder.orderBy(new String[]{"nckd_saleorgid","nckd_orderdate","nckd_billno"});
     }
@@ -119,8 +119,9 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
     //    关联其他单据
     public DataSet linkOtherBills(DataSet ds) {
         List<Long> orderdetailid = DataSetToList.getOneToList(ds, "orderdetailid");
-        if (orderdetailid.isEmpty())
+        if (orderdetailid.isEmpty()){
             return ds;
+        }
 
         //查询销售出库业务日期，
         String saleOutFields = "biztime as nckd_outdate , " +
@@ -141,7 +142,7 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
         QFilter saleOutFilter = new QFilter("billentry.mainbillentryid", QCP.in, orderdetailid.toArray(new Long[0]));
         //限定单据为已审核
         saleOutFilter.and("billstatus", QCP.equals, "C");
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                         "im_saloutbill", saleOutFields, new QFilter[]{saleOutFilter}, null)
                 .groupBy(new String[]{"nckd_outdate", "nckd_outbillno", "nckd_outauditdate", "nckd_operatorgroup", "mainbillentryid", "saleoutid"})
                 .sum("nckd_qtyout", "nckd_qtyout").sum("nckd_qty", "nckd_qty").finish();
@@ -197,23 +198,23 @@ public class OrderProcessQueryReportListDataPlugin extends AbstractReportListDat
 
         //销售出库关联财务应收 返回字段 销售出库日期，销售出库单据号，销售出库应发数量，销售出库实发数量，销售出库签字日期，销售出库库存组，销售出库核心单据行id
         //财务应收单据号，财务应收金额
-        im_saloutbill = im_saloutbill.leftJoin(finarBill).on("mainbillentryid", "ar_corebillentryid").on("saleoutid", "e_srcid")
-                .select(im_saloutbill.getRowMeta().getFieldNames(), finarBill.getRowMeta().getFieldNames()).finish();
+        imSaloutbill = imSaloutbill.leftJoin(finarBill).on("mainbillentryid", "ar_corebillentryid").on("saleoutid", "e_srcid")
+                .select(imSaloutbill.getRowMeta().getFieldNames(), finarBill.getRowMeta().getFieldNames()).finish();
 
 
         //销售出库关联开票申请，增加开票申请审核日期，开票申请发票号，开票申请数量
-        im_saloutbill = im_saloutbill.leftJoin(originalBill).on("mainbillentryid", "sim_corebillentryid")
-                .select(im_saloutbill.getRowMeta().getFieldNames(), originalBill.getRowMeta().getFieldNames()).finish();
+        imSaloutbill = imSaloutbill.leftJoin(originalBill).on("mainbillentryid", "sim_corebillentryid")
+                .select(imSaloutbill.getRowMeta().getFieldNames(), originalBill.getRowMeta().getFieldNames()).finish();
 
         //关联上要货订单销售组织，销售部门，客户，订单日期，订单号，交付计划行id
-        ds = ds.leftJoin(im_saloutbill).on("orderdetailid", "mainbillentryid")
-                .select(ds.getRowMeta().getFieldNames(), im_saloutbill.getRowMeta().getFieldNames()).finish();
+        ds = ds.leftJoin(imSaloutbill).on("orderdetailid", "mainbillentryid")
+                .select(ds.getRowMeta().getFieldNames(), imSaloutbill.getRowMeta().getFieldNames()).finish();
 
         //关联收款单单据号，收款金额
         ds = ds.leftJoin(recBill).on("orderdetailid", "e_corebillentryid")
                 .select(ds.getRowMeta().getFieldNames(), recBill.getRowMeta().getFieldNames()).finish();
 
-        im_saloutbill.close();
+        imSaloutbill.close();
         finarBill.close();
         originalBill.close();
         recBill.close();

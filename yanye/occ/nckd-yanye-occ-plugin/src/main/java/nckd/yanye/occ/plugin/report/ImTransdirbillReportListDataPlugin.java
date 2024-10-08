@@ -28,36 +28,36 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
 
         //获取过滤条件
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        Long nckd_forg_q = null;
-        String nckd_biztime_q_start = null;
-        String nckd_biztime_q_end = null;
-        Long nckd_ywy_q = null;
-        Long nckd_materiel_q = null;
+        Long nckdForgQ = null;
+        String nckdBiztimeQStart = null;
+        String nckdBiztimeQEnd = null;
+        Long nckdYwyQ = null;
+        Long nckdMaterielQ = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
                 // 查询条件库存组织,标识如不一致,请修改
                 case "nckd_forg_q":
-                    nckd_forg_q = (filterItem.getValue() == null) ? null
+                    nckdForgQ = (filterItem.getValue() == null) ? null
                             : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "nckd_biztime_q_start":
-                    nckd_biztime_q_start  = (filterItem.getDate() == null) ? null
+                    nckdBiztimeQStart  = (filterItem.getDate() == null) ? null
                             : new SimpleDateFormat("yyyy-MM-dd").format(filterItem.getDate());
                     break;
                 case "nckd_biztime_q_end":
-                    nckd_biztime_q_end  = (filterItem.getDate() == null) ? null
+                    nckdBiztimeQEnd  = (filterItem.getDate() == null) ? null
                             : new SimpleDateFormat("yyyy-MM-dd").format(filterItem.getDate());
                     break;
                 // 查询条件业务员,标识如不一致,请修改
                 case "nckd_ywy_q":
-                     nckd_ywy_q = (filterItem.getValue() == null) ? null
+                    nckdYwyQ = (filterItem.getValue() == null) ? null
                              : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
 
                     break;
                 // 查询条件物料,标识如不一致,请修改
                 case "nckd_materiel_q":
-                    nckd_materiel_q = (filterItem.getValue() == null) ? null
+                    nckdMaterielQ = (filterItem.getValue() == null) ? null
                             : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
                     break;
             }
@@ -65,19 +65,19 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
         if (im.isEmpty()) {
             return im;
         }
-        if (nckd_forg_q != null){
-            im = im.filter("nckd_forg = " + nckd_forg_q);
+        if (nckdForgQ != null){
+            im = im.filter("nckd_forg = " + nckdForgQ);
         }
-        if (nckd_biztime_q_start != null && nckd_biztime_q_end != null){
-            im = im.filter("fbiztime >=  to_date('" +  nckd_biztime_q_start + "','yyyy-MM-dd')"  )
-                    .filter("fbiztime <= to_date('" +  nckd_biztime_q_end + "','yyyy-MM-dd')" );
+        if (nckdBiztimeQStart != null && nckdBiztimeQEnd != null){
+            im = im.filter("fbiztime >=  to_date('" +  nckdBiztimeQStart + "','yyyy-MM-dd')"  )
+                    .filter("fbiztime <= to_date('" +  nckdBiztimeQEnd + "','yyyy-MM-dd')" );
         }
-        if (nckd_ywy_q != null){
-            im = im.filter("nckd_ywy = " + nckd_ywy_q);
+        if (nckdYwyQ != null){
+            im = im.filter("nckd_ywy = " + nckdYwyQ);
 
         }
-        if (nckd_materiel_q != null){
-            im = im.filter("nckd_material = " + nckd_materiel_q);
+        if (nckdMaterielQ != null){
+            im = im.filter("nckd_material = " + nckdMaterielQ);
         }
 
 
@@ -112,9 +112,9 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
 //        默认查询借出和借出还回的直接调拨单
         QFilter qFilter = new QFilter("billtype", QCP.in,new Long[]{1980435141796826112L,1980435041267748864L});
         qFilter.and("billstatus", QCP.equals ,"C");
-        DataSet im_transdirbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imTransdirbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_transdirbill", selectFields, new QFilter[]{qFilter},null);
-        return im_transdirbill;
+        return imTransdirbill;
     }
 
     //获取销售出库单
@@ -138,9 +138,9 @@ public class ImTransdirbillReportListDataPlugin extends AbstractReportListDataPl
 //        默认查询车销出库单据类型和已审核的销售出库单
         QFilter qFilter = new QFilter("billtype", QCP.equals,1980511903113284608L);
         qFilter.and("billstatus", QCP.equals ,"C");
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", selectFields, new QFilter[]{qFilter},null);
-        return im_saloutbill;
+        return imSaloutbill;
     }
 
 }

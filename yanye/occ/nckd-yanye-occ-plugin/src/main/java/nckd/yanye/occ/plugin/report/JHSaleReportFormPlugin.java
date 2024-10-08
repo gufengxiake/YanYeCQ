@@ -32,23 +32,23 @@ public class JHSaleReportFormPlugin extends AbstractReportFormPlugin implements 
         while (iterator.hasNext()) {
             DynamicObject row = iterator.next();
             //含税单价（销售出库单上运费单价）
-            BigDecimal nckd_priceyf = row.getBigDecimal("nckd_priceyf") == null
+            BigDecimal nckdPriceyf = row.getBigDecimal("nckd_priceyf") == null
                     ? BigDecimal.ZERO : row.getBigDecimal("nckd_priceyf");
-            if (nckd_priceyf.compareTo(BigDecimal.ZERO) != 0){
+            if (nckdPriceyf.compareTo(BigDecimal.ZERO) != 0){
                 //计算不含税单价 = 含税单价/(1+(税率/100))
                 BigDecimal nckdFtaxrateid = (row.getBigDecimal("nckd_ftaxrateid").divide(BigDecimal.valueOf(100))).add(BigDecimal.ONE);
-                BigDecimal nckd_priceyfnotax = nckd_priceyf.divide(nckdFtaxrateid, RoundingMode.CEILING);
-                row.set("nckd_priceyfnotax",nckd_priceyfnotax);
+                BigDecimal nckdPriceyfnotax = nckdPriceyf.divide(nckdFtaxrateid, RoundingMode.CEILING);
+                row.set("nckd_priceyfnotax",nckdPriceyfnotax);
             }
 
             //销售出库单上签收数量
-            BigDecimal nckd_signqty = row.getBigDecimal("nckd_signqty") == null
+            BigDecimal nckdSignqty = row.getBigDecimal("nckd_signqty") == null
                     ? BigDecimal.ZERO : row.getBigDecimal("nckd_signqty");
             //不含税单价
-            BigDecimal nckd_priceyfnotax = row.getBigDecimal("nckd_priceyfnotax") == null
+            BigDecimal nckdPriceyfnotax = row.getBigDecimal("nckd_priceyfnotax") == null
                     ? BigDecimal.ZERO : row.getBigDecimal("nckd_priceyfnotax");
             //计算运费
-            row.set("nckd_amountyf",nckd_signqty.multiply(nckd_priceyfnotax));
+            row.set("nckd_amountyf",nckdSignqty.multiply(nckdPriceyfnotax));
 
         }
     }

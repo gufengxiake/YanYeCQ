@@ -109,7 +109,9 @@ public class HKTradeCustomerReportListDataPlugin extends AbstractReportListDataP
     //获取要货订单信息
     public DataSet getSaleOrder(DataSet ds){
         List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
-        if (mainbillentryidToList.isEmpty()) return ds;
+        if (mainbillentryidToList.isEmpty()) {
+            return ds;
+        }
 
         //取要货订单交付明细主键，
         String sFields = "itementry.id as fdetailid," +

@@ -28,31 +28,31 @@ public class CityWarehouseReportFormPlugin extends AbstractReportFormPlugin impl
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //计划小包
-            BigDecimal nckd_plans = next.getBigDecimal("nckd_plans") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_plans");
+            BigDecimal nckdPlans = next.getBigDecimal("nckd_plans") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_plans");
             //计划大包
-            BigDecimal nckd_planb = next.getBigDecimal("nckd_planb") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_planb");
+            BigDecimal nckdPlanb = next.getBigDecimal("nckd_planb") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_planb");
             //计划小计 = 计划小包 + 计划大包
-            BigDecimal nckd_plansum = nckd_plans.add(nckd_planb);
-            next.set("nckd_plansum",nckd_plansum);
+            BigDecimal nckdPlansum = nckdPlans.add(nckdPlanb);
+            next.set("nckd_plansum",nckdPlansum);
             //库容小包
-            BigDecimal nckd_storages = next.getBigDecimal("nckd_storages") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_storages");
+            BigDecimal nckdStorages = next.getBigDecimal("nckd_storages") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_storages");
             //库容大包
-            BigDecimal nckd_storageb = next.getBigDecimal("nckd_storageb") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_storageb");
+            BigDecimal nckdStorageb = next.getBigDecimal("nckd_storageb") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_storageb");
             //库容小计 = 库容小包 + 库容大包
-            BigDecimal nckd_storagesum = nckd_storages.add(nckd_storageb);
-            next.set("nckd_storagesum",nckd_storagesum);
+            BigDecimal nckdStoragesum = nckdStorages.add(nckdStorageb);
+            next.set("nckd_storagesum",nckdStoragesum);
             
             //库存小计
             BigDecimal nckdKcxj = next.getBigDecimal("nckd_kcxj");
 
             //小计（差异）= 库存小计 - 计划小计
-            next.set("nckd_xjcy",nckdKcxj.subtract(nckd_plansum));
+            next.set("nckd_xjcy",nckdKcxj.subtract(nckdPlansum));
 
             //小包差异 = 小包合计 - 计划小包
-            next.set("nckd_xbcy",next.getBigDecimal("nckd_xbhj").subtract(nckd_plans));
+            next.set("nckd_xbcy",next.getBigDecimal("nckd_xbhj").subtract(nckdPlans));
 
             //大包差异 = 大包合计 - 计划大包
-            next.set("nckd_dbcy",next.getBigDecimal("nckd_dbhj").subtract(nckd_planb));
+            next.set("nckd_dbcy",next.getBigDecimal("nckd_dbhj").subtract(nckdPlanb));
         }
     }
 }

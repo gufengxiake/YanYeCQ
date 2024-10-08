@@ -37,12 +37,12 @@ public class CustomerTradeReportFormPlugin extends AbstractReportFormPlugin impl
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //数量
-            BigDecimal nckd_reqbaseqty = next.getBigDecimal("nckd_reqbaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_reqbaseqty");
+            BigDecimal nckdReqbaseqty = next.getBigDecimal("nckd_reqbaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_reqbaseqty");
             //金额
-            BigDecimal nckd_sumtaxamount = next.getBigDecimal("nckd_sumtaxamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_sumtaxamount");
-            if(nckd_reqbaseqty.compareTo(BigDecimal.ZERO) != 0){
+            BigDecimal nckdSumtaxamount = next.getBigDecimal("nckd_sumtaxamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_sumtaxamount");
+            if(nckdReqbaseqty.compareTo(BigDecimal.ZERO) != 0){
                 //计算含税单价
-                BigDecimal divide = nckd_sumtaxamount.divide(nckd_reqbaseqty, RoundingMode.CEILING);
+                BigDecimal divide = nckdSumtaxamount.divide(nckdReqbaseqty, RoundingMode.CEILING);
                 next.set("nckd_pricetax",divide);
             }
             //计算无交易天数

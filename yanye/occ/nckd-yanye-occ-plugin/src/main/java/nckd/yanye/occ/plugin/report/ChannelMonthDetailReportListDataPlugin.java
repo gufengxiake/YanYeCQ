@@ -66,11 +66,11 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
                 //价税合计
                 "billentry.amountandtax as out_amountandtax" ;
         //查询销售出库单
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSalOutBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
         DataSet sumYear = null,sumMonth = null;
         //汇总当年数量和价税合计
-        sumYear = im_saloutbill.copy().groupBy(new String[]{"out_bizorg","out_bizorgname","out_group"})
+        sumYear = imSalOutBill.copy().groupBy(new String[]{"out_bizorg","out_bizorgname","out_group"})
                 .sum("out_baseqty","yearsum").sum("out_amountandtax","yearamountandtax")
                 .finish().addField("0","yearmonth");
         //循环分隔每个月份的数量和价税合计
@@ -82,7 +82,7 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
             //获取月份结束日期
             DateTime e = DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(date));
             //过滤一个月的数据
-            sumYear = im_saloutbill.copy().filter("out_biztime >=to_date('" + s + "','yyyy-MM-dd hh:mm:ss')")
+            sumYear = imSalOutBill.copy().filter("out_biztime >=to_date('" + s + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("out_biztime <=to_date('" + e + "','yyyy-MM-dd hh:mm:ss')").addField(String.valueOf(i),"yearmonth");
             if(i == 1){
                 sumMonth = sumYear;
@@ -115,7 +115,7 @@ public class ChannelMonthDetailReportListDataPlugin extends AbstractReportListDa
 
         sumYear =sumYear.union(sumMonth);
         sumMonth.close();
-        im_saloutbill.close();
+        imSalOutBill.close();
 
         return sumYear.orderBy(new String[]{"out_group","out_bizorg desc" });
     }

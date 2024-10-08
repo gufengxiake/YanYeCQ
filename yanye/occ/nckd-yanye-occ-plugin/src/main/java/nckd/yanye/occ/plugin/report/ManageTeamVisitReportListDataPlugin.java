@@ -43,7 +43,7 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
 
 //        qFilters.add(new QFilter("biztime",QCP.large_equals, DateUtil.beginOfYear(new SimpleDateFormat("yyyy-MM").parse(year + "-01")))
 //                .and("biztime",QCP.less_equals, DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(year + "-"+ month))));
-        DataSet ocdbd_channel = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet ocdbdChannel = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocdbd_channel",
                 //销售组织
                 "slaeorginfo.saleorginfonum as ocdbd_saleorginfonum," +
@@ -52,7 +52,7 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
                         //渠道主键
                         "id as ocdbd_id", qFilters.toArray(new QFilter[0]), null);
         //查询拜访记录
-        DataSet hmua_sfa_bf_record = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet hmuaSfaBfRecord = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "hmua_sfa_bf_record",
                 //门店
                 "hmua_visit_stores," +
@@ -61,33 +61,33 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
                         //渠道主键
                         "id as sfa_id", new QFilter[]{new QFilter("billstatus", QCP.equals, "B")}, null);
         //根据门店汇总
-        DataSet mdsumbf = hmua_sfa_bf_record.groupBy(new String[]{"hmua_visit_stores"}).count("sumbf").finish()
+        DataSet mdsumbf = hmuaSfaBfRecord.groupBy(new String[]{"hmua_visit_stores"}).count("sumbf").finish()
                 .select("hmua_visit_stores as qdzj", "sumbf");
         //根据经销商汇总
-        DataSet jxssumbf = hmua_sfa_bf_record.groupBy(new String[]{"hmua_bf_cust"}).count("sumbf").finish()
+        DataSet jxssumbf = hmuaSfaBfRecord.groupBy(new String[]{"hmua_bf_cust"}).count("sumbf").finish()
                 .select("hmua_bf_cust as qdzj", "sumbf");
 
         //过滤渠道主键为0的数据
-        hmua_sfa_bf_record = mdsumbf.union(jxssumbf).filter(" qdzj <> 0");
+        hmuaSfaBfRecord = mdsumbf.union(jxssumbf).filter(" qdzj <> 0");
 
         //根据组织汇总渠道数量
-        DataSet ocdbdSumks = ocdbd_channel.copy().groupBy(new String[]{"ocdbd_saleorginfonum"}).count("ocdbd_sumks").finish();
+        DataSet ocdbdSumks = ocdbdChannel.copy().groupBy(new String[]{"ocdbd_saleorginfonum"}).count("ocdbd_sumks").finish();
 
         //根据主键关联拜访数据
-        ocdbd_channel = ocdbd_channel.leftJoin(hmua_sfa_bf_record).on("ocdbd_id","qdzj").select(new String[]{"ocdbd_saleorginfonum","ocdbd_department","sumbf"}).finish();
+        ocdbdChannel = ocdbdChannel.leftJoin(hmuaSfaBfRecord).on("ocdbd_id","qdzj").select(new String[]{"ocdbd_saleorginfonum","ocdbd_department","sumbf"}).finish();
 
         //根据组织和部门对拜访数据进行汇总
-        ocdbd_channel = ocdbd_channel.groupBy(new String[]{"ocdbd_saleorginfonum","ocdbd_department"}).sum("sumbf").finish();
+        ocdbdChannel = ocdbdChannel.groupBy(new String[]{"ocdbd_saleorginfonum","ocdbd_department"}).sum("sumbf").finish();
 
         //关联获取汇总的渠道数量
-        ocdbd_channel = ocdbd_channel.leftJoin(ocdbdSumks).on("ocdbd_saleorginfonum","ocdbd_saleorginfonum").select(new String[]{"ocdbd_saleorginfonum","ocdbd_department","sumbf","ocdbd_sumks"}).finish();
+        ocdbdChannel = ocdbdChannel.leftJoin(ocdbdSumks).on("ocdbd_saleorginfonum","ocdbd_saleorginfonum").select(new String[]{"ocdbd_saleorginfonum","ocdbd_department","sumbf","ocdbd_sumks"}).finish();
 
         DataSet hkYearPlan = getHKYearPlan(year, month);
-        ocdbd_channel = ocdbd_channel.leftJoin(hkYearPlan).on("ocdbd_saleorginfonum","hk_org").on("ocdbd_department","hk_jytd")
+        ocdbdChannel = ocdbdChannel.leftJoin(hkYearPlan).on("ocdbd_saleorginfonum","hk_org").on("ocdbd_department","hk_jytd")
                 .select(new String[]{"ocdbd_saleorginfonum","ocdbd_department","sumbf","ocdbd_sumks","year_hk_ydbfkh"}).finish();
 
 
-        return ocdbd_channel;
+        return ocdbdChannel;
 
     }
 
@@ -105,13 +105,13 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
         String date= year + "-" + month;
         QFilter hkFilter = new QFilter("entryentity.nckd_date", QCP.large_equals, DateUtil.beginOfYear(new SimpleDateFormat("yyyy-MM").parse(date)))
                 .and("entryentity.nckd_date",QCP.less_equals, DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(date)));
-        DataSet nckd_hkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet nckdHkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
         //汇总年度目标
-        nckd_hkndjhb = nckd_hkndjhb.groupBy(new String[]{"hk_org", "hk_jytd"})
+        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org", "hk_jytd"})
                 .sum("hk_ydbfkh", "year_hk_ydbfkh").finish();
 
-        return nckd_hkndjhb;
+        return nckdHkndjhb;
     }
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {

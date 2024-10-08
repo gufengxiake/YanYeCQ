@@ -112,9 +112,9 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
                 //成本单价
                 "billentry.nckd_cbdj as nckd_cbdj";
 
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
-        return im_saloutbill.orderBy(new String[]{"bizorg","material"});
+        return imSaloutbill.orderBy(new String[]{"bizorg","material"});
     }
 
     @Override
@@ -130,7 +130,7 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
         columns.add(createReportColumn("material",ReportColumn.TYPE_TEXT,"物料编码"));
         columns.add(createReportColumn("materialname",ReportColumn.TYPE_TEXT,"物料名称"));
         columns.add(createReportColumn("materialmodel",ReportColumn.TYPE_TEXT,"存货规格"));
-        columns.add(createReportColumn("ispresent",ReportColumn.TYPE_BOOLEAN,"赠品"));
+        columns.add(createReportColumn("ispresent",ReportColumn.TYPE_TEXT,"赠品"));
         columns.add(createReportColumn("baseqty",ReportColumn.TYPE_DECIMAL,"数量"));
         columns.add(createReportColumn("priceandtax",ReportColumn.TYPE_DECIMAL,"含税单价"));
         columns.add(createReportColumn("curamount",ReportColumn.TYPE_DECIMAL,"金额（本位币）"));

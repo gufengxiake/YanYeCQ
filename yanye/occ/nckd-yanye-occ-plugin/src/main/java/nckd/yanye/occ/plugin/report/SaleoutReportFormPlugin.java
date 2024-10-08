@@ -83,10 +83,10 @@ public class SaleoutReportFormPlugin extends AbstractReportFormPlugin implements
             return nameAndPhone;
         }
         //根据业务员编码获取人员编码
-        DataSet bos_user = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet bosUser = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "bos_user", "phone,number,name", new QFilter[]{new QFilter("number", QCP.in, operatorIds.toArray(new String[0]))}, null);
-        while (bos_user.hasNext()) {
-            Row next = bos_user.next();
+        while (bosUser.hasNext()) {
+            Row next = bosUser.next();
             String key = next.getString("number");
             //获取用户名加电话
             String value = next.getString("name") + next.getString("phone");

@@ -37,16 +37,16 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
         Map<Long, String> invoiceNo = this.getInvoiceNo(rowData);
         while (iterator.hasNext()) {
             DynamicObject row = iterator.next();
-            BigDecimal nckd_amount =  row.getBigDecimal("nckd_amount") == null
+            BigDecimal nckdAmount =  row.getBigDecimal("nckd_amount") == null
                     ? BigDecimal.ZERO :  row.getBigDecimal("nckd_amount");
-            if( nckd_amount.compareTo(BigDecimal.ZERO) != 0){
-                BigDecimal nckd_mll = BigDecimal.ZERO;
+            if( nckdAmount.compareTo(BigDecimal.ZERO) != 0){
+                BigDecimal nckdMll = BigDecimal.ZERO;
                 //计算毛利率 = 金额-结算成本/金额
-                nckd_mll = nckd_amount.subtract(row.getBigDecimal("nckd_cbj") == null
+                nckdMll = nckdAmount.subtract(row.getBigDecimal("nckd_cbj") == null
                         ? BigDecimal.ZERO : row.getBigDecimal("nckd_cbj"))  ;
-                nckd_mll = nckd_mll.divide(nckd_amount, RoundingMode.CEILING);
+                nckdMll = nckdMll.divide(nckdAmount, RoundingMode.CEILING);
                 DecimalFormat df = new DecimalFormat("0.00%");
-                String percent=df.format(nckd_mll);
+                String percent=df.format(nckdMll);
                 row.set("nckd_mll", percent);
             }
 
@@ -59,7 +59,9 @@ public class SaledetailReportFormPlugin extends AbstractReportFormPlugin impleme
             //获取发票编号
             if (row.getString("nckd_mainbillentity").equals("ocbsoc_saleorder")) {
                 Long key = row.getLong("nckd_mainbillentryid");
-                if (invoiceNo.isEmpty() || key == 0L) continue;
+                if (invoiceNo.isEmpty() || key == 0L) {
+                    continue;
+                }
                 if (invoiceNo.containsKey(key)) {
                     row.set("nckd_invoiceno", invoiceNo.get(key));
                 }

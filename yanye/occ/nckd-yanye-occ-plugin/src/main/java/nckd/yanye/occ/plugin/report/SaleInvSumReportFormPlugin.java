@@ -39,16 +39,24 @@ public class SaleInvSumReportFormPlugin extends AbstractReportFormPlugin impleme
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
         for (DynamicObject rowDatum : rowData) {
+            //计算成本金额
             BigDecimal baseqty = rowDatum.getBigDecimal("baseqty") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("baseqty");
-            BigDecimal nckd_cbdj = rowDatum.getBigDecimal("nckd_cbdj") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("nckd_cbdj");
-            rowDatum.set("nckd_cbdj",baseqty.multiply(nckd_cbdj));
+            BigDecimal nckdCbdj = rowDatum.getBigDecimal("nckd_cbdj") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("nckd_cbdj");
+            rowDatum.set("nckd_cbdj",baseqty.multiply(nckdCbdj));
+            //赠品改为是/否
+            String ispresent = rowDatum.getString("ispresent");
+            if(ispresent.equals("true")){
+                rowDatum.set("ispresent","是");
+            }else{
+                rowDatum.set("ispresent","否");
+            }
         }
     }
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
-        BasedataEdit nckd_operator = this.getControl("nckd_operator_q");
-        nckd_operator.addBeforeF7SelectListener(this);
+        BasedataEdit nckdOperator = this.getControl("nckd_operator_q");
+        nckdOperator.addBeforeF7SelectListener(this);
 
     }
 

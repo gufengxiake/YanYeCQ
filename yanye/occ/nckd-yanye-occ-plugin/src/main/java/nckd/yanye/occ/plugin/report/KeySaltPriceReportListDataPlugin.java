@@ -92,11 +92,11 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
                 "billentry.amountandtax as nckd_outamount";
 
 
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
 
         //获取物料名称
-        for (Row row : im_saloutbill.copy()) {
+        for (Row row : imSaloutbill.copy()) {
             material.put(row.getLong("nckd_material"), row.getString("nckd_materialname"));
         }
 
@@ -107,7 +107,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
             String date = year + "-" + (i + 1);
             DateTime begin = DateUtil.beginOfMonth(new SimpleDateFormat("yyyy-MM").parse(date));
             DateTime end = DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(date));
-            ds = im_saloutbill.filter("biztime >=to_date('" + begin + "','yyyy-MM-dd hh:mm:ss')")
+            ds = imSaloutbill.filter("biztime >=to_date('" + begin + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("biztime <=to_date('" + end + "','yyyy-MM-dd hh:mm:ss')")
                     .addField(""+(i+1), "nckd_qj");
             if (i >= 1) {
@@ -128,7 +128,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
             sumGroup.sum("case when nckd_material = " + id[i] + " then nckd_qty else 0 end", id[i] + "qty");
             sumGroup.sum("case when nckd_material = " + id[i] + " then nckd_outamount else 0 end", id[i] + "amount");
         }
-        im_saloutbill = sumGroup.finish();
+        imSaloutbill = sumGroup.finish();
 
         //获取后续需要添加的金额字段
         ArrayList<String> idAmount = new ArrayList<>();
@@ -144,7 +144,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         DataSet sum = null,filter = null,finish =null;
         //根据月份隔离期间的数据
         for (int i = 0; i < 12; i++) {
-            filter = im_saloutbill.copy().filter("nckd_qj = " + (i + 1));
+            filter = imSaloutbill.copy().filter("nckd_qj = " + (i + 1));
             if(sum == null){
                 sum = filter.orderBy(new String[]{"nckd_qj", "nckd_bizorg"});
             }else {
@@ -176,7 +176,7 @@ public class KeySaltPriceReportListDataPlugin extends AbstractReportListDataPlug
         dataSets.close();
         filter.close();
         finish.close();
-        im_saloutbill.close();
+        imSaloutbill.close();
 
         return sum;
     }
