@@ -3,8 +3,6 @@ package nckd.yanye.hr.plugin.form.bianzhi;
 
 import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
-import kd.bos.bill.BillShowParameter;
-import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.DBRoute;
@@ -17,7 +15,6 @@ import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.control.events.RowClickEvent;
 import kd.bos.form.control.events.RowClickEventListener;
-import kd.bos.form.events.PreOpenFormEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
@@ -35,13 +32,11 @@ import kd.hr.hbp.common.model.org.staff.StaffResponse;
 import kd.hr.hbp.common.util.DatePattern;
 import kd.hr.hbp.common.util.DateUtils;
 import kd.hr.hbp.common.util.HRDBUtil;
-import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
-import kd.bos.db.DB;
 
 /**
  * Module           :HR中控服务云-HR基础组织-人力编制-编制调整申请
