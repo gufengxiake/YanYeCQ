@@ -20,7 +20,6 @@ import kd.hr.hbp.common.util.HRDateTimeUtils;
 import kd.hr.hbp.common.util.HRStringUtils;
 import kd.hr.hspm.business.domian.repository.EmpReportRepository;
 import kd.hr.hspm.business.domian.repository.ReportDisplayRepository;
-import kd.hr.hspm.formplugin.web.report.EmpReportListPlugin;
 import kd.hr.hspm.formplugin.web.report.func.EmpReportCalculateMapFunction;
 import kd.hr.hspm.formplugin.web.report.func.EmpReportShowHisNameCalculateMapFunction;
 import kd.hr.hspm.formplugin.web.report.helper.CreateReportColumn;
@@ -28,7 +27,6 @@ import kd.hr.hspm.formplugin.web.report.helper.EmpReportHelper;
 import kd.sdk.hr.hspm.business.helper.ShowHisVersionEntityHelper;
 import kd.sdk.hr.hspm.business.repository.ext.service.EmpReportExtCommon;
 import kd.sdk.hr.hspm.common.entity.ShowHisVersionEntity;
-
 import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -128,7 +126,7 @@ public class DutyPersonnelRosterReportPlugin extends AbstractReportListDataPlugi
                 this.reportPlanId = filterInfo.getLong("report");
                 Set<String> queryFieldSet = this.getQueryFields();
                 if (!CollectionUtils.isEmpty(queryFieldSet)) {
-                    String order  = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.adminorg.number asc,hrpi_empposorgrel.position.number,hrpi_employee.startdate";
+                    String order  = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.adminorg.number asc,hrpi_empposorgrel.position.number,hrpi_empposorgrel.nckd_personindex asc";
                     String sort = ReportDisplayRepository.getSort(this.reportPlanId);
                     order = order + "," + sort;
                     matIdsOfCurrentBatch = this.getQueryIdList(currentBatchRows);

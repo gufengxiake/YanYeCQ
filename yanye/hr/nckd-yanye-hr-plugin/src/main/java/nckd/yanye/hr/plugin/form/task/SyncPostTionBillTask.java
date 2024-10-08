@@ -95,8 +95,8 @@ public class SyncPostTionBillTask extends AbstractTask {
                 Object nckdSortnum = positionBill.get("nckd_sortnum");
                 // 获取人员 hrpi_empposorgrel 任职经历表
                 QFilter qFilter5 = new QFilter("position.number", QCP.equals, positionBill.getString("number"));
-                QFilter qFilter6 = new QFilter("iscurrentversion", QCP.equals, "1")
-                        .and("datastatus", QCP.equals, "1")
+                QFilter qFilter6 = new QFilter("datastatus", QCP.equals, "1")
+//                        .and("datastatus", QCP.equals, "1")
                         .and("businessstatus", QCP.equals, "1");
                 DynamicObject[] hrpiEmpposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,datastatus,person.id,position,position.number,nckd_personindex", new QFilter[]{qFilter5,qFilter6});
                 if(ObjectUtils.isNotEmpty(hrpiEmpposorgrels)){
