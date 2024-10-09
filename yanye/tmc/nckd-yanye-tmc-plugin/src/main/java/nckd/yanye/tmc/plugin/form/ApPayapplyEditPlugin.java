@@ -110,11 +110,11 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                     for (DynamicObject object : entryBank) {
                                         if (object.getString("bankaccount").equals(eAssacct)) {
                                             dynamicObject.set("e_bebank", object.getDynamicObject("nckd_acceptingbank"));
-                                            // 刷新页面
-                                            this.getView().updateView();
                                             break; // 找到符合条件的记录后退出循环
                                         }
                                     }
+                                    // 刷新页面
+                                    this.getView().updateView();
 
                                 }
                             }else{
@@ -144,11 +144,11 @@ public class ApPayapplyEditPlugin extends AbstractBillPlugIn {
                                     for (DynamicObject object : entryBank) {
                                         if (object.getString("bankaccount").equals(eAssacct)) {
                                             dynamicObject.set("e_bebank", object.getDynamicObject("bank"));
-                                            // 刷新页面
-                                            this.getView().updateView();
                                             break; // 找到符合条件的记录后退出循环
                                         }
                                     }
+                                    // 刷新页面
+                                    this.getView().updateView();
                                 }
 
                             }

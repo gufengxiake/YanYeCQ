@@ -194,11 +194,11 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
                             for (DynamicObject object : entryBank) {
                                 if (eAssacct.equals(object.getString("bankaccount"))) {
                                     dynamicObject.set("payerbank", object.getDynamicObject("bank"));
-                                    // 刷新页面
-                                    this.getView().updateView();
                                     break; // 找到符合条件的记录后退出循环
                                 }
                             }
+                            // 刷新页面
+                            this.getView().updateView();
                         }
 
 
@@ -446,16 +446,16 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
         if (account == null) {
             return "";
         } else {
-            StringBuffer account_show = new StringBuffer();
+            StringBuffer accountShow = new StringBuffer();
             if (account.length() > 10) {
-                account_show.append(account.substring(0, 6));
-                account_show.append("***");
-                account_show.append(account.substring(account.length() - 4, account.length()));
+                accountShow.append(account.substring(0, 6));
+                accountShow.append("***");
+                accountShow.append(account.substring(account.length() - 4, account.length()));
             } else {
-                account_show.append(account);
+                accountShow.append(account);
             }
 
-            return String.valueOf(account_show);
+            return String.valueOf(accountShow);
         }
     }
 
@@ -463,17 +463,17 @@ public class RrimbursebillCollectionPlugin extends AbstractBillPlugIn {
         if (account == null) {
             return "";
         } else {
-            StringBuffer account_show = new StringBuffer();
+            StringBuffer accountShow = new StringBuffer();
             if (account.length() > 4) {
-                account_show.append('(');
-                account_show.append('*');
-                account_show.append(account.substring(account.length() - 4, account.length()));
-                account_show.append(')');
+                accountShow.append('(');
+                accountShow.append('*');
+                accountShow.append(account.substring(account.length() - 4, account.length()));
+                accountShow.append(')');
             } else {
-                account_show.append(account);
+                accountShow.append(account);
             }
 
-            return String.valueOf(account_show);
+            return String.valueOf(accountShow);
         }
     }
 

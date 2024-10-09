@@ -10,8 +10,6 @@ import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QFilter;
-import kd.swc.hsas.business.cal.helper.HSASCalApproveBillHelper;
-import kd.swc.hsbp.business.cal.helper.PayrollTaskHelper;
 import kd.swc.hsbp.business.servicehelper.SWCDataServiceHelper;
 import kd.swc.hsbp.opplugin.web.SWCCoreBaseBillOp;
 
@@ -26,7 +24,6 @@ public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
         super.beginOperationTransaction(args);
         DynamicObject[] regBillObjs = args.getDataEntities();
         List<Long> billIdList = new ArrayList(10);
-        Set<Long> calTaskIds = new HashSet(regBillObjs.length);
         DynamicObject[] var5 = regBillObjs;
         int var6 = regBillObjs.length;
 
@@ -34,7 +31,6 @@ public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
             DynamicObject dynamicObject = var5[var7];
             long id = dynamicObject.getLong("id");
             billIdList.add(id);
-//            calTaskIds.addAll(HSASCalApproveBillHelper.getCalTask(dynamicObject));
         }
 
         SWCDataServiceHelper helper = new SWCDataServiceHelper("nckd_preadjustapplic");
@@ -59,8 +55,6 @@ public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
         }
 
         helper.update(needUpdateBillDy);
-
-
     }
 
     private void setApproveStatus(DynamicObject[] regBillObjs, String billstatus) {
