@@ -44,13 +44,21 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
     public void registerListener(EventObject e) {
         super.registerListener(e);
         BasedataEdit inWareHouseEdit = this.getView().getControl("inwarehouse");
-        inWareHouseEdit.addBeforeF7SelectListener(this);
+        if (inWareHouseEdit != null) {
+            inWareHouseEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit wareHoseEdit = this.getView().getControl("warehouse");
-        wareHoseEdit.addBeforeF7SelectListener(this);
+        if (wareHoseEdit != null) {
+            wareHoseEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit salerIdEdit = this.getView().getControl("nckd_ywy");
-        salerIdEdit.addBeforeF7SelectListener(this);
+        if (salerIdEdit != null) {
+            salerIdEdit.addBeforeF7SelectListener(this);
+        }
         BasedataEdit operatorEdit = this.getView().getControl("nckd_operatorgroup");
-        operatorEdit.addBeforeF7SelectListener(this);
+        if (operatorEdit != null) {
+            operatorEdit.addBeforeF7SelectListener(this);
+        }
     }
 
     @Override
@@ -92,6 +100,7 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
             DynamicObject salOrg = (DynamicObject) this.getModel().getValue("org", 0);
             if (salOrg == null) {
                 this.getView().showErrorNotification("请先选择申请组织！");
+                evt.setCancel(true);
                 return;
             }
             Object orgId = salOrg.getPkValue();
@@ -104,6 +113,7 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
             DynamicObject operatorGroup = (DynamicObject) this.getModel().getValue("nckd_operatorgroup", 0);
             if (operatorGroup == null) {
                 this.getView().showErrorNotification("请先选择业务组！");
+                evt.setCancel(true);
                 return;
             }
             Object operatorGroupId = operatorGroup.getPkValue();
@@ -131,6 +141,56 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                 DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
                 if (user != null && operatorGroupId != 0) {
                     String number = user.getString("number");
+                    Long userId=user.getLong("id");
+                    // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
+                    QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
+                            .and("operatorgrpid", QCP.equals, operatorGroupId);
+                    //查找业务员
+                    DynamicObjectCollection opreatorColl = QueryServiceHelper.query("bd_operator",
+                            "id", Filter.toArray(), "");
+                    if (!opreatorColl.isEmpty()) {
+                        DynamicObject operatorItem = opreatorColl.get(0);
+                        Long operatorId = operatorItem.getLong("id");
+                        this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+
+                    //查找业务员对应的销售片区
+                    // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组 entryentity.operator 业务员
+                    QFilter gFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                            .and("operatorgrouptype", QCP.equals, "XSZ")
+                            .and("entryentity.operator.id",QCP.equals,userId);
+                    //查找销售片区
+                    DynamicObjectCollection gcollections = QueryServiceHelper.query("bd_operatorgroup",
+                            "entryentity.nckd_regiongroup regiongroup", gFilter.toArray(), "");
+                    if(!gcollections.isEmpty()){
+                        DynamicObject regionGroupItem = gcollections.get(0);
+                        long regionGroupId = (long) regionGroupItem.get("regiongroup");
+                        this.getModel().setItemValueByID("nckd_regiongroup", regionGroupId);
+                    }
+                }
+            }
+
+        }
+    }
+
+    @Override
+    public void afterCopyData(EventObject e) {
+        Long orgId = RequestContext.get().getOrgId();
+        if (orgId != 0) {
+            // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                    .and("operatorgrouptype", QCP.equals, "XSZ");
+            //查找业务组
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operatorgroup",
+                    "id", qFilter.toArray(), "");
+            if (!collections.isEmpty()) {
+                DynamicObject operatorGroupItem = collections.get(0);
+                long operatorGroupId = (long) operatorGroupItem.get("id");
+                this.getModel().setItemValueByID("nckd_operatorgroup", operatorGroupId);
+                DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+                if (user != null && operatorGroupId != 0) {
+                    String number = user.getString("number");
+                    Long userId=user.getLong("id");
                     // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
                     QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
                             .and("operatorgrpid", QCP.equals, operatorGroupId);
@@ -141,6 +201,19 @@ public class TransApplyBillPlugIn extends AbstractBillPlugIn implements BeforeF7
                         DynamicObject operatorItem = opreatorColl.get(0);
                         String operatorId = operatorItem.getString("id");
                         this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+                    //查找业务员对应的销售片区
+                    // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组 entryentity.operator 业务员
+                    QFilter gFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                            .and("operatorgrouptype", QCP.equals, "XSZ")
+                            .and("entryentity.operator.id",QCP.equals,userId);
+                    //查找销售片区
+                    DynamicObjectCollection gcollections = QueryServiceHelper.query("bd_operatorgroup",
+                            "entryentity.nckd_regiongroup regiongroup", gFilter.toArray(), "");
+                    if(!gcollections.isEmpty()){
+                        DynamicObject regionGroupItem = gcollections.get(0);
+                        long regionGroupId = (long) regionGroupItem.get("regiongroup");
+                        this.getModel().setItemValueByID("nckd_regiongroup", regionGroupId);
                     }
                 }
             }

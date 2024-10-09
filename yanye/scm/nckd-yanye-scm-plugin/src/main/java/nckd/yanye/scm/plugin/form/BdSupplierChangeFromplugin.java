@@ -1,6 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityProperty;
@@ -10,6 +11,7 @@ import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.property.BasedataProp;
 import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
@@ -17,6 +19,7 @@ import kd.bos.entity.property.UserProp;
 import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.ComboEdit;
@@ -27,6 +30,7 @@ import kd.bos.imageplatform.axis.IScanWebServiceImplServiceStub;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
@@ -173,17 +177,161 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         String fieldKey = e.getProperty().getName();
         ChangeData[] changeSet = e.getChangeSet();
         int rowIndex = changeSet[0].getRowIndex();
+        DynamicObject entry = this.getModel().getEntryRowEntity("nckd_entry",rowIndex);
         //维护类型
         if ("nckd_maintenancetype".equals(fieldKey)) {
             String maintenanceType = this.getModel().getValue("nckd_maintenancetype").toString();
+            Object merchanttype = this.getModel().getValue("nckd_merchanttype");
+            
+            
             TextEdit maintenanceTypeEdit = this.getControl("nckd_addsupplier");
             TextProp maintenanceTypeProp = (TextProp) maintenanceTypeEdit.getProperty();
+            ComboEdit changetypeEdit = this.getControl("nckd_changetype");//变更类型
+            ComboProp changetypeProp = (ComboProp) changetypeEdit.getProperty();
+            BasedataEdit groupEdit = this.getControl("nckd_group");//供应商分组
+            BasedataProp groupProp = (BasedataProp) groupEdit.getProperty();
+            TextEdit societycreditcodeEdit = this.getControl("nckd_societycreditcode");//统一社会信用代码
+            TextProp societycreditcodeProp = (TextProp) societycreditcodeEdit.getProperty();
+            TextEdit artificialpersonEdit = this.getControl("nckd_artificialperson");//法定代表人
+            TextProp artificialpersonProp = (TextProp) artificialpersonEdit.getProperty();
+            TextEdit regcapitalEdit = this.getControl("nckd_regcapital");//注册资本
+            TextProp regcapitalProp = (TextProp) regcapitalEdit.getProperty();
+            BasedataEdit basedatafieldEdit = this.getControl("nckd_basedatafield");//归属集团供应商名称（实际控制人）
+            BasedataProp basedatafieldProp = (BasedataProp) basedatafieldEdit.getProperty();
+            TextEdit linkmanEdit = this.getControl("nckd_linkman");//联系人
+            TextProp linkmanProp = (TextProp) linkmanEdit.getProperty();
+            TextEdit phoneEdit = this.getControl("nckd_phone");//联系电话
+            TextProp phoneProp = (TextProp) phoneEdit.getProperty();
+            TextEdit addressEdit = this.getControl("nckd_address");//联系地址
+            TextProp addressProp = (TextProp) addressEdit.getProperty();
+            TextEdit postalcodeEdit = this.getControl("nckd_postalcode");//邮政编码
+            TextProp postalcodeProp = (TextProp) postalcodeEdit.getProperty();
+            ComboEdit riskEdit = this.getControl("nckd_risk");//风险属性
+            ComboProp riskProp = (ComboProp) riskEdit.getProperty();
+            TextEdit bankaccountEdit = this.getControl("nckd_bankaccount");//银行账号
+            TextProp bankaccountProp = (TextProp) bankaccountEdit.getProperty();
+            TextEdit accountnameEdit = this.getControl("nckd_accountname");//账户名称
+            TextProp accountnameProp = (TextProp) accountnameEdit.getProperty();
+            BasedataEdit bankEdit = this.getControl("nckd_bank");//开户银行
+            BasedataProp bankProp = (BasedataProp) bankEdit.getProperty();
+            TextEdit acceptingaccountEdit = this.getControl("nckd_acceptingaccount");//承兑银行账号
+            TextProp acceptingaccountProp = (TextProp) acceptingaccountEdit.getProperty();
+            BasedataEdit acceptingbankEdit = this.getControl("nckd_acceptingbank");//承兑银行
+            BasedataProp acceptingbankProp = (BasedataProp) acceptingbankEdit.getProperty();
+            BasedataEdit currencyEdit = this.getControl("nckd_currency");//币别
+            BasedataProp currencyProp = (BasedataProp) currencyEdit.getProperty();
+            TextEdit licenseNumberEdit = this.getControl("nckd_licensenumber");
+            TextProp licenseNumberProp = (TextProp) licenseNumberEdit.getProperty();
+            ComboEdit transportTypeEdit = this.getControl("nckd_transporttype");
+            ComboProp transportTypeProp = (ComboProp) transportTypeEdit.getProperty();
+            BasedataEdit rateEdit = this.getControl("nckd_rate");
+            BasedataProp rateProp = (BasedataProp) rateEdit.getProperty();
+
             if ("save".equals(maintenanceType)) {
                 maintenanceTypeEdit.setMustInput(true);
                 maintenanceTypeProp.setMustInput(true);
+                changetypeEdit.setMustInput(true);
+                changetypeProp.setMustInput(true);
+                groupEdit.setMustInput(true);
+                groupProp.setMustInput(true);
+                societycreditcodeEdit.setMustInput(true);
+                societycreditcodeProp.setMustInput(true);
+                artificialpersonEdit.setMustInput(true);
+                artificialpersonProp.setMustInput(true);
+                regcapitalEdit.setMustInput(true);
+                regcapitalProp.setMustInput(true);
+                basedatafieldEdit.setMustInput(true);
+                basedatafieldProp.setMustInput(true);
+                linkmanEdit.setMustInput(true);
+                linkmanProp.setMustInput(true);
+                phoneEdit.setMustInput(true);
+                phoneProp.setMustInput(true);
+                addressEdit.setMustInput(true);
+                addressProp.setMustInput(true);
+                postalcodeEdit.setMustInput(true);
+                postalcodeProp.setMustInput(true);
+                riskEdit.setMustInput(true);
+                riskProp.setMustInput(true);
+                bankaccountEdit.setMustInput(true);
+                bankaccountProp.setMustInput(true);
+                accountnameEdit.setMustInput(true);
+                accountnameProp.setMustInput(true);
+                bankEdit.setMustInput(true);
+                bankProp.setMustInput(true);
+                acceptingaccountEdit.setMustInput(true);
+                acceptingaccountProp.setMustInput(true);
+                acceptingbankEdit.setMustInput(true);
+                acceptingbankProp.setMustInput(true);
+                currencyEdit.setMustInput(true);
+                currencyProp.setMustInput(true);
+                if ("supplier".equals(merchanttype)){
+                    licenseNumberEdit.setMustInput(false);
+                    licenseNumberProp.setMustInput(false);
+                    transportTypeEdit.setMustInput(false);
+                    transportTypeProp.setMustInput(false);
+                    rateEdit.setMustInput(false);
+                    rateProp.setMustInput(false);
+                } else if ("carrier".equals(merchanttype)) {
+                    licenseNumberEdit.setMustInput(true);
+                    licenseNumberProp.setMustInput(true);
+                    transportTypeEdit.setMustInput(true);
+                    transportTypeProp.setMustInput(true);
+                    rateEdit.setMustInput(true);
+                    rateProp.setMustInput(true);
+                }
             }else {
-                maintenanceTypeEdit.setMustInput(false);
+                maintenanceTypeEdit.setMustInput(true);
                 maintenanceTypeProp.setMustInput(false);
+
+                changetypeEdit.setMustInput(true);
+                changetypeProp.setMustInput(false);
+                groupEdit.setMustInput(true);
+                groupProp.setMustInput(false);
+                societycreditcodeEdit.setMustInput(true);
+                societycreditcodeProp.setMustInput(false);
+                artificialpersonEdit.setMustInput(true);
+                artificialpersonProp.setMustInput(false);
+                regcapitalEdit.setMustInput(true);
+                regcapitalProp.setMustInput(false);
+                basedatafieldEdit.setMustInput(true);
+                basedatafieldProp.setMustInput(false);
+                linkmanEdit.setMustInput(true);
+                linkmanProp.setMustInput(false);
+                phoneEdit.setMustInput(true);
+                phoneProp.setMustInput(false);
+                addressEdit.setMustInput(true);
+                addressProp.setMustInput(false);
+                postalcodeEdit.setMustInput(true);
+                postalcodeProp.setMustInput(false);
+                riskEdit.setMustInput(true);
+                riskProp.setMustInput(false);
+                bankaccountEdit.setMustInput(true);
+                bankaccountProp.setMustInput(false);
+                accountnameEdit.setMustInput(true);
+                accountnameProp.setMustInput(false);
+                bankEdit.setMustInput(true);
+                bankProp.setMustInput(false);
+                acceptingaccountEdit.setMustInput(true);
+                acceptingaccountProp.setMustInput(false);
+                acceptingbankEdit.setMustInput(true);
+                acceptingbankProp.setMustInput(false);
+                currencyEdit.setMustInput(true);
+                currencyProp.setMustInput(false);
+                if (merchanttype != null && "supplier".equals(merchanttype.toString())){
+                    licenseNumberEdit.setMustInput(false);
+                    licenseNumberProp.setMustInput(false);
+                    transportTypeEdit.setMustInput(false);
+                    transportTypeProp.setMustInput(false);
+                    rateEdit.setMustInput(false);
+                    rateProp.setMustInput(false);
+                } else if (merchanttype != null && "carrier".equals(merchanttype.toString())) {
+                    licenseNumberEdit.setMustInput(true);
+                    licenseNumberProp.setMustInput(false);
+                    transportTypeEdit.setMustInput(true);
+                    transportTypeProp.setMustInput(false);
+                    rateEdit.setMustInput(true);
+                    rateProp.setMustInput(false);
+                }
             }
         }
         //客商类型
@@ -193,6 +341,44 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         //需修改供应商
         if ("nckd_suppliermodify".equals(fieldKey)) {
             setSupplierModify(rowIndex);
+        }
+        //开户银行
+        if ("nckd_bank".equals(fieldKey)) {
+            Object changeafter = this.getModel().getValue("nckd_changeafter", rowIndex);
+            if ("1".equals(changeafter)) {
+                DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_suppliermodify",rowIndex);
+                supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(), "bd_supplier");
+                DynamicObjectCollection entryBank = supplier.getDynamicObjectCollection("entry_bank");
+                if (entryBank.size() <= 0) {
+                    this.getModel().setValue("nckd_bankaccount",null,rowIndex);
+                    this.getModel().setValue("nckd_bank",null,rowIndex);
+                    this.getModel().setValue("nckd_accountname",null,rowIndex);
+                    return;
+                }
+            }
+            DynamicObject bank = (DynamicObject) this.getModel().getValue("nckd_bank",rowIndex);
+            if (bank != null) {
+                this.getModel().setValue("nckd_bankaccount",bank.getString("number"),rowIndex);
+                this.getModel().setValue("nckd_accountname",bank.getString("name"),rowIndex);
+            }
+        }
+        //承兑银行
+        if ("nckd_acceptingbank".equals(fieldKey)) {
+            Object changeafter = this.getModel().getValue("nckd_changeafter", rowIndex);
+            if ("1".equals(changeafter)) {
+                DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_suppliermodify",rowIndex);
+                supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(), "bd_supplier");
+                DynamicObjectCollection entryBank = supplier.getDynamicObjectCollection("entry_bank");
+                if (entryBank.size() <= 0) {
+                    this.getModel().setValue("nckd_acceptingbank",null,rowIndex);
+                    this.getModel().setValue("nckd_acceptingaccount",null,rowIndex);
+                    return;
+                }
+            }
+            DynamicObject acceptingbank = (DynamicObject) this.getModel().getValue("nckd_acceptingbank",rowIndex);
+            if (acceptingbank != null) {
+                this.getModel().setValue("nckd_acceptingaccount",acceptingbank.getString("number"),rowIndex);
+            }
         }
     }
 
@@ -222,8 +408,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_linkman",supplier.get("linkman"),index);
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),index);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),index);
-            this.getModel().setValue("nckd_postalcode",supplier.get("duns"),index);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
+            this.getModel().setValue("nckd_postalcode",supplier.getDynamicObjectCollection("entry_linkman").size() <= 0 ? null : supplier.getDynamicObjectCollection("entry_linkman").get(0).getString("postalcode"),index);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
             this.getModel().setValue("nckd_suppliertype","factory",index);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),index);
             this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),index);
@@ -254,8 +440,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_linkman",supplier.get("linkman"),newIndex);
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),newIndex);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),newIndex);
-            this.getModel().setValue("nckd_postalcode",supplier.get("duns"),newIndex);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),newIndex);
+            this.getModel().setValue("nckd_postalcode",supplier.getDynamicObjectCollection("entry_linkman").size() <= 0 ? null : supplier.getDynamicObjectCollection("entry_linkman").get(0).getString("postalcode"),newIndex);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),newIndex);
             this.getModel().setValue("nckd_suppliertype","factory",newIndex);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),newIndex);
             this.getModel().setValue("nckd_cooperatestatus",supplier.get("nckd_cooperatestatus"),newIndex);
@@ -284,8 +470,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_linkman",supplier.get("linkman"),index);
             this.getModel().setValue("nckd_phone",supplier.get("bizpartner_phone"),index);
             this.getModel().setValue("nckd_address",supplier.get("bizpartner_address"),index);
-            this.getModel().setValue("nckd_postalcode",supplier.get("duns"),index);
-            this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
+            this.getModel().setValue("nckd_postalcode",supplier.getDynamicObjectCollection("entry_linkman").size() <= 0 ? null : supplier.getDynamicObjectCollection("entry_linkman").get(0).getString("postalcode"),index);
+            //this.getModel().setValue("nckd_buyer",supplier.getDynamicObject("purchaserid"),index);
             this.getModel().setValue("nckd_suppliertype","factory",index);
             this.getModel().setValue("nckd_risk",supplier.get("nckd_unittype"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
@@ -309,8 +495,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             this.getView().setVisible(true, "nckd_rate");
             return;
         }
-        UserEdit buyerEdit = this.getControl("nckd_buyer");
-        UserProp buyerProp = (UserProp) buyerEdit.getProperty();
+        //UserEdit buyerEdit = this.getControl("nckd_buyer");
+        //UserProp buyerProp = (UserProp) buyerEdit.getProperty();
         ComboEdit supplierTypeEdit = this.getControl("nckd_suppliertype");
         ComboProp supplierTypeProp = (ComboProp) supplierTypeEdit.getProperty();
         TextEdit licenseNumberEdit = this.getControl("nckd_licensenumber");
@@ -328,8 +514,8 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 this.getView().setVisible(false, "nckd_rate");
 
                 //设置供应商相关字段必录
-                buyerEdit.setMustInput(true);
-                buyerProp.setMustInput(true);
+                //buyerEdit.setMustInput(true);
+                //buyerProp.setMustInput(true);
                 supplierTypeEdit.setMustInput(true);
                 supplierTypeProp.setMustInput(true);
 
@@ -347,19 +533,50 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 this.getView().setVisible(true, "nckd_transporttype");
                 this.getView().setVisible(true, "nckd_rate");
 
-                //取消供应商相关字段必录
-                buyerEdit.setMustInput(false);
-                buyerProp.setMustInput(false);
-                supplierTypeEdit.setMustInput(false);
-                supplierTypeProp.setMustInput(false);
+                Object maintenancetype = this.getModel().getValue("nckd_maintenancetype");
+                if (maintenancetype != null && "save".equals(maintenancetype)) {
+                    //取消供应商相关字段必录
+                    //buyerEdit.setMustInput(false);
+                    //buyerProp.setMustInput(false);
+                    supplierTypeEdit.setMustInput(false);
+                    supplierTypeProp.setMustInput(false);
 
-                //设置承运商相关字段必录
-                licenseNumberEdit.setMustInput(true);
-                licenseNumberProp.setMustInput(true);
-                transportTypeEdit.setMustInput(true);
-                transportTypeProp.setMustInput(true);
-                rateEdit.setMustInput(true);
-                rateProp.setMustInput(true);
+                    //设置承运商相关字段必录
+                    licenseNumberEdit.setMustInput(true);
+                    licenseNumberProp.setMustInput(true);
+                    transportTypeEdit.setMustInput(true);
+                    transportTypeProp.setMustInput(true);
+                    rateEdit.setMustInput(true);
+                    rateProp.setMustInput(true);
+                } else if (maintenancetype != null && "update".equals(maintenancetype)) {
+                    //取消供应商相关字段必录
+                    //buyerEdit.setMustInput(false);
+                    //buyerProp.setMustInput(false);
+                    supplierTypeEdit.setMustInput(false);
+                    supplierTypeProp.setMustInput(false);
+
+                    //设置承运商相关字段必录
+                    licenseNumberEdit.setMustInput(false);
+                    licenseNumberProp.setMustInput(false);
+                    transportTypeEdit.setMustInput(false);
+                    transportTypeProp.setMustInput(false);
+                    rateEdit.setMustInput(false);
+                    rateProp.setMustInput(false);
+                }else {
+                    //取消供应商相关字段必录
+                    //buyerEdit.setMustInput(false);
+                    //buyerProp.setMustInput(false);
+                    supplierTypeEdit.setMustInput(false);
+                    supplierTypeProp.setMustInput(false);
+
+                    //设置承运商相关字段必录
+                    licenseNumberEdit.setMustInput(true);
+                    licenseNumberProp.setMustInput(true);
+                    transportTypeEdit.setMustInput(true);
+                    transportTypeProp.setMustInput(true);
+                    rateEdit.setMustInput(true);
+                    rateProp.setMustInput(true);
+                }
                 break;
             //客户
             case "customer":
@@ -439,6 +656,41 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         if (stringBuilder.length() > 0){
             this.getView().showErrorNotification(stringBuilder.toString());
             args.setCancel(true);
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_entry");
+        String key = e.getOperateKey();
+        if ("audit".equals(key)){
+            OperationResult operationResult = e.getOperationResult();
+            if (operationResult.isSuccess()){
+                if (entity.size() > 0){
+                    for (DynamicObject entry : entity) {
+                        String changeAfter = entry.getString("nckd_changeafter");
+                        if (StringUtils.isEmpty(changeAfter)){
+                            String addSupplier = entry.getString("nckd_addsupplier");
+                            DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name",QCP.equals,addSupplier)});
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                            }
+                            continue;
+                        }
+                        if ("2".equals(changeAfter)){
+                            DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
+                            supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 

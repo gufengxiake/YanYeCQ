@@ -47,6 +47,17 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
             "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grhj8", "dwhj8"
     };
 
+    private final String[] amountFields = {
+            "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grhj1", "dwhj1",
+            "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grhj2", "dwhj2",
+            "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grhj3", "dwhj3",
+            "grjfje4", "dwjfje4", "grbjje4", "dwbjje4", "grhj4", "dwhj4",
+            "grjfje5", "dwjfje5", "grbjje5", "dwbjje5", "grhj5", "dwhj5",
+            "grjfje6", "dwjfje6", "grbjje6", "dwbjje6", "grhj6", "dwhj6",
+            "grjfje7", "dwjfje7", "grbjje7", "dwbjje7", "grhj7", "dwhj7",
+            "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grhj8", "dwhj8",
+    };
+
 
     @Override
     public DataSet query(ReportQueryParam queryParam, Object o) {
@@ -76,13 +87,16 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
 
         // 过滤
         // 社保开始期间
-        QFilter qFilter = new QFilter("sinsurperiod.perioddate", QCP.large_equals, ((DynamicObject) sbksqj.getValue()).getDate("perioddate"));
+        QFilter qFilter = new QFilter("sinsurperiod.perioddate",
+                QCP.large_equals,
+                ((DynamicObject) sbksqj.getValue()).getDate("perioddate")
+        );
         // 人员
         if (users.getValue() != null) {
             qFilter = qFilter.and(
-                    new QFilter("employee.person", QCP.in, ((DynamicObjectCollection) users.getValue())
+                    new QFilter("employee.empnumber", QCP.in, ((DynamicObjectCollection) users.getValue())
                             .stream()
-                            .map(obj -> obj.getLong("id"))
+                            .map(obj -> obj.getString("empnumber"))
                             .collect(Collectors.toList()))
             );
         }
@@ -92,13 +106,12 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         }
         // 实际参保单位
         if (sjcbdw.getValue() != null) {
-            qFilter = qFilter.and(new QFilter("welfarepayer", QCP.equals, ((DynamicObject) sjcbdw.getValue()).getLong("id")));
+            qFilter = qFilter.and(new QFilter("welfarepayer", QCP.in, ((DynamicObjectCollection) sjcbdw.getValue()).stream().map(obj -> obj.getLong("id")).collect(Collectors.toList())));
         }
         // 理论参保单位
         if (llcbdw.getValue() != null) {
-            qFilter = qFilter.and(new QFilter("sinsurfilev.welfarepayertheory", QCP.equals, ((DynamicObject) llcbdw.getValue()).getLong("id")));
+            qFilter = qFilter.and(new QFilter("sinsurfilev.welfarepayertheory", QCP.in, ((DynamicObjectCollection) llcbdw.getValue()).stream().map(obj -> obj.getLong("id")).collect(Collectors.toList())));
         }
-
 
         // 自定义过滤
         QFilter[] filters = new QFilter[]{qFilter};
@@ -133,10 +146,10 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                         "namedb ygxm," +
                         // 社保区间
                         "sinsurperiod.perioddate sbqj," +
-                        // 实际缴纳单位
-                        "welfarepayer.name sjjndw," +
                         // 理论缴纳单位
                         "sinsurfilev.welfarepayertheory.name lljndw," +
+                        // 实际缴纳单位
+                        "welfarepayer.name sjjndw," +
                         sb +
                         ""
                 ,
@@ -144,7 +157,7 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                 null
         );
         dataSet = dataSet.select(new String[]{
-                "ygbh", "ygxm", "sbqj", "sjjndw", "lljndw",
+                "ygbh", "ygxm", "sbqj", "lljndw", "sjjndw",
                 "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grjfje1+grbjje1 grhj1", "dwjfje1+dwbjje1 dwhj1",
                 "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grjfje2+grbjje2 grhj2", "dwjfje2+dwbjje2 dwhj2",
                 "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grjfje3+grbjje3 grhj3", "dwjfje3+dwbjje3 dwhj3",
@@ -155,7 +168,7 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                 "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grjfje8+grbjje8 grhj8", "dwjfje8+dwbjje8 dwhj8"
         });
 
-        GroupbyDataSet groupbyDataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(sbqj,'yyyy-MM') sbqj", "sjjndw", "lljndw"});
+        GroupbyDataSet groupbyDataSet = dataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(sbqj,'yyyy-MM') sbqj", "lljndw", "sjjndw",});
         for (int i = 0; i < PROJECTS.length; i++) {
             groupbyDataSet = groupbyDataSet
                     .max("grjfje" + (i + 1))
@@ -165,9 +178,77 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
                     .max("grhj" + (i + 1))
                     .max("dwhj" + (i + 1));
         }
-        dataSet = groupbyDataSet.finish().orderBy(new String[]{"ygbh", "sjjndw", "lljndw", "sbqj"});
+        dataSet = groupbyDataSet.finish().orderBy(new String[]{"ygbh", "lljndw", "sjjndw", "sbqj"});
 
-        return dataSet;
+        // 添加合计行
+        DataSet finish = addSumRow(dataSet);
+        dataSet.close();
+        return finish;
+    }
+
+    /**
+     * 添加合计行
+     *
+     * @param dataSet
+     * @return
+     */
+    private DataSet addSumRow(DataSet dataSet) {
+        DataSet copy = dataSet.copy();
+        GroupbyDataSet groupbyDataSet = copy.groupBy(new String[]{"lljndw"});
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet = groupbyDataSet
+                    .sum("grjfje" + (i + 1))
+                    .sum("dwjfje" + (i + 1))
+                    .sum("grbjje" + (i + 1))
+                    .sum("dwbjje" + (i + 1))
+                    .sum("grhj" + (i + 1))
+                    .sum("dwhj" + (i + 1));
+        }
+        copy = groupbyDataSet.finish().addNullField("ygbh", "ygxm", "sbqj", "sjjndw")
+                .select(new String[]{
+                                "ygbh", "ygxm", "sbqj", "null lljndw", "'理论缴纳单位合计:'+lljndw sjjndw",
+                                "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grhj1", "dwhj1",
+                                "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grhj2", "dwhj2",
+                                "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grhj3", "dwhj3",
+                                "grjfje4", "dwjfje4", "grbjje4", "dwbjje4", "grhj4", "dwhj4",
+                                "grjfje5", "dwjfje5", "grbjje5", "dwbjje5", "grhj5", "dwhj5",
+                                "grjfje6", "dwjfje6", "grbjje6", "dwbjje6", "grhj6", "dwhj6",
+                                "grjfje7", "dwjfje7", "grbjje7", "dwbjje7", "grhj7", "dwhj7",
+                                "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grhj8", "dwhj8"
+                        }
+
+                ).orderBy(new String[]{"lljndw"});
+
+
+        DataSet copy2 = dataSet.copy();
+        GroupbyDataSet groupbyDataSet2 = copy2.groupBy(new String[]{"sjjndw"});
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet2 = groupbyDataSet2
+                    .sum("grjfje" + (i + 1))
+                    .sum("dwjfje" + (i + 1))
+                    .sum("grbjje" + (i + 1))
+                    .sum("dwbjje" + (i + 1))
+                    .sum("grhj" + (i + 1))
+                    .sum("dwhj" + (i + 1));
+        }
+        copy2 = groupbyDataSet2.finish().addNullField("ygbh", "ygxm", "sbqj", "lljndw")
+                .select(new String[]{
+                                "ygbh", "ygxm", "sbqj", "lljndw", "'实际缴纳单位合计:'+sjjndw sjjndw",
+                                "grjfje1", "dwjfje1", "grbjje1", "dwbjje1", "grhj1", "dwhj1",
+                                "grjfje2", "dwjfje2", "grbjje2", "dwbjje2", "grhj2", "dwhj2",
+                                "grjfje3", "dwjfje3", "grbjje3", "dwbjje3", "grhj3", "dwhj3",
+                                "grjfje4", "dwjfje4", "grbjje4", "dwbjje4", "grhj4", "dwhj4",
+                                "grjfje5", "dwjfje5", "grbjje5", "dwbjje5", "grhj5", "dwhj5",
+                                "grjfje6", "dwjfje6", "grbjje6", "dwbjje6", "grhj6", "dwhj6",
+                                "grjfje7", "dwjfje7", "grbjje7", "dwbjje7", "grhj7", "dwhj7",
+                                "grjfje8", "dwjfje8", "grbjje8", "dwbjje8", "grhj8", "dwhj8"
+                        }
+                ).orderBy(new String[]{"sjjndw"});
+
+        DataSet union = dataSet.union(copy).union(copy2);
+        copy.close();
+        copy2.close();
+        return union;
     }
 
 
@@ -177,13 +258,13 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         ReportColumn ygxm = createReportColumn("ygxm", ReportColumn.TYPE_TEXT, "员工姓名");
         ReportColumn sbqj = createReportColumn("sbqj", ReportColumn.TYPE_TEXT, "社保区间");
 
-        ReportColumn sjjndw = createReportColumn("sjjndw", ReportColumn.TYPE_TEXT, "实际缴纳单位");
         ReportColumn lljndw = createReportColumn("lljndw", ReportColumn.TYPE_TEXT, "理论缴纳单位");
+        ReportColumn sjjndw = createReportColumn("sjjndw", ReportColumn.TYPE_TEXT, "实际缴纳单位");
         columns.add(ygbh);
         columns.add(ygxm);
         columns.add(sbqj);
-        columns.add(sjjndw);
         columns.add(lljndw);
+        columns.add(sjjndw);
 
         // 险种
         for (int i = 0; i < PROJECTS.length; i++) {
@@ -210,8 +291,8 @@ public class WithholdReportListDataPlugin extends AbstractReportListDataPlugin {
         if (fieldType.equals(ReportColumn.TYPE_DECIMAL)) {
             column.setScale(2);
             column.setZeroShow(true);
+//            column.setNoDisplayScaleZero(true);
         }
-
         return column;
     }
 

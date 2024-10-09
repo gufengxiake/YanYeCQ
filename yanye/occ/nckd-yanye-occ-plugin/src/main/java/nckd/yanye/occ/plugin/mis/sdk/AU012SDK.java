@@ -38,11 +38,13 @@ public class AU012SDK {
         });
         if ("00".equals(misApiResponse.getRetCode())) {
             //解密数据
-            logger.info(CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey()));
-            return CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
+            String newKey = CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
+            //解密数据
+            logger.info("newKey " + newKey);
+            return newKey;
         } else {
             //请求失败
-            logger.info(misApiResponse.getRetErrMsg());
+            logger.info("ErrMsg " + misApiResponse.getRetErrMsg());
             return null;
         }
     }

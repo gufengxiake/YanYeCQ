@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * 客户交易情况表-报表取数插件
  * 表单标识：nckd_customertrade_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/02
  */
 public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
@@ -31,15 +31,15 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
                 // 查询条件销售组织,标识如不一致,请修改
                 case "nckd_org_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_org_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter.and("saleorgid", QCP.equals, nckd_org_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilter.and("saleorgid", QCP.equals, pkValue);
                     }
                     break;
                 // 订货渠道
                 case "nckd_orderchannelid_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_orderchannelid_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter.and("orderchannelid", QCP.equals, nckd_orderchannelid_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilter.and("orderchannelid", QCP.equals, pkValue);
                     }
                     break;
                 // 查询条件订单日期,标识如不一致,请修改
@@ -77,6 +77,7 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
                         //金额
                         "sumtaxamount as nckd_sumtaxamount";
 
+        //过滤累计出库基本单位数量-累计退货基本单位数量不大于0的数据
         DataSet orderDS = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                         "ocbsoc_saleorder", sFields, new QFilter[]{qFilter}, null).filter("complete > 0");
 
@@ -103,24 +104,14 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
-        ReportColumn nckd_entrytelephone = createReportColumn("nckd_entrytelephone", ReportColumn.TYPE_TEXT, "电话");
-        ReportColumn nckd_entrycontactname = createReportColumn("nckd_entrycontactname", ReportColumn.TYPE_TEXT, "联系人");
-        ReportColumn nckd_reqbaseqty = createReportColumn("nckd_reqbaseqty", ReportColumn.TYPE_DECIMAL, "数量");
-        ReportColumn nckd_sumtaxamount = createReportColumn("nckd_sumtaxamount", ReportColumn.TYPE_DECIMAL, "金额");
-        ReportColumn nckd_pricetax = createReportColumn("nckd_pricetax", ReportColumn.TYPE_DECIMAL, "含税单价");
-        ReportColumn notradedays = createReportColumn("notradedays", ReportColumn.TYPE_TEXT, "无交易天数");
-        ReportColumn max_orderdate = createReportColumn("max_orderdate", ReportColumn.TYPE_DATE, "最后交易日期");
-        ReportColumn countorder = createReportColumn("countorder", ReportColumn.TYPE_TEXT, "累计订单数");
-
-        columns.add(nckd_entrytelephone);
-        columns.add(nckd_entrycontactname);
-        columns.add(nckd_reqbaseqty);
-        columns.add(nckd_sumtaxamount);
-        columns.add(nckd_pricetax);
-        columns.add(notradedays);
-        columns.add(max_orderdate);
-        columns.add(countorder);
-
+        columns.add(createReportColumn("nckd_entrytelephone", ReportColumn.TYPE_TEXT, "电话"));
+        columns.add(createReportColumn("nckd_entrycontactname", ReportColumn.TYPE_TEXT, "联系人"));
+        columns.add(createReportColumn("nckd_reqbaseqty", ReportColumn.TYPE_DECIMAL, "数量"));
+        columns.add(createReportColumn("nckd_sumtaxamount", ReportColumn.TYPE_DECIMAL, "金额"));
+        columns.add(createReportColumn("nckd_pricetax", ReportColumn.TYPE_DECIMAL, "含税单价"));
+        columns.add(createReportColumn("notradedays", ReportColumn.TYPE_TEXT, "无交易天数"));
+        columns.add(createReportColumn("max_orderdate", ReportColumn.TYPE_DATE, "最后交易日期"));
+        columns.add(createReportColumn("countorder", ReportColumn.TYPE_TEXT, "累计订单数"));
         return columns;
     }
 

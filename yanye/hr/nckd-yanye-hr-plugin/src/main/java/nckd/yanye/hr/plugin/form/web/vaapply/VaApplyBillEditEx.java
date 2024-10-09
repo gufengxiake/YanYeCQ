@@ -37,10 +37,11 @@ public class VaApplyBillEditEx  extends HRCoreBaseBillEdit {
     public void beforeItemClick(BeforeItemClickEvent evt) {
         super.beforeItemClick(evt);
         String itemKey = evt.getItemKey();
-        if (HRStringUtils.equals("bar_submit", itemKey)) {
+        if (HRStringUtils.equals("bar_submit", itemKey)) { // bar_save  bar_submit
             // 1.取当前组织
             DynamicObject org =  (DynamicObject)this.getModel().getValue("org");
             String orgnumber = org.getString("number");
+            String orgname = org.getString("name");
             // 2.目前只有 119.01 晶昊本部，121 江西富达盐化有限公司 需要判断请年假的次数
             String orgstrs =  CappConfig.getConfigValue("nianjia_org","119.01,121");
             String[] orgList = orgstrs.split(",");
@@ -80,7 +81,7 @@ public class VaApplyBillEditEx  extends HRCoreBaseBillEdit {
                                         " inner join t_wtabm_vaapplyentry c on c.fid = a.fid" +
                                         " inner join t_wtbd_vacationtype d on d.fid = c.fvacationtypeid" +
                                         " where a.fbillstatus in ('B','D','C') and b.fnumber = '" + currgonghao + "'" +
-                                        " and d.fnumber = '1030_S'" +
+                                        " and d.fnumber in ('1030_S','1088_S') " +
                                         " group by a.fbillno" +
                                         " ) a" +
                                         " where fstartdate=" + year  +
@@ -101,12 +102,12 @@ public class VaApplyBillEditEx  extends HRCoreBaseBillEdit {
                                     if ( (xianzhinum - 1) == numberlist2.get(0)) {
                                         // 6）本年最后一次可提交年假的请假单，显示确认消息
                                         ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener("yearCount", this);
-                                        String confirmTip = "您" + year + "年申请(年假)次数剩本次最后一次，请确认是否继续提交？";
+                                        String confirmTip = "您" + year + "年在" + orgname + "申请(年假)次数剩本次最后一次，请确认是否继续提交？";
                                         this.getView().showConfirm(confirmTip, MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
                                         evt.setCancel(true);
                                     } else if (xianzhinum <= numberlist2.get(0)) {
                                         // 7）该年份请年假已经请完了
-                                        this.getView().showTipNotification("您" +year + "年申请(年假)次数已满，不能再次申请");
+                                        this.getView().showTipNotification("您" +year + "年在" + orgname + "申请(年假)次数已满" + nianjia_num + "次，不能再次申请");
                                         evt.setCancel(true);
                                     }
                                 }

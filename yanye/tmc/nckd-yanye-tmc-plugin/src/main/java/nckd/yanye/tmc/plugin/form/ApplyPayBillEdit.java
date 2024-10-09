@@ -122,25 +122,25 @@ public class ApplyPayBillEdit extends ApBaseEdit {
         DynamicObjectCollection entry = m.getEntryEntity("entry");
 
         for(int i = 0; i < entry.size(); ++i) {
-            BigDecimal e_applyAmount = (BigDecimal)m.getValue("e_applyamount", i);
-            BigDecimal e_approvedAmt = (BigDecimal)m.getValue("e_approvedamt", i);
-            if (e_approvedAmt.compareTo(BigDecimal.ZERO) == 0) {
-                e_approvedAmt = e_applyAmount;
-                m.setValue("e_approvedamt", e_applyAmount, i);
+            BigDecimal eApplyamount = (BigDecimal)m.getValue("e_applyamount", i);
+            BigDecimal eApprovedamt = (BigDecimal)m.getValue("e_approvedamt", i);
+            if (eApprovedamt.compareTo(BigDecimal.ZERO) == 0) {
+                eApprovedamt = eApplyamount;
+                m.setValue("e_approvedamt", eApplyamount, i);
             }
 
             BigDecimal localApplyAmount;
-            BigDecimal LocalApprovedAmt;
+            BigDecimal localApprovedAmt2;
             if ("1".equals(quotation)) {
-                localApplyAmount = e_applyAmount.divide(exchangeRate, localprecision, RoundingMode.HALF_UP);
-                LocalApprovedAmt = e_approvedAmt.divide(exchangeRate, localprecision, RoundingMode.HALF_UP);
+                localApplyAmount = eApplyamount.divide(exchangeRate, localprecision, RoundingMode.HALF_UP);
+                localApprovedAmt2 = eApprovedamt.divide(exchangeRate, localprecision, RoundingMode.HALF_UP);
             } else {
-                localApplyAmount = e_applyAmount.multiply(exchangeRate).setScale(localprecision, RoundingMode.HALF_UP);
-                LocalApprovedAmt = e_approvedAmt.multiply(exchangeRate).setScale(localprecision, RoundingMode.HALF_UP);
+                localApplyAmount = eApplyamount.multiply(exchangeRate).setScale(localprecision, RoundingMode.HALF_UP);
+                localApprovedAmt2 = eApprovedamt.multiply(exchangeRate).setScale(localprecision, RoundingMode.HALF_UP);
             }
 
             m.setValue("e_appseleamount", localApplyAmount, i);
-            m.setValue("e_approvedseleamt", LocalApprovedAmt, i);
+            m.setValue("e_approvedseleamt", localApprovedAmt2, i);
         }
 
     }
@@ -314,7 +314,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             List<DynamicObject> isPushCasList = new ArrayList(entrys.size());
             Iterator var7 = entrys.iterator();
 
-            Long PayAsstactId;
+            Long payAsstactId;
             while(var7.hasNext()) {
                 DynamicObject entry = (DynamicObject)var7.next();
                 BigDecimal ePaidAmt = entry.getBigDecimal("e_paidamt");
@@ -322,9 +322,9 @@ public class ApplyPayBillEdit extends ApBaseEdit {
                 if (ePaidAmt.abs().compareTo(eApproveAmt.abs()) < 0) {
                     Long asstactId = entry.getLong("e_asstact.id");
                     String assacctName = entry.getString("e_assacct");
-                    PayAsstactId = entry.getLong("e_bebank.id");
+                    payAsstactId = entry.getLong("e_bebank.id");
                     asstactIdList.add(asstactId);
-                    bankIdList.add(PayAsstactId);
+                    bankIdList.add(payAsstactId);
                     assacctNameList.add(assacctName);
                     isPushCasList.add(entry);
                 }
@@ -340,7 +340,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
             while(var26.hasNext()) {
                 Map.Entry<Object, List<DynamicObject>> payEntry = (Map.Entry)var26.next();
                 DynamicObject paybill = (DynamicObject)((List)payEntry.getValue()).get(0);
-                PayAsstactId = paybill.getLong("payee");
+                payAsstactId = paybill.getLong("payee");
                 Long payBankId = paybill.getLong("payeebank");
                 String payAssacctName = paybill.getString("payeebanknum");
                 Iterator var16 = isPushCasList.iterator();
@@ -350,7 +350,7 @@ public class ApplyPayBillEdit extends ApBaseEdit {
                     Long asstactId = entry.getLong("e_asstact.id");
                     String assacctName = entry.getString("e_assacct");
                     Long bankId = entry.getLong("e_bebank.id");
-                    if (asstactId.equals(PayAsstactId) && bankId.equals(payBankId) && assacctName.equals(payAssacctName)) {
+                    if (asstactId.equals(payAsstactId) && bankId.equals(payBankId) && assacctName.equals(payAssacctName)) {
                         String groupKey = asstactId + assacctName + bankId;
                         List<DynamicObject> groupEntrys = (List)entryFroupMap.get(groupKey);
                         if (groupEntrys != null) {
@@ -667,20 +667,20 @@ public class ApplyPayBillEdit extends ApBaseEdit {
                 case "e_approvedamt":
                     BigDecimal approvedAmt = (BigDecimal)this.getModel().getValue("e_approvedamt", iRow);
                     BigDecimal exchangeRate = (BigDecimal)this.getModel().getValue("exchangerate");
-                    DynamicObject settleCurrency_1 = (DynamicObject)this.getModel().getValue("settlecurrency");
+                    DynamicObject settleCurrency2 = (DynamicObject)this.getModel().getValue("settlecurrency");
                     String quotation = (String)this.getModel().getValue("quotation");
                     if ("1".equals(quotation) && exchangeRate.compareTo(BigDecimal.ZERO) == 0) {
                         quotation = "0";
                     }
 
-                    if (ObjectUtils.isEmpty(settleCurrency_1)) {
+                    if (ObjectUtils.isEmpty(settleCurrency2)) {
                         this.getModel().setValue("e_applyamount", BigDecimal.ZERO, iRow);
                         this.getModel().setValue("e_payamount", BigDecimal.ZERO, iRow);
                         this.getView().showTipNotification(ResManager.loadKDString("请先录入结算币。", "ApplyPayBillEdit_3", "fi-ap-formplugin", new Object[0]));
                         return;
                     }
 
-                    int amtPrecision = settleCurrency_1.getInt("amtprecision");
+                    int amtPrecision = settleCurrency2.getInt("amtprecision");
                     if ("1".equals(quotation)) {
                         this.getModel().setValue("e_approvedseleamt", approvedAmt.divide(exchangeRate, amtPrecision, RoundingMode.HALF_UP), iRow);
                     } else {

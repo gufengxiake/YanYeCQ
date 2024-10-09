@@ -67,4 +67,14 @@ public class Content implements Serializable {
     public void setEncryptBody(String encryptBody) {
         this.encryptBody = encryptBody;
     }
+
+    @Override
+    public String toString() {
+        return "Content{" +
+                "nonce='" + nonce + '\'' +
+                ", timestamp='" + timestamp + '\'' +
+                ", signature='" + signature + '\'' +
+                ", encryptBody='" + encryptBody + '\'' +
+                '}';
+    }
 }

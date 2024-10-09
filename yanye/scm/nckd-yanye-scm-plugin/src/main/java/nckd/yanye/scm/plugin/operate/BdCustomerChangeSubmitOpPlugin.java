@@ -44,18 +44,40 @@ public class BdCustomerChangeSubmitOpPlugin extends AbstractOperationServicePlug
                 case "save":
                     for (int t = 0; t < entry.size(); t++) {
                         DynamicObject entity = entry.get(t);
+                        //开票校验
+                        String isInvoice = entity.getString("nckd_isinvoice");
+                        if ("1".equals(isInvoice)) {
+                            String enterpriseemail = entity.getString("nckd_enterpriseemail");//客户企业邮箱
+                            String customeremail = entity.getString("nckd_customeremail");//客户业务员邮箱
+                            String myemail = entity.getString("nckd_myemail");//我方业务员邮箱
+                            if (StringUtils.isEmpty(enterpriseemail) && StringUtils.isEmpty(customeremail) && StringUtils.isEmpty(myemail)) {
+                                stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中在开票状态下必须填写一个邮箱信息");
+                                continue;
+                            }
+                        }
                         //社会统一信用代码
                         String societyCreditCode = entity.getString("nckd_societycreditcode");
-                        if (StringUtils.isBlank(societyCreditCode)) {
-                            stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中社会统一信用代码无效");
-                            continue;
-                        }
-                        //先查供应商，供应商无重复再查客户，都无重复则放行，否则中断操作
-                        DynamicObject bdCustomer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,societycreditcode",
-                                new QFilter[]{new QFilter("societycreditcode", QCP.equals, societyCreditCode)});
-                        if (bdCustomer != null){
-                            stringBuilder.append("提交单据第" + (i+1) + "中维护客户信息表体第" + (t+1) + "条数据中" + bdCustomer.getString("name") + "客户社会统一信用代码重复");
-                            break;
+                        String addCustomer = entity.getString("nckd_addcustomer");
+                        DynamicObject currency = entity.getDynamicObject("nckd_currency");
+                        if ("CNY".equals(currency.getString("number"))) {
+                            if (StringUtils.isBlank(societyCreditCode)) {
+                                stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中社会统一信用代码无效");
+                                continue;
+                            }
+                            //先查客户，供应商无重复再查供应商，都无重复则放行，否则中断操作
+                            DynamicObject bdCustomer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,societycreditcode",
+                                    new QFilter[]{new QFilter("societycreditcode", QCP.equals, societyCreditCode)});
+                            if (bdCustomer != null){
+                                stringBuilder.append("提交单据第" + (i+1) + "条中维护客户信息表体第" + (t+1) + "条数据中名字为" + addCustomer + "的客户社会统一信用代码重复");
+                                continue;
+                            }
+                            DynamicObject bdSupplier = BusinessDataServiceHelper.loadSingle("bd_supplier", "id,societycreditcode",
+                                    new QFilter[]{new QFilter("societycreditcode", QCP.equals, societyCreditCode)});
+                            if (bdSupplier != null) {
+                                if (!addCustomer.equals(bdSupplier.getString("name"))){
+                                    stringBuilder.append("提交单据第" + (i + 1) + "条中维护客户信息表体第" + (t + 1) + "条数据中名字为" + addCustomer + "的客户与名字为" + bdSupplier.getString("name") +  "的供应商名字不一致");
+                                }
+                            }
                         }
                     }
                     break;
@@ -69,11 +91,14 @@ public class BdCustomerChangeSubmitOpPlugin extends AbstractOperationServicePlug
                             pkList.add(customerModify.getPkValue());
                         }else {
                             //社会统一信用代码
-                            String societyCreditCode = entity.getString("nckd_societycreditcode");
-                            DynamicObject bdCustomer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,societycreditcode",
-                                    new QFilter[]{new QFilter("societycreditcode", QCP.equals, societyCreditCode)});
-                            if (bdCustomer != null && !pkList.contains(bdCustomer .getPkValue())) {
-                                stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中" + bdCustomer.getString("name") + "供应商社会统一信用代码重复");
+                            DynamicObject currency = entity.getDynamicObject("nckd_currency");
+                            if ("CNY".equals(currency.getString("number"))) {
+                                String societyCreditCode = entity.getString("nckd_societycreditcode");
+                                DynamicObject bdCustomer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,societycreditcode",
+                                        new QFilter[]{new QFilter("societycreditcode", QCP.equals, societyCreditCode)});
+                                if (bdCustomer != null && !pkList.contains(bdCustomer .getPkValue())) {
+                                    stringBuilder.append("提交单据第" + (i + 1) + "中维护客商信息表体第" + (t + 1) + "条数据中" + bdCustomer.getString("name") + "供应商社会统一信用代码重复");
+                                }
                             }
                         }
                     }

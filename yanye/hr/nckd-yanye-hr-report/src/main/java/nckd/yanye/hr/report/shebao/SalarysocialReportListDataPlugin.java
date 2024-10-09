@@ -32,20 +32,25 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
      */
     private final String[] PROJECTS = {
             "养老保险",
-            "失业保险",
             "医疗保险",
             "大病医疗保险",
+            "失业保险",
+            "工伤保险",
+            "补充工伤保险",
             "住房公积金",
             "企业年金",
     };
 
-    private final String[] FIELDS = {"ygbh", "ygxm", "qj",
-            "sbb1", "gzb1", "pzjl1",
-            "sbb2", "gzb2", "pzjl2",
-            "sbb3", "gzb3", "pzjl3",
-            "sbb4", "gzb4", "pzjl4",
-            "sbb5", "gzb5", "pzjl5",
-            "sbb6", "gzb6", "pzjl6",
+    private final String[] FIELDS = {
+            "ygbh", "ygxm", "qj",
+            "sbb1", "gzb1", "pzjl1", "NullToZero(sbb1) - NullToZero(gzb1) - NullToZero(pzjl1) ce1",
+            "sbb2", "gzb2", "pzjl2", "NullToZero(sbb2) - NullToZero(gzb2) - NullToZero(pzjl2) ce2",
+            "sbb3", "gzb3", "pzjl3", "NullToZero(sbb3) - NullToZero(gzb3) - NullToZero(pzjl3) ce3",
+            "sbb4", "gzb4", "pzjl4", "NullToZero(sbb4) - NullToZero(gzb4) - NullToZero(pzjl4) ce4",
+            "sbb5", "gzb5", "pzjl5", "NullToZero(sbb5) - NullToZero(gzb5) - NullToZero(pzjl5) ce5",
+            "sbb6", "gzb6", "pzjl6", "NullToZero(sbb6) - NullToZero(gzb6) - NullToZero(pzjl6) ce6",
+            "sbb7", "gzb7", "pzjl7", "NullToZero(sbb7) - NullToZero(gzb7) - NullToZero(pzjl7) ce7",
+            "sbb8", "gzb8", "pzjl8", "NullToZero(sbb8) - NullToZero(gzb8) - NullToZero(pzjl8) ce8",
     };
 
 
@@ -57,61 +62,89 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
 
         // 选择人员
         FilterItemInfo users = filter.getFilterItem("nckd_users");
+        // 算发薪组织
+        FilterItemInfo org = filter.getFilterItem("nckd_org");
         // 社保开始期间
         FilterItemInfo sbksqj = filter.getFilterItem("nckd_sbksqj");
         // 社保结束期间
         FilterItemInfo sbjsqj = filter.getFilterItem("nckd_sbjsqj");
-        // 实际参保单位
-        FilterItemInfo sjcbdw = filter.getFilterItem("nckd_sjcbdw");
-        // 理论参保单位
-        FilterItemInfo llcbdw = filter.getFilterItem("nckd_llcbdw");
+        // 薪酬开始日期
+        FilterItemInfo xcksrq = filter.getFilterItem("nckd_xcksrq");
+        // 薪酬结束日期
+        FilterItemInfo xcjsrq = filter.getFilterItem("nckd_xcjsrq");
 
-        if (sbksqj.getValue() == null) {
-            throw new KDBizException("社保开始期间不能为空");
+
+        if (sbksqj.getValue() == null && xcksrq.getValue() == null) {
+            throw new KDBizException("社保开始期间或薪酬开始日期至少录入一项");
         }
 
-        // 实际参保单位或理论参保单位至少录入一项
-        if (sjcbdw.getValue() == null && llcbdw.getValue() == null) {
-            throw new KDBizException("实际参保单位或理论参保单位至少录入一项");
-        }
+//        if (org.getValue() == null) {
+//            throw new KDBizException("算发薪组织不能为空");
+//        }
 
-        // 过滤
-        // 社保开始期间
-        QFilter qFilter = new QFilter("sinsurperiod.perioddate", QCP.large_equals, ((DynamicObject) sbksqj.getValue()).getDate("perioddate"));
-        // 人员
+        /*
+         * 社保表过滤
+         */
+        // 选择人员
+        QFilter userQfilter = null;
         if (users.getValue() != null) {
-            qFilter = qFilter.and(
-                    new QFilter("employee.person", QCP.in, ((DynamicObjectCollection) users.getValue())
+            userQfilter = new QFilter("employee.empnumber",
+                    QCP.in,
+                    ((DynamicObjectCollection) users.getValue())
                             .stream()
-                            .map(obj -> obj.getLong("id"))
-                            .collect(Collectors.toList()))
+                            .map(obj -> obj.getString("empnumber"))
+                            .collect(Collectors.toList())
             );
         }
+
+        // 社保开始期间
+        QFilter sbksQfilter = null;
+        if (sbksqj.getValue() != null) {
+            sbksQfilter = new QFilter("sinsurperiod.perioddate",
+                    QCP.large_equals,
+                    ((DynamicObject) sbksqj.getValue()).getDate("perioddate")
+            );
+        }
+
         // 社保结束期间
+        QFilter sbjsQfilter = null;
         if (sbjsqj.getValue() != null) {
-            qFilter = qFilter.and(new QFilter("sinsurperiod.perioddate", QCP.less_equals, ((DynamicObject) sbjsqj.getValue()).getDate("perioddate")));
-        }
-        // 实际参保单位
-        if (sjcbdw.getValue() != null) {
-            qFilter = qFilter.and(new QFilter("welfarepayer", QCP.equals, ((DynamicObject) sjcbdw.getValue()).getLong("id")));
-        }
-        // 理论参保单位
-        if (llcbdw.getValue() != null) {
-            qFilter = qFilter.and(new QFilter("sinsurfilev.welfarepayertheory", QCP.equals, ((DynamicObject) llcbdw.getValue()).getLong("id")));
+            sbjsQfilter = new QFilter("sinsurperiod.perioddate",
+                    QCP.less_equals,
+                    ((DynamicObject) sbjsqj.getValue()).getDate("perioddate")
+            );
         }
 
-
-        // 自定义过滤
-        QFilter[] filters = new QFilter[]{qFilter};
+        // 社保表过滤条件
+        QFilter[] sbbQfilters = new QFilter[]{userQfilter, sbksQfilter, sbjsQfilter};
 
         // 社保表数据
-        DataSet sbbDataSet = getSbbDataSet(filters);
+        DataSet sbbDataSet = getSbbDataSet(sbbQfilters);
+
+        /*
+         * 工资表过滤
+         */
+        StringBuilder sqlFilter = new StringBuilder();
+        sqlFilter.append("where 1=1");
+        // 薪酬开始日期
+        if (xcksrq.getValue() != null) {
+            sqlFilter.append(" and a.fbelongperiod >= '" + xcksrq.getDate() + "'");
+        }
+        // 薪酬结束日期
+        if (xcjsrq.getValue() != null) {
+            sqlFilter.append(" and a.fbelongperiod <= '" + xcjsrq.getDate() + "'");
+        }
+        // 算发薪组织
+        if (org.getValue() != null) {
+            sqlFilter.append(" and a.forgid = '" + ((DynamicObject) org.getValue()).getLong("id") + "'");
+        }
+
 
         // 工资表数据
-        DataSet gzbDataSet = getGzbDataSet(filters);
+        DataSet gzbDataSet = getGzbDataSet(sqlFilter);
 
         // 平账记录数据
-        DataSet pzjlDataSet = getPzjlDataSet(filters);
+        DataSet pzjlDataSet = getPzjlDataSet();
 
 
         DataSet finish = sbbDataSet
@@ -126,6 +159,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                         "sbb4", "gzb4",
                         "sbb5", "gzb5",
                         "sbb6", "gzb6",
+                        "sbb7", "gzb7",
+                        "sbb8", "gzb8",
                 })
                 .finish()
                 .leftJoin(pzjlDataSet)
@@ -134,7 +169,77 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 .on("qj", "qj").select(FIELDS)
                 .finish();
 
-        return finish;
+        DataSet groupSumRow = addGroupSumRow(finish);
+        DataSet onlySumRow = addSumRow(finish);
+        DataSet union = groupSumRow.union(onlySumRow);
+
+
+        return union;
+    }
+
+    private DataSet addSumRow(DataSet finish) {
+        GroupbyDataSet groupbyDataSet = finish.groupBy();
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet
+                    .sum("sbb" + (i + 1))
+                    .sum("gzb" + (i + 1))
+                    .sum("pzjl" + (i + 1))
+                    .sum("ce" + (i + 1));
+        }
+        DataSet sumDataSet = groupbyDataSet.finish().select(new String[]{
+                        "null ygbh", "null ygxm", "'合计' qj",
+                        "sbb1", "gzb1", "pzjl1", "ce1",
+                        "sbb2", "gzb2", "pzjl2", "ce2",
+                        "sbb3", "gzb3", "pzjl3", "ce3",
+                        "sbb4", "gzb4", "pzjl4", "ce4",
+                        "sbb5", "gzb5", "pzjl5", "ce5",
+                        "sbb6", "gzb6", "pzjl6", "ce6",
+                        "sbb7", "gzb7", "pzjl7", "ce7",
+                        "sbb8", "gzb8", "pzjl8", "ce8",
+                        "0 nckd_iflight"
+                }
+        );
+
+        return sumDataSet;
+    }
+
+    /**
+     * 添加分组合计行
+     *
+     * @param finish
+     * @return
+     */
+    private DataSet addGroupSumRow(DataSet finish) {
+        // 分组后，进行合计
+        GroupbyDataSet groupbyDataSet = finish.groupBy(new String[]{"ygbh", "ygxm"});
+        for (int i = 0; i < PROJECTS.length; i++) {
+            groupbyDataSet
+                    .sum("sbb" + (i + 1))
+                    .sum("gzb" + (i + 1))
+                    .sum("pzjl" + (i + 1))
+                    .sum("ce" + (i + 1));
+        }
+        DataSet sumDataSet = groupbyDataSet.finish();
+
+        // 添加高亮字段
+        finish = finish.addField("0", "nckd_iflight");
+
+        // union前，需要保证两个dataSet的字段序列一致，因此这里对sumDataSet对象重新排列字段序列
+        sumDataSet = sumDataSet.select(new String[]{
+                "ygbh", "ygxm +'的金额合计' ygxm", "null qj",
+                "sbb1", "gzb1", "pzjl1", "ce1",
+                "sbb2", "gzb2", "pzjl2", "ce2",
+                "sbb3", "gzb3", "pzjl3", "ce3",
+                "sbb4", "gzb4", "pzjl4", "ce4",
+                "sbb5", "gzb5", "pzjl5", "ce5",
+                "sbb6", "gzb6", "pzjl6", "ce6",
+                "sbb7", "gzb7", "pzjl7", "ce7",
+                "sbb8", "gzb8", "pzjl8", "ce8",
+                "1 nckd_iflight"
+        });
+        DataSet unionDataSet = finish.union(sumDataSet).orderBy(new String[]{"ygxm"});
+
+        return unionDataSet;
     }
 
 
@@ -142,7 +247,7 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) {
         ReportColumn ygbh = createReportColumn("ygbh", ReportColumn.TYPE_TEXT, "员工编码");
         ReportColumn ygxm = createReportColumn("ygxm", ReportColumn.TYPE_TEXT, "员工姓名");
-        ReportColumn sbqj = createReportColumn("qj", ReportColumn.TYPE_TEXT, "社保区间");
+        ReportColumn sbqj = createReportColumn("qj", ReportColumn.TYPE_TEXT, "期间");
 
         columns.add(ygbh);
         columns.add(ygxm);
@@ -166,10 +271,10 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
     /**
      * 社保表数据
      *
-     * @param filters
+     * @param sbbQfilters
      * @return
      */
-    private DataSet getSbbDataSet(QFilter[] filters) {
+    private DataSet getSbbDataSet(QFilter[] sbbQfilters) {
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < PROJECTS.length; i++) {
             String project = PROJECTS[i];
@@ -196,7 +301,7 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                         // 社保表
                         sb
                 ,
-                filters,
+                sbbQfilters,
                 null
         );
 
@@ -216,19 +321,18 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
      *
      * @return
      */
-    private DataSet getGzbDataSet(QFilter[] filters) {
+    private DataSet getGzbDataSet(StringBuilder sqlFilter) {
         SqlBuilder sql = new SqlBuilder();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < PROJECTS.length; i++) {
             String project = PROJECTS[i];
             sb
-//                    .append("(CASE WHEN g.fname = '").append(name).append("个人缴费金额' THEN (" + "case when c.ftextvalue = ' ' then (case when c.fcalamountvalue = 0 then c.fnumvalue || '' else c.fcalamountvalue || '' end) else c.ftextvalue end" + ") END)")
-                    .append("(CASE WHEN g.fname = '").append(project).append("个人缴费金额' THEN 0 ELSE 0 END)")
-                    .append(" as " + "gzb").append(i + 1);
-            if (i != (PROJECTS.length - 1)) {
-                sb.append(",");
-            }
+                    .append("CASE WHEN g.fname = '").append(project).append("个人缴费金额' THEN (" + "case when c.ftextvalue = ' ' then (case when c.fcalamountvalue = 0 then c.fnumvalue || '' else c.fcalamountvalue || '' end) else c.ftextvalue end" + ") END")
+//                    .append("(CASE WHEN g.fname = '").append(project).append("个人缴费金额' THEN 0 ELSE 0 END)")
+                    .append(" " + "gzb").append(i + 1);
+            sb.append(",");
         }
+
         sql.append("select a.fid\n" +
                 "     -- 员工工号\n" +
                 "     , a.fempnumber              ygbh\n" +
@@ -236,9 +340,9 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 "     , a.fname                   ygxm\n" +
                 "     -- 期间\n" +
                 "     , d.fperioddate                 qj\n" +
-                ", " + sb +
+                "     , " + sb +
                 "     -- 项目名称\n" +
-                "     , g.fname                   项目名称\n" +
+                "     g.fname                   项目名称\n" +
                 "     -- 金额\n" +
                 "     , case when c.ftextvalue = ' ' then (case when c.fcalamountvalue = 0 then c.fnumvalue || '' else c.fcalamountvalue || '' end) else c.ftextvalue end 项目数据\n" +
                 "         from t_hsas_calperson a -- 核算名单\n" +
@@ -248,11 +352,25 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 "         inner join t_haos_adminorg e on e.fid = a.fadminorgid -- hr行政组织\n" +
                 "         inner join t_hsas_calpayrolltask f on f.fid = a.fcaltaskid -- 薪资核算任务\n" +
                 "         inner join t_hsbs_salaryitem g on g.fid = c.fsalaryitemid -- 薪酬项目\n" +
-                ";");
+                sqlFilter +
+                ";"
+        );
 
         DataSet gzbDataSet = DB.queryDataSet(this.getClass().getName(), DBRoute.of("hr"), sql);
 
-        GroupbyDataSet groupbyDataSet = gzbDataSet.groupBy(new String[]{"ygbh", "ygxm", "to_char(qj,'yyyy-MM') qj"});
+        gzbDataSet = gzbDataSet.select(new String[]{"ygbh", "ygxm", "to_char(qj,'yyyy-MM') qj",
+                        "CAST(gzb1 AS DECIMAL) gzb1",
+                        "CAST(gzb2 AS DECIMAL) gzb2",
+                        "CAST(gzb3 AS DECIMAL) gzb3",
+                        "CAST(gzb4 AS DECIMAL) gzb4",
+                        "CAST(gzb5 AS DECIMAL) gzb5",
+                        "CAST(gzb6 AS DECIMAL) gzb6",
+                        "CAST(gzb7 AS DECIMAL) gzb7",
+                        "CAST(gzb8 AS DECIMAL) gzb8",
+                }
+        );
+
+        GroupbyDataSet groupbyDataSet = gzbDataSet.groupBy(new String[]{"ygbh", "ygxm", "qj"});
 
         for (int i = 0; i < PROJECTS.length; i++) {
             groupbyDataSet = groupbyDataSet.max("gzb" + (i + 1));
@@ -270,9 +388,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
      *
      * @return
      */
-    private DataSet getPzjlDataSet(QFilter[] filters) {
-        // fixme 暂时不支持
-        filters = null;
+    private DataSet getPzjlDataSet() {
+        QFilter[] filters = null;
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < PROJECTS.length; i++) {
             String project = PROJECTS[i];
@@ -322,7 +439,9 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                         "CAST(pzjl3 AS DOUBLE) pzjl3",
                         "CAST(pzjl4 AS DOUBLE) pzjl4",
                         "CAST(pzjl5 AS DOUBLE) pzjl5",
-                        "CAST(pzjl6 AS DOUBLE) pzjl6"
+                        "CAST(pzjl6 AS DOUBLE) pzjl6",
+                        "CAST(pzjl7 AS DOUBLE) pzjl7",
+                        "CAST(pzjl8 AS DOUBLE) pzjl8"
                 })
                 .finish().groupBy(new String[]{"ygbh", "ygxm", "qj"})
                 .max("pzjl1")
@@ -331,6 +450,8 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
                 .max("pzjl4")
                 .max("pzjl5")
                 .max("pzjl6")
+                .max("pzjl7")
+                .max("pzjl8")
                 .finish();
 
 
@@ -344,10 +465,9 @@ public class SalarysocialReportListDataPlugin extends AbstractReportListDataPlug
         column.setCaption(new LocaleString(caption));
         if (fieldType.equals(ReportColumn.TYPE_DECIMAL)) {
             column.setScale(2);
-//            column.setZeroShow(true);
-            column.setZeroShow(false);
+            column.setZeroShow(true);
+//            column.setNoDisplayScaleZero(true);
         }
-
         return column;
     }
 

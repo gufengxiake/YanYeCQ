@@ -1,8 +1,10 @@
 package nckd.yanye.occ.plugin.report;
 
 import cn.hutool.core.date.DateUtil;
+import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
@@ -15,10 +17,19 @@ import java.util.Iterator;
 /**
  * 客户交易情况表-报表界面插件
  * 表单标识：nckd_customertrade_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/09/02
  */
 public class CustomerTradeReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
+    @Override
+    public void initDefaultQueryParam(ReportQueryParam queryParam) {
+        super.initDefaultQueryParam(queryParam);
+        FilterInfo filter = queryParam.getFilter();
+        Long curLoginOrg = RequestContext.get().getOrgId();
+        //给组织默认值
+        filter.addFilterItem("nckd_org_q", curLoginOrg);
+    }
+
     @Override
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
@@ -26,12 +37,12 @@ public class CustomerTradeReportFormPlugin extends AbstractReportFormPlugin impl
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //数量
-            BigDecimal nckd_reqbaseqty = next.getBigDecimal("nckd_reqbaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_reqbaseqty");
+            BigDecimal nckdReqbaseqty = next.getBigDecimal("nckd_reqbaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_reqbaseqty");
             //金额
-            BigDecimal nckd_sumtaxamount = next.getBigDecimal("nckd_sumtaxamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_sumtaxamount");
-            if(nckd_reqbaseqty.compareTo(BigDecimal.ZERO) != 0){
+            BigDecimal nckdSumtaxamount = next.getBigDecimal("nckd_sumtaxamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_sumtaxamount");
+            if(nckdReqbaseqty.compareTo(BigDecimal.ZERO) != 0){
                 //计算含税单价
-                BigDecimal divide = nckd_sumtaxamount.divide(nckd_reqbaseqty, RoundingMode.CEILING);
+                BigDecimal divide = nckdSumtaxamount.divide(nckdReqbaseqty, RoundingMode.CEILING);
                 next.set("nckd_pricetax",divide);
             }
             //计算无交易天数

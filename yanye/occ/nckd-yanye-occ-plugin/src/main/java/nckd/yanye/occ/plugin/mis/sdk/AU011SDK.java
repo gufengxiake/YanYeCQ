@@ -38,14 +38,15 @@ public class AU011SDK {
         //json转对象
         MisApiResponseVo misApiResponse = JsonUtil.jsonStringToObject(result, new TypeReference<MisApiResponseVo>() {
         });
+        //解密数据
         if ("00".equals(misApiResponse.getRetCode())) {
-            //解密数据
             String key = CCBMisSdk.CCBMisSdk_KeyDecrypt(misApiResponse.getKey(), misBankKey.getPrivateKey());
-            logger.info(key);
+            //解密数据
+            logger.info("key " + key);
             return key;
         } else {
             //请求失败
-            logger.info(misApiResponse.getRetErrMsg());
+            logger.info("ErrMsg " + misApiResponse.getRetErrMsg());
             return null;
         }
     }

@@ -1,17 +1,22 @@
 package nckd.yanye.scm.plugin.operate;
 
+import cn.hutool.core.convert.Convert;
 import cn.hutool.core.util.ObjectUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.db.DB;
+import kd.bos.db.DBRoute;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.DBServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
@@ -67,7 +72,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                         .and("validstatus", QCP.equals, "B")
                         .and("closestatus", QCP.equals, "A");
                 //String entityName, String selectProperties, QFilter[] filters
-                DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,type,totalallamount,nckd_totalallamount,billentry.id,billentry.material,billentry.nckd_priceandtaxup,billentry.nckd_priceandtaxlow" +
+                DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,type,totalallamount,nckd_totalallamount,nckd_cebl,billentry.id,billentry.material,billentry.nckd_priceandtaxup,billentry.nckd_priceandtaxlow" +
                         ",billentry.qty,billentry.nckd_qty,billentry.amountandtax,billentry.nckd_amount,billentry,billentry.seq", qFilter.toArray());
                 //转成key id value DynamicObject采购合同
                 Map<Long, DynamicObject> map = Arrays.stream(purcontractArr).collect(Collectors.toMap(k -> k.getLong("id"), v -> v));
@@ -178,10 +183,12 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                 //c）如果控制总金额，则采购订单中相同采购合同的物料明细行的“价税合计”的合计≤采购合同财务信息“已执行价税合计”，存在一个采购订单多行物料对应一个采购合同，故需要先将采购订单中相同采购合同的金额进行汇总后，再与采购合同进行比较判断；
                 //采购订单数据
                 BigDecimal groupAmountandtax = purorderbillMap.get(purorderbillEntry.get("conbillid"));
-                //采购合同数量
+                //采购合同数量 modify 这里新增超额设置（采购合同上已执行价税合计+本次采购订单执行价税合计）小于等于价税合计*（1+允许超额比例）
                 BigDecimal totalallamount = purcontract.getBigDecimal("totalallamount");
+                BigDecimal nckdCebl = purcontract.getBigDecimal("nckd_cebl");
+                BigDecimal total = totalallamount.add(totalallamount.multiply(nckdCebl).divide(new BigDecimal(100), 2, RoundingMode.HALF_UP));
                 BigDecimal nckdTotalallamount = purcontract.getBigDecimal("nckd_totalallamount");
-                BigDecimal subtract = totalallamount.subtract(nckdTotalallamount);
+                BigDecimal subtract = total.subtract(nckdTotalallamount);
                 if (groupAmountandtax.compareTo(subtract) > 0) {
                     //%s 物料明细第(%s)行，对应合同：[%s] 的已订货金额超额
                     String billno = purorderbill.getString("billno");
@@ -327,5 +334,89 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                 }
             }
         }
+    }
+
+    @Override
+    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
+        super.afterExecuteOperationTransaction(e);
+        // 提交时校验
+        DynamicObject[] entities = e.getDataEntities();
+        Set<Long> conbillids = new HashSet<>();
+        Arrays.stream(entities).forEach(k -> {
+            DynamicObjectCollection billentry = k.getDynamicObjectCollection("billentry");
+            Set<Long> conbillidSet = billentry.stream().map(h -> h.getLong("conbillid")).collect(Collectors.toSet());
+            conbillids.addAll(conbillidSet);
+        });
+        //根据提交的采购订单去查询采购合同
+        QFilter qFilter = new QFilter("id", QCP.in, conbillids)
+                .and("billstatus", QCP.equals, "C")
+                .and("validstatus", QCP.equals, "B")
+                .and("closestatus", QCP.equals, "A");
+        //String entityName, String selectProperties, QFilter[] filters
+        DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,totalallamount,nckd_totalallamount,nckd_totalallamountrat,billentry.id,billentry.material,billentry.qty,billentry.nckd_qty,billentry.nckd_qtyratio,billentry.amountandtax,billentry.nckd_amount,billentry.nckd_amountratio,billentry.seq", qFilter.toArray());
+        //转成key id value DynamicObject采购合同
+        Map<Long, DynamicObject> map = Arrays.stream(purcontractArr).collect(Collectors.toMap(k -> k.getLong("id"), v -> v));
+        //遍历提交的采购订单单据 进行逻辑处理
+        for (DynamicObject purorderbill : entities) {
+            DynamicObjectCollection billentry = purorderbill.getDynamicObjectCollection("billentry");
+            for (DynamicObject entry : billentry) {
+                //获取分录行的合同id
+                long key = entry.getLong("conbillid");
+                //获取采购合同
+                DynamicObject purcontractBill = map.get(key);
+                //获取到了才进行下面逻辑，否则下一条分录
+                if (ObjectUtil.isNotEmpty(purcontractBill)) {
+                    DynamicObjectCollection purcontractBillEntry = purcontractBill.getDynamicObjectCollection("billentry");
+                    //转换为key 为物料 value 为该行数据
+                    Map<Object, DynamicObject> purcontractBillEntryMap = purcontractBillEntry.stream().filter(h -> ObjectUtil.isNotEmpty(h.getDynamicObject("material"))).collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v));
+                    //当前单据分录的物料
+                    Object materialId = entry.getDynamicObject("material").getPkValue();
+                    //以下字段来源于采购合同
+                    DynamicObject purcontractBillEntryDy = purcontractBillEntryMap.get(materialId);
+                    // 带参数
+                    boolean result = insertTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
+                    if (result) {
+                        insertTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * 插入规则表
+     */
+    private static void insertTPmPurorderbillTc(Object sbillid, Object sid, Object tbillid, Object tid) {
+        String purorderBillTcSql = "INSERT INTO t_pm_purorderbill_tc (fid, ftbillid, fttableid, ftid, fsbillid, fstableid,fsid) VALUES (?, ?, ?, ?, ?, ?,?);";
+        Long fid = DBServiceHelper.genGlobalLongId();
+        Long ftbillid = Convert.toLong(tbillid);
+        Long fttableid = 602924326097811460L;
+        Long ftid = Convert.toLong(tid);
+        Long fsbillid = Convert.toLong(sbillid);
+        Long fstableid = 719529409035381761L;
+        Long fsid = Convert.toLong(sid);
+        DB.execute(DBRoute.of("scm"), purorderBillTcSql, new Object[]{fid, ftbillid, fttableid, ftid, fsbillid, fstableid, fsid});
+    }
+
+    /**
+     * 插入botp规则表
+     */
+    private static boolean insertTBotpBilltracker(Object sbillid, Object tbillid) {
+        String botpSql = "INSERT INTO t_botp_billtracker (fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime) VALUES (?, ?, ?, ?, ?, ?);";
+        Long fid = DBServiceHelper.genGlobalLongId();
+        Long fstableid = 719529409035381761L;
+        Long fsbillid = Convert.toLong(sbillid);
+        Long fttableid = 602924326097811460L;
+        Long ftbillid = Convert.toLong(tbillid);
+        Date fcreatetime = new Date();
+        //先判断有没有这个botp关系，有就不再添加
+        QFilter qFilter = new QFilter("stableid", QCP.equals, 719529409035381761L).and("sbillid", QCP.equals, sbillid)
+                .and("ttableid", QCP.equals, 602924326097811460L).and("tbillid", QCP.equals, tbillid);
+        DynamicObject botpBilltracker = BusinessDataServiceHelper.loadSingle("botp_billtracker", "id,stableid,sbillid,ttableid,tbillid,createtime", qFilter.toArray());
+        if (ObjectUtil.isNotEmpty(botpBilltracker)) {
+            return false;
+        }
+        boolean result = DB.execute(DBRoute.basedata, botpSql, new Object[]{fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime});
+        return result;
     }
 }

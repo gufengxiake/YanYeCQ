@@ -54,12 +54,15 @@ public class BussprocessorderTask extends AbstractTask {
                 ",nckd_bussinessentries.nckd_quantity,nckd_bussinessentries.nckd_parameter,nckd_bussinessentries.nckd_isinventory," +
                 "nckd_bussinessentries.nckd_inventoryorg,nckd_bussinessentries.nckd_warehouse,nckd_bussinessentries.nckd_businessdocument," +
                 "nckd_bussinessentries.nckd_sideproduct,nckd_bussinessentries.nckd_mainproduce,nckd_bussinessentries.nckd_useworkshop," +
-                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate", new QFilter[]{qFilter});
+                "nckd_bussinessentries.nckd_wareorderworkshop,nckd_bussinessentries.nckd_illustrate,nckd_datefield,nckd_bussinessentries.nckd_istakeeffect,nckd_bussinessentries.nckd_startenddata," +
+                "nckd_bussinessentries.nckd_documentstatus", new QFilter[]{qFilter});
         //构建map,key:物料生产信息id，value:5G工厂返回数量
 //        Map<Object,BigDecimal> bigDecimalMap = new HashMap<>();
         for (DynamicObject dynamicObject : dynamicObjects){
-            Date date = new Date();
+//            Date date = new Date();
             DynamicObjectCollection dynamicObjectCollection = dynamicObject.getDynamicObjectCollection("nckd_bussinessentries");
+            //取出生效的分录数据
+            List<DynamicObject> entityObjects = dynamicObjectCollection.stream().filter(t->t.getBoolean("nckd_istakeeffect")).collect(Collectors.toList());
             //构造调用5G接口的参数
             List<String> stringList = new ArrayList<>();
             //构造是否累计值为true的参数
@@ -72,7 +75,7 @@ public class BussprocessorderTask extends AbstractTask {
              */
             //构造map,key:物料生产信息id,value：5G智能工厂系统入参
 //            Map<Object,String> stringMap = new HashMap<>();
-            for (DynamicObject dynamic : dynamicObjectCollection){
+            for (DynamicObject dynamic : entityObjects){
                 String parmeter = dynamic.getString("nckd_parameter").replaceFirst("#","");
                 if (!"4".equals(dynamic.getString("nckd_teamsgroups"))){
                     parmeter = parmeter + "," + getMap().get(dynamic.getString("nckd_teamsgroups"));
@@ -99,9 +102,12 @@ public class BussprocessorderTask extends AbstractTask {
 //                        +","+getMap().get(dynamic.getString("nckd_teamsgroups")));
             }
             //昨天的日期，用于调用5G工厂接口昨天晚班的数据
-
-            Date dateTime = DateUtil.offsetDay(new Date(),-3);
-            Date yesterday = DateUtil.offsetDay(new Date(),-4);
+            Date datefield = dynamicObject.getDate("nckd_datefield");
+            if (null == datefield){
+                datefield = new Date();
+            }
+            Date dateTime = DateUtil.offsetDay(datefield,-1);
+            Date yesterday = DateUtil.offsetDay(datefield,-2);
             //调用5G工厂接口：所有物料
             JSONObject resultJson = FactoryApiUtil.getFactoryInfo(stringList,dateTime);
             JSONArray jsonArray = resultJson.getJSONArray("data");
@@ -155,26 +161,30 @@ public class BussprocessorderTask extends AbstractTask {
              * 计算晚班的累计值，当天晚班的值减去当天中班的值
              */
             //回写物料中的数量
-            dynamicObjectCollection.forEach(t-> {
+            entityObjects.forEach(t-> {
                 String parameter = t.getString("nckd_parameter").replaceFirst("#","");
                 if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("1",t.getString("nckd_teamsgroups"))){
                     //班组  3:晚班   1:早班   2:中班
                     BigDecimal decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("1")).subtract(decimal));
+                    t.set("nckd_startenddata", decimal.setScale(2)+ ","+ dataMap.get(parameter + "," + getMap().get("1")).setScale(2));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("2",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("1"));
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("2")).subtract(decimal));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter + "," + getMap().get("2")).setScale(2));
                 } else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("3",t.getString("nckd_teamsgroups"))) {
                     BigDecimal decimal = dataMap.get(parameter + "," + getMap().get("2"));
                     if (decimal == null){
                         decimal = cumdataMap.get(parameter + "," + getMap().get("3"));
                     }
                     t.set("nckd_quantity", dataMap.get(parameter + "," + getMap().get("3")).subtract(decimal));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter + "," + getMap().get("3")).setScale(2));
                 }else if (t.getBoolean("nckd_iscumulative") && ObjectUtil.equal("4",t.getString("nckd_teamsgroups"))){
                     BigDecimal decimal = cumdataMap.get(parameter);
                     t.set("nckd_quantity", dataMap.get(parameter).subtract(decimal));
+                    t.set("nckd_startenddata",decimal.setScale(2) + ","+ dataMap.get(parameter).setScale(2));
                 }else {
-                    t.set("nckd_quantity", dataMap.get(parameter));
+                    t.set("nckd_quantity", dataMap.get(parameter+","+getMap().get(t.getString("nckd_teamsgroups"))));
                 }
             });
 //            stringMap.forEach((key,value)->{
@@ -183,7 +193,7 @@ public class BussprocessorderTask extends AbstractTask {
             //更新
             SaveServiceHelper.update(dynamicObject);
             //调用生产负库存的操作(负库存需要判断是5G工厂类型还是默认类型)  操作按钮：generate
-            OperationResult operationResult = saveNegainventoryOrder(date,dynamicObject);
+            OperationResult operationResult = saveNegainventoryOrder(dateTime,dynamicObject);
             //插入日志表
             saveLog(operationResult,dynamicObject);
 
@@ -214,11 +224,14 @@ public class BussprocessorderTask extends AbstractTask {
         //分录赋值
         DynamicObjectCollection negainventoryOrderEntryColl = negainventoryOrder.getDynamicObjectCollection("nckd_negainentries");
         DynamicObjectCollection bussProcessOrderEntryColl = dynamicObject.getDynamicObjectCollection("nckd_bussinessentries");
-        bussProcessOrderEntryColl.forEach(e -> {
+        List<DynamicObject> entityObjects = bussProcessOrderEntryColl.stream().filter(t->t.getBoolean("nckd_istakeeffect")).collect(Collectors.toList());
+        entityObjects.forEach(e -> {
             DynamicObject negainventoryOrderEntry = negainventoryOrderEntryColl.addNew();
             //这一部分直接由物料-业务处理对应单 分录带过来
             DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
             negainventoryOrderEntry.set("nckd_teamsgroups", e.getString("nckd_teamsgroups"));
+            negainventoryOrderEntry.set("nckd_documentstatus", e.get("nckd_documentstatus"));
+            negainventoryOrderEntry.set("nckd_startenddata", e.getString("nckd_startenddata"));
             negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
             negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));
             negainventoryOrderEntry.set("nckd_isinventory", e.getBoolean("nckd_isinventory"));

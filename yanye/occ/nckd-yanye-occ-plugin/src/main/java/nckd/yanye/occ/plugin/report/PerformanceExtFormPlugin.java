@@ -22,7 +22,7 @@ import java.util.*;
 /**
  * 业绩统计-报表界面插件
  * 表单标识：nckd_hmua_sfa_perform_ext
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/30
  */
 public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implements Plugin {
@@ -96,15 +96,15 @@ public class PerformanceExtFormPlugin extends AbstractReportFormPlugin implement
         }
 
         //根据条件匹配对应的销售出库单的核心来源单据行id
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                         "im_saloutbill", "billentry.mainbillentryid as mainbillentryid", new QFilter[]{qFilter},null);
 
         ArrayList<Long> mainbillentryid = new ArrayList<>();
-        while (im_saloutbill.hasNext()) {
-            mainbillentryid.add(im_saloutbill.next().getLong("mainbillentryid"));
+        while (imSaloutbill.hasNext()) {
+            mainbillentryid.add(imSaloutbill.next().getLong("mainbillentryid"));
         }
 
-        QFilter orderFilter = new QFilter("itementry.subentryentity.id",QCP.in,mainbillentryid.toArray(new Long[0]));
+        QFilter orderFilter = new QFilter("itementry.id",QCP.in,mainbillentryid.toArray(new Long[0]));
         //取要货订单业务员，
         String sFields = "nckd_salerid.operatornumber as nckd_salerid , " +
                 //销售部门，

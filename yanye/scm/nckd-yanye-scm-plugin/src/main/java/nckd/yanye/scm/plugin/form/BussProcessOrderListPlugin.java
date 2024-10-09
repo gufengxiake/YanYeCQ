@@ -257,6 +257,8 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             negainventoryOrder.set("nckd_inventoryclosedate", inventoryclosedate);
             negainventoryOrder.set("nckd_invcountschemeno", schemenumber);
             negainventoryOrder.set("billstatus", "A");
+            negainventoryOrder.set("nckd_datasources", bussProcessOrder.getString("nckd_datasources"));
+            negainventoryOrder.set("nckd_org", bussProcessOrder.getString("org"));//适用组织
             long currUserId = RequestContext.get().getCurrUserId();
             negainventoryOrder.set("creator", currUserId);
             negainventoryOrder.set("createtime", date);
@@ -277,6 +279,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
                 DynamicObject nckdWarehouse = e.getDynamicObject("nckd_warehouse");
                 negainventoryOrderEntry.set("nckd_warehouse", nckdWarehouse);
                 negainventoryOrderEntry.set("nckd_businessdocument", e.getString("nckd_businessdocument"));
+                negainventoryOrderEntry.set("nckd_documentstatus", e.getString("nckd_documentstatus"));
                 negainventoryOrderEntry.set("nckd_sideproduct", e.getString("nckd_sideproduct"));
                 negainventoryOrderEntry.set("nckd_mainproduce", e.getDynamicObject("nckd_mainproduce"));
                 negainventoryOrderEntry.set("nckd_useworkshop", e.getDynamicObject("nckd_useworkshop"));
@@ -315,21 +318,23 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             } else {
                 //提交审批
                 OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
-                if(!submit.isSuccess()){
+                if (!submit.isSuccess()) {
                     OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单提交失败");
                     return;
                 }
                 OperationResult audit = OperationServiceHelper.executeOperate("audit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
-                if(!audit.isSuccess()){
+                if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
                     OperationServiceHelper.executeOperate("unsubmit", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     OperationServiceHelper.executeOperate("delete", "nckd_negainventoryorder", new DynamicObject[]{negainventoryOrder}, OperateOption.create());
                     this.getView().showErrorNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单发起审核失败");
                     return;
                 }
-                this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单新增成功");
-                this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                this.getView().showSuccessNotification(bussProcessOrder.getString("billno") + "对应的负库存物料检查单下推成功");
+                if (StringUtils.isNotEmpty(msg.toString())) {
+                    this.getView().showConfirm(msg.toString(), MessageBoxOptions.OK);
+                }
             }
         }
     }

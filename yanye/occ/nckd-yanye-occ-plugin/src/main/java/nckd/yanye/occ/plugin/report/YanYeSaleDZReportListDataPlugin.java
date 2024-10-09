@@ -1,10 +1,9 @@
 package nckd.yanye.occ.plugin.report;
 
+import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
-import kd.bos.algo.Row;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -12,49 +11,57 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 /**
  * 盐类产品内部销售对账表-报表取数插件
  * 表单标识：nckd_ylcpnbxsdz_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/27
  */
 public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
+        ArrayList<QFilter> qFilters = new ArrayList<>();
         //默认发货通知单为审核态并且源头是采购订单
-        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
-
+        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C").
+                and("billentry.mainbillentity", QCP.equals, "pm_purorderbill");
+        qFilters.add(qFilter);
         List<FilterItemInfo> filters = reportQueryParam.getFilter().getFilterItems();
-        Long nckd_purorg = null;
+        Long  nckdPurorg = null;
         for (FilterItemInfo filterItem : filters) {
             switch (filterItem.getPropName()) {
                 // 查询条件销售组织,标识如不一致,请修改
                 case "nckd_saleorgid_q":
-                    if(!(filterItem.getValue() == null)){
-                        Long bizOrg = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter = qFilter.and("org", QCP.equals, bizOrg);
+                    if(filterItem.getValue() != null){
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("org",QCP.equals,pkValue));
                     }
                     break;
                 // 查询条件单据日期,标识如不一致,请修改
                 case "salebizdate_start":
-                    if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("bizdate", QCP.large_equals,
-                                DateUtil.beginOfDay(filterItem.getDate()));
+                    if(filterItem.getDate() != null){
+                        DateTime salebizdateStart = DateUtil.beginOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("bizdate",QCP.large_equals,salebizdateStart));
                     }
                     break;
                 case "salebizdate_end":
-                    if(! (filterItem.getDate() == null) ){
-                        qFilter = qFilter.and("bizdate", QCP.less_equals,
-                                DateUtil.endOfDay(filterItem.getDate()));
+                    if(filterItem.getDate() != null){
+                        DateTime salebizdateEnd = DateUtil.endOfDay(filterItem.getDate());
+                        qFilters.add(new QFilter("bizdate",QCP.less_equals,salebizdateEnd));
                     }
                     break;
                 // 查询条件收货组织,标识如不一致,请修改
                 case "nckd_purorg_q":
-                    nckd_purorg =  filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    nckdPurorg = filterItem.getValue() == null ? null : (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                    break;
+                //查询条件为物料
+                case "nckd_material_q":
+                    if(filterItem.getValue() != null){
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilters.add(new QFilter("billentry.material.masterid",QCP.equals,pkValue));
+                    }
                     break;
             }
         }
@@ -70,6 +77,8 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                         "nckd_vehicle as nckd_vehicle ," +
 //                        司机
                         "nckd_driver as nckd_driver," +
+//                        物料
+                        "billentry.material.masterid as nckd_material," +
 //                        单位
                         "billentry.unit as nckd_unit," +
 //                        销售单价
@@ -82,12 +91,14 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                         "billentry.mainbillentryid as mainbillentryid";
         DataSet delivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_delivernotice", sFields,
-                new QFilter[]{qFilter}, null);
+                qFilters.toArray(new QFilter[0]), null);
         delivernotice = this.linkEleWeighing(delivernotice);
         delivernotice = this.linkPurReceiveBill(delivernotice);
-//        根据收货日组织过滤
-        if(nckd_purorg != null){
-            delivernotice = delivernotice.filter("nckd_purorg = "+ nckd_purorg );
+
+
+//        根据收货组织过滤
+        if (nckdPurorg != null) {
+            delivernotice = delivernotice.filter("nckd_purorg = " + nckdPurorg);
         }
 
         return delivernotice.orderBy(delivernotice.getRowMeta().getFieldNames());
@@ -95,20 +106,14 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
 
     //关联采购收货单
     public DataSet linkPurReceiveBill(DataSet ds) {
-        DataSet copy = ds.copy();
-        List<Long> mainbillentryid = new ArrayList<>();
-        while (copy.hasNext()) {
-            Row next = copy.next();
-            if (next.getLong("mainbillentryid") != null
-                    && next.getLong("mainbillentryid")!= 0L) {
-                mainbillentryid.add(next.getLong("mainbillentryid"));
-            }
-        }
-        if (mainbillentryid.isEmpty())
+        List<Long> mainbillentryidToList = DataSetToList.getMainbillentryidToList(ds);
+        if (mainbillentryidToList.isEmpty()) {
             return ds;
+        }
 
-        //根据发货单核心单据行id查询来源于采购订单的采购发货单
-        QFilter purFilter = new QFilter("billentry.srcbillentryid", QCP.in, mainbillentryid.toArray(new Long[0]));
+        //根据发货单核心单据行id查询来源于采购订单的采购收货单
+        QFilter purFilter = new QFilter("billentry.srcbillentryid", QCP.in, mainbillentryidToList.toArray(new Long[0]));
+        purFilter.and("billstatus",QCP.equals,"C");
         DataSet purReceiveBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_purreceivebill",
                 "billentry.srcbillentryid as srcbillentryid," +//来源行id
@@ -123,8 +128,6 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
                 , new QFilter[]{purFilter}, null);
 
 
-
-
         ds = ds.leftJoin(purReceiveBill).on("mainbillentryid", "srcbillentryid")
                 .select(ds.getRowMeta().getFieldNames(), purReceiveBill.getRowMeta().getFieldNames()).finish();
         return ds;
@@ -133,28 +136,43 @@ public class YanYeSaleDZReportListDataPlugin extends AbstractReportListDataPlugi
 
     //关联电子磅单
     public DataSet linkEleWeighing(DataSet ds) {
-        DataSet copy = ds.copy();
-        List<Long> billentryid = new ArrayList<>();
-        while (copy.hasNext()) {
-            Row next = copy.next();
-            if (next.getLong("billentryid") != null) {
-                billentryid.add(next.getLong("billentryid"));
-            }
-        }
-        if (billentryid.isEmpty())
+        //获取数据源中的发货通知单的分录行id
+        List<Long> billentryid = DataSetToList.getOneToList(ds, "billentryid");
+        if (billentryid.isEmpty()){
             return ds;
+        }
+
 
         //根据发货单单据行id查询来源于发货单的电子磅单
         QFilter eleFilter = new QFilter("entryentity.nckd_srcbillentryid", QCP.in, billentryid.toArray(new Long[0]));
-        DataSet nckd_eleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        eleFilter.and("billstatus",QCP.equals,"C");
+        DataSet nckdEleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_eleweighing",
                 "entryentity.nckd_srcbillentryid as nckd_srcbillentryid," +
-                        //                        发货数量
-                        "entryentity.nckd_qty as nckd_saleqty",
+                        //分录id
+                        "entryentity.id as eleweighingentryid",
                 new QFilter[]{eleFilter}, null);
 
-        ds = ds.leftJoin(nckd_eleweighing).on("billentryid","nckd_srcbillentryid")
-                .select(ds.getRowMeta().getFieldNames(), nckd_eleweighing.getRowMeta().getFieldNames()).finish();
+        //获取电子磅单中的分录行id
+        List<Long> eleweighingentryid = DataSetToList.getOneToList(nckdEleweighing, "eleweighingentryid");
+        QFilter outFilter = new QFilter("billentry.srcbillentryid", QCP.in, eleweighingentryid.toArray(new Long[0]));
+        outFilter.and("billstatus",QCP.equals,"C");
+        //根据来源行id查询销售出库单
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+                "im_saloutbill",
+                "billentry.srcbillentryid as outsrcbillentryid," +
+                        //发货数量
+                        "billentry.qty as nckd_saleqty,"+
+                        //销售出库单编号
+                        "billno as nckd_saleoutbillno",
+                new QFilter[]{outFilter}, null);
+        //电子磅单关联销售出库单
+        nckdEleweighing = nckdEleweighing.leftJoin(imSaloutbill).on("eleweighingentryid", "outsrcbillentryid")
+                .select(new String[]{"nckd_srcbillentryid", "nckd_saleqty", "nckd_saleoutbillno"}).finish();
+
+        //发货通知单关联电子磅单
+        ds = ds.leftJoin(nckdEleweighing).on("billentryid", "nckd_srcbillentryid")
+                .select(ds.getRowMeta().getFieldNames(), nckdEleweighing.getRowMeta().getFieldNames()).finish();
         return ds;
     }
 

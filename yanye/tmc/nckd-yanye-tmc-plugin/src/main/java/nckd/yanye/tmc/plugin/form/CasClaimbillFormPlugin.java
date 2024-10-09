@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
 
 /**
  * Module           :财务云-出纳-收款认领
- * Description      :1.认领处理单，系统控制应收金额不能超过关联的销售订单-收款计划明细行的未关联收款金额，系统关联销售订单时，也会按照明细行进行关联，所以按照明细行进行控制就可以；
+ * Description      :1.认领处理单，增加核心单据可选要货订单
  *
  * @author : zhujintao
  * @date : 2024/8/6
@@ -92,11 +92,11 @@ public class CasClaimbillFormPlugin extends AbstractBillPlugIn {
     private void getCorebilltypeToChange() {
         int iRow = this.getModel().getEntryCurrentRowIndex("entry");
         Object corebilltype = this.getModel().getValue("e_corebilltype", iRow);
-        DynamicObject value = (DynamicObject) this.getModel().getValue("org");//收款人id
+        Object settleorg = this.getModel().getValue("e_settleorg", iRow);
         if ("ocbsoc_saleorder".equals(corebilltype)) {
             ListShowParameter lsp = ShowFormHelper.createShowListForm(String.valueOf(corebilltype), false, 2);
             List<QFilter> qFilters = lsp.getListFilterParameter().getQFilters();
-            qFilters.add(new QFilter("saleorgid", QCP.equals, value.getPkValue()));
+            qFilters.add(new QFilter("saleorgid", QCP.equals, settleorg != null ? ((DynamicObject) settleorg).getPkValue() : null));
             lsp.setCustomParam("ismergerows", Boolean.FALSE);
             CloseCallBack closeCallBack = new CloseCallBack(this, "e_corebillno_ext");
             lsp.setCloseCallBack(closeCallBack);

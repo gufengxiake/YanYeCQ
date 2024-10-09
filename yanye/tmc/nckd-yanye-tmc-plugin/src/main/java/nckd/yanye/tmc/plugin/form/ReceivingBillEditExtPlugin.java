@@ -1,6 +1,5 @@
 package nckd.yanye.tmc.plugin.form;
 
-import cn.hutool.core.util.ObjectUtil;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.ObjectUtils;
@@ -96,6 +95,8 @@ public class ReceivingBillEditExtPlugin extends AbstractBillPlugIn {
                     this.getModel().endInit();
                     this.getView().updateView("e_corebilltype", currentRowIndex + i);
                     model.setValue("e_corebillno", listSelectedRow.getBillNo(), currentRowIndex + i);
+                    //已匹配核心单据标识
+                    model.setValue("e_matchselltag", "1", currentRowIndex + i);
                     //TODO 抄产品的，应该可以删除这一段
                     if (StringUtils.equals(coreBillType, ClaimCoreBillTypeEnum.REPAYMENTBILL.getValue())) {
                         model.setValue("e_sourcebillid", listSelectedRow.getPrimaryKeyValue(), currentRowIndex + i);

@@ -15,9 +15,6 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.hr.common.ClockInConst;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -65,22 +62,18 @@ public class ClockInApiUtil {
      *
      * @return 所有人员昨天到今天的打卡流水
      */
-    public static JSONArray getYunZhiJiaClockInList() {
+    public static JSONArray getYunZhiJiaClockInList(String yesterdayStr, String todayStr) {
         String url = "https://yunzhijia.com/gateway/smartatt-core/v2/clockIn/listByUpdateTime"
                 + "?accessToken=" + getYunZhiJiaAccessToken();
 
-        // 查询时间
-        LocalDateTime today = LocalDate.now().atStartOfDay();
-        LocalDateTime yesterday = today.minusDays(2);
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String todayStr = today.format(formatter);
-        String yesterdayStr = yesterday.format(formatter);
-
         // 获取苍穹人员集合
+        QFilter qFilter = new QFilter("useropenid", QCP.not_equals, null);
+        QFilter qFilter1 = new QFilter("useropenid", QCP.not_equals, "");
+        QFilter qFilter2 = new QFilter("useropenid", QCP.not_equals, " ");
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "useropenid",
-                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
+                new QFilter[]{qFilter, qFilter1, qFilter2}
         );
 
         JSONArray usersClockInList = new JSONArray();
@@ -132,8 +125,12 @@ public class ClockInApiUtil {
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.GET);
-        httpRequest.form("appkey", ClockInConst.DD_APPKEY);
-        httpRequest.form("appsecret", ClockInConst.DD_APPSECRET);
+        String ddAppkey = ClockInConst.DD_APPKEY;
+        String ddAppsecret = ClockInConst.DD_APPSECRET;
+
+        httpRequest.form("appkey", ddAppkey);
+        httpRequest.form("appsecret", ddAppsecret);
+        log.error("钉钉-获取accessToken。appkey:{} 。appsecret:{}", ddAppkey, ddAppsecret);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
 
@@ -286,24 +283,19 @@ public class ClockInApiUtil {
     }
 
     /**
-     * 钉钉-获取打卡结果
+     * 钉钉-获取打卡详情
      */
-    public static JSONArray getDingDingClockInList() {
-        String url = "https://oapi.dingtalk.com/attendance/list?access_token=" + ClockInApiUtil.getDingDingAccessToken();
-
-        // 查询时间
-        LocalDateTime today = LocalDate.now().atStartOfDay();
-        LocalDateTime yesterday = today.minusDays(2);
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-        String todayStr = today.format(formatter);
-        String yesterdayStr = yesterday.format(formatter);
+    public static JSONArray getDingDingClockInList(String workDateFrom, String workDateTo) {
+        String url = "https://oapi.dingtalk.com/attendance/listRecord?access_token=" + ClockInApiUtil.getDingDingAccessToken();
 
         // 获取苍穹人员集合
+        QFilter qFilter = new QFilter("nckd_dingdingid", QCP.not_equals, null);
+        QFilter qFilter1 = new QFilter("nckd_dingdingid", QCP.not_equals, "");
+        QFilter qFilter2 = new QFilter("nckd_dingdingid", QCP.not_equals, " ");
         DynamicObject[] users = BusinessDataServiceHelper.load(
                 "bos_user",
                 "id,name,nckd_dingdingid",
-                new QFilter[]{new QFilter("useropenid", QCP.not_equals, "").or(new QFilter("useropenid", QCP.not_equals, null))}
+                new QFilter[]{qFilter, qFilter1, qFilter2}
         );
 
         JSONArray usersClockInList = new JSONArray();
@@ -312,49 +304,33 @@ public class ClockInApiUtil {
         for (DynamicObject user : users) {
             userIds.add(user.getString("nckd_dingdingid"));
             if (userIds.size() == 50) {
-                int offset = 0;
-                boolean hasMore = true;
-
-                while (hasMore) {
-                    JSONObject responseObj = getDingDingClockInlist(userIds, offset, url, yesterdayStr, todayStr);
-                    usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
-                    offset = offset + 50;
-                    hasMore = responseObj.getBoolean("hasMore");
-                }
+                JSONObject responseObj = getDingDingClockInlist(userIds, url, workDateFrom, workDateTo);
+                usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
                 userIds.clear();
             }
         }
 
         if (!userIds.isEmpty()) {
-            int offset = 0;
-            boolean hasMore = true;
+            JSONObject responseObj = getDingDingClockInlist(userIds, url, workDateFrom, workDateTo);
+            usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
 
-            while (hasMore) {
-                JSONObject responseObj = getDingDingClockInlist(userIds, offset, url, yesterdayStr, todayStr);
-                usersClockInList.addAll(responseObj.getJSONArray("recordresult"));
-                offset = offset + 50;
-                hasMore = responseObj.getBoolean("hasMore");
-            }
             userIds.clear();
         }
 
         return usersClockInList;
     }
 
-    private static JSONObject getDingDingClockInlist(ArrayList<String> userIds, Integer offset, String url, String yesterdayStr, String todayStr) {
+    private static JSONObject getDingDingClockInlist(ArrayList<String> userIds, String url, String workDateFrom, String workDateTo) {
         JSONObject body = new JSONObject()
-                // 查询考勤打卡记录的起始工作日。
-                // 格式为yyyy-MM-dd HH:mm:ss，HH:mm:ss可以使用00:00:00，将返回此日期从0点到24点的结果。
-                .fluentPut("workDateFrom", yesterdayStr)
-                // 查询考勤打卡记录的结束工作日。
-                // 格式为“yyyy-MM-dd HH:mm:ss”，HH:mm:ss可以使用00:00:00，将返回此日期从0点到24点的结果。
-                .fluentPut("workDateTo", todayStr)
-                // 员工在企业内的userId列表，最大值50。
-                .fluentPut("userIdList", userIds)
-                // 表示获取考勤数据的起始点。
-                // 第一次传0，如果还有多余数据，下次获取传的offset值为之前的offset+limit，0、1、2...依次递增。
-                .fluentPut("offset", offset)
-                .fluentPut("limit", 50);
+                // 企业内的员工ID列表，最大值50。
+                .fluentPut("userIds", userIds)
+                // 查询考勤打卡记录的起始工作日。格式为：yyyy-MM-dd hh:mm:ss。
+                // 例如，参数传"2021-12-01 10:00:00"，员工在09:00的打卡信息获取不到。
+                .fluentPut("checkDateFrom", workDateFrom)
+                // 查询考勤打卡记录的结束工作日。格式为：yyyy-MM-dd hh:mm:ss。
+                // 例如，参数传"2021-12-01 18:00:00"，员工在19:00的打卡信息获取不到。
+                .fluentPut("checkDateTo", workDateTo);
+
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.POST);

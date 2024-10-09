@@ -1,19 +1,36 @@
 package nckd.yanye.scm.plugin.form;
 
+import com.icbc.api.internal.apache.http.nio.protocol.D;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.entity.property.BasedataProp;
+import kd.bos.entity.property.ComboProp;
 import kd.bos.entity.property.TextProp;
+import kd.bos.form.control.Control;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.AfterDoOperationEventArgs;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.ComboEdit;
 import kd.bos.form.field.TextEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.list.ListShowParameter;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
+import java.util.ArrayList;
 import java.util.EventObject;
+import java.util.List;
 
 
 /**
@@ -22,7 +39,7 @@ import java.util.EventObject;
  * author：xiaoxiaopeng
  * date：2024-08-29
  */
-public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
+public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
 
     //调整信息单据体字段
     private String[] ENTRYFIELD = {"nckd_changetype", "nckd_changeafter",
@@ -30,7 +47,9 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             "nckd_district", "nckd_businesstype", "nckd_quality", "nckd_societycreditcode", "nckd_basedatafield", "nckd_buyer",
             "nckd_cooperatestatus", "nckd_linkman", "nckd_phone", "nckd_postalcode", "nckd_address", "nckd_bankaccount",
             "nckd_accountname", "nckd_bank", "nckd_currency", "nckd_taxpayertype", "nckd_invoicename","nckd_banknumber",
-            "nckd_invoicetype","nckd_addressorphone","nckd_invoicephone","nckd_enterpriseemail","nckd_customeremail","nckd_myemail"};
+            "nckd_invoicetype","nckd_addressorphone","nckd_invoicephone","nckd_enterpriseemail","nckd_customeremail","nckd_myemail","nckd_isinvoice"};
+
+    private String[] NUMBERS = {"1","2","26","27"};
 
 
     @Override
@@ -38,6 +57,9 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
         super.registerListener(e);
         //监听调整信息分录工具栏
         this.addItemClickListeners("advcontoolbarap");
+        //监听bef7
+        BasedataEdit fieldEdit = this.getView().getControl("nckd_invoicetype");
+        fieldEdit.addBeforeF7SelectListener(this);
     }
 
 
@@ -62,6 +84,15 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
                 }
             }
         }
+
+        TextEdit societycreditcodeEdit = this.getControl("nckd_societycreditcode");
+        TextProp societycreditcodeProp = (TextProp) societycreditcodeEdit.getProperty();
+        BasedataEdit taxpayertypeEdit = this.getControl("nckd_taxpayertype");
+        BasedataProp taxpayertypeProp = (BasedataProp) taxpayertypeEdit.getProperty();
+        societycreditcodeEdit.setMustInput(true);
+        societycreditcodeProp.setMustInput(true);
+        taxpayertypeEdit.setMustInput(true);
+        taxpayertypeProp.setMustInput(true);
     }
 
     @Override
@@ -134,6 +165,75 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
         if ("nckd_customermodify".equals(fieldKey)) {
             setSupplierModify(rowIndex);
         }
+        //客户联系人电话
+        if ("nckd_phone".equals(fieldKey)){
+            Object phone = this.getModel().getValue("nckd_phone", rowIndex);
+            this.getModel().setValue("nckd_invoicephone", phone,rowIndex);
+            this.getModel().setValue("nckd_addressorphone","",rowIndex);
+            DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", rowIndex);
+            if (phone != null && address != null) {
+                this.getModel().setValue("nckd_addressorphone", address.getString("name")+" "+phone.toString(),rowIndex);
+            }
+        }
+        //新增客户名称
+        if ("nckd_addcustomer".equals(fieldKey)){
+            Object addcustomer = this.getModel().getValue("nckd_addcustomer", rowIndex);
+            this.getModel().setValue("nckd_invoicename", addcustomer,rowIndex);
+            this.getModel().setValue("nckd_accountname", addcustomer,rowIndex);
+        }
+        //联系地址
+        if ("nckd_address".equals(fieldKey)){
+            DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", rowIndex);
+            Object phone = this.getModel().getValue("nckd_phone");
+            if (phone != null) {
+                this.getModel().setValue("nckd_addressorphone", address.getString("name")+" "+phone.toString(),rowIndex);
+            }
+        }
+        //是否开票
+        if ("nckd_isinvoice".equals(fieldKey)){
+            String isinvoice = this.getModel().getValue("nckd_isinvoice", rowIndex).toString();
+            BasedataEdit rateEdit = this.getControl("nckd_invoicetype");
+            BasedataProp rateProp = (BasedataProp) rateEdit.getProperty();
+            if (isinvoice.equals("1")){
+                rateEdit.setMustInput(true);
+                rateProp.setMustInput(true);
+            } else {
+                rateEdit.setMustInput(false);
+                rateProp.setMustInput(false);
+            }
+        }
+        if ("nckd_bankaccount".equals(fieldKey)){
+            Object bankaccount = this.getModel().getValue("nckd_bankaccount", rowIndex);
+            this.getModel().setValue("nckd_banknumber", bankaccount,rowIndex);
+        }
+        //供应商名称
+        if ("nckd_spname".equals(fieldKey)){
+            Object spname = this.getModel().getValue("nckd_spname", rowIndex);
+            this.getModel().setValue("nckd_invoicename", spname,rowIndex);
+            this.getModel().setValue("nckd_accountname", spname,rowIndex);
+        }
+        //币别
+        if ("nckd_currency".equals(fieldKey)){
+            DynamicObject currency = (DynamicObject) this.getModel().getValue("nckd_currency", rowIndex);
+            String maintenancetype = this.getModel().getValue("nckd_maintenancetype").toString();
+            if (maintenancetype.equals("save")){
+                TextEdit societycreditcodeEdit = this.getControl("nckd_societycreditcode");
+                TextProp societycreditcodeProp = (TextProp) societycreditcodeEdit.getProperty();
+                BasedataEdit taxpayertypeEdit = this.getControl("nckd_taxpayertype");
+                BasedataProp taxpayertypeProp = (BasedataProp) taxpayertypeEdit.getProperty();
+                if ("CNY".equals(currency.getString("number"))) {
+                    societycreditcodeEdit.setMustInput(true);
+                    societycreditcodeProp.setMustInput(true);
+                    taxpayertypeEdit.setMustInput(true);
+                    taxpayertypeProp.setMustInput(true);
+                }else {
+                    societycreditcodeEdit.setMustInput(false);
+                    societycreditcodeProp.setMustInput(false);
+                    taxpayertypeEdit.setMustInput(false);
+                    taxpayertypeProp.setMustInput(false);
+                }
+            }
+        }
     }
 
     /**
@@ -152,6 +252,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
     private void setAddMaintenanceType() {
         DynamicObjectCollection entry = this.getModel().getEntryEntity("nckd_entry");
         String maintenanceType = this.getModel().getValue("nckd_maintenancetype").toString();
+        DynamicObject creator = (DynamicObject) this.getModel().getValue("creator");
         switch (maintenanceType) {
             //新增
             case "save":
@@ -159,6 +260,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
                 this.getView().setEnable(false,"nckd_maintenancetype");
                 for (int i = 0; i < entry.size(); i++) {
                     this.getModel().setValue("nckd_changetype", maintenanceType, i);
+                    this.getModel().setValue("nckd_buyer", creator, i);
                 }
                 break;
             //修改
@@ -167,6 +269,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
                 this.getView().setEnable(false,"nckd_maintenancetype");
                 for (int i = 0; i < entry.size(); i++) {
                     this.getModel().setValue("nckd_changetype", maintenanceType, i);
+                    this.getModel().setValue("nckd_buyer", creator, i);
                 }
                 break;
         }
@@ -195,14 +298,15 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
         DynamicObject bankEntry = customer.getDynamicObjectCollection("entry_bank").size() <= 0 ? null : customer.getDynamicObjectCollection("entry_bank").get(0);
         DynamicObject linkmanEntry = customer.getDynamicObjectCollection("entry_linkman").size() <= 0 ? null : customer.getDynamicObjectCollection("entry_linkman").get(0);
         Object changeAfter = this.getModel().getValue("nckd_changeafter", rowIndex);
-
+        Object mails = customer.get("nckd_mail");
+        String[] splitMails = {};
         //判断值改变行是否是当前选中行，不是的话直接中断操作
         if (rowIndex == index && changeAfter == null){
             this.getModel().setValue("nckd_changeafter","1",index);
             this.getModel().setValue("nckd_spname",customer.get("name"),index);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),index);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),index);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),index);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),index);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),index);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),index);
             this.getModel().setValue("nckd_basedatafield",customer,index);
@@ -210,21 +314,24 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),index);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),index);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),index);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),index);
-            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),index);
+            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_phonenumber"),index);
             this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),index);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            //this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",index);
+            this.getModel().setValue("nckd_enterpriseemail",customer.getString("nckd_email1"),index);
+            this.getModel().setValue("nckd_customeremail",customer.getString("nckd_email2"),index);
+            this.getModel().setValue("nckd_myemail",customer.getString("nckd_email3"),index);
 
             //锁定当前分录行
             this.getView().setEnable(false, index, ENTRYFIELD);
@@ -236,7 +343,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_spname",customer.get("name"),newIndex);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),newIndex);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),newIndex);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),newIndex);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),newIndex);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),newIndex);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),newIndex);
             this.getModel().setValue("nckd_basedatafield",customer,newIndex);
@@ -244,21 +351,23 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),newIndex);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),newIndex);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),newIndex);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),newIndex);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),newIndex);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),newIndex);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),newIndex);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),newIndex);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),newIndex);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),newIndex);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),newIndex);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),newIndex);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),newIndex);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),newIndex);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),newIndex);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),newIndex);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),newIndex);
-            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),newIndex);
-            this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),newIndex);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),newIndex);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_phonenumber"),newIndex);
+            //this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),newIndex);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",newIndex);
+            this.getModel().setValue("nckd_enterpriseemail",customer.getString("nckd_email1"),newIndex);
+            this.getModel().setValue("nckd_customeremail",customer.getString("nckd_email2"),newIndex);
+            this.getModel().setValue("nckd_myemail",customer.getString("nckd_email3"),newIndex);
             return;
         }
 
@@ -267,7 +376,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_spname",customer.get("name"),index);
             this.getModel().setValue("nckd_customerrange", customer.getDynamicObject("nckd_customertype"),index);//客户范围
             this.getModel().setValue("nckd_province",customer.get("admindivision"),index);
-            this.getModel().setValue("nckd_businesstype",customer.get("nckd_v"),index);
+            this.getModel().setValue("nckd_businesstype",customer.getDynamicObject("nckd_group"),index);
             this.getModel().setValue("nckd_quality",customer.get("nckd_customerxz"),index);
             this.getModel().setValue("nckd_societycreditcode",customer.get("societycreditcode"),index);
             this.getModel().setValue("nckd_basedatafield",customer,index);
@@ -275,21 +384,24 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
             this.getModel().setValue("nckd_cooperatestatus",getCooperateStatus(customer.getString("nckd_cooperationstatus")),index);
             this.getModel().setValue("nckd_linkman",linkmanEntry == null ? null : linkmanEntry.get("contactperson"),index);
             this.getModel().setValue("nckd_phone",linkmanEntry == null ? null : linkmanEntry.get("phone"),index);
-            this.getModel().setValue("nckd_postalcode",customer.get("duns"),index);
-            this.getModel().setValue("nckd_address",customer.get("bizpartner_address"),index);
+            this.getModel().setValue("nckd_postalcode",linkmanEntry == null ? null : linkmanEntry.get("postalcode"),index);
+            this.getModel().setValue("nckd_address",customer.getDynamicObject("nckd_addtel"),index);
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
-            //this.getModel().setValue("nckd_invoicename",,index);
-            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory").get("number"),index);
+            this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
+            this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);
             //this.getModel().setValue("nckd_addressorphone",,index);
             this.getModel().setValue("nckd_banknumber",customer.get("nckd_yhzh"),index);
-            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_telnumber"),index);
+            this.getModel().setValue("nckd_invoicephone",customer.get("nckd_phonenumber"),index);
             this.getModel().setValue("nckd_enterpriseemail",customer.get("postal_code"),index);
-            this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
-            //this.getModel().setValue("nckd_myemail",customer.get("nckd_mail"),index);
+            //this.getModel().setValue("nckd_customeremail",customer.get("nckd_mail"),index);
+            this.getModel().setValue("nckd_isinvoice",customer.getBoolean("nckd_isopenpay") ? "1" : "2",index);
+            this.getModel().setValue("nckd_enterpriseemail",customer.getString("nckd_email1"),index);
+            this.getModel().setValue("nckd_customeremail",customer.getString("nckd_email2"),index);
+            this.getModel().setValue("nckd_myemail",customer.getString("nckd_email3"),index);
         }
     }
 
@@ -311,4 +423,49 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn {
         return result;
     }
 
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
+        String name = beforeF7SelectEvent.getProperty().getName();
+        ListShowParameter formShowParameter = (ListShowParameter) beforeF7SelectEvent.getFormShowParameter();
+        if ("nckd_invoicetype".equals(name)){
+            List<QFilter> qFilters = new ArrayList<>();
+            qFilters.add(new QFilter("number", QCP.in, NUMBERS));
+            formShowParameter.getListFilterParameter().setQFilters(qFilters);
+        }
+    }
+
+    @Override
+    public void afterDoOperation(AfterDoOperationEventArgs e) {
+        super.afterDoOperation(e);
+        DynamicObjectCollection entity = this.getModel().getEntryEntity("nckd_entry");
+        String key = e.getOperateKey();
+        if ("audit".equals(key)){
+            OperationResult operationResult = e.getOperationResult();
+            if (operationResult.isSuccess()){
+                if (entity.size() > 0){
+                    for (DynamicObject entry : entity) {
+                        String changeAfter = entry.getString("nckd_changeafter");
+                        if (StringUtils.isEmpty(changeAfter)){
+                            String addCustomer = entry.getString("nckd_addcustomer");
+                            DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer","id",new QFilter[]{new QFilter("name",QCP.equals,addCustomer)});
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_customer", new DynamicObject[]{customer}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                            }
+                            continue;
+                        }
+                        if ("2".equals(changeAfter)){
+                            DynamicObject customer = entry.getDynamicObject("nckd_customermodify");
+                            customer = BusinessDataServiceHelper.loadSingle(customer.getPkValue(),"bd_customer");
+                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_customer", new DynamicObject[]{customer}, OperateOption.create());
+                            if (!pushzhwl.isSuccess()){
+                                this.getView().showMessage(pushzhwl.getMessage());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

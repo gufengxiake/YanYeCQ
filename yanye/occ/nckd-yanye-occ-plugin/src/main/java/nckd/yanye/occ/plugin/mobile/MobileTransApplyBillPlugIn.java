@@ -2,6 +2,7 @@ package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.bill.BillShowParameter;
 import kd.bos.bill.MobileFormPosition;
+import kd.bos.context.RequestContext;
 import kd.bos.data.ParameterHelper;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -36,6 +37,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.util.CommonUtils;
 import kd.occ.ocbase.common.util.DynamicObjectUtils;
@@ -61,20 +63,39 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
         this.getModel().setItemValueByID("billtype","1994937113375673344");
 
         //设置业务员
-        DynamicObject user= UserServiceHelper.getCurrentUser("id,number,name");
-        if(user!=null){
-            String number=user.getString("number");
-            // 构造QFilter  operatornumber业务员   opergrptype 业务组类型=销售组
-            QFilter qFilter = new QFilter("operatornumber", QCP.equals, number)
-                    .and("opergrptype", QCP.equals, "XSZ");
-            //查找业务员
-            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operator",
+        Long orgId = RequestContext.get().getOrgId();
+        DynamicObject org= (DynamicObject) this.getModel().getValue("org");
+        if(org!=null){
+            orgId= (Long) org.getPkValue();
+        }
+        if (orgId != 0) {
+            // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
+            QFilter qFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                    .and("operatorgrouptype", QCP.equals, "XSZ");
+            //查找业务组
+            DynamicObjectCollection collections = QueryServiceHelper.query("bd_operatorgroup",
                     "id", qFilter.toArray(), "");
-            if(!collections.isEmpty()){
-                DynamicObject operatorItem = collections.get(0);
-                String operatorId = operatorItem.getString("id");
-                this.getModel().setItemValueByID("nckd_ywy",operatorId);
+            if (!collections.isEmpty()) {
+                DynamicObject operatorGroupItem = collections.get(0);
+                long operatorGroupId = (long) operatorGroupItem.get("id");
+                //this.getModel().setItemValueByID("nckd_operatorgroup", operatorGroupId);
+                DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
+                if (user != null && operatorGroupId != 0) {
+                    String number = user.getString("number");
+                    // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
+                    QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
+                            .and("operatorgrpid", QCP.equals, operatorGroupId);
+                    //查找业务员
+                    DynamicObjectCollection opreatorColl = QueryServiceHelper.query("bd_operator",
+                            "id", Filter.toArray(), "");
+                    if (!opreatorColl.isEmpty()) {
+                        DynamicObject operatorItem = opreatorColl.get(0);
+                        String operatorId = operatorItem.getString("id");
+                        this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+                }
             }
+
         }
     }
 
@@ -110,6 +131,7 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                 if (e.getOperationResult().isSuccess()) {
                     Long pkId = this.getPkId();
                     if (pkId != 0) {
+                        this.update(pkId);
                         OperateOption submitOption = OperateOption.create();
                         submitOption.setVariableValue("ignorewarn", String.valueOf(true));
                         OperationResult result = OperationServiceHelper.executeOperate("submit", targetBill, new Long[]{pkId}, submitOption);
@@ -130,6 +152,36 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                         return;
                     }
 
+                }
+                break;
+            case "mobileaudit":
+                if (e.getOperationResult().isSuccess()) {
+                    Long pkId = this.getPkId();
+                    if (pkId == 0) {
+                        this.getView().showErrorNotification("请先保存单据！");
+                        return;
+                    }
+                    String status=this.getModel().getValue("billstatus").toString();
+                    if(!status.equals("B")){
+                        this.getView().showErrorNotification("单据未提交，不允许审核！");
+                        return;
+                    }
+                    OperateOption submitOption = OperateOption.create();
+                    submitOption.setVariableValue("ignorewarn", String.valueOf(true));
+                    OperationResult result = OperationServiceHelper.executeOperate("audit", targetBill, new Long[]{pkId}, submitOption);
+                    if (!result.isSuccess()) {
+                        List<IOperateInfo> errInfo = result.getAllErrorOrValidateInfo();
+                        StringBuilder errMessage = new StringBuilder();
+                        for (IOperateInfo err : errInfo) {
+                            errMessage.append(err.getMessage());
+                        }
+                        this.getView().showErrorNotification(errMessage.toString());
+                        return;
+                    }
+                    this.getModel().setValue("billstatus", "C");
+                    //this.getView().setEnable(false, "nckd_combofield", "nckd_applyuser", "nckd_dirver", "nckd_car", "nckd_cartype", "nckd_material", "nckd_materialname", "nckd_unit", "nckd_qty", "nckd_warehouse", "nckd_inwarehouse");//锁定字段
+                    this.getView().setEnable(false, "nckd_audit");//锁定按钮
+                    this.getView().showSuccessNotification("审核成功！");
                 }
         }
 
@@ -283,50 +335,69 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
         DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype");
         //业务员
         DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        IFormView formView = null;
+        try {
+            MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
+            String appId = getAppId(targetBill, dt);
+            // 设置单据显示参数
+            BillShowParameter para = new BillShowParameter();
+            para.setFormId(targetBill);
+            para.setPkId(0);
+            para.setAppId(appId);
 
-        MainEntityType dt = EntityMetadataCache.getDataEntityType(targetBill);
-        String appId = getAppId(targetBill, dt);
-        // 设置单据显示参数
-        BillShowParameter para = new BillShowParameter();
-        para.setFormId(targetBill);
-        para.setPkId(0);
-        para.setAppId(appId);
-
-        // 创建单据配置
-        FormConfigFactory.createConfigInCurrentAppService(para);
-        // 获取单据页面视图
-        final SessionManager sm = SessionManager.getCurrent();
-        final IFormView formView = sm.getView(para.getPageId());
-        if (formView != null) {
-            // 设置视图应用id和数据模型
-            formView.getFormShowParameter().setAppId(appId);
-            formView.getModel().createNewData();
-            formView.updateView();
-        }
-        BillModel mode = (BillModel) formView.getModel();
-        mode.setPKValue(pkId);
-        if (pkId > 0) {
-            mode.load(pkId);
-        }
-        mode.setValue("billtype", billtype);
-        mode.setValue("nckd_ywy", ywy);
-        mode.deleteEntryData("billentry");
-        DynamicObjectCollection entry = this.getModel().getEntryEntity("billentry");
-        mode.batchCreateNewEntryRow("billentry", entry.size());
-        int row = 0;
-        for (DynamicObject entryRow : entry) {
-            mode.setValue("material", entryRow.getDynamicObject("material"), row);
-            mode.setValue("qty", entryRow.getBigDecimal("qty"), row);
-            mode.setValue("warehouse", entryRow.getDynamicObject("warehouse"), row);
-            mode.setValue("inwarehouse", entryRow.getDynamicObject("inwarehouse"), row);
-            mode.setValue("lotnumber", entryRow.getString("lotnumber"), row);
-            row++;
-        }
-        OperationResult saveOp = formView.invokeOperation("save");
-        if (saveOp.isSuccess()) {
-            formView.close();
+            // 创建单据配置
+            FormConfigFactory.createConfigInCurrentAppService(para);
+            // 获取单据页面视图
+            final SessionManager sm = SessionManager.getCurrent();
+            formView = sm.getView(para.getPageId());
+            if (formView != null) {
+                // 设置视图应用id和数据模型
+                formView.getFormShowParameter().setAppId(appId);
+                formView.getModel().createNewData();
+                //formView.updateView();
+            }
+            BillModel mode = (BillModel) formView.getModel();
+            mode.setPKValue(pkId);
+            if (pkId > 0) {
+                mode.load(pkId);
+            }
+            mode.setValue("billtype", billtype);
+            mode.setValue("nckd_ywy", ywy);
+            mode.deleteEntryData("billentry");
+            DynamicObjectCollection entry = this.getModel().getEntryEntity("billentry");
+            mode.batchCreateNewEntryRow("billentry", entry.size());
+            int row = 0;
+            for (DynamicObject entryRow : entry) {
+                mode.setValue("material", entryRow.getDynamicObject("material"), row);
+                mode.setValue("unit", entryRow.getDynamicObject("unit"), row);
+                mode.setValue("qty", entryRow.getBigDecimal("qty"), row);
+                mode.setValue("warehouse", entryRow.getDynamicObject("warehouse"), row);
+                mode.setValue("inwarehouse", entryRow.getDynamicObject("inwarehouse"), row);
+                mode.setValue("lotnumber", entryRow.getString("lotnumber"), row);
+                row++;
+            }
+            OperationResult saveOp = formView.invokeOperation("save");
+            if (saveOp.isSuccess()) {
+                formView.close();
+            }
+        } finally {
+            if (formView != null) {
+                formView.close();
+            }
         }
 
+
+    }
+
+    /*
+    更新调拨申请单
+     */
+    private void update(Long pkId) {
+        DynamicObject dataObj=BusinessDataServiceHelper.loadSingle(pkId,targetBill);
+        //业务员
+        DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        dataObj.set("nckd_ywy",ywy);
+        SaveServiceHelper.update(dataObj);
     }
 
     private static String getAppId(String entityNumber, MainEntityType dt) {

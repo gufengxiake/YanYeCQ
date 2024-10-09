@@ -7,6 +7,8 @@ import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.exception.KDBizException;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import nckd.yanye.scm.common.ZcPlatformConst;
 
@@ -19,23 +21,30 @@ import java.util.HashMap;
  * @author liuxiao
  */
 public class ZcPlatformApiUtil {
+    private static final Log log = LogFactory.getLog(ZcPlatformApiUtil.class);
+
     /**
      * 获取 Access token
      *
      * @return Access_token
      */
-    public static String getZcAccessToken() {
+    public static String getZcAccessToken(ZcPlatformConst zcPlatformConst) {
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/oauth/token");
 
         httpRequest.setMethod(Method.GET);
-        httpRequest.form("client_id", ZcPlatformConst.ZC_CLIENT_ID);
-        httpRequest.form("client_secret", ZcPlatformConst.ZC_CLIENT_SECRET);
+        httpRequest.form("client_id", zcPlatformConst.getClientId());
+        httpRequest.form("client_secret", zcPlatformConst.getClientSecret());
         httpRequest.form("grant_type", ZcPlatformConst.GRANT_TYPE);
+        log.info("发送招采平台请求。获取 Access_token。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         String token = null;
         // 输出响应内容
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取 Access_token。招采平台返回结果:{}", responseObj);
         if ((boolean) responseObj.get("success")) {
             token = (String) ((JSONObject) responseObj.get("data")).get("token");
         } else {
@@ -51,11 +60,11 @@ public class ZcPlatformApiUtil {
      *
      * @return token
      */
-    public static String getZcUserToken() {
+    public static String getZcUserToken(ZcPlatformConst zcPlatformConst) {
         String token;
         String mobile = (String) UserServiceHelper.getUserInfoByID(UserServiceHelper.getCurrentUserId()).get("phone");
 
-        String accessToken = getZcAccessToken();
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/users/access-token");
 
@@ -63,11 +72,16 @@ public class ZcPlatformApiUtil {
         httpRequest.form("platform", "1");
         httpRequest.form("mobile", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。获取用户访问凭证。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         // 输出响应内容
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取用户访问凭证。招采平台返回结果:{}", responseObj);
         if ((boolean) responseObj.get("success")) {
             JSONObject dataObject = responseObj.getJSONObject("data");
             token = dataObject.getString("accessToken");
@@ -82,11 +96,11 @@ public class ZcPlatformApiUtil {
      *
      * @return
      */
-    public static String getZcUserId() {
+    public static String getZcUserId(ZcPlatformConst zcPlatformConst) {
         //当前登录用户的手机号
         String mobile = (String) UserServiceHelper.getUserInfoByID(UserServiceHelper.getCurrentUserId()).get("phone");
 
-        String accessToken = getZcAccessToken();
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/enterprise/employees/page");
 
@@ -95,10 +109,15 @@ public class ZcPlatformApiUtil {
         httpRequest.form("size", "1");
         httpRequest.form("keyword", mobile);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。获取当前登录员工的招采平台id。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("获取当前登录员工的招采平台id。招采平台返回结果:{}", responseObj);
         JSONObject data = responseObj.getJSONObject("data");
         JSONArray record = data.getJSONArray("records");
         if (!(boolean) responseObj.get("success")) {
@@ -116,9 +135,9 @@ public class ZcPlatformApiUtil {
      *
      * @return
      */
-    public static JSONArray getAllZcSupplier() {
+    public static JSONArray getAllZcSupplier(ZcPlatformConst zcPlatformConst) {
         JSONArray allSuppliers = new JSONArray();
-        String accessToken = getZcAccessToken();
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         int page = 1;
         int size = 1000;
@@ -130,10 +149,15 @@ public class ZcPlatformApiUtil {
             //是否为供应商 0: 否 1: 是
             httpRequest.form("isSupplier", 1);
             httpRequest.header("Authorization", "Bearer " + accessToken);
-            httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+            httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+            log.info("发送招采平台请求。获取所有供应商。\r\n请求地址:{}。\r\n请求参数:{}",
+                    httpRequest.getUrl(),
+                    httpRequest.form()
+            );
             HttpResponse execute = httpRequest.execute();
 
             JSONObject responseObj = JSON.parseObject(execute.body());
+            log.info("获取所有供应商。招采平台返回结果:{}", responseObj);
             if (!responseObj.getBooleanValue("success")) {
                 break;
             }
@@ -157,8 +181,8 @@ public class ZcPlatformApiUtil {
      * @param socialCreditCode 社会信用代码
      * @return
      */
-    public static Integer getCompanyIdByParam(String companyName, String socialCreditCode) {
-        String accessToken = getZcAccessToken();
+    public static Integer getCompanyIdByParam(ZcPlatformConst zcPlatformConst, String companyName, String socialCreditCode) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/enterprise/companies/page");
         httpRequest.setMethod(Method.GET);
@@ -167,10 +191,15 @@ public class ZcPlatformApiUtil {
         httpRequest.form("companyName", companyName);
         httpRequest.form("socialCreditCode", socialCreditCode);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。根据公司名称或者社会信用代码查询公司id。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("根据公司名称或者社会信用代码查询公司id。招采平台返回结果:{}", responseObj);
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
@@ -187,16 +216,21 @@ public class ZcPlatformApiUtil {
      * @param companyID
      * @return
      */
-    public static JSONObject getCompanyDataById(String companyID) {
-        String accessToken = getZcAccessToken();
+    public static JSONObject getCompanyDataById(ZcPlatformConst zcPlatformConst, String companyID) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/enterprise/companies/" + companyID);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        log.info("发送招采平台请求。根据公司id查询公司信息。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("根据公司id查询公司信息。招采平台返回结果:{}", responseObj);
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
         }
@@ -212,9 +246,9 @@ public class ZcPlatformApiUtil {
      * @param bizType
      * @return 结果
      */
-    public static JSONObject addOrder(JSONObject bodyJson, String bizType) {
+    public static JSONObject addOrder(ZcPlatformConst zcPlatformConst, JSONObject bodyJson, String bizType) {
         String string = bodyJson.toString();
-        String accessToken = getZcAccessToken();
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         String addorderUrl = "";
         switch (bizType) {
@@ -236,9 +270,13 @@ public class ZcPlatformApiUtil {
         httpRequest.setMethod(Method.POST);
         httpRequest.body(string);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
-        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.header("identity", "purchaser");
+        log.info("发送招采平台请求。采购单发布。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                string
+        );
         HttpResponse execute = httpRequest.execute();
 
         // 输出响应内容
@@ -251,8 +289,8 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static JSONObject cancelOrder(HashMap<String, String> cancelMap, String orderId, String bizType) {
-        String accessToken = getZcAccessToken();
+    public static JSONObject cancelOrder(ZcPlatformConst zcPlatformConst, HashMap<String, Object> cancelMap, String orderId, String bizType) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         String cancelOrderUrl = "";
         JSONObject cancelJson = new JSONObject();
@@ -276,10 +314,14 @@ public class ZcPlatformApiUtil {
         HttpRequest httpRequest = HttpRequest.of(cancelOrderUrl);
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.header("identity", "purchaser");
-        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.body(cancelJson.toString());
+        log.info("发送招采平台请求。采购单流标。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                cancelJson
+        );
         HttpResponse execute = httpRequest.execute();
 
         return JSON.parseObject(execute.body());
@@ -292,8 +334,8 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static String getViewNoticeUrl(String procurements, String orderId) {
-        String userAccessToken = getZcUserToken();
+    public static String getViewNoticeUrl(ZcPlatformConst zcPlatformConst, String procurements, String orderId) {
+        String userAccessToken = getZcUserToken(zcPlatformConst);
         String page = null;
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
             // 采购方式-询比价，单一品牌
@@ -320,7 +362,7 @@ public class ZcPlatformApiUtil {
                 });
                 put("query", new JSONObject() {
                     {
-                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(zcPlatformConst,
                                 "江西省盐业集团股份有限公司", "91360000158260136N"
                         ));
                     }
@@ -340,23 +382,28 @@ public class ZcPlatformApiUtil {
      * @param attGroupId
      * @return
      */
-    public static Integer uploadFile(String name, String url, Integer attGroupId) {
-        String accessToken = getZcAccessToken();
+    public static Integer uploadFile(ZcPlatformConst zcPlatformConst, String name, String url, Integer attGroupId) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/file/attachments/upload");
 
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
 
         File file = new File(url);
 
         httpRequest.form("file", file);
         httpRequest.form("name", name);
         httpRequest.form("groupId", attGroupId);
+        log.info("发送招采平台请求。上传附件。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("发送招采平台请求。招采平台返回结果:{}", responseObj);
 
         Integer attachmentId;
         if ((boolean) responseObj.get("success")) {
@@ -379,22 +426,27 @@ public class ZcPlatformApiUtil {
      * @param attachmentType
      * @return
      */
-    public static Integer addAttachmentGroup(String bizType, String attachmentType) {
-        String accessToken = getZcAccessToken();
+    public static Integer addAttachmentGroup(ZcPlatformConst zcPlatformConst, String bizType, String attachmentType) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/file/attachment-groups");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.body(new JSONObject() {
             {
                 put("bizType", bizType);
                 put("attachmentType", attachmentType);
             }
         }.toString());
+        log.info("发送招采平台请求。新增附件组。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("新增附件组。招采平台返回结果:{}", responseObj);
 
         Integer groupId;
         if ((boolean) responseObj.get("success")) {
@@ -415,19 +467,22 @@ public class ZcPlatformApiUtil {
      * @param winId        成交id
      * @return 成交data
      */
-    public static JSONObject getWinData(Integer purchaseType, String orderId, String winId) {
-        String accessToken = getZcAccessToken();
+    public static JSONObject getWinData(ZcPlatformConst zcPlatformConst, Integer purchaseType, String orderId, String winId) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchase-cloud/orders/" + orderId + "/wins/" + winId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
-
+        log.info("发送招采平台请求。查询成交通知书。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
-
+        log.info("查询成交通知书。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
@@ -443,18 +498,23 @@ public class ZcPlatformApiUtil {
      * @param purchaseType
      * @return
      */
-    public static JSONObject getOrderData(String orderId, Integer purchaseType) {
-        String accessToken = getZcAccessToken();
+    public static JSONObject getOrderData(ZcPlatformConst zcPlatformConst, String orderId, Integer purchaseType) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchase-cloud/orders/" + orderId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询采购单。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
+
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
-
+        log.info("查询采购单。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
         } else {
@@ -471,14 +531,18 @@ public class ZcPlatformApiUtil {
      * @param awardId      授标id
      * @return 授标data
      */
-    public static JSONObject getAwardData(Integer purchaseType, String orderId, String awardId) {
-        String accessToken = getZcAccessToken();
+    public static JSONObject getAwardData(ZcPlatformConst zcPlatformConst, Integer purchaseType, String orderId, String awardId) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchase-cloud/orders/" + orderId + "/win-awards/" + awardId);
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询成交授标。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
@@ -498,8 +562,8 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static String getViewWinNoticeUrl(String procurements, String orderId) {
-        String userAccessToken = getZcUserToken();
+    public static String getViewWinNoticeUrl(ZcPlatformConst zcPlatformConst, String procurements, String orderId) {
+        String userAccessToken = getZcUserToken(zcPlatformConst);
         String page = null;
         if ("2".equals(procurements)) {
             // 采购方式-询比价
@@ -526,7 +590,7 @@ public class ZcPlatformApiUtil {
                 });
                 put("query", new JSONObject() {
                     {
-                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(zcPlatformConst,
                                 "江西省盐业集团股份有限公司", "91360000158260136N"
                         ));
                     }
@@ -545,18 +609,23 @@ public class ZcPlatformApiUtil {
      * @param orderId
      * @return
      */
-    public static JSONArray getOrderItemsData(Integer purchaseType, String orderId) {
-        String accessToken = getZcAccessToken();
+    public static JSONArray getOrderItemsData(ZcPlatformConst zcPlatformConst, Integer purchaseType, String orderId) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchase-cloud/orders/" + orderId + "/items");
         httpRequest.setMethod(Method.GET);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.form("purchaseType", purchaseType);
+        log.info("发送招采平台请求。查询采购单-品目列表。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                httpRequest.form()
+        );
         HttpResponse execute = httpRequest.execute();
 
-        JSONObject responseObj = JSON.parseObject(execute.body());
 
+        JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("查询采购单-品目列表。招采平台返回结果:{}", responseObj);
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONArray("data");
         } else {
@@ -569,14 +638,14 @@ public class ZcPlatformApiUtil {
      *
      * @return 评审单id reviewId
      */
-    public static Integer getPurchaseReviews(String reviewModel) {
-        String accessToken = getZcAccessToken();
+    public static Integer getPurchaseReviews(ZcPlatformConst zcPlatformConst, String reviewModel) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchaser/purchase-reviews/advance");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
-        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.header("identity", "purchaser");
 
         JSONObject jsonObject = new JSONObject()
@@ -594,9 +663,14 @@ public class ZcPlatformApiUtil {
 //                .fluentPut("isReviewerScore", 1);
 
         httpRequest.body(jsonObject.toString());
+        log.info("发送招采平台请求。预先生成评审单。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                jsonObject
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("预先生成评审单。招采平台返回结果:{}", responseObj);
 
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data").getInteger("reviewId");
@@ -610,14 +684,14 @@ public class ZcPlatformApiUtil {
      *
      * @return 标书id
      */
-    public static Integer getBiddingFiles() {
-        String accessToken = getZcAccessToken();
+    public static Integer getBiddingFiles(ZcPlatformConst zcPlatformConst) {
+        String accessToken = getZcAccessToken(zcPlatformConst);
 
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + "/sourcing/purchaser/kpb/bidding-files/advance");
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
-        httpRequest.header("X-Open-App-Id", ZcPlatformConst.ZC_CLIENT_ID);
-        httpRequest.header("x-trade-employee-id", getZcUserId());
+        httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
+        httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
         httpRequest.header("identity", "purchaser");
 
         JSONObject jsonObject = new JSONObject()
@@ -635,9 +709,14 @@ public class ZcPlatformApiUtil {
 //                .fluentPut("openBidAddress", 1);
 
         httpRequest.body(jsonObject.toString());
+        log.info("发送招采平台请求。预先生成标书。\r\n请求地址:{}。\r\n请求参数:{}",
+                httpRequest.getUrl(),
+                jsonObject
+        );
         HttpResponse execute = httpRequest.execute();
 
         JSONObject responseObj = JSON.parseObject(execute.body());
+        log.info("预先生成标书。招采平台返回结果:{}", responseObj);
 
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getInteger("data");
@@ -654,9 +733,9 @@ public class ZcPlatformApiUtil {
      * @param reviewMode   评审模式
      * @return url
      */
-    public static String getOnlineReviewUrl(String procurements, Integer reviewId, String reviewMode) {
+    public static String getOnlineReviewUrl(ZcPlatformConst zcPlatformConst, String procurements, Integer reviewId, String reviewMode) {
 
-        String userAccessToken = getZcUserToken();
+        String userAccessToken = getZcUserToken(zcPlatformConst);
         String page = null;
         if ("pricecomparison".equals(procurements) || "singlebrand".equals(procurements)) {
             // 采购方式-询比价，单一品牌
@@ -679,7 +758,7 @@ public class ZcPlatformApiUtil {
                 put("query", new JSONObject() {
                     {
                         // 登录公司id，选填
-                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                        put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(zcPlatformConst,
                                 "江西省盐业集团股份有限公司", "91360000158260136N"
                         ));
                         // 评审单id，必填
@@ -709,7 +788,7 @@ public class ZcPlatformApiUtil {
             configJson.put("query", new JSONObject() {
                 {
                     // 登录公司id，选填
-                    put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(
+                    put("loginCompanyId", ZcPlatformApiUtil.getCompanyIdByParam(zcPlatformConst,
                             "江西省盐业集团股份有限公司", "91360000158260136N"
                     ));
                 }

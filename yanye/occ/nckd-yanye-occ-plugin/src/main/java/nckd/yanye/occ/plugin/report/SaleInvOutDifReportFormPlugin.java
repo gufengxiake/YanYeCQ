@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * 发票出库差额全表-报表界面插件
  * 表单标识：nckd_saleinvoutdif_rpt
- * author:zzl
+ * author:zhangzhilong
  * date:2024/08/30
  */
 public class SaleInvOutDifReportFormPlugin extends AbstractReportFormPlugin implements Plugin {
@@ -38,14 +38,14 @@ public class SaleInvOutDifReportFormPlugin extends AbstractReportFormPlugin impl
         Iterator<DynamicObject> iterator = rowData.iterator();
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
-            BigDecimal nckd_qty = next.getBigDecimal("nckd_qty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_qty");
-            BigDecimal nckd_amount = next.getBigDecimal("nckd_outamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_outamount");
-            BigDecimal nckd_invnum = next.getBigDecimal("nckd_invnum") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_invnum");
-            BigDecimal nckd_invamount = next.getBigDecimal("nckd_invamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_invamount");
+            BigDecimal nckdQty = next.getBigDecimal("nckd_qty") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_qty");
+            BigDecimal nckdAmount = next.getBigDecimal("nckd_outamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_outamount");
+            BigDecimal nckdInvnum = next.getBigDecimal("nckd_invnum") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_invnum");
+            BigDecimal nckdInvamount = next.getBigDecimal("nckd_invamount") == null ? BigDecimal.ZERO : next.getBigDecimal("nckd_invamount");
 //            出库数量-开票申请数量 = 数量差额
-            next.set("nckd_outinvqty",nckd_qty.subtract(nckd_invnum));
+            next.set("nckd_outinvqty",nckdQty.subtract(nckdInvnum));
 //            出库金额-开票申请金额 = 金额差额
-            next.set("nckd_outinvamount",nckd_amount.subtract(nckd_invamount));
+            next.set("nckd_outinvamount",nckdAmount.subtract(nckdInvamount));
         }
     }
 }

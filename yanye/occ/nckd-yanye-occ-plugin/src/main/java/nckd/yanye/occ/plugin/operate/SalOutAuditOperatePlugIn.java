@@ -22,6 +22,7 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
+import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.metadata.dao.MetadataDao;
 import kd.bos.orm.query.QCP;
@@ -49,6 +50,9 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
         super.onPreparePropertys(e);
+        e.getFieldKeys().add("nckd_carsysno");//电子磅单
+        e.getFieldKeys().add("nckd_vehicle");//车辆
+        e.getFieldKeys().add("nckd_driver");//司机
         e.getFieldKeys().add("mainbillentryid");//核心单据行Id
         e.getFieldKeys().add("qty");//数量
         e.getFieldKeys().add("lotnumber");//批号
@@ -56,23 +60,17 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         e.getFieldKeys().add("expirydate");//到期日期
     }
 
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        if (e.getValidExtDataEntities().isEmpty()) {
-
-            return;
-
-        }
-
-
+    public void endOperationTransaction(EndOperationTransactionArgs e) {
+        super.endOperationTransaction(e);
         // 获取当前单据的主实体编码、单据内码
 
         String targetEntityNumber = this.billEntityType.getName();
 
         Set<Object> billIds = new HashSet<>();
 
-        for (ExtendedDataEntity dataEntity : e.getValidExtDataEntities()) {
+        for (DynamicObject dataEntity : e.getDataEntities()) {
 
-            billIds.add(dataEntity.getBillPkId());
+            billIds.add(dataEntity.getPkValue());
 
         }
         // 调用平台的服务，获取所有源单及其内码
@@ -99,16 +97,29 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
         if (saloutBillIds.isEmpty()) {
             return;
         }
-        //记录销售出库单核心单据行Id 对应的数量，批号，生产日期，到期日期
+        //记录销售出库单核心单据行Id 对应的行Id,数量，批号，生产日期，到期日期
+        Map<String, Object> outEntryId = new HashMap<>();
         Map<String, BigDecimal> outQty = new HashMap<>();
         Map<String, String> outLot = new HashMap<>();
         Map<String, Date> outProduceDate = new HashMap<>();
         Map<String, Date> outExpiryDate = new HashMap<>();
+        //记录核心单据Id对应的 编码，电子磅单，车辆，司机
+        Map<String, String> outNumber = new HashMap<>();
+        Map<String, String> outcarsysno = new HashMap<>();
+        Map<String,DynamicObject>outVehicle=new HashMap<>();
+        Map<String,DynamicObject>outDriver=new HashMap<>();
+
         for (DynamicObject dataObject : e.getDataEntities()) {
+            String number=dataObject.getString("billno");//单据编号
+            String carsysno =dataObject.getString("nckd_carsysno");//电子磅单
+            DynamicObject vehicle =dataObject.getDynamicObject("nckd_vehicle");//车辆
+            DynamicObject driver =dataObject.getDynamicObject("nckd_driver");//司机
             //获取单据体数据的集合
             DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
             for (DynamicObject entryObj : billentry) {
+                String mainbillid=entryObj.getString("mainbillid");//核心单据Id
                 String mainbillentryid = entryObj.getString("mainbillentryid");//核心单据行Id
+                Object entryId = entryObj.getPkValue();
                 BigDecimal qty = entryObj.getBigDecimal("qty");//出库数量
                 String lot = entryObj.getString("lotnumber");//批号
                 Date produceDate = entryObj.getDate("producedate");//生产日期
@@ -118,9 +129,15 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                 } else {
                     outQty.put(mainbillentryid, outQty.get(mainbillentryid).add(qty));
                 }
+                outEntryId.put(mainbillentryid, entryId);
                 outLot.put(mainbillentryid, lot);
                 outProduceDate.put(mainbillentryid, produceDate);
                 outExpiryDate.put(mainbillentryid, expirydate);
+
+                outNumber.put(mainbillid,number);
+                outcarsysno.put(mainbillid,carsysno);
+                outVehicle.put(mainbillid,vehicle);
+                outDriver.put(mainbillid,driver);
             }
         }
 
@@ -155,7 +172,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
             if (!botpbill1_Ids.isEmpty()) {
                 String sourceBill = "pm_purorderbill";//采购订单
                 String targetBill = "im_purreceivebill";//采购收货单
-                String ruleId = "2025459918533834752";//单据转换Id
+                String ruleId = "1985077720819698688";//单据转换Id
                 // TODO 已经获取到了源头的demo_botpbill1单据内码，可以进行后续处理
                 for (Object pk : botpbill1_Ids) {
 
@@ -188,7 +205,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                     for (DynamicObject entryObj : goodsEntities) {
                         //获取某行数据的id
                         Object entryId = entryObj.getPkValue();
-                        BigDecimal qty = entryObj.getBigDecimal("joinqty");
+                        BigDecimal qty = entryObj.getBigDecimal("joinqty");//关联数量
                         if (qty.compareTo(BigDecimal.ZERO) == 0) {
                             ListSelectedRow row = new ListSelectedRow();
                             //必填，设置源单单据id
@@ -200,7 +217,7 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                             selectedRows.add(row);
                         }
                     }
-                    if (selectedRows.size() > 0) {
+                    if (!selectedRows.isEmpty()) {
 
                         // 必选，设置需要下推的源单及分录内码
                         pushArgs.setSelectedRows(selectedRows);
@@ -282,6 +299,17 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                         depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
                                     }
                                 }
+                                String billno=outNumber.get(pk.toString());
+                                String carsysno=outcarsysno.get(pk.toString());
+                                DynamicObject vehicle=outVehicle.get(pk.toString());
+                                DynamicObject driver=outDriver.get(pk.toString());
+                                mode.beginInit();
+                                mode.setValue("nckd_seloutbillno",billno);
+                                mode.setValue("nckd_carsysno",carsysno);
+                                mode.setValue("nckd_vehicle",vehicle);
+                                mode.setValue("nckd_driver",driver);
+                                mode.endInit();
+
                                 DynamicObjectCollection entry = dataObj.getDynamicObjectCollection("billentry");
                                 int row = 0;
                                 for (DynamicObject entryRow : entry) {
@@ -290,11 +318,14 @@ public class SalOutAuditOperatePlugIn extends AbstractOperationServicePlugIn {
                                     String lot = outLot.get(mainbillentryid);
                                     Date producedate = outProduceDate.get(mainbillentryid);
                                     Date expirydate = outExpiryDate.get(mainbillentryid);
+                                    Object entryId = outEntryId.get(mainbillentryid);
                                     mode.setValue("qty", qty, row);
+                                    mode.setValue("nckd_outqty", qty, row);//出库数量
                                     mode.setValue("lotnumber", lot, row);
                                     mode.setValue("producedate", producedate, row);
                                     mode.setValue("expirydate", expirydate, row);
                                     mode.setValue("warehouse", depStock, row);
+                                    mode.setValue("nckd_outentryid", entryId, row);
                                     row++;
                                 }
                                 OperationResult saveOp = formView.invokeOperation("save");

@@ -15,7 +15,7 @@ import kd.fi.cal.business.datacheck.item.DataEntityDataCheck;
 /**
  * @author husheng
  * @date 2024-07-24 18:02
- * @description 关账-检查项插件-校验存是否在未审核的月末调价单
+ * @description 关账-检查项插件-校验是否存在未审核的月末调价单
  */
 public class CloseAccountCheck extends DataEntityDataCheck {
     @Override
