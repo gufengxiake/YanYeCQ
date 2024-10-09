@@ -23,12 +23,10 @@ import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.DispatchServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.hr.haos.business.servicehelper.OrgBatchBillHelper;
 import kd.hr.haos.common.constants.masterdata.AdminOrgConstants;
-import kd.hr.hbp.common.model.org.staff.StaffResponse;
 import kd.hr.hbp.common.util.DatePattern;
 import kd.hr.hbp.common.util.DateUtils;
 import kd.hr.hbp.common.util.HRDBUtil;
@@ -418,7 +416,8 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             qFilter.and(new QFilter("bsled", QCP.large_equals, date2)).and("disabler",QCP.equals,0);
             DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{qFilter}, "number,createtime desc,hisversion");
             // 岗位id
-            List<Long> positionIds = new ArrayList<Long>();
+            Set<Long> positionIds = new HashSet<Long>();
+
             //  创建一个Map来存储结果
             Map<String, List<DynamicObject>> resultMap = Arrays.stream(query.toArray(new DynamicObject[0]))
                     .collect(Collectors.toMap(
@@ -450,17 +449,51 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             // 调用服务，获取岗位编制信息
             Object[] objects2 = new Object[2];
             objects2[0] = new Date();
-            objects2[1] = positionIds;
-            StaffResponse<Map<String, Map<String, Object>>> staffpositionResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryPositionStaffInfo",objects2);
+
+            List<Long> positionIdList = positionIds.stream()
+                    .collect(Collectors.toList());
+            objects2[1] = positionIdList;
+//            StaffResponse<Map<String, Map<String, Object>>> staffpositionResponse =  DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryPositionStaffInfo",objects2);
+//            BusinessDataServiceHelper.load("haos_dutyorgdetail","id,useorgbo",new QFilter[]{});
+
+            QFilter qFilter3 = new QFilter("staff.id", QCP.equals, pkValue)
+                    .and("enable", QCP.not_equals, "0")
+                    .and("datastatus",QCP.not_equals,"-2")
+                    .and("datastatus",QCP.not_equals,"2")
+                    .and("datastatus",QCP.not_equals,"-1")
+                    .and("dutyworkrole.boid",QCP.in,positionIdList);
+
+
+            DynamicObject[] haosDutyorgdetails = BusinessDataServiceHelper.load("haos_muldimendetail", "id,staff,dutyworkrole,dutyworkrole.boid,yearstaff", new QFilter[]{qFilter3});
+            Map<String, DynamicObject> map2 =
+                    Arrays.stream(haosDutyorgdetails)
+                            .collect(Collectors.toMap(
+                                    detail -> detail.get("dutyworkrole.boid").toString(), // 获取 useorg.id 作为 key
+                                    detail -> detail, // 整个 DynamicObject 作为 value
+                                    (existing, replacement) -> existing // 保留前面的值
+                            ));
+
+
             Object[] objects = new Object[2];
             objects[0] = new Date();
             objects[1] = collect2;
-            StaffResponse<Map<String, Map<String, Object>>> staffResponse = (StaffResponse<Map<String, Map<String, Object>>>) DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryUseStaffInfo",objects);
+            QFilter qFilter1 = new QFilter("useorgbo", QCP.in, collect2)
+                    .and("enable", QCP.equals,"1");
+            // 使用组织明细
+            DynamicObject[] haosUseorgdetails = BusinessDataServiceHelper.load("haos_useorgdetail", "id,useorgbo,useorg.id,yearstaff", new QFilter[]{qFilter1});
+            Map<String, DynamicObject> map =
+                    Arrays.stream(haosUseorgdetails)
+                            .collect(Collectors.toMap(
+                                    detail -> detail.get("useorgbo").toString(), // 获取 useorg.id 作为 key
+                                    detail -> detail, // 整个 DynamicObject 作为 value
+                                    (existing, replacement) -> existing // 保留前面的值
+                            ));
+
+//            StaffResponse<Map<String, Map<String, Object>>> staffResponse = (StaffResponse<Map<String, Map<String, Object>>>) DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryUseStaffInfo",objects);
             Map<Long, String> orgLongNameMap = OrgBatchBillHelper.getOrgLongName(longSet, new Date(), String.valueOf(AdminOrgConstants.ADMINORG_STRUCT));
-            this.initTree(staffResponse,staffpositionResponse,resultMap,orgLongNameMap);
+            this.initTree(map,map2,resultMap,orgLongNameMap);
             this.getView().updateView("nckd_bentryentity");
             this.getView().updateView("nckd_centryentity");
-
 
         }
     }
@@ -480,7 +513,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
 
 
     // 分配树形结构
-    private void initTree(StaffResponse<Map<String, Map<String, Object>>> staffResponse,StaffResponse<Map<String, Map<String, Object>>> staffpositionResponse,Map<String, List<DynamicObject>> postMap,Map<Long, String> orgLongNameMap) {
+    private void initTree(Map<String, DynamicObject> staffResponse,Map<String, DynamicObject> staffpositionResponse,Map<String, List<DynamicObject>> postMap,Map<Long, String> orgLongNameMap) {
         // 获取他的单据体，循环单据体
         DynamicObjectCollection entryentityCols = this.getModel().getDataEntity(true).getDynamicObjectCollection("nckd_bentryentity");
         for (int i = 0; i < entryentityCols.size(); i++) {
@@ -495,20 +528,19 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             DynamicObjectCollection cntryEntity = enObj.getDynamicObjectCollection("nckd_centryentity");
             if(ObjectUtils.isNotEmpty(nckdAdminorg1)){
                 for (DynamicObject object : nckdAdminorg1) {
-                    DynamicObject dynamicObject = new DynamicObject(cntryEntity.getDynamicObjectType());
-                    DynamicObject dynamicObject2 = BusinessDataServiceHelper.newDynamicObject("hbpm_positionhr");
-                    dynamicObject2.set("id",object.get("id"));
-                    BaseDataServiceHelper.clearCache(dynamicObject);
-                    dynamicObject.set("nckd_cdutyworkrole",dynamicObject2);
-                    dynamicObject.set("nckd_cdutyworknumber",object.getString("number"));
-//                    dynamicObject.set("nckd_cdutyworkrole.number",object.get("number"));
-                    Map<String, Object> positionMap = staffpositionResponse.getData().get(String.valueOf(object.get("id")));
+                    DynamicObject positionMap = staffpositionResponse.get(String.valueOf(object.get("id")));
                     if(ObjectUtils.isNotEmpty(positionMap)){
-                        dynamicObject.set("nckd_relcyearstaff",positionMap.get("staffNum"));
-                        // todo 岗位调整后人数
-//                        dynamicObject.set("nckd_postadjustlatenum",positionMap.get("staffNum"));
+                        DynamicObject dynamicObject = new DynamicObject(cntryEntity.getDynamicObjectType());
+                        DynamicObject dynamicObject2 = BusinessDataServiceHelper.newDynamicObject("hbpm_positionhr");
+                        dynamicObject2.set("id",object.get("id"));
+                        BaseDataServiceHelper.clearCache(dynamicObject);
+                        dynamicObject.set("nckd_cdutyworkrole",dynamicObject2);
+                        dynamicObject.set("nckd_cdutyworknumber",object.getString("number"));
+                        dynamicObject.set("nckd_relcyearstaff",positionMap.get("yearstaff"));
+
+                        dynamicObject.set("nckd_postadjustlatenum",positionMap.get("yearstaff"));
+                        cntryEntity.add(dynamicObject);
                     }
-                    cntryEntity.add(dynamicObject);
                 }
             }
 
@@ -541,11 +573,11 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                 // 处理未找到匹配的情况
                 centrydynamicObject.set("pid",0);
             }
-            Map<String, Object> nckdAdminorg = staffResponse.getData().get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
+            DynamicObject nckdAdminorg = staffResponse.get(String.valueOf(centrydynamicObject.getDynamicObject("nckd_adminorg").getPkValue()));
             if(ObjectUtils.isNotEmpty(nckdAdminorg)){
                 // 编制人数
-                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("staffNum"));
-                centrydynamicObject.set("NCKD_RELBDIRECTNUM",nckdAdminorg.get("staffNum"));
+                centrydynamicObject.set("nckd_bdirectnum",nckdAdminorg.get("yearstaff"));
+                centrydynamicObject.set(NCKD_RELBDIRECTNUM,nckdAdminorg.get("yearstaff"));
             }
         }
 
