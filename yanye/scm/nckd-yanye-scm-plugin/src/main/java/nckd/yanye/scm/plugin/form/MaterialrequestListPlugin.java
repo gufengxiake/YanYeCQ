@@ -19,6 +19,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -161,7 +162,57 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             materialmaintenanObject.set("nckd_materialattribute", dynamicObject.getString("nckd_materialattribute"));//物料属性
             materialmaintenanObject.set("nckd_selfmaterialtype", dynamicObject.getString("nckd_selfmaterialtype"));//自制物料类型
             materialmaintenanObject.set("nckd_materialid", dynamicObject.getLong("id"));//物料申请单物料分录id
+
+            if ("1".equals(billType)) {
+                // 生产基本信息
+                materialmaintenanObject.set("nckd_mftunit", dynamicObject.getDynamicObject("nckd_baseunit"));//生产计量单位
+                materialmaintenanObject.set("nckd_supplyorgunitid", org);//供货库存组织
+                String materialattri = null;
+                if ("1".equals(dynamicObject.getString("nckd_materialattribute"))) {
+                    materialattri = "10030";
+                } else if ("2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+                    materialattri = "10040";
+                }
+                materialmaintenanObject.set("nckd_materialattri", materialattri);//物料属性
+                materialmaintenanObject.set("nckd_bomversionrule", MaterialAttributeInformationUtils.getDefaultBOMRuleVer());//BOM版本规则
+                materialmaintenanObject.set("nckd_issuemode", "11010");//领送料方式
+                materialmaintenanObject.set("nckd_isbackflush", "A");//倒冲
+
+                // 组织范围内属性页签
+                boolean flag = true;
+                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
+                if (loadSingle != null) {
+                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                    List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                    if (materialproperty.contains("2")) {
+                        flag = false;
+                    }
+                }
+
+                if (flag) {
+                    // 计划基本信息
+                    materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
+                    materialmaintenanObject.set("nckd_materialattr", materialattri);//物料属性
+                    materialmaintenanObject.set("nckd_planmode", "D");//计划方式
+                }
+            } else if ("2".equals(billType)) {
+                // 库存基本信息
+                materialmaintenanObject.set("nckd_inventoryunit", dynamicObject.getDynamicObject("nckd_baseunit"));//库存单位
+            } else if ("4".equals(billType)) {
+                // 销售基本信息
+                materialmaintenanObject.set("nckd_salesunit", dynamicObject.getDynamicObject("nckd_baseunit"));//销售单位
+            } else if ("5".equals(billType)) {
+                // 采购基本信息
+                materialmaintenanObject.set("nckd_purchaseunit", dynamicObject.getDynamicObject("nckd_baseunit"));//采购单位
+            }
+
             OperationResult operationResult = OperationServiceHelper.executeOperate("save", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+            if (operationResult.isSuccess()) {
+                if (!"3".equals(billType)) {
+                    // 提交
+                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                }
+            }
         }
     }
 
@@ -204,7 +255,51 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 //            materialmaintenanObject.set("nckd_materialattribute", dynamicObject.getString("nckd_materialattribute"));//物料属性
 //            materialmaintenanObject.set("nckd_selfmaterialtype", dynamicObject.getString("nckd_selfmaterialtype"));//自制物料类型
 //            materialmaintenanObject.set("nckd_materialid", dynamicObject.getLong("id"));//物料申请单物料分录id
+
+            if ("1".equals(billType)) {
+                // 生产基本信息
+                materialmaintenanObject.set("nckd_mftunit", materialdynamicObject.getDynamicObject("baseunit"));//生产计量单位
+                materialmaintenanObject.set("nckd_supplyorgunitid", org);//供货库存组织
+                materialmaintenanObject.set("nckd_materialattri", "10030");//物料属性
+                materialmaintenanObject.set("nckd_bomversionrule", MaterialAttributeInformationUtils.getDefaultBOMRuleVer());//BOM版本规则
+                materialmaintenanObject.set("nckd_issuemode", "11010");//领送料方式
+                materialmaintenanObject.set("nckd_isbackflush", "A");//倒冲
+
+                // 组织范围内属性页签
+                boolean flag = true;
+                DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
+                if (loadSingle != null) {
+                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                    List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                    if (materialproperty.contains("2")) {
+                        flag = false;
+                    }
+                }
+
+                if (flag) {
+                    // 计划基本信息
+                    materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
+                    materialmaintenanObject.set("nckd_materialattr", "10030");//物料属性
+                    materialmaintenanObject.set("nckd_planmode", "D");//计划方式
+                }
+            } else if ("2".equals(billType)) {
+                // 库存基本信息
+                materialmaintenanObject.set("nckd_inventoryunit", materialdynamicObject.getDynamicObject("baseunit"));//库存单位
+            } else if ("4".equals(billType)) {
+                // 销售基本信息
+                materialmaintenanObject.set("nckd_salesunit", materialdynamicObject.getDynamicObject("baseunit"));//销售单位
+            } else if ("5".equals(billType)) {
+                // 采购基本信息
+                materialmaintenanObject.set("nckd_purchaseunit", materialdynamicObject.getDynamicObject("baseunit"));//采购单位
+            }
+
             OperationResult operationResult = OperationServiceHelper.executeOperate("save", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+            if (operationResult.isSuccess()) {
+                if (!"3".equals(billType)) {
+                    // 提交
+                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                }
+            }
         }
     }
 }

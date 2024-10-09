@@ -93,41 +93,41 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
 
-        String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
-        if ("update".equals(materialmaintunit)) {
-            ComboEdit combo = this.getView().getControl("nckd_documenttype");
-            List<ComboItem> items = new ArrayList<>();
-            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
-            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
-            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
-            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
-            combo.setComboItems(items);
-        } else if ("add".equals(materialmaintunit)) {
-            String nckdDocumenttype = (String) this.getModel().getValue("nckd_documenttype");
-            if ("1".equals(nckdDocumenttype)) {
-                // 生产信息创建组织
-                this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
-                // 供货库存组织
-                this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
-                // 物料属性
-                String materialattribute = (String) this.getModel().getValue("nckd_materialattribute");
-                String materialattri = null;
-                if ("1".equals(materialattribute)) {
-                    materialattri = "10030";
-                } else if ("2".equals(materialattribute)) {
-                    materialattri = "10040";
-                }
-                this.getModel().setValue("nckd_materialattri", materialattri);
-                // BOM版本规则
-                this.getModel().setValue("nckd_bomversionrule", MaterialAttributeInformationUtils.getDefaultBOMRuleVer());
-            } else if ("2".equals(nckdDocumenttype)) {
-                this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
-            } else if ("4".equals(nckdDocumenttype)) {
-                this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
-            } else if ("5".equals(nckdDocumenttype)) {
-                this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
-            }
-        }
+//        String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
+//        if ("update".equals(materialmaintunit)) {
+//            ComboEdit combo = this.getView().getControl("nckd_documenttype");
+//            List<ComboItem> items = new ArrayList<>();
+//            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
+//            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
+//            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
+//            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
+//            combo.setComboItems(items);
+//        } else if ("add".equals(materialmaintunit)) {
+//            String nckdDocumenttype = (String) this.getModel().getValue("nckd_documenttype");
+//            if ("1".equals(nckdDocumenttype)) {
+//                // 生产信息创建组织
+//                this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
+//                // 供货库存组织
+//                this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
+//                // 物料属性
+//                String materialattribute = (String) this.getModel().getValue("nckd_materialattribute");
+//                String materialattri = null;
+//                if ("1".equals(materialattribute)) {
+//                    materialattri = "10030";
+//                } else if ("2".equals(materialattribute)) {
+//                    materialattri = "10040";
+//                }
+//                this.getModel().setValue("nckd_materialattri", materialattri);
+//                // BOM版本规则
+//                this.getModel().setValue("nckd_bomversionrule", MaterialAttributeInformationUtils.getDefaultBOMRuleVer());
+//            } else if ("2".equals(nckdDocumenttype)) {
+//                this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
+//            } else if ("4".equals(nckdDocumenttype)) {
+//                this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
+//            } else if ("5".equals(nckdDocumenttype)) {
+//                this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
+//            }
+//        }
 
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         // 组织范围内属性页签
@@ -208,36 +208,38 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
         super.propertyChanged(e);
 
         String name = e.getProperty().getName();
-        if ("nckd_materialmaintunit".equals(name)) {
-            ChangeData changeData = e.getChangeSet()[0];
-            String materialmaintunit = (String) changeData.getNewValue();
-            ComboEdit combo = this.getView().getControl("nckd_documenttype");
-            List<ComboItem> items = new ArrayList<>();
-            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
-            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
-            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
-            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
-            if ("add".equals(materialmaintunit)) {
-                items.add(new ComboItem("", new LocaleString("财务类型"), "3", true));
-            }
-            combo.setComboItems(items);
-            this.getView().updateView();
-        } else if ("nckd_documenttype".equals(name)) {
+//        if ("nckd_materialmaintunit".equals(name)) {
+//            ChangeData changeData = e.getChangeSet()[0];
+//            String materialmaintunit = (String) changeData.getNewValue();
+//            ComboEdit combo = this.getView().getControl("nckd_documenttype");
+//            List<ComboItem> items = new ArrayList<>();
+//            items.add(new ComboItem("", new LocaleString("生产类型"), "1", true));
+//            items.add(new ComboItem("", new LocaleString("仓库类型"), "2", true));
+//            items.add(new ComboItem("", new LocaleString("销售类型"), "4", true));
+//            items.add(new ComboItem("", new LocaleString("采购类型"), "5", true));
+//            if ("add".equals(materialmaintunit)) {
+//                items.add(new ComboItem("", new LocaleString("财务类型"), "3", true));
+//            }
+//            combo.setComboItems(items);
+//            this.getView().updateView();
+//        } else
+        if ("nckd_documenttype".equals(name)) {
             ChangeData changeData = e.getChangeSet()[0];
             String nckdDocumenttype = (String) changeData.getNewValue();
             String materialmaintunit = (String) this.getModel().getValue("nckd_materialmaintunit");
-            if ("add".equals(materialmaintunit)) {
-                if ("1".equals(nckdDocumenttype)) {
-                    this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
-                    this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
-                } else if ("2".equals(nckdDocumenttype)) {
-                    this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
-                } else if ("4".equals(nckdDocumenttype)) {
-                    this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
-                } else if ("5".equals(nckdDocumenttype)) {
-                    this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
-                }
-            } else if ("update".equals(materialmaintunit)) {
+//            if ("add".equals(materialmaintunit)) {
+//                if ("1".equals(nckdDocumenttype)) {
+//                    this.getModel().setValue("nckd_mftunit", this.getModel().getValue("nckd_baseunit"));
+//                    this.getModel().setValue("nckd_supplyorgunitid", this.getModel().getValue("org"));
+//                } else if ("2".equals(nckdDocumenttype)) {
+//                    this.getModel().setValue("nckd_inventoryunit", this.getModel().getValue("nckd_baseunit"));
+//                } else if ("4".equals(nckdDocumenttype)) {
+//                    this.getModel().setValue("nckd_salesunit", this.getModel().getValue("nckd_baseunit"));
+//                } else if ("5".equals(nckdDocumenttype)) {
+//                    this.getModel().setValue("nckd_purchaseunit", this.getModel().getValue("nckd_baseunit"));
+//                }
+//            } else
+            if ("update".equals(materialmaintunit)) {
                 DynamicObject materialnumber = (DynamicObject) this.getModel().getValue("nckd_materialnumber");
                 if (materialnumber != null) {
                     DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(materialnumber.getPkValue(), "bd_material");
