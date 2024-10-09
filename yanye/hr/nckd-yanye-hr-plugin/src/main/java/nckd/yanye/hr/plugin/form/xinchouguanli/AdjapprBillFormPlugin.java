@@ -5,6 +5,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.plugin.AbstractFormPlugin;
@@ -93,14 +94,24 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         if ("advconbaritemap".equals(itemKey)) {
             // 组织范围：针对晶昊公司和富达公司
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+            if (org == null) {
+                throw new KDBizException("请先填写基本信息中的薪酬管理组织");
+            }
             String orgName = org.getString("name");
             DynamicObject salaryadjrsn = (DynamicObject) this.getModel().getValue("salaryadjrsn");
+            if (salaryadjrsn == null) {
+                throw new KDBizException("请先填写基本信息中的定调薪类型");
+            }
+
             String salaryadjrsnName = salaryadjrsn.getString("name");
 
             if ("年度绩效调薪".equals(salaryadjrsnName) &&
                     ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
                 // 默认生效日期
                 Date defaultEffectiveDate = (Date) this.getModel().getValue("effectivedate");
+                if (defaultEffectiveDate == null) {
+                    throw new KDBizException("请先填写基本信息中的默认生效日期");
+                }
                 SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd");
                 String dateString = sdf.format(defaultEffectiveDate);
                 this.getView().getPageCache().put("isYear", dateString);
