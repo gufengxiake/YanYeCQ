@@ -3,26 +3,11 @@ package nckd.yanye.scm.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.datamodel.RowDataEntity;
 import kd.bos.entity.datamodel.events.AfterAddRowEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-//import org.joda.time.DateTime;
-import java.math.BigDecimal;
-import java.util.*;
-
-import kd.bos.entity.property.EntryProp;
-import kd.bos.form.IFormView;
-import kd.bos.metadata.dao.MetaCategory;
-import kd.bos.metadata.dao.MetadataDao;
-import kd.bos.metadata.entity.EntityMetadata;
-import kd.bos.metadata.entity.businessfield.BasedataField;
-import kd.bos.metadata.form.ControlAp;
-import kd.bos.metadata.form.FormMetadata;
-import kd.bos.metadata.form.control.EntryFieldAp;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.fi.ap.helper.BaseDataHelper;
 import kd.bos.dataentity.utils.StringUtils;
 /**
  * 销售订单勾选清运供应商，根据商务伙伴基础资料自动获取，同时行类别需要同步为“服务（数量）”
