@@ -99,6 +99,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
                         bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
                         bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
+                        bdCustomer.set("settlementcyid", entity.getDynamicObject("nckd_currency"));//币别
                         //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
                         bdCustomer.set("nckd_addtel", entity.getDynamicObject("nckd_address"));//客户联系人地址
                         bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
@@ -205,6 +206,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         bdCustomer.set("nckd_mail", entity.getString("nckd_enterpriseemail"));//客户企业邮箱
                         bdCustomer.set("nckd_phonenumber", entity.getString("nckd_invoicephone"));//交付手机
                         bdCustomer.set("nckd_isopenpay", isInvoice.equals("1") ? true : false);//是否开票
+                        bdCustomer.set("settlementcyid", entity.getDynamicObject("nckd_currency"));//币别
                         //bdCustomer.set("nckd_telnumber", entity.getString("nckd_phone"));//客户联系人电话
                         bdCustomer.set("nckd_addtel", entity.getDynamicObject("nckd_address"));//客户联系人地址
                         bdCustomer.set("nckd_email1", entity.getString("nckd_enterpriseemail"));//邮箱1
