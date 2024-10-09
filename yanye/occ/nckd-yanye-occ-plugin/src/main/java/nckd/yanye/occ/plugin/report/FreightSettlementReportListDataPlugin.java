@@ -89,10 +89,10 @@ public class FreightSettlementReportListDataPlugin extends AbstractReportListDat
                 "detailentry.nckd_declarationnumber as nckd_declarationnumber," +
                 //运输合同号
                 "detailentry.nckd_carriagenumber as nckd_carriagenumber";
-        DataSet ap_finapbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "ap_finapbill",
+        DataSet apFinapbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "ap_finapbill",
                 fields, qFilters.toArray(new QFilter[0]) , null);
 
-        return ap_finapbill.orderBy(new String[]{"nckd_fhdate","materialNumber"});
+        return apFinapbill.orderBy(new String[]{"nckd_fhdate","materialNumber"});
     }
 
     public void getQFilter(List<QFilter>qFilters, FilterInfo filter,String query,String property){

@@ -32,12 +32,12 @@ public class KeySaltPriceReportFormPlugin extends AbstractReportFormPlugin imple
     public void processRowData(String gridPK, DynamicObjectCollection rowData, ReportQueryParam queryParam) {
         super.processRowData(gridPK, rowData, queryParam);
         QFilter materialFilter = new QFilter("nckd_iskey", QCP.equals, "1");
-        DataSet bd_material = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet bdMaterial = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "bd_material", "id,name", new QFilter[]{materialFilter}, null);
 
         Map<Long,String> material = new HashMap<>();
-        while (bd_material.hasNext()) {
-            Row next = bd_material.next();
+        while (bdMaterial.hasNext()) {
+            Row next = bdMaterial.next();
             material.put(next.getLong("id"),next.getString("name"));
         }
 
@@ -74,7 +74,7 @@ public class KeySaltPriceReportFormPlugin extends AbstractReportFormPlugin imple
             }
 
         }
-        bd_material.close();
+        bdMaterial.close();
     }
 
 

@@ -6,6 +6,8 @@ import kd.bos.bec.model.KDBizEvent;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
@@ -32,9 +34,8 @@ public class PayCasBillUpBillPlugin implements IEventServicePlugin {
         logger.info("付款处理保存处理执行插件:-------------------");
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
-        DynamicObject casPaybill = null;
-        for (String businesskey : businesskeys) {
-            casPaybill = BusinessDataServiceHelper.loadSingle(businesskey, "cas_paybill");
+        DynamicObject[] load = BusinessDataServiceHelper.load("cas_paybill", "", new QFilter[]{new QFilter("id", QCP.in, businesskeys)});
+        for (DynamicObject casPaybill : load) {
             String nckdActpayamtupper = casPaybill.getString("nckd_actpayamtupper");
             if(StringUtils.isNotEmpty(nckdActpayamtupper)){
                 return null;
@@ -45,6 +46,7 @@ public class PayCasBillUpBillPlugin implements IEventServicePlugin {
             casPaybill.set("nckd_actpayamtupper",amountUpper);
             SaveServiceHelper.save(new DynamicObject[]{casPaybill});
         }
+
         return null;
     }
 

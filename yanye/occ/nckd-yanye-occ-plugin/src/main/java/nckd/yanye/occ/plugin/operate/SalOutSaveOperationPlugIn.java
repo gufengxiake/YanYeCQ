@@ -93,16 +93,16 @@ public class SalOutSaveOperationPlugIn extends AbstractOperationServicePlugIn im
         // 调用平台的服务，获取所有源单及其内码
         Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, billIds.toArray(new Long[0]));
         // 从所有源单中寻找需要的demo_botpbill1
-        HashSet<Long> botpbill1_Ids = new HashSet<>();
+        HashSet<Long> botpBillIds = new HashSet<>();
         String sourceBill = "ocbsoc_saleorder";//要货订单
         if (sourceBillIds.containsKey(sourceBill)) {
-            botpbill1_Ids = sourceBillIds.get(sourceBill);
+            botpBillIds = sourceBillIds.get(sourceBill);
         }
-        if(botpbill1_Ids.isEmpty()){
+        if(botpBillIds.isEmpty()){
             return;
         }
         List<DynamicObject> saveValue = new ArrayList(16);
-        for (Object pk : botpbill1_Ids) {
+        for (Object pk : botpBillIds) {
             //根据Id获取要货订单单实体
             DynamicObject saleBill = BusinessDataServiceHelper.loadSingle(pk, sourceBill);
             saleBill.set("billstatus","E");//订单状态已发货
@@ -123,34 +123,34 @@ public class SalOutSaveOperationPlugIn extends AbstractOperationServicePlugIn im
                 .and("closestatus", QCP.equals, "A")
                 .and("biztimeend", QCP.large_equals, biztime)
                 .and("biztimebegin", QCP.less_equals, biztime);
-        DynamicObjectCollection conm_purcontract = QueryServiceHelper.query("conm_purcontract", "billentry.priceandtax as priceandtax,org,supplier"
+        DynamicObjectCollection conmPurcontract = QueryServiceHelper.query("conm_purcontract", "billentry.priceandtax as priceandtax,org,supplier"
                 , new QFilter[]{qFilter}, "biztimebegin desc");
-        if (conm_purcontract == null || conm_purcontract.isEmpty()) {
+        if (conmPurcontract == null || conmPurcontract.isEmpty()) {
             return BigDecimal.ZERO;
         }
-        return conm_purcontract.get(0).getBigDecimal("priceandtax");
+        return conmPurcontract.get(0).getBigDecimal("priceandtax");
 
     }
 
     public Long getSupplierId(Long channelId) {
-        DynamicObject ocdbd_channel = QueryServiceHelper.queryOne("ocdbd_channel", "customer",
+        DynamicObject ocdbdChannel = QueryServiceHelper.queryOne("ocdbd_channel", "customer",
                 new QFilter[]{new QFilter("id", QCP.equals, channelId)});
-        if (ocdbd_channel == null) {
+        if (ocdbdChannel == null) {
             return 0L;
         }
-        long customer = ocdbd_channel.getLong("customer");
-        DynamicObject bd_customer = QueryServiceHelper.queryOne("bd_customer", "bizpartner",
+        long customer = ocdbdChannel.getLong("customer");
+        DynamicObject bdCustomer = QueryServiceHelper.queryOne("bd_customer", "bizpartner",
                 new QFilter[]{new QFilter("id", QCP.equals, customer)});
-        if (bd_customer == null) {
+        if (bdCustomer == null) {
             return 0L;
         }
-        long bizpartner = bd_customer.getLong("bizpartner");
-        DynamicObject bd_bizpartner = QueryServiceHelper.queryOne("bd_supplier", "id",
+        long bizpartner = bdCustomer.getLong("bizpartner");
+        DynamicObject bdBizpartner = QueryServiceHelper.queryOne("bd_supplier", "id",
                 new QFilter[]{new QFilter("bizpartner", QCP.equals, bizpartner)});
-        if (bd_bizpartner == null) {
+        if (bdBizpartner == null) {
             return 0L;
         }
-        return bd_bizpartner.getLong("id");
+        return bdBizpartner.getLong("id");
 
     }
 }

@@ -99,41 +99,41 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                 //单据行id
                 "billentry.id as out_billentryid";
         //查询销售出库单
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
-        if (im_saloutbill.isEmpty()) {
-            return im_saloutbill;
+        if (imSaloutbill.isEmpty()) {
+            return imSaloutbill;
         }
 
         //关联上游单据
-        im_saloutbill = this.linkUpBills(im_saloutbill);
+        imSaloutbill = this.linkUpBills(imSaloutbill);
 
         //过滤订单日期
         if(filter.getDate("orderdate_start") != null && filter.getDate("orderdate_end") != null){
             DateTime start = DateUtil.beginOfDay(filter.getDate("orderdate_start"));
             DateTime end = DateUtil.endOfDay(filter.getDate("orderdate_end"));
-            im_saloutbill = im_saloutbill.filter("order_bizdate >= to_date('" + start + "','yyyy-MM-dd hh:mm:ss')")
+            imSaloutbill = imSaloutbill.filter("order_bizdate >= to_date('" + start + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("order_bizdate <= to_date('" + end + "','yyyy-MM-dd hh:mm:ss')");
         }
         //过滤发货日期
         if(filter.getDate("dispdate_start") != null && filter.getDate("dispdate_end") != null){
             DateTime start = DateUtil.beginOfDay(filter.getDate("dispdate_start"));
             DateTime end = DateUtil.endOfDay(filter.getDate("dispdate_end"));
-            im_saloutbill = im_saloutbill.filter("ele_date >= to_date('" + start + "','yyyy-MM-dd hh:mm:ss')")
+            imSaloutbill = imSaloutbill.filter("ele_date >= to_date('" + start + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("ele_date <= to_date('" + end + "','yyyy-MM-dd hh:mm:ss')");
         }
         //过滤客户
         DynamicObject nckdCustomerQ = filter.getDynamicObject("nckd_customer_q");
         if(nckdCustomerQ != null){
-            im_saloutbill = im_saloutbill.filter("out_customer = "+nckdCustomerQ.getPkValue());
+            imSaloutbill = imSaloutbill.filter("out_customer = "+nckdCustomerQ.getPkValue());
         }
 
 //        im_saloutbill = im_saloutbill.filter("order_billno = 'XSDD-240829-000002'");
 
         //关联下游单据
-        im_saloutbill = this.linkLowBills(im_saloutbill);
+        imSaloutbill = this.linkLowBills(imSaloutbill);
 
-        return im_saloutbill.orderBy(new String[]{"out_bizorg","out_biztime"});
+        return imSaloutbill.orderBy(new String[]{"out_bizorg","out_biztime"});
     }
 
     //关联上游单据单据
@@ -144,7 +144,7 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
             return ds;
         }
         //根据来源信息查询销售出库上游电子磅单
-        DataSet nckd_eleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet nckdEleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_eleweighing",
                 //发货日期
                 "nckd_date as ele_date," +
@@ -159,9 +159,9 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                 new QFilter[]{new QFilter("entryentity.id" ,QCP.in,outSrcbillentryid.toArray(new Long[0]))}, null);
 
         //获取电子磅单来源单据行id
-        List<Long> eleSrcbillentryid = DataSetToList.getOneToList(nckd_eleweighing,"ele_srcbillentryid");
+        List<Long> eleSrcbillentryid = DataSetToList.getOneToList(nckdEleweighing,"ele_srcbillentryid");
         //根据电子磅单来源信息查询上游发货通知单
-        DataSet sm_delivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet smDelivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_delivernotice",
                 //发货单号
                 "billno as del_billno," +
@@ -173,12 +173,12 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "billentry.id as del_billentryid ",
                 new QFilter[]{new QFilter("billentry.id" ,QCP.in,eleSrcbillentryid.toArray(new Long[0]))}, null);
         //电子磅单关联发货申请单
-        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_delivernotice).on("ele_srcbillentryid","del_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(),sm_delivernotice.getRowMeta().getFieldNames()).finish();
+        nckdEleweighing = nckdEleweighing.leftJoin(smDelivernotice).on("ele_srcbillentryid","del_billentryid").select(nckdEleweighing.getRowMeta().getFieldNames(),smDelivernotice.getRowMeta().getFieldNames()).finish();
 
         //获取发货申请单来源单据行id
-        List<Long> delSrcbillentryid = DataSetToList.getOneToList(sm_delivernotice, "del_srcbillentryid");
+        List<Long> delSrcbillentryid = DataSetToList.getOneToList(smDelivernotice, "del_srcbillentryid");
         //根据发货通知单的来源单据行id查询销售订单
-        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet smSalorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_salorder",
                 //订单号
                 "billno as order_billno," +
@@ -188,14 +188,14 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "billentry.id as order_billentryid ",
                 new QFilter[]{new QFilter("billentry.id" ,QCP.in,delSrcbillentryid.toArray(new Long[0]))}, null);
         //关联销售订单
-        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_salorder).on("del_srcbillentryid","order_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(),sm_salorder.getRowMeta().getFieldNames()).finish();
+        nckdEleweighing = nckdEleweighing.leftJoin(smSalorder).on("del_srcbillentryid","order_billentryid").select(nckdEleweighing.getRowMeta().getFieldNames(),smSalorder.getRowMeta().getFieldNames()).finish();
 
         //销售出库单关联电子磅单
-        ds = ds.leftJoin(nckd_eleweighing).on("out_srcbillentryid","ele_entryentityid").select(ds.getRowMeta().getFieldNames(),nckd_eleweighing.getRowMeta().getFieldNames()).finish();
+        ds = ds.leftJoin(nckdEleweighing).on("out_srcbillentryid","ele_entryentityid").select(ds.getRowMeta().getFieldNames(),nckdEleweighing.getRowMeta().getFieldNames()).finish();
 
-        nckd_eleweighing.close();
-        sm_delivernotice.close();
-        sm_salorder.close();
+        nckdEleweighing.close();
+        smDelivernotice.close();
+        smSalorder.close();
         return ds;
     }
 
@@ -210,7 +210,7 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
         //限定单据为已审核
         signFilter.and("billstatus", QCP.equals, "C");
         //签收单通过来源销售出库单行id
-        DataSet nckd_signaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet nckdSignaturebill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_signaturebill",
                 //车皮号
                 "entryentity.nckd_cpno1 as sign_cpno1," +
@@ -220,14 +220,14 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                         "entryentity.nckd_sourceentryid as sign_sourceentryid ",
                 new QFilter[]{signFilter}, null);
 
-        ds = ds.leftJoin(nckd_signaturebill).on("out_billentryid","sign_sourceentryid").select(ds.getRowMeta().getFieldNames(),nckd_signaturebill.getRowMeta().getFieldNames()).finish();
+        ds = ds.leftJoin(nckdSignaturebill).on("out_billentryid","sign_sourceentryid").select(ds.getRowMeta().getFieldNames(),nckdSignaturebill.getRowMeta().getFieldNames()).finish();
 
 
         QFilter arFilter = new QFilter("entry.e_srcentryid", QCP.in, outBillentryid.toArray(new Long[0]));
         //限定单据为已审核
         arFilter.and("billstatus", QCP.equals, "C");
         //财务应收单通过来源销售出库单行id
-        DataSet ar_finarbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet arFinarbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ar_finarbill",
                 //应收单编号
                 "billno as fin_billno," +
@@ -242,9 +242,9 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                 new QFilter[]{arFilter}, null);
 
         //获取财务应收单表体id
-        List<Long> finentryid = DataSetToList.getOneToList(ar_finarbill, "fin_entryid");
+        List<Long> finentryid = DataSetToList.getOneToList(arFinarbill, "fin_entryid");
         //根据财务应收单找下游开票申请单
-        DataSet sim_original_bil = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet simOriginalBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sim_original_bill",
                 //发票号
                 "invoiceno as sim_invoiceno," +
@@ -261,10 +261,10 @@ public class SaleDisOutIvReportListDataPlugin extends AbstractReportListDataPlug
                 new QFilter[]{new QFilter("sim_original_bill_item.srcentryid" ,QCP.in,finentryid.toArray(new Long[0]))}, null);
 
         //财务应收关联开票申请
-        ar_finarbill = ar_finarbill.leftJoin(sim_original_bil).on("fin_entryid","sim_srcentryid").select(ar_finarbill.getRowMeta().getFieldNames(),sim_original_bil.getRowMeta().getFieldNames()).finish();
+        arFinarbill = arFinarbill.leftJoin(simOriginalBill).on("fin_entryid","sim_srcentryid").select(arFinarbill.getRowMeta().getFieldNames(),simOriginalBill.getRowMeta().getFieldNames()).finish();
 
         //销售出库关联财务应收单
-        ds = ds.leftJoin(ar_finarbill).on("out_billentryid","fin_srcentryid").select(ds.getRowMeta().getFieldNames(),ar_finarbill.getRowMeta().getFieldNames()).finish();
+        ds = ds.leftJoin(arFinarbill).on("out_billentryid","fin_srcentryid").select(ds.getRowMeta().getFieldNames(),arFinarbill.getRowMeta().getFieldNames()).finish();
         return ds;
     }
 

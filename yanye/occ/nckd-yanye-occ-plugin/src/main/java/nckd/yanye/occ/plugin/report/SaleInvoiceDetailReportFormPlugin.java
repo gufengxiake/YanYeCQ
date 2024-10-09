@@ -48,12 +48,12 @@ public class SaleInvoiceDetailReportFormPlugin extends AbstractReportFormPlugin 
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
-        BasedataEdit nckd_warehouse_q = this.getControl("nckd_warehouse_q");
-        nckd_warehouse_q.addBeforeF7SelectListener(this);
-        BasedataEdit nckd_dept_q = this.getControl("nckd_dept_q");
-        nckd_dept_q.addBeforeF7SelectListener(this);
-        BasedataEdit nckd_bizoperator_q = this.getControl("nckd_bizoperator_q");
-        nckd_bizoperator_q.addBeforeF7SelectListener(this);
+        BasedataEdit nckdWarehouseQ = this.getControl("nckd_warehouse_q");
+        nckdWarehouseQ.addBeforeF7SelectListener(this);
+        BasedataEdit nckdDeptQ = this.getControl("nckd_dept_q");
+        nckdDeptQ.addBeforeF7SelectListener(this);
+        BasedataEdit nckdBizoperatorQ = this.getControl("nckd_bizoperator_q");
+        nckdBizoperatorQ.addBeforeF7SelectListener(this);
 
     }
 

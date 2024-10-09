@@ -6,6 +6,8 @@ import kd.bos.bec.model.KDBizEvent;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.fi.fa.common.util.DateUtil;
@@ -33,11 +35,10 @@ public class WaitSignedAccptPlugin implements IEventServicePlugin {
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
 
-        DynamicObject transdetail = null;
         String newAcceptancePeriod = null;
-        // 获取导入的数据，进行计算
-        for (String businesskey : businesskeys) {
-            transdetail = BusinessDataServiceHelper.loadSingle(businesskey, "cdm_electronic_sign_deal");
+
+        DynamicObject[] transdetails = BusinessDataServiceHelper.load("cdm_electronic_sign_deal", "id,issueticketdate,exchangebillexpiredate,nckd_acceptance_period", new QFilter[]{new QFilter("id", QCP.in, businesskeys)});
+        for (DynamicObject transdetail : transdetails) {
             Date issueticketdate = transdetail.getDate("issueticketdate");
             Date exchangebillexpiredate = transdetail.getDate("exchangebillexpiredate");
             String acceptancePeriod = transdetail.getString("nckd_acceptance_period");
@@ -52,12 +53,12 @@ public class WaitSignedAccptPlugin implements IEventServicePlugin {
                 if(ObjectUtils.isEmpty(acceptancePeriod) || !acceptancePeriod.equals(newAcceptancePeriod)){
                     transdetail.set("nckd_acceptance_period",newAcceptancePeriod);
                     SaveServiceHelper.save(new DynamicObject[]{transdetail});
-                    logger.info("计算承兑期限完成key：{}，值:{}",businesskey,newAcceptancePeriod);
+                    logger.info("计算承兑期限完成key：{}，值:{}",transdetail.getPkValue(),newAcceptancePeriod);
                 }
 
             }
-
         }
+
         return null;
     }
 }

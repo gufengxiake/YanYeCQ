@@ -35,8 +35,8 @@ public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListData
                 // 查询条件收货单位,标识如不一致,请修改
                 case "nckd_org_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_org_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        filter.and("bizorg", QCP.equals, nckd_org_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        filter.and("bizorg", QCP.equals, pkValue);
                     }
                     break;
                 // 查询条件发货日期,标识如不一致,请修改
@@ -60,29 +60,29 @@ public class EveryDaySaltSaleReportListDataPlugin extends AbstractReportListData
                         "customer as customer," +
 //                        销售员
                         "bizoperator as bizoperator" ;
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, new QFilter[]{filter,filterOrg} , null);
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", sFields, new QFilter[]{filter,filterOrg} , null);
 
         //计算同组织下不同收货客户的数量
-        DataSet im_saloutbill_customer = im_saloutbill.filter("customer <> 0").groupBy(new String[]{"nckd_bizorg" , "customer"}).finish()
+        DataSet imSaloutbillCustomer = imSaloutbill.filter("customer <> 0").groupBy(new String[]{"nckd_bizorg" , "customer"}).finish()
                 .groupBy(new String[]{"nckd_bizorg"}).count("customer").finish().select("nckd_bizorg as customerorg","customer");
         //计算同组织不同销售员的数量
-        DataSet im_saloutbill_bizoperator= im_saloutbill.filter("bizoperator <> 0").groupBy(new String[]{"nckd_bizorg" , "bizoperator"}).finish()
+        DataSet imSaloutbillBizoperator= imSaloutbill.filter("bizoperator <> 0").groupBy(new String[]{"nckd_bizorg" , "bizoperator"}).finish()
                 .groupBy(new String[]{"nckd_bizorg"}).count("bizoperator").finish().select("nckd_bizorg as bizoperatororg","bizoperator");
 
-        im_saloutbill =  im_saloutbill.groupBy(new String[]{"nckd_bizorg"})
+        imSaloutbill =  imSaloutbill.groupBy(new String[]{"nckd_bizorg"})
                 .sum("CASE WHEN materialgroup <> '竞品' THEN qty ELSE 0 END ","xl" )
                 .sum("CASE WHEN materialgroup = '高端' THEN qty ELSE 0 END ","gd" )
                 .sum("CASE WHEN materialgroup = '竞品' THEN qty ELSE 0 END ","jp" ).finish();
 
         //关联取同组织不同客户的数量
-        im_saloutbill = im_saloutbill.leftJoin(im_saloutbill_customer).on("nckd_bizorg","customerorg")
-                .select(im_saloutbill.getRowMeta().getFieldNames(),new String[]{"customer"}).finish();
+        imSaloutbill = imSaloutbill.leftJoin(imSaloutbillCustomer).on("nckd_bizorg","customerorg")
+                .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"customer"}).finish();
 
         //关联取同组织不同销售员的数量
-        im_saloutbill = im_saloutbill.leftJoin(im_saloutbill_bizoperator).on("nckd_bizorg","bizoperatororg")
-                .select(im_saloutbill.getRowMeta().getFieldNames(),new String[]{"bizoperator"}).finish();
+        imSaloutbill = imSaloutbill.leftJoin(imSaloutbillBizoperator).on("nckd_bizorg","bizoperatororg")
+                .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"bizoperator"}).finish();
 
-        return im_saloutbill;
+        return imSaloutbill;
     }
 
     @Override

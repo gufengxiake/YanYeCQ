@@ -5,30 +5,32 @@ import kd.bos.algo.Row;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.exception.KDException;
-import kd.bos.metadata.form.FormMetadata;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-import nckd.yanye.occ.plugin.report.DataSetToList;
 
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-public class SetVipChannelCustomerTaask extends AbstractTask {
+/**
+ * Module           :系统服务云-调度中心-调度执行程序
+ * Description      :定时更新精品客户和渠道档案
+ * @author : wgq
+ * @date : 2024/8/23
+ */
+public class SetVipChannelCustomerTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         Set orderchannelidList = new HashSet();
         Set customeridList = new HashSet();
         //查找要货订单单笔超过2000元的订货渠道和客户
-        QFilter qFilter = new QFilter("sumtax", QCP.large_equals, 2000);
+        QFilter qFilter = new QFilter("sumtaxamount", QCP.large_equals, 2000);
         DynamicObjectCollection collections = QueryServiceHelper.query("ocbsoc_saleorder",
                 "id,orderchannelid.id  orderchannelid,customerid.id customerid", qFilter.toArray(), "");
         if (!collections.isEmpty()) {

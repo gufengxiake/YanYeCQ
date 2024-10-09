@@ -70,11 +70,11 @@ public class ImTransdirbillReportFormPlugin extends AbstractReportFormPlugin imp
                 orgId = (long) nckdForgQ.getPkValue();
             }
             QFilter qFilter = new QFilter("createorg", QCP.equals, orgId);
-            DynamicObjectCollection bd_operatorgroup = QueryServiceHelper.query("bd_operatorgroup",
+            DynamicObjectCollection bdOperatorgroup = QueryServiceHelper.query("bd_operatorgroup",
                     "id", new QFilter[]{qFilter}, "");
             List<Long> operatorgroupId = new ArrayList<>();
-            if(bd_operatorgroup != null && !bd_operatorgroup.isEmpty()){
-                bd_operatorgroup.forEach((e)->{
+            if(bdOperatorgroup != null && !bdOperatorgroup.isEmpty()){
+                bdOperatorgroup.forEach((e)->{
                     operatorgroupId.add(e.getLong("id"));
                 });
             }

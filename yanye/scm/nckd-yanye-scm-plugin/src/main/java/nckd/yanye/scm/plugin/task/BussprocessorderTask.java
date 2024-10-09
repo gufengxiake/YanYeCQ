@@ -230,7 +230,7 @@ public class BussprocessorderTask extends AbstractTask {
             //这一部分直接由物料-业务处理对应单 分录带过来
             DynamicObject nckdMaterielfield = e.getDynamicObject("nckd_materielfield");
             negainventoryOrderEntry.set("nckd_teamsgroups", e.getString("nckd_teamsgroups"));
-            negainventoryOrderEntry.set("nckd_documentstatus", e.getString("nckd_documentstatus"));
+            negainventoryOrderEntry.set("nckd_documentstatus", e.get("nckd_documentstatus"));
             negainventoryOrderEntry.set("nckd_startenddata", e.getString("nckd_startenddata"));
             negainventoryOrderEntry.set("nckd_materielfield", nckdMaterielfield);
             negainventoryOrderEntry.set("nckd_materiel", nckdMaterielfield.getDynamicObject("masterid"));

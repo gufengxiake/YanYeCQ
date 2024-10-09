@@ -62,11 +62,11 @@ public class ChannelMonthSaleReportListDataPlugin extends AbstractReportListData
                 //价税合计
                 "billentry.amountandtax as out_amountandtax" ;
         //查询销售出库单
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSalOutBill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
         DataSet sumYear = null,sumMonth = null;
         //汇总当年数量和价税合计
-        sumYear = im_saloutbill.copy().groupBy(new String[]{"out_bizorg","out_bizorgname"})
+        sumYear = imSalOutBill.copy().groupBy(new String[]{"out_bizorg","out_bizorgname"})
                 .sum("out_baseqty","yearsum").sum("out_amountandtax","yearamountandtax")
                 .finish().addField("0","yearmonth");
         //循环汇总每个月份的数量和价税合计
@@ -78,7 +78,7 @@ public class ChannelMonthSaleReportListDataPlugin extends AbstractReportListData
             //获取月份结束日期
             DateTime e = DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(date));
             //过滤一个月的数据
-            sumMonth = im_saloutbill.copy().filter("out_biztime >=to_date('" + s + "','yyyy-MM-dd hh:mm:ss')")
+            sumMonth = imSalOutBill.copy().filter("out_biztime >=to_date('" + s + "','yyyy-MM-dd hh:mm:ss')")
                     .filter("out_biztime <=to_date('" + e + "','yyyy-MM-dd hh:mm:ss')").addField(String.valueOf(i),"yearmonth"+i);
             //汇总一个月的数量和价税合计
             sumMonth = sumMonth.groupBy(new String[]{"out_bizorg","out_bizorgname","yearmonth"+i})
@@ -86,7 +86,7 @@ public class ChannelMonthSaleReportListDataPlugin extends AbstractReportListData
             sumYear = sumYear.leftJoin(sumMonth).on("out_bizorg","out_bizorg").select(sumYear.getRowMeta().getFieldNames(),new String[]{"yearmonth"+i,"sum"+i,"amountandtax"+i}).finish();
         }
         sumMonth.close();
-        im_saloutbill.close();
+        imSalOutBill.close();
         return sumYear.orderBy(new String[]{"out_bizorg"});
     }
 

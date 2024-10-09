@@ -77,14 +77,14 @@ public class SalesInAreaReportListDataPlugin extends AbstractReportListDataPlugi
                 //核心单据行id
                 "billentry.mainbillentryid as out_mainbillentryid";
         //查询销售出库单
-        DataSet im_saloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
-        if (im_saloutbill.isEmpty()) {
-            return im_saloutbill;
+        if (imSaloutbill.isEmpty()) {
+            return imSaloutbill;
         }
 
         //获取销售出库单的核心单据行id
-        List<Long> outMainbillentryid = DataSetToList.getOneToList(im_saloutbill, "out_mainbillentryid");
+        List<Long> outMainbillentryid = DataSetToList.getOneToList(imSaloutbill, "out_mainbillentryid");
         //电话
         String orderFields = "itementry.entrytelephone as order_entrytelephone," +
                 //联系人
@@ -94,21 +94,21 @@ public class SalesInAreaReportListDataPlugin extends AbstractReportListDataPlugi
                 //表体id
                 "itementry.id as order_entryid";
         //查询要货订单
-        DataSet ocbsoc_saleorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet ocbsocSaleorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocbsoc_saleorder", orderFields, new QFilter[]{new QFilter("itementry.id", QCP.in, outMainbillentryid.toArray(new Long[0]))}, null);
 
         //获取渠道主键
-        List<Long> orderOrderchannelid = DataSetToList.getOneToList(ocbsoc_saleorder, "order_orderchannelid");
+        List<Long> orderOrderchannelid = DataSetToList.getOneToList(ocbsocSaleorder, "order_orderchannelid");
         //查询渠道档案 获取 主键，详细地址，省市区字段
-        DataSet ocdbd_channel = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet ocdbdChannel = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "ocdbd_channel", "id,address,area", new QFilter[]{new QFilter("id", QCP.in, orderOrderchannelid.toArray(new Long[0]))}, null);
         //要货订单关联渠道档案
-        ocbsoc_saleorder = ocbsoc_saleorder.leftJoin(ocdbd_channel).on("order_orderchannelid", "id").select(ocbsoc_saleorder.getRowMeta().getFieldNames(), ocdbd_channel.getRowMeta().getFieldNames()).finish();
+        ocbsocSaleorder = ocbsocSaleorder.leftJoin(ocdbdChannel).on("order_orderchannelid", "id").select(ocbsocSaleorder.getRowMeta().getFieldNames(), ocdbdChannel.getRowMeta().getFieldNames()).finish();
 
         //关联要货订单
-        im_saloutbill = im_saloutbill.leftJoin(ocbsoc_saleorder).on("out_mainbillentryid", "order_entryid").select(im_saloutbill.getRowMeta().getFieldNames(), ocbsoc_saleorder.getRowMeta().getFieldNames()).finish();
+        imSaloutbill = imSaloutbill.leftJoin(ocbsocSaleorder).on("out_mainbillentryid", "order_entryid").select(imSaloutbill.getRowMeta().getFieldNames(), ocbsocSaleorder.getRowMeta().getFieldNames()).finish();
 
-        return im_saloutbill;
+        return imSaloutbill;
     }
     //获取汇总数数据
     public DataSet getSumAreaCustomer(DataSet ds){
@@ -149,15 +149,15 @@ public class SalesInAreaReportListDataPlugin extends AbstractReportListDataPlugi
 //            columns.add(createReportColumn("xiaobao", ReportColumn.TYPE_TEXT, "小包"));
             columns.add(createReportColumn("address", ReportColumn.TYPE_TEXT, "通信地址"));
             //获取行政区划的长名称
-            ReportColumn ocdbd_channel = ReportColumn.createBaseDataColumn("area", "bd_admindivision");
-            ocdbd_channel.setCaption(new LocaleString("实际县区"));
-            ocdbd_channel.setDisplayProp("fullname");
-            columns.add(ocdbd_channel);
+            ReportColumn ocdbdChannel = ReportColumn.createBaseDataColumn("area", "bd_admindivision");
+            ocdbdChannel.setCaption(new LocaleString("实际县区"));
+            ocdbdChannel.setDisplayProp("fullname");
+            columns.add(ocdbdChannel);
         } else {
-            ReportColumn ocdbd_channel1 = ReportColumn.createBaseDataColumn("sumarea", "bd_admindivision");
-            ocdbd_channel1.setCaption(new LocaleString("实际县区"));
+            ReportColumn ocdbdChannel1 = ReportColumn.createBaseDataColumn("sumarea", "bd_admindivision");
+            ocdbdChannel1.setCaption(new LocaleString("实际县区"));
 //            ocdbd_channel.setHyperlink(true);
-            columns.add(ocdbd_channel1);
+            columns.add(ocdbdChannel1);
             columns.add(createReportColumn("sumcustomerid", ReportColumn.TYPE_TEXT, "盐客户数量"));
 //            columns.add(createReportColumn("xiaobao", ReportColumn.TYPE_TEXT, "小包"));
         }

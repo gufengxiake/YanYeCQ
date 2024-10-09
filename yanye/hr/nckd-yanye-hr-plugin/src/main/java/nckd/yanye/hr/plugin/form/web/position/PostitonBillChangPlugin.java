@@ -1,18 +1,13 @@
 package nckd.yanye.hr.plugin.form.web.position;
 
 
-import com.google.common.collect.Lists;
-import kd.bos.coderule.util.CodeRuleSerialNumUtil;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.entity.MainEntityType;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.MetadataServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-import kd.hr.hbp.common.util.HRDynamicObjectUtils;
 import kd.hr.hbp.common.util.HRStringUtils;
 import kd.hr.hbp.opplugin.web.HRCoreBaseBillOp;
 import org.apache.commons.lang3.ObjectUtils;
@@ -77,8 +72,7 @@ public class PostitonBillChangPlugin extends HRCoreBaseBillOp {
                     if(!new Date().before(positionBill.getDate("bsed"))){
                         // 获取人员 hrpi_empposorgrel 任职经历表
                         QFilter qFilter5 = new QFilter("position.number", QCP.equals, positionBill.getString("number"));
-                        QFilter qFilter6 = new QFilter("iscurrentversion", QCP.equals, "1")
-                                .and("datastatus", QCP.equals, "1")
+                        QFilter qFilter6 = new QFilter("datastatus", QCP.equals, "1")
                                 .and("businessstatus", QCP.equals, "1");
                         DynamicObject[] hrpiEmpposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,datastatus,person.id,position,position.number,nckd_personindex", new QFilter[]{qFilter5,qFilter6});
                         if(ObjectUtils.isNotEmpty(hrpiEmpposorgrels)){
@@ -89,10 +83,10 @@ public class PostitonBillChangPlugin extends HRCoreBaseBillOp {
                                     });
                             // 更新上次排序号
                             positionBill.set("nckd_lastsortnum", nckdSortnum);
-                            positionBill.set("nckd_lastsortnum", nckdSortnum);
+                            SaveServiceHelper.update(hrpiEmpposorgrels);
                         }
                         SaveServiceHelper.update(positionBill);
-                        SaveServiceHelper.update(hrpiEmpposorgrels);
+
 
                     }else{
                         break;
@@ -102,28 +96,6 @@ public class PostitonBillChangPlugin extends HRCoreBaseBillOp {
         }
     }
 
-
-    public static List<DynamicObject> transferPositionToPositionBill(List<DynamicObject> positions) {
-        List<DynamicObject> positionBills = Lists.newArrayListWithExpectedSize(positions.size());
-        MainEntityType dataEntityType = MetadataServiceHelper.getDataEntityType("hrpi_perregion");
-        Iterator var3 = positions.iterator();
-
-        while(var3.hasNext()) {
-            DynamicObject position = (DynamicObject)var3.next();
-            DynamicObject positionBill = new DynamicObject(dataEntityType);
-            HRDynamicObjectUtils.copy(position, positionBill);
-            positionBill.set("sourcevid", position.getLong("id"));
-            positionBills.add(positionBill);
-        }
-
-        return positionBills;
-    }
-
-    public static String getRandomNumber(int length) {
-
-
-        return CodeRuleSerialNumUtil.getRandomNumber(length);
-    }
 
 
 }

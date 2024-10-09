@@ -31,15 +31,15 @@ public class CustomerTradeReportListDataPlugin extends AbstractReportListDataPlu
                 // 查询条件销售组织,标识如不一致,请修改
                 case "nckd_org_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_org_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter.and("saleorgid", QCP.equals, nckd_org_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilter.and("saleorgid", QCP.equals, pkValue);
                     }
                     break;
                 // 订货渠道
                 case "nckd_orderchannelid_q":
                     if (filterItem.getValue() != null) {
-                        Long nckd_orderchannelid_q = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
-                        qFilter.and("orderchannelid", QCP.equals, nckd_orderchannelid_q);
+                        Long pkValue = (Long) ((DynamicObject) filterItem.getValue()).getPkValue();
+                        qFilter.and("orderchannelid", QCP.equals, pkValue);
                     }
                     break;
                 // 查询条件订单日期,标识如不一致,请修改

@@ -62,21 +62,22 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                  * 物料属性nckd_materialattribute(1:自制、2：外购)
                  * 自制物料类型nckd_selfmaterialtype(1：产成品、2：半成品)
                  */
-                if ("1".equals(dynamicObject.getString("nckd_materialtype"))
-                        && "1".equals(dynamicObject.getString("nckd_materialattribute"))
-                        && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.finishedGoodsList, t, errorMsg, materialObject);
-                } else if ("1".equals(dynamicObject.getString("nckd_materialtype"))
-                        && "1".equals(dynamicObject.getString("nckd_materialattribute"))
-                        && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.semiFinishedList, t, errorMsg, materialObject);
-                } else if (Arrays.asList("1", "8").contains(dynamicObject.getString("nckd_materialtype"))
-                        && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.outsourcingList, t, errorMsg, materialObject);
-                } else if ("7".equals(dynamicObject.getString("nckd_materialtype"))
-                        && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.feeOutsourcingList, t, errorMsg, materialObject);
-                }
+//                if ("1".equals(dynamicObject.getString("nckd_materialtype"))
+//                        && "1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                        && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
+//                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.finishedGoodsList, t, errorMsg, materialObject);
+//                } else if ("1".equals(dynamicObject.getString("nckd_materialtype"))
+//                        && "1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                        && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
+//                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.semiFinishedList, t, errorMsg, materialObject);
+//                } else if (Arrays.asList("1", "8").contains(dynamicObject.getString("nckd_materialtype"))
+//                        && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+//                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.outsourcingList, t, errorMsg, materialObject);
+//                } else if ("7".equals(dynamicObject.getString("nckd_materialtype"))
+//                        && "2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+//                    getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.feeOutsourcingList, t, errorMsg, materialObject);
+//                }
+                getDynamicObject(dynamicObject, MaterialAttributeInformationUtils.list, t, errorMsg, materialObject);
 
                 // 申请组织
                 DynamicObject org = t.getDynamicObject("org");
@@ -101,6 +102,12 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
 
                 // 核算信息设置存货类别并提交审核
                 MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(material, org);
+
+                // 单位信息
+                DynamicObjectCollection unitentryentity = dynamicObject.getDynamicObjectCollection("nckd_unitentryentity");
+                unitentryentity.stream().forEach(d -> {
+                    MaterialAttributeInformationUtils.saveBdMultimeasureunit(material, d);
+                });
 
                 // 物料分类
                 DynamicObjectCollection groupstandard = material.getDynamicObjectCollection("entry_groupstandard");

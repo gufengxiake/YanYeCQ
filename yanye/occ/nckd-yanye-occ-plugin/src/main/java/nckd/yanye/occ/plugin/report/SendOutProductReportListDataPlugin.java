@@ -164,7 +164,7 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
             return ds;
         }
         //根据来源信息查询销售出库上游电子磅单
-        DataSet nckd_eleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet nckdEleweighing = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_eleweighing",
                 //来源单据行id
                 "entryentity.nckd_srcbillentryid as ele_srcbillentryid," +
@@ -173,9 +173,9 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
                 new QFilter[]{new QFilter("entryentity.id", QCP.in, outSrcbillentryid.toArray(new Long[0]))}, null);
 
         //获取电子磅单来源单据行id
-        List<Long> eleSrcbillentryid = DataSetToList.getOneToList(nckd_eleweighing, "ele_srcbillentryid");
+        List<Long> eleSrcbillentryid = DataSetToList.getOneToList(nckdEleweighing, "ele_srcbillentryid");
         //根据电子磅单来源信息查询上游发货通知单
-        DataSet sm_delivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet smDelivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_delivernotice",
                 //来源单据行id
                 "billentry.srcbillentryid as del_srcbillentryid," +
@@ -183,12 +183,12 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
                         "billentry.id as del_billentryid ",
                 new QFilter[]{new QFilter("billentry.id", QCP.in, eleSrcbillentryid.toArray(new Long[0]))}, null);
         //电子磅单关联发货申请单
-        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_delivernotice).on("ele_srcbillentryid", "del_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(), sm_delivernotice.getRowMeta().getFieldNames()).finish();
+        nckdEleweighing = nckdEleweighing.leftJoin(smDelivernotice).on("ele_srcbillentryid", "del_billentryid").select(nckdEleweighing.getRowMeta().getFieldNames(), smDelivernotice.getRowMeta().getFieldNames()).finish();
 
         //获取发货申请单来源单据行id
-        List<Long> delSrcbillentryid = DataSetToList.getOneToList(sm_delivernotice, "del_srcbillentryid");
+        List<Long> delSrcbillentryid = DataSetToList.getOneToList(smDelivernotice, "del_srcbillentryid");
         //根据发货通知单的来源单据行id查询销售订单
-        DataSet sm_salorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
+        DataSet smSalorder = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "sm_salorder",
                 //订单号
                 "billno as order_billno," +
@@ -196,14 +196,14 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
                         "billentry.id as order_billentryid ",
                 new QFilter[]{new QFilter("billentry.id", QCP.in, delSrcbillentryid.toArray(new Long[0]))}, null);
         //关联销售订单
-        nckd_eleweighing = nckd_eleweighing.leftJoin(sm_salorder).on("del_srcbillentryid", "order_billentryid").select(nckd_eleweighing.getRowMeta().getFieldNames(), sm_salorder.getRowMeta().getFieldNames()).finish();
+        nckdEleweighing = nckdEleweighing.leftJoin(smSalorder).on("del_srcbillentryid", "order_billentryid").select(nckdEleweighing.getRowMeta().getFieldNames(), smSalorder.getRowMeta().getFieldNames()).finish();
 
         //销售出库单关联电子磅单
-        ds = ds.leftJoin(nckd_eleweighing).on("out_srcbillentryid", "ele_entryentityid").select(new String[]{"ele_entryentityid","order_billno"}).finish();
+        ds = ds.leftJoin(nckdEleweighing).on("out_srcbillentryid", "ele_entryentityid").select(new String[]{"ele_entryentityid","order_billno"}).finish();
 
-        nckd_eleweighing.close();
-        sm_delivernotice.close();
-        sm_salorder.close();
+        nckdEleweighing.close();
+        smDelivernotice.close();
+        smSalorder.close();
         return ds;
     }
 
@@ -235,9 +235,9 @@ public class SendOutProductReportListDataPlugin extends AbstractReportListDataPl
         columns.add(createReportColumn("out_signbaseqty", ReportColumn.TYPE_DECIMAL, "签收数量"));
         columns.add(createReportColumn("fin_amount", ReportColumn.TYPE_DECIMAL, "开票金额"));
         //特殊处理一下行政区划，获取行政区划的对象并隐藏后续用来获取省份
-        ReportColumn out_admindivision = ReportColumn.createBaseDataColumn("out_admindivision", "bd_admindivision");
-        out_admindivision.setHide(true);
-        columns.add(out_admindivision);
+        ReportColumn outAdmindivision = ReportColumn.createBaseDataColumn("out_admindivision", "bd_admindivision");
+        outAdmindivision.setHide(true);
+        columns.add(outAdmindivision);
 
         return columns;
     }

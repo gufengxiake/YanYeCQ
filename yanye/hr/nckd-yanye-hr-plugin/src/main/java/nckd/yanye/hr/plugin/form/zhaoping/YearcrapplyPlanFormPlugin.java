@@ -5,15 +5,12 @@ import kd.bos.algo.DataSet;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.db.DBRoute;
-import kd.bos.db.SqlBuilder;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
@@ -29,7 +26,6 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import kd.hr.hbp.common.util.HRDBUtil;
 import org.apache.commons.lang3.ObjectUtils;
-
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,7 +57,6 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
     @Override
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
-//        DispatchServiceHelper.invokeService("kd.hrmp.haos.servicehelper","haos","IHAOSStaffService","queryUseStaffInfo",objects);
     }
 
     @Override
@@ -165,11 +160,13 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             List<Long> allSubordinateOrgs = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
             QFilter qFilter = new QFilter("org.id", QCP.in, allSubordinateOrgs);
             // 年度招聘计划数据
-            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter,qBillstatus});
-//            DynamicObject[] loads = QueryServiceHelper.query("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg,entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification,entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter});
+            DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg," +
+                    "entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification," +
+                    "entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter,qBillstatus});
             if(ObjectUtils.isEmpty(loads)){
                 return;
             }
+            ORM orm = ORM.create();
             for (DynamicObject dynamicObject : loads) {
                 // 获取招聘计划的下级分录
                 DynamicObjectCollection entryentity1 = dynamicObject.getDynamicObjectCollection("entryentity");
@@ -187,7 +184,6 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
 
                     Object[] param = new Object[]{object.getPkValue()};
                     DataSet rows = HRDBUtil.queryDataSet("tk_nckd_yearcrapp_major", new DBRoute("tsc"), sqlBuilder.toString(), param);
-                    ORM orm = ORM.create();
                     // 多选基础资料key
                     DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(rows);
                     MainEntityType type = EntityMetadataCache.getDataEntityType("nckd_specialityclass");
@@ -208,7 +204,6 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
 
                 }
             }
-//            getModel().endInit();
             // 计算人数
             setSumRecruitnum(0,-1);
             getView().updateView("entryentity");
@@ -243,7 +238,6 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
         DynamicObject viewObj = BusinessDataServiceHelper.loadSingleFromCache("bos_org_viewschema", "id", new QFilter[]{numberFilter});
         QFilter viewFilter = new QFilter("view", "=", viewObj.getPkValue());
         QFilter viewFilter2 = new QFilter("parent.id", "=", org.getPkValue());
-//        QFilter qFilter4 = new QFilter("orgpattern.number", "in", COMPANY_LIST2);
         QFilter[] filters = new QFilter[]{viewFilter,viewFilter2};
         // 获取组织所有直属下级组织
         DynamicObject[] bosOrgStructures = BusinessDataServiceHelper.load("bos_org_structure", selectFields, filters);
@@ -265,7 +259,6 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             DynamicObject[] nckdYearcasreplans = BusinessDataServiceHelper.load("nckd_yearcasreplan", "id,org,", new QFilter[]{nckdYear1,bosOrgFilter, qBillstatus});
             if(ObjectUtils.isEmpty(nckdYearcasreplans)){
                 errBuilder.append("直属下级组织未配置完年度招聘计划");
-//                    this.getView().showErrorNotification("直属下级组织未配置完年度招聘计划");
             }else{
                 Map<Object, DynamicObject> resultMap = Arrays.stream(nckdYearcasreplans)
                         .collect(Collectors.toMap(

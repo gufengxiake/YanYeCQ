@@ -38,7 +38,9 @@ public class PurSettleNoTaxReportFormPlugin extends AbstractReportFormPlugin imp
             BigDecimal sumBaseQty = next.getBigDecimal("sumbaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("sumbaseqty");
             //获取累计本位币结算金额
             BigDecimal sumAmount = next.getBigDecimal("sumamount") == null ? BigDecimal.ZERO : next.getBigDecimal("sumamount");
-            if (sumBaseQty.compareTo(BigDecimal.ZERO) == 0) continue;
+            if (sumBaseQty.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
             //计算结算无税价 = 累计本位币结算金额/累计结算数量
             BigDecimal noTaxPrice = sumAmount.divide(sumBaseQty, RoundingMode.CEILING);
             next.set("notaxprice",noTaxPrice);

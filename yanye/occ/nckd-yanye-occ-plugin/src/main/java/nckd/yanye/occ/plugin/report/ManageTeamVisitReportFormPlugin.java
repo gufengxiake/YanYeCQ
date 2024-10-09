@@ -28,20 +28,20 @@ public class ManageTeamVisitReportFormPlugin extends AbstractReportFormPlugin im
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //登记客商数
-            double ocdbd_sumks = next.getBigDecimal("ocdbd_sumks").doubleValue();
+            double ocdbdSumks = next.getBigDecimal("ocdbd_sumks").doubleValue();
             //当月拜访
             double sumbf = next.getBigDecimal("sumbf").doubleValue();
             //月度拜访目标
-            double year_hk_ydbfkh = next.getBigDecimal("year_hk_ydbfkh").doubleValue();
+            double yearHkYdbfkh = next.getBigDecimal("year_hk_ydbfkh").doubleValue();
             //计算零拜访客户数 = 登记客商数 - 当月拜访
-            next.set("lbfkhs",ocdbd_sumks-sumbf);
+            next.set("lbfkhs",ocdbdSumks-sumbf);
             //计算月拜访覆盖率 = 当月拜访/登记客商数
-            if(ocdbd_sumks != 0){
-                next.set("ybffgl",new DecimalFormat("0.00%").format(sumbf/ocdbd_sumks));
+            if(ocdbdSumks != 0){
+                next.set("ybffgl",new DecimalFormat("0.00%").format(sumbf/ocdbdSumks));
             }
             //计算月拜访完成率 = 当月拜访/月度拜访目标
-            if(year_hk_ydbfkh != 0){
-                next.set("ybfwcl",new DecimalFormat("0.00%").format(sumbf/year_hk_ydbfkh));
+            if(yearHkYdbfkh != 0){
+                next.set("ybfwcl",new DecimalFormat("0.00%").format(sumbf/yearHkYdbfkh));
             }
         }
     }

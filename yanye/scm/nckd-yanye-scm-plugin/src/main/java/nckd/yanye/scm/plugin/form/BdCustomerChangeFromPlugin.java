@@ -84,6 +84,15 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
                 }
             }
         }
+
+        TextEdit societycreditcodeEdit = this.getControl("nckd_societycreditcode");
+        TextProp societycreditcodeProp = (TextProp) societycreditcodeEdit.getProperty();
+        BasedataEdit taxpayertypeEdit = this.getControl("nckd_taxpayertype");
+        BasedataProp taxpayertypeProp = (BasedataProp) taxpayertypeEdit.getProperty();
+        societycreditcodeEdit.setMustInput(true);
+        societycreditcodeProp.setMustInput(true);
+        taxpayertypeEdit.setMustInput(true);
+        taxpayertypeProp.setMustInput(true);
     }
 
     @Override
@@ -203,6 +212,28 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_invoicename", spname,rowIndex);
             this.getModel().setValue("nckd_accountname", spname,rowIndex);
         }
+        //币别
+        if ("nckd_currency".equals(fieldKey)){
+            DynamicObject currency = (DynamicObject) this.getModel().getValue("nckd_currency", rowIndex);
+            String maintenancetype = this.getModel().getValue("nckd_maintenancetype").toString();
+            if (maintenancetype.equals("save")){
+                TextEdit societycreditcodeEdit = this.getControl("nckd_societycreditcode");
+                TextProp societycreditcodeProp = (TextProp) societycreditcodeEdit.getProperty();
+                BasedataEdit taxpayertypeEdit = this.getControl("nckd_taxpayertype");
+                BasedataProp taxpayertypeProp = (BasedataProp) taxpayertypeEdit.getProperty();
+                if ("CNY".equals(currency.getString("number"))) {
+                    societycreditcodeEdit.setMustInput(true);
+                    societycreditcodeProp.setMustInput(true);
+                    taxpayertypeEdit.setMustInput(true);
+                    taxpayertypeProp.setMustInput(true);
+                }else {
+                    societycreditcodeEdit.setMustInput(false);
+                    societycreditcodeProp.setMustInput(false);
+                    taxpayertypeEdit.setMustInput(false);
+                    taxpayertypeProp.setMustInput(false);
+                }
+            }
+        }
     }
 
     /**
@@ -288,7 +319,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
             this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
             this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);
@@ -325,7 +356,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),newIndex);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),newIndex);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),newIndex);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),newIndex);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),newIndex);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),newIndex);
             this.getModel().setValue("nckd_invoicename",customer.get("name"),newIndex);
             this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),newIndex);
@@ -358,7 +389,7 @@ public class BdCustomerChangeFromPlugin extends AbstractBillPlugIn implements Be
             this.getModel().setValue("nckd_bankaccount",bankEntry == null ? null : bankEntry.get("bankaccount"),index);
             this.getModel().setValue("nckd_accountname",bankEntry == null ? null : bankEntry.get("accountname"),index);
             this.getModel().setValue("nckd_bank",bankEntry == null ? null : bankEntry.getDynamicObject("bank"),index);
-            this.getModel().setValue("nckd_currency",bankEntry == null ? null : bankEntry.getDynamicObject("currency"),index);
+            this.getModel().setValue("nckd_currency",customer.getDynamicObject("settlementcyid"),index);
             this.getModel().setValue("nckd_taxpayertype",customer.getDynamicObject("nckd_nashuitype"),index);
             this.getModel().setValue("nckd_invoicename",customer.get("name"),index);
             this.getModel().setValue("nckd_invoicetype",customer.getDynamicObject("invoicecategory") == null ? null : customer.getDynamicObject("invoicecategory"),index);

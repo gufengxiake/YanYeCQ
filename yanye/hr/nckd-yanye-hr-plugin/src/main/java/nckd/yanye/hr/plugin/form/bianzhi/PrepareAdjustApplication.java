@@ -51,7 +51,6 @@ import java.util.stream.Collectors;
 public class PrepareAdjustApplication extends AbstractBillPlugIn implements BeforeF7SelectListener, RowClickEventListener {
 
 
-    private static List<String> approval = new ArrayList<>();
 
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"Orgform01","Orgform01-100","Orgform02","Orgform03"});
 

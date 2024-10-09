@@ -252,7 +252,7 @@ public class PayeeDisposeInfoEdit extends DynamicFormPlugin {
             if (user != null) {
                 QFilter payerFilter = new QFilter("payer", "=", user.getPkValue());
                 QFilter isemployeeFilter = new QFilter("isemployee", "=", '1');
-                DynamicObjectCollection query = QueryServiceHelper.query("er_payeer", "id", new QFilter[]{uFilter, payerFilter, isemployeeFilter});
+                DynamicObjectCollection query = QueryServiceHelper.query(ER_PAYEER, "id", new QFilter[]{uFilter, payerFilter, isemployeeFilter});
                 if (query.isEmpty()) {
                     uFilter = uFilter.and(new QFilter("name", "=", user.getLocaleString("name").getLocaleValue()));
                     uFilter.and(new QFilter("isemployee", "=", '0'));
@@ -527,7 +527,7 @@ public class PayeeDisposeInfoEdit extends DynamicFormPlugin {
         QFilter[] qFilters = new QFilter[]{uFilter};
         String selectFields = "id,name,payer,payeraccount,payeraccount01,payeraccount02,payerbank_id,payerbank.name,payerbank.number,payeraccountname";
         String orderBys = "isdefault desc";
-        DynamicObject[] defaultAccounts = BusinessDataServiceHelper.load("er_payeer", selectFields, qFilters, orderBys, 1);
+        DynamicObject[] defaultAccounts = BusinessDataServiceHelper.load(ER_PAYEER, selectFields, qFilters, orderBys, 1);
         if (defaultAccounts != null && defaultAccounts.length > 0) {
             dynamicObject = defaultAccounts[0];
         }
@@ -895,12 +895,12 @@ public class PayeeDisposeInfoEdit extends DynamicFormPlugin {
             if (!CasHelper.isEmpty(payee)) {
                 DynamicObject supplierDO = BusinessDataServiceHelper.loadSingle(payee.getPkValue(), "bd_supplier", "entry_bank.settlment,entry_bank.isdefault_bank");
                 if (!CasHelper.isEmpty(supplierDO)) {
-                    DynamicObjectCollection entry_banks = supplierDO.getDynamicObjectCollection("entry_bank");
-                    if (!CasHelper.isEmpty(entry_banks)) {
-                        for(int i = 0; i < entry_banks.size(); ++i) {
-                            if (i == 0 || ((DynamicObject)entry_banks.get(i)).getBoolean("isdefault_bank")) {
-                                DynamicObject entry_bank = (DynamicObject)entry_banks.get(i);
-                                DynamicObject settlment = entry_bank.getDynamicObject("settlment");
+                    DynamicObjectCollection entryBanks = supplierDO.getDynamicObjectCollection("entry_bank");
+                    if (!CasHelper.isEmpty(entryBanks)) {
+                        for(int i = 0; i < entryBanks.size(); ++i) {
+                            if (i == 0 || ((DynamicObject)entryBanks.get(i)).getBoolean("isdefault_bank")) {
+                                DynamicObject entryBank = (DynamicObject)entryBanks.get(i);
+                                DynamicObject settlment = entryBank.getDynamicObject("settlment");
                                 resultMap.put("settlment", settlment);
                             }
                         }
@@ -968,7 +968,7 @@ public class PayeeDisposeInfoEdit extends DynamicFormPlugin {
         DynamicObject acctCash;
         if (this.isUser()) {
             if (this.getValue("erpayeef7") != null) {
-                this.setValue("payeeaccformid", "er_payeer");
+                this.setValue("payeeaccformid", ER_PAYEER);
                 acctCash = this.getDynamicObject("erpayeef7");
                 this.setValue("payeeacctbank", acctCash.getPkValue());
             }

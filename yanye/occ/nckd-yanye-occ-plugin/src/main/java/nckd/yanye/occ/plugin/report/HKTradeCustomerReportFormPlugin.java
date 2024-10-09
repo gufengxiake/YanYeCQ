@@ -38,7 +38,9 @@ public class HKTradeCustomerReportFormPlugin extends AbstractReportFormPlugin im
             BigDecimal sumsjybaseqty = next.getBigDecimal("sumsjybaseqty") == null ? BigDecimal.ZERO : next.getBigDecimal("sumsjybaseqty");
             //深井盐交易金额
             BigDecimal sumsjyamountandtax = next.getBigDecimal("sumsjyamountandtax") == null ? BigDecimal.ZERO : next.getBigDecimal("sumsjyamountandtax");
-            if(sumsjybaseqty.compareTo(BigDecimal.ZERO) == 0) continue;
+            if(sumsjybaseqty.compareTo(BigDecimal.ZERO) == 0) {
+                continue;
+            }
             //计算深井盐均价 = 深井盐交易金额 / 深井盐销量
             BigDecimal sjyavgprice = sumsjyamountandtax.divide(sumsjybaseqty, RoundingMode.CEILING);
             next.set("sjyavgprice",sjyavgprice);
