@@ -1,6 +1,5 @@
 package nckd.yanye.occ.plugin.report;
 
-import cn.hutool.core.date.DateTime;
 import cn.hutool.core.date.DateUtil;
 import kd.bos.algo.DataSet;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -10,8 +9,6 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.sdk.plugin.Plugin;
-
-import java.util.ArrayList;
 import java.util.List;
 
 /**

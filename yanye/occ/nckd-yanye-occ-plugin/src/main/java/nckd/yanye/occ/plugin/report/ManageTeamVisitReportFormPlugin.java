@@ -37,11 +37,11 @@ public class ManageTeamVisitReportFormPlugin extends AbstractReportFormPlugin im
             next.set("lbfkhs",ocdbdSumks-sumbf);
             //计算月拜访覆盖率 = 当月拜访/登记客商数
             if(ocdbdSumks != 0){
-                next.set("ybffgl",new DecimalFormat("0.00%").format(sumbf/ocdbdSumks));
+                next.set("nckd_ybffgl",new DecimalFormat("0.00%").format(sumbf/ocdbdSumks));
             }
             //计算月拜访完成率 = 当月拜访/月度拜访目标
             if(yearHkYdbfkh != 0){
-                next.set("ybfwcl",new DecimalFormat("0.00%").format(sumbf/yearHkYdbfkh));
+                next.set("nckd_ybfwcl",new DecimalFormat("0.00%").format(sumbf/yearHkYdbfkh));
             }
         }
     }

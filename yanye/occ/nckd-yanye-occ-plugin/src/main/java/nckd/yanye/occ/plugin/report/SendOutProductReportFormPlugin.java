@@ -9,7 +9,6 @@ import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
-import java.util.Iterator;
 
 /**
  * 发出商品报表-报表界面插件

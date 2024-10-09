@@ -103,7 +103,7 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
                 "entryentity.nckd_ydbfkh as hk_ydbfkh" ;
         //计算汇总本月月度小包装盐销售目标
         String date= year + "-" + month;
-        QFilter hkFilter = new QFilter("entryentity.nckd_date", QCP.large_equals, DateUtil.beginOfYear(new SimpleDateFormat("yyyy-MM").parse(date)))
+        QFilter hkFilter = new QFilter("entryentity.nckd_date", QCP.large_equals, DateUtil.beginOfMonth(new SimpleDateFormat("yyyy-MM").parse(date)))
                 .and("entryentity.nckd_date",QCP.less_equals, DateUtil.endOfMonth(new SimpleDateFormat("yyyy-MM").parse(date)));
         DataSet nckdHkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
@@ -127,8 +127,8 @@ public class ManageTeamVisitReportListDataPlugin extends AbstractReportListDataP
         columns.add(createReportColumn("year_hk_ydbfkh",ReportColumn.TYPE_DECIMAL,"月度拜访目标"));
         columns.add(createReportColumn("sumbf",ReportColumn.TYPE_DECIMAL,"当月拜访"));
         columns.add(createReportColumn("",ReportColumn.TYPE_DECIMAL,"当月餐饮"));
-        columns.add(createReportColumn("ybffgl",ReportColumn.TYPE_TEXT,"月拜访覆盖率"));
-        columns.add(createReportColumn("ybfwcl",ReportColumn.TYPE_TEXT,"月拜访完成率"));
+        columns.add(createReportColumn("nckd_ybffgl",ReportColumn.TYPE_TEXT,"月拜访覆盖率"));
+        columns.add(createReportColumn("nckd_ybfwcl",ReportColumn.TYPE_TEXT,"月拜访完成率"));
         columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"餐饮月占比"));
         columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"餐饮年占比"));
         columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"当月江盐"));

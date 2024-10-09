@@ -1,7 +1,6 @@
 package nckd.yanye.occ.plugin.report;
 
 import kd.bos.context.RequestContext;
-import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.report.FilterInfo;
 import kd.bos.entity.report.ReportQueryParam;

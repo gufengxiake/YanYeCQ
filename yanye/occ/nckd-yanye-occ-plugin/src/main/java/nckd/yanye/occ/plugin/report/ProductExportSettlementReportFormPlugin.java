@@ -1,6 +1,5 @@
 package nckd.yanye.occ.plugin.report;
 
-import cn.hutool.core.date.DateUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -10,7 +9,6 @@ import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.sdk.plugin.Plugin;
 
 import java.math.BigDecimal;
-import java.util.Date;
 
 /**
  * 产品出口结算表-报表取数插件

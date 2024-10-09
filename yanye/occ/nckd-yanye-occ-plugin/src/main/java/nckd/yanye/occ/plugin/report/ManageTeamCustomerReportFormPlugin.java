@@ -30,24 +30,24 @@ public class ManageTeamCustomerReportFormPlugin extends AbstractReportFormPlugin
         while (iterator.hasNext()) {
             DynamicObject next = iterator.next();
             //月客户完成率
-            next.set("monthjywcl",calPercent(next,"month_hk_ydjykh","out_customerMonth"));
+            next.set("nckd_monthjywcl",calPercent(next,"month_hk_ydjykh","out_customerMonth"));
             //交易客户完成
-            next.set("yearjywcl",calPercent(next,"year_hk_ydjykh","out_customerYear"));
+            next.set("nckd_yearjywcl",calPercent(next,"year_hk_ydjykh","out_customerYear"));
             //月度精品客户完成
-            next.set("monthjpkhwcl",calPercent(next,"month_hk_ydjpzdkh","out_isJPMonth"));
+            next.set("nckd_monthjpkhwcl",calPercent(next,"month_hk_ydjpzdkh","out_isJPMonth"));
             //精品客户完成
-            next.set("monthjpkhwcl",calPercent(next,"year_hk_ydjpzdkh","out_isJPYear"));
+            next.set("nckd_monthjpkhwcl",calPercent(next,"year_hk_ydjpzdkh","out_isJPYear"));
         }
     }
 
     //计算百分比 目标/完成数
     public String calPercent(DynamicObject next,String target, String count){
-        BigDecimal targetDec = next.getBigDecimal(target);
-        BigDecimal countDec = next.getBigDecimal(count);
-        if (countDec.compareTo(BigDecimal.ZERO)==0){
+        BigDecimal targetDec = next.getBigDecimal(target) == null ? BigDecimal.ZERO : next.getBigDecimal(target);
+        BigDecimal countDec = next.getBigDecimal(count) == null ? BigDecimal.ZERO : next.getBigDecimal(count);
+        if (targetDec.compareTo(BigDecimal.ZERO)==0){
             return "0.00%";
         }
-        BigDecimal divide = targetDec.divide(countDec, RoundingMode.CEILING);
-        return new DecimalFormat("0.00%").format(divide);
+        double v = countDec.doubleValue() / targetDec.doubleValue();
+        return new DecimalFormat("0.00%").format(v);
     }
 }

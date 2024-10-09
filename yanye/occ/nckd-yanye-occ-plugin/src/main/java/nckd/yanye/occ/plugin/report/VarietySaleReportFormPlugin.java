@@ -1,6 +1,5 @@
 package nckd.yanye.occ.plugin.report;
 
-import com.ccb.core.date.DateUtil;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
