@@ -20,7 +20,7 @@ import java.util.Set;
 
 /**
  * Module           :系统服务云-调度中心-调度执行程序
- * Description      :定时审核电子磅单
+ * Description      :定时批量提交电子磅单
  * @author : wgq
  * @date : 2024/10/8
  */
@@ -43,8 +43,8 @@ public class AuditEleWeighingTask extends AbstractTask {
             OperateOption auditOption = OperateOption.create();
             auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
             auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-            //批量审核电子磅单
-            OperationServiceHelper.executeOperate("audit","nckd_eleweighing",dynamicObjects,auditOption);
+            //批量提交电子磅单
+            OperationServiceHelper.executeOperate("submit","nckd_eleweighing",dynamicObjects,auditOption);
         }
     }
 }
