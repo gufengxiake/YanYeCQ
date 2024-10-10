@@ -278,6 +278,35 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 DynamicObject linkman_e = bdSupplier.getDynamicObjectCollection("entry_linkman").get(0);
                                 linkman_e.set("associatedaddress", address);
                                 SaveServiceHelper.update(bdSupplier);
+                            }else {
+                                DynamicObject bd_address = BusinessDataServiceHelper.newDynamicObject("bd_address");
+                                DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle(100000L, "bos_org");
+                                bd_address.set("number", bdSupplier.get("number"));
+                                bd_address.set("name", entity.getString("nckd_spname") + "地址");
+                                bd_address.set("supplier", bdSupplier);
+                                bd_address.set("detailaddress", entity.get("nckd_address"));
+                                bd_address.set("phone", entity.get("nckd_phone"));
+                                bd_address.set("zipcode", entity.get("nckd_postalcode"));
+                                bd_address.set("supplierid", bdSupplier.getPkValue());
+                                bd_address.set("issupplieradd", true);
+                                bd_address.set("creator", date.getDynamicObject("creator"));
+                                bd_address.set("createtime", new Date());
+                                bd_address.set("createorg", bosOrg);
+                                OperationServiceHelper.executeOperate("save", "bd_address", new DynamicObject[]{bd_address}, OperateOption.create());
+
+                                //地址信息
+                                DynamicObjectCollection entryAddress = bdSupplier.getDynamicObjectCollection("entry_address");
+                                DynamicObject address_a = entryAddress.addNew();
+                                address_a.set("addnumber", bdSupplier.get("number"));
+                                address_a.set("addname", entity.getString("nckd_addsupplier") + "地址");
+                                address_a.set("addphone", entity.get("nckd_phone"));
+                                address_a.set("addpostalcode", entity.get("nckd_postalcode"));
+                                address_a.set("addfulladdress", entity.get("nckd_address"));
+                                address_a.set("default", true);
+                                address_a.set("supplieraddress", bd_address);
+                                DynamicObject linkman_e = bdSupplier.getDynamicObjectCollection("entry_linkman").get(0);
+                                linkman_e.set("associatedaddress", bd_address);
+                                SaveServiceHelper.update(bdSupplier);
                             }
 
                         } catch (Exception ex) {

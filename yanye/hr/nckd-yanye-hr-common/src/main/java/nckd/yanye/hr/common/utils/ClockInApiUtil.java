@@ -13,6 +13,7 @@ import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import nckd.base.common.utils.log.LogUtil;
 import nckd.yanye.hr.common.ClockInConst;
 
 import java.util.ArrayList;
@@ -48,6 +49,15 @@ public class ClockInApiUtil {
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseJson = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseJson.toString()
+        );
 
         if (responseJson.getBoolean("success")) {
             return responseJson.getJSONObject("data").getString("accessToken");
@@ -104,6 +114,15 @@ public class ClockInApiUtil {
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseObj.toString()
+        );
         if (responseObj.getBoolean("success")) {
             JSONArray data = responseObj.getJSONArray("data");
             if (data != null) {
@@ -133,6 +152,15 @@ public class ClockInApiUtil {
         log.error("钉钉-获取accessToken。appkey:{} 。appsecret:{}", ddAppkey, ddAppsecret);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseObj.toString()
+        );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj.getString("access_token");
@@ -219,6 +247,15 @@ public class ClockInApiUtil {
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseObj.toString()
+        );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj;
         } else {
@@ -275,6 +312,15 @@ public class ClockInApiUtil {
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseObj.toString()
+        );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj.getJSONObject("result").getJSONArray("dept_id_list");
         } else {
@@ -337,6 +383,15 @@ public class ClockInApiUtil {
         httpRequest.body(body.toString());
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
+        // 记录调用日志
+        LogUtil.newApiLog(
+                "nckd_wtpd_signcard_ext",
+                "原始卡记录",
+                "dksj",
+                url,
+                httpRequest.form().toString(),
+                responseObj.toString()
+        );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj;
