@@ -136,12 +136,12 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
             List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamicObject -> dynamicObject.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
             List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
             if (materialproperty.contains("2")) {
-                this.setEditShow(false);
-            } else {
                 this.setEditShow(true);
+            } else {
+                this.setEditShow(false);
             }
         } else {
-            this.setEditShow(true);
+            this.setEditShow(false);
         }
 
         // 来源编码标签
@@ -337,14 +337,13 @@ public class MaterialmaintenanFormPlugin extends AbstractBillPlugIn implements B
                 // 组织范围内属性页签
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org");
                 DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
-                List<String> materialproperty = null;
                 if (dynamicObject != null) {
                     List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> dynamic.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
-                    materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
-                }
-                if (dynamicObject == null || !materialproperty.contains("2")) {
-                    //计划基本信息
-                    setBasicinformationplan(qFilter);
+                    List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                    if (materialproperty.contains("2")) {
+                        //计划基本信息
+                        setBasicinformationplan(qFilter);
+                    }
                 }
 
                 //质检基本信息

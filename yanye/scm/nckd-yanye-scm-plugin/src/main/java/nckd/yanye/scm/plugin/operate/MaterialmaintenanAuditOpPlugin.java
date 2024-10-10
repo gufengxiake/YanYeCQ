@@ -76,14 +76,13 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
 
                         // 组织范围内属性页签
                         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
-                        List<String> materialproperty = null;
-                        if(dynamicObject != null){
+                        if (dynamicObject != null) {
                             List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> dynamic.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
-                            materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
-                        }
-                        if (dynamicObject == null || !materialproperty.contains("2")) {
-                            // 计划基本信息
-                            this.planInfo(data);
+                            List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                            if (materialproperty.contains("2")) {
+                                // 计划基本信息
+                                this.planInfo(data);
+                            }
                         }
 
                         // 质检基本信息
@@ -555,7 +554,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            if(ObjectUtil.isNull(dynamicObject.get("nckd_purchaseorg")) && ObjectUtil.isNull(dynamicObject.get("nckd_buyer"))){
+            if (ObjectUtil.isNull(dynamicObject.get("nckd_purchaseorg")) && ObjectUtil.isNull(dynamicObject.get("nckd_buyer"))) {
                 return;
             }
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule("msbd_puropermaterctrl", newDynamicObject, null);
@@ -623,7 +622,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            if(dynamicObject.getDynamicObjectCollection("nckd_entryentity").size() == 0){
+            if (dynamicObject.getDynamicObjectCollection("nckd_entryentity").size() == 0) {
                 return;
             }
             DynamicObject material = this.getMaterial(dynamicObject);
@@ -668,40 +667,40 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         //查询物料
         DynamicObject dynamic = BusinessDataServiceHelper.loadSingle(dynamicObject.getDynamicObject("nckd_materialnumber").getPkValue(), "bd_material");
         //物料名称
-        if(!"".equals(dynamicObject.get("nckd_altermaterialname"))){
-            dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));
+        if (!"".equals(dynamicObject.get("nckd_altermaterialname"))) {
+            dynamic.set("name", dynamicObject.get("nckd_altermaterialname"));
         }
         //规格
-        if(!"".equals(dynamicObject.get("nckd_alterspecificat"))){
-            dynamic.set("modelnum",dynamicObject.get("nckd_alterspecificat"));
+        if (!"".equals(dynamicObject.get("nckd_alterspecificat"))) {
+            dynamic.set("modelnum", dynamicObject.get("nckd_alterspecificat"));
         }
         //型号
-        if(!"".equals(dynamicObject.get("nckd_altermodel"))){
-            dynamic.set("nckd_model",dynamicObject.get("nckd_altermodel"));
+        if (!"".equals(dynamicObject.get("nckd_altermodel"))) {
+            dynamic.set("nckd_model", dynamicObject.get("nckd_altermodel"));
         }
         //物料分组
-        if(dynamicObject.get("nckd_altermaterialclass") != null){
-            dynamic.set("group",dynamicObject.get("nckd_altermaterialclass"));
+        if (dynamicObject.get("nckd_altermaterialclass") != null) {
+            dynamic.set("group", dynamicObject.get("nckd_altermaterialclass"));
         }
         //助记码
-        if(!"".equals(dynamicObject.get("nckd_altermnemoniccode"))){
-            dynamic.set("helpcode",dynamicObject.get("nckd_altermnemoniccode"));
+        if (!"".equals(dynamicObject.get("nckd_altermnemoniccode"))) {
+            dynamic.set("helpcode", dynamicObject.get("nckd_altermnemoniccode"));
         }
         //旧物料编码
-        if(!"".equals(dynamicObject.get("nckd_alteroldnumber"))){
-            dynamic.set("oldnumber",dynamicObject.get("nckd_alteroldnumber"));
+        if (!"".equals(dynamicObject.get("nckd_alteroldnumber"))) {
+            dynamic.set("oldnumber", dynamicObject.get("nckd_alteroldnumber"));
         }
         //描述
-        if(!"".equals(dynamicObject.get("nckd_alterremark"))){
-            dynamic.set("description",dynamicObject.get("nckd_alterremark"));
+        if (!"".equals(dynamicObject.get("nckd_alterremark"))) {
+            dynamic.set("description", dynamicObject.get("nckd_alterremark"));
         }
         //物料危险性
-        if(!",,".equals(dynamicObject.getString("nckd_altermaterialrisk"))){
-            dynamic.set("hazardous",dynamicObject.get("nckd_altermaterialrisk"));
+        if (!",,".equals(dynamicObject.getString("nckd_altermaterialrisk"))) {
+            dynamic.set("hazardous", dynamicObject.get("nckd_altermaterialrisk"));
         }
         //可委外
-        if(dynamicObject.getBoolean("nckd_alteroutsourcing")){
-            dynamic.set("enableoutsource",dynamicObject.get("nckd_alteroutsourcing"));
+        if (dynamicObject.getBoolean("nckd_alteroutsourcing")) {
+            dynamic.set("enableoutsource", dynamicObject.get("nckd_alteroutsourcing"));
         }
 //        dynamic.set("name",dynamicObject.get("nckd_altermaterialname"));//物料名称
 //        dynamic.set("modelnum", dynamicObject.get("nckd_alterspecificat"));//规格

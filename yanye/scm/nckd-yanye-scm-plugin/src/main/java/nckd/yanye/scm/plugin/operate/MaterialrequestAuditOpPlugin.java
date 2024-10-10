@@ -84,20 +84,20 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("number", QCP.equals, dynamicObject.getString("nckd_materialnumber"))});
 
                 // 生成物料属性信息
-                if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
-                        && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))
-                        && "113".equals(org.getString("number"))) {
-                    //【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
-                    MaterialAttributeInformationUtils.defaultPurchaseInfo(org, material);// 采购基本信息
-                } else if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
-                        && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
-                    //【物料属性】为‘自制’+【自制物料类型】“半成品”
-                    MaterialAttributeInformationUtils.defaultPurchaseInfo(org, material);// 采购基本信息
-                    MaterialAttributeInformationUtils.defaultMarketInfo(org, material);// 销售基本信息
-                } else if ("2".equals(dynamicObject.getString("nckd_materialattribute"))) {
-                    //【物料属性】为‘外购’
-                    MaterialAttributeInformationUtils.defaultMarketInfo(org, material);// 销售基本信息
-                }
+//                if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                        && "1".equals(dynamicObject.getString("nckd_selfmaterialtype"))
+//                        && "113".equals(org.getString("number"))) {
+//                    //【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
+//                    MaterialAttributeInformationUtils.defaultPurchaseInfo(org, material);// 采购基本信息
+//                } else if ("1".equals(dynamicObject.getString("nckd_materialattribute"))
+//                        && "2".equals(dynamicObject.getString("nckd_selfmaterialtype"))) {
+//                    //【物料属性】为‘自制’+【自制物料类型】“半成品”
+//                    MaterialAttributeInformationUtils.defaultPurchaseInfo(org, material);// 采购基本信息
+//                    MaterialAttributeInformationUtils.defaultMarketInfo(org, material);// 销售基本信息
+//                } else if ("2".equals(dynamicObject.getString("nckd_materialattribute"))) {
+//                    //【物料属性】为‘外购’
+//                    MaterialAttributeInformationUtils.defaultMarketInfo(org, material);// 销售基本信息
+//                }
 
                 // 核算信息设置存货类别并提交审核
                 MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(material, org);
@@ -252,21 +252,16 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 materialmaintenanObject.set("nckd_isbackflush", "A");//倒冲
 
                 // 组织范围内属性页签
-                boolean flag = true;
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, object.getDynamicObject("org").getPkValue())});
                 if (loadSingle != null) {
                     List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == object.getDynamicObject("org").getPkValue()).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
-                        flag = false;
+                        // 计划基本信息
+                        materialmaintenanObject.set("nckd_createorg", object.getDynamicObject("org"));//计划信息创建组织
+                        materialmaintenanObject.set("nckd_materialattr", materialattri);//物料属性
+                        materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                     }
-                }
-
-                if (flag) {
-                    // 计划基本信息
-                    materialmaintenanObject.set("nckd_createorg", object.getDynamicObject("org"));//计划信息创建组织
-                    materialmaintenanObject.set("nckd_materialattr", materialattri);//物料属性
-                    materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                 }
             } else if ("2".equals(billType)) {
                 // 库存基本信息

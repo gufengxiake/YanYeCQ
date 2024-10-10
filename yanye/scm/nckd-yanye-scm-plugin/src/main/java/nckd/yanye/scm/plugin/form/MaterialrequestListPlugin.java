@@ -99,20 +99,20 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                     getDynamicObject(object, MaterialAttributeInformationUtils.list, dynamicObject, org, bdMaterial);
 
                     // 生成物料属性信息
-                    if ("1".equals(object.getString("nckd_materialattribute"))
-                            && "1".equals(object.getString("nckd_selfmaterialtype"))
-                            && "113".equals(org.getString("number"))) {
-                        //【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
-                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org, bdMaterial);// 采购基本信息
-                    } else if ("1".equals(object.getString("nckd_materialattribute"))
-                            && "2".equals(object.getString("nckd_selfmaterialtype"))) {
-                        //【物料属性】为‘自制’+【自制物料类型】“半成品”
-                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org, bdMaterial);// 采购基本信息
-                        MaterialAttributeInformationUtils.defaultMarketInfo(org, bdMaterial);// 销售基本信息
-                    } else if ("2".equals(object.getString("nckd_materialattribute"))) {
-                        //【物料属性】为‘外购’
-                        MaterialAttributeInformationUtils.defaultMarketInfo(org, bdMaterial);// 销售基本信息
-                    }
+//                    if ("1".equals(object.getString("nckd_materialattribute"))
+//                            && "1".equals(object.getString("nckd_selfmaterialtype"))
+//                            && "113".equals(org.getString("number"))) {
+//                        //【物料属性】为‘自制’+【自制物料类型】‘产成品’+【申请组织】‘江西盐业包装有限公司’
+//                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org, bdMaterial);// 采购基本信息
+//                    } else if ("1".equals(object.getString("nckd_materialattribute"))
+//                            && "2".equals(object.getString("nckd_selfmaterialtype"))) {
+//                        //【物料属性】为‘自制’+【自制物料类型】“半成品”
+//                        MaterialAttributeInformationUtils.defaultPurchaseInfo(org, bdMaterial);// 采购基本信息
+//                        MaterialAttributeInformationUtils.defaultMarketInfo(org, bdMaterial);// 销售基本信息
+//                    } else if ("2".equals(object.getString("nckd_materialattribute"))) {
+//                        //【物料属性】为‘外购’
+//                        MaterialAttributeInformationUtils.defaultMarketInfo(org, bdMaterial);// 销售基本信息
+//                    }
                 } else {
                     // 手动新增的物料
                     getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial);
@@ -179,21 +179,16 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 materialmaintenanObject.set("nckd_isbackflush", "A");//倒冲
 
                 // 组织范围内属性页签
-                boolean flag = true;
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                 if (loadSingle != null) {
                     List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
-                        flag = false;
+                        // 计划基本信息
+                        materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
+                        materialmaintenanObject.set("nckd_materialattr", materialattri);//物料属性
+                        materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                     }
-                }
-
-                if (flag) {
-                    // 计划基本信息
-                    materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
-                    materialmaintenanObject.set("nckd_materialattr", materialattri);//物料属性
-                    materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                 }
             } else if ("2".equals(billType)) {
                 // 库存基本信息
@@ -266,21 +261,16 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 materialmaintenanObject.set("nckd_isbackflush", "A");//倒冲
 
                 // 组织范围内属性页签
-                boolean flag = true;
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                 if (loadSingle != null) {
                     List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
-                        flag = false;
+                        // 计划基本信息
+                        materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
+                        materialmaintenanObject.set("nckd_materialattr", "10030");//物料属性
+                        materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                     }
-                }
-
-                if (flag) {
-                    // 计划基本信息
-                    materialmaintenanObject.set("nckd_createorg", org);//计划信息创建组织
-                    materialmaintenanObject.set("nckd_materialattr", "10030");//物料属性
-                    materialmaintenanObject.set("nckd_planmode", "D");//计划方式
                 }
             } else if ("2".equals(billType)) {
                 // 库存基本信息
