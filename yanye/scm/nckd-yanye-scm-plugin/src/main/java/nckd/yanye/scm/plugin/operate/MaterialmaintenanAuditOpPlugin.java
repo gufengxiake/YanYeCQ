@@ -622,9 +622,9 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                 return;
             }
         } else if ("add".equals(dynamicObject.getString("nckd_materialmaintunit"))) {
-            if (dynamicObject.getDynamicObjectCollection("nckd_entryentity").size() == 0) {
-                return;
-            }
+//            if (dynamicObject.getDynamicObjectCollection("nckd_entryentity").size() == 0) {
+//                return;
+//            }
             DynamicObject material = this.getMaterial(dynamicObject);
             // 物料
             newDynamicObject.set("masterid", material);
