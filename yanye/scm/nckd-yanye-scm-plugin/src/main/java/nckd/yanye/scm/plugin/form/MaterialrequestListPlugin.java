@@ -83,10 +83,10 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         Map<String, Object> map = (Map<String, Object>) closedCallBackEvent.getReturnData();
         if (map != null) {
             DynamicObject org = BusinessDataServiceHelper.loadSingle(map.get("orgId"), "bos_org");
-            List<Long> materialIdList = (List<Long>) map.get("materialIdList");
+            DynamicObjectCollection entryentity = (DynamicObjectCollection) map.get("entryentity");
 
-            materialIdList.stream().forEach(id -> {
-                DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(id, "bd_material");
+            entryentity.stream().forEach(entity -> {
+                DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(entity.getDynamicObject("nckd_material").getLong("id"), "bd_material");
 
                 // 判断是不是通过物料申请单生成的物料
                 QFilter filter = new QFilter("nckd_materialentries.nckd_materialnumber", QCP.equals, bdMaterial.getString("number"));
@@ -96,7 +96,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                             .filter(t -> t.getString("nckd_materialnumber").equals(bdMaterial.getString("number")))
                             .findFirst().orElse(null);
 
-                    getDynamicObject(object, MaterialAttributeInformationUtils.list, dynamicObject, org, bdMaterial);
+                    getDynamicObject(object, MaterialAttributeInformationUtils.list, dynamicObject, org, bdMaterial, entity);
 
                     // 生成物料属性信息
 //                    if ("1".equals(object.getString("nckd_materialattribute"))
@@ -115,7 +115,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 //                    }
                 } else {
                     // 手动新增的物料
-                    getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial);
+                    getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial, entity);
                 }
 
                 // 核算信息设置存货类别并提交审核
@@ -131,7 +131,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
      * @param list          单据类型集合
      * @return
      */
-    private void getDynamicObject(DynamicObject dynamicObject, List<String> list, DynamicObject object, DynamicObject org, DynamicObject materialdynamicObject) {
+    private void getDynamicObject(DynamicObject dynamicObject, List<String> list, DynamicObject object, DynamicObject org, DynamicObject materialdynamicObject, DynamicObject entity) {
         for (String billType : list) {
             DynamicObject materialmaintenanObject = BusinessDataServiceHelper.newDynamicObject("nckd_materialmaintenan");
             /**制单信息**/
@@ -162,6 +162,10 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             materialmaintenanObject.set("nckd_materialattribute", dynamicObject.getString("nckd_materialattribute"));//物料属性
             materialmaintenanObject.set("nckd_selfmaterialtype", dynamicObject.getString("nckd_selfmaterialtype"));//自制物料类型
             materialmaintenanObject.set("nckd_materialid", dynamicObject.getLong("id"));//物料申请单物料分录id
+
+            materialmaintenanObject.set("nckd_sales", entity.get("nckd_sales"));//销售
+            materialmaintenanObject.set("nckd_selfmade", entity.get("nckd_selfmade"));//自制
+            materialmaintenanObject.set("nckd_purchase", entity.get("nckd_purchase"));//采购
 
             if ("1".equals(billType)) {
                 // 生产基本信息
@@ -211,7 +215,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         }
     }
 
-    private void getDynamicObjectForBdMaterial(List<String> list, DynamicObject org, DynamicObject materialdynamicObject) {
+    private void getDynamicObjectForBdMaterial(List<String> list, DynamicObject org, DynamicObject materialdynamicObject, DynamicObject entity) {
         // 江盐集团
         QFilter qFilter = new QFilter("number", QCP.equals, "1");
         DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle("bos_adminorg", new QFilter[]{qFilter});
@@ -250,6 +254,10 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 //            materialmaintenanObject.set("nckd_materialattribute", dynamicObject.getString("nckd_materialattribute"));//物料属性
 //            materialmaintenanObject.set("nckd_selfmaterialtype", dynamicObject.getString("nckd_selfmaterialtype"));//自制物料类型
 //            materialmaintenanObject.set("nckd_materialid", dynamicObject.getLong("id"));//物料申请单物料分录id
+
+            materialmaintenanObject.set("nckd_sales", entity.get("nckd_sales"));//销售
+            materialmaintenanObject.set("nckd_selfmade", entity.get("nckd_selfmade"));//自制
+            materialmaintenanObject.set("nckd_purchase", entity.get("nckd_purchase"));//采购
 
             if ("1".equals(billType)) {
                 // 生产基本信息

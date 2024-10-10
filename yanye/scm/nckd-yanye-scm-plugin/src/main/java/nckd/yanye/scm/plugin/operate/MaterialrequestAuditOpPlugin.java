@@ -27,7 +27,6 @@ import kd.bos.servicehelper.operation.DeleteServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
-import kd.hr.hbp.common.util.HRDBUtil;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -240,6 +239,10 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             materialmaintenanObject.set("nckd_materialattribute", dynamicObject.getString("nckd_materialattribute"));//物料属性
             materialmaintenanObject.set("nckd_selfmaterialtype", dynamicObject.getString("nckd_selfmaterialtype"));//自制物料类型
             materialmaintenanObject.set("nckd_materialid", dynamicObject.getLong("id"));//物料申请单物料分录id
+
+            materialmaintenanObject.set("nckd_sales", dynamicObject.get("nckd_sales"));//销售
+            materialmaintenanObject.set("nckd_selfmade", dynamicObject.get("nckd_selfmade"));//自制
+            materialmaintenanObject.set("nckd_purchase", dynamicObject.get("nckd_purchase"));//采购
 
             if ("1".equals(billType)) {
                 // 生产基本信息

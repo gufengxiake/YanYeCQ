@@ -106,7 +106,7 @@ public class SelectorgFormPlugin extends AbstractBillPlugIn {
                 }
 
                 map.put("orgId", org.getLong("id"));
-                map.put("materialIdList", materialIdList);
+                map.put("entryentity", entryentity);
                 //返回数据
                 this.getView().returnDataToParent(map);
                 this.getView().close();
