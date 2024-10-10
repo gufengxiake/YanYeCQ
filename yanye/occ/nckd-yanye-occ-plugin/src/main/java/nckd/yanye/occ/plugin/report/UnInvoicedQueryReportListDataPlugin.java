@@ -28,8 +28,8 @@ public class UnInvoicedQueryReportListDataPlugin extends AbstractReportListDataP
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //已审核
         QFilter initFilter = new QFilter("billstatus", QCP.equals, "C");
-        //应收数量不为0
-        initFilter.and("billentry.joinpriceqty",QCP.not_equals2,0);
+        //应收数量为0
+        initFilter.and("billentry.joinpriceqty",QCP.equals,0);
         //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
         initFilter.and("bizorg.number", QCP.in, new String[]{"11901", "121"});
         qFilters.add(initFilter);
