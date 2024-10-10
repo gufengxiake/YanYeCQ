@@ -93,10 +93,10 @@ public class PrepareAdjustApplicationValidator extends AbstractOperationServiceP
                                 Object nckdRelbdirectnum = dynamicObject.get("nckd_relbdirectnum");
                                 if(!StringUtils.equals("A", (String) dynamicObject.get("nckd_lowermost"))){
                                     // 更新组织编制人数
-                                    useOrgEntryBo.setYearStaffNumWithSub(ObjectUtils.isNotEmpty(nckdAdjustlatenum) ? (int) nckdRelbdirectnum : null);
-                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (int) nckdRelbdirectnum : null);
+                                    useOrgEntryBo.setYearStaffNumWithSub(ObjectUtils.isNotEmpty(nckdAdjustlatenum) ? (Integer) nckdAdjustlatenum : null);
+                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (Integer) nckdRelbdirectnum : null);
                                 }else{
-                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (int) nckdRelbdirectnum : null);
+                                    useOrgEntryBo.setYearStaff(ObjectUtils.isNotEmpty(nckdRelbdirectnum) ? (Integer) nckdRelbdirectnum : null);
                                 }
                                 // 更新岗位编制人数,如果不存在岗位则跳过
                                 DynamicObjectCollection nckdCentryentity = dynamicObject.getDynamicObjectCollection("nckd_centryentity");

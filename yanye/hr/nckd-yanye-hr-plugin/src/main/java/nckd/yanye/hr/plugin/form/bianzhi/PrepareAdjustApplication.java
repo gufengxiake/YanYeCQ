@@ -162,7 +162,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             // 调整后编制人数为空，给调整人数也为空
             this.getModel().setValue("nckd_adjustdire",null,row);
         }else{
-            int relcyearstaff = getIntValue("nckd_adjustdire", row);
+            int relcyearstaff = getIntValue("nckd_bdirectnum", row);
             int newValueInt = (int) newValue;
             if(newValueInt<0){
                 this.getView().showErrorNotification("编制人数不能小于0！");
@@ -351,6 +351,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     + "          WHERE M.fenable = '1' "
                     + "          AND M.fboid = a.fboid "
                     + "          AND N.fenable = '1' "
+                    + "          AND N.fid = ?  "
                     + "          AND N.fleffdt >= '" + dateStr + "' "
                     + "          AND M.fbsed <= '" + dateStr + "' "
                     + "          AND M.fbsled >= '" + dateStr + "' "
@@ -362,6 +363,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     + "          WHERE M.fenable = '1' "
                     + "          AND M.fboid = a.fboid "
                     + "          AND N.fenable = '1' "
+                    + "          AND N.fid = ?  "
                     + "          AND N.fleffdt >= '" + dateStr + "' "
                     + "          AND M.fbsed <= '" + dateStr + "' "
                     + "          AND M.fbsled >= '" + dateStr + "' "
@@ -382,11 +384,14 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     + "WHERE A.fiscurrentversion = '0' AND A.fdatastatus = '1' AND A.finitstatus = '2' "
                     + "AND A.fbsed <= '" + dateStr + "' AND A.fbsled >= '" + dateStr + "' "
                     + "AND A.fenable = '1' "
-                    + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ?) " +") "
-//                    + "AND A.forgid = ? "
+                    + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ? "
+                    + "AND F.fiscurrentversion = '0' AND F.fdatastatus = '1' AND F.fstructprojectid = 1010 "
+                    + "AND F.finitstatus = '2' AND F.fbsed <= '" + dateStr + "' "
+                    + "AND F.fbsled >= '" + dateStr + "' AND F.fenable = '1' "
+                    +") " +") "
                     + "ORDER BY S.fsortcode");
 //            Object[] param = new Object[]{(Long) orgid,haosStaff.getPkValue()};
-            Object[] param = new Object[]{(Long) orgid};
+            Object[] param = new Object[]{pkValue,pkValue,(Long) orgid};
             DataSet dataSet = HRDBUtil.queryDataSet("haos_adminOrgHisSearch", new DBRoute("hr"), sql.toString(), param);
 //            DataSet dataSet = DB.queryDataSet("leaseContractPushCard", DBRoute.of("hr"), sql);
 
@@ -613,6 +618,10 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             DynamicObject useOrgInfo = (DynamicObject)useOrgInfoSortList.get(i);
             Object directNumObject = useOrgInfo.get("nckd_relnum");
             Object realNumWithSubObject = useOrgInfo.get("nckd_rellownum");
+
+            Object nckdBdirectNum = useOrgInfo.get("nckd_bdirectnum");// 直属
+            Object nckdBrealNumWithSub = useOrgInfo.get("nckd_brealnum");// 含下级
+
             if (!Objects.isNull(directNumObject) || !Objects.isNull(realNumWithSubObject)) {
                 int realNumWithSub = 0;
                 if (Objects.nonNull(realNumWithSubObject)) {
@@ -636,6 +645,31 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
                     }
                 }
             }
+
+//            if (!Objects.isNull(nckdBdirectNum) || !Objects.isNull(nckdBrealNumWithSub)) {
+//                int realNumWithSub = 0;
+//                if (Objects.nonNull(nckdBrealNumWithSub)) {
+//                    realNumWithSub = (Integer)nckdBrealNumWithSub;
+//                }
+//
+//                int directNum = 0;
+//                if (Objects.nonNull(nckdBdirectNum)) {
+//                    directNum = (Integer)nckdBdirectNum;
+//                }
+//                useOrgInfo.set("nckd_brealnum", directNum + realNumWithSub);
+//                long parentEntryId = useOrgInfo.getLong("pid");
+//                if (parentEntryId != 0L) {
+//                    DynamicObject parentDyn = (DynamicObject)idVsDynMap.get(parentEntryId);
+//                    if (!Objects.isNull(parentDyn)) {
+//                        Object parentRealNumWithSubObject = parentDyn.get("nckd_brealnum");
+//                        if (Objects.nonNull(parentRealNumWithSubObject)) {
+//                            parentDyn.set("nckd_brealnum", useOrgInfo.getInt("nckd_brealnum") + (Integer)parentRealNumWithSubObject);
+//                        }
+//                    }
+//                }
+//            }
+
+
         }
 
 
