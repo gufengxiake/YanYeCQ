@@ -24,6 +24,7 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.PurapplybillConst;
 import nckd.yanye.scm.common.dto.Content;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.cxf.Bus;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -133,7 +134,10 @@ public class ZhwlCallBackApiPlugin implements Serializable {
             @ApiParam(value = "皮重", required = true) BigDecimal nckd_tare,
             @ApiParam(value = "净重", required = true) BigDecimal nckd_netweight,
             @ApiParam(value = "发货数量", required = true) BigDecimal nckd_qty,
-            @ApiParam(value = "车皮号", required = true) BigDecimal nckd_railwaywagon
+            @ApiParam(value = "车皮号", required = true) String nckd_railwaywagon,
+            @ApiParam(value = "客户名称", required = true) String nckd_customer,
+            @ApiParam(value = "采样流水id", required = true) String nckd_waterid,
+            @ApiParam(value = "采样桶号", required = true) String nckd_bucket
     ) {
         //业务类型
         if (Objects.isNull(nckd_billtype)){
@@ -299,7 +303,53 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         return CustomApiResult.fail("false","生成电子磅单失败");
                     }
 
-                }else {
+                } else if ("3".equals(nckd_billtype)) {
+                    //客户名称
+                    if (Objects.isNull(nckd_customer)){
+                        return CustomApiResult.fail("false","业务类型为采购时，客户名称必填");
+                    }
+                    //采样流水id
+                    if (Objects.isNull(nckd_waterid)){
+                        return CustomApiResult.fail("false","业务类型为采购时，采样流水id必填");
+                    }
+                    //采样桶号
+                    if (Objects.isNull(nckd_bucket)){
+                        return CustomApiResult.fail("false","业务类型为采购时，采样桶号必填");
+                    }
+                    //生成电子磅单
+                    DynamicObject eleweighing = BusinessDataServiceHelper.newDynamicObject("nckd_eleweighing");
+                    CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(eleweighing.getDataEntityType().getName(), eleweighing, null);
+                    String number = CodeRuleServiceHelper.getNumber(codeRule, eleweighing);
+                    //DynamicObject billType = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("id", QCP.equals, "2057962852278348800")});
+                    DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier", "id,name", new QFilter[]{new QFilter("name", QCP.equals, nckd_customer)});
+                    DynamicObject vehicle = BusinessDataServiceHelper.loadSingle( "nckd_vehicle","id,name",new QFilter[]{new QFilter("name",QCP.equals,carno)});
+                    DynamicObject driver = BusinessDataServiceHelper.loadSingle("nckd_driver","id,name",new QFilter[]{new QFilter("name",QCP.equals,nckd_driver)});
+                    DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", "id,name", new QFilter[]{new QFilter("name", QCP.equals, "石灰石（60一120mm）")});
+
+                    eleweighing.set("billno",number);
+                    eleweighing.set("billstatus","A");
+                    eleweighing.set("org",100000);
+                    eleweighing.set("nckd_billtype",2057962852278348800L);
+                    eleweighing.set("nckd_currency",1);
+                    eleweighing.set("nckd_settlecurrency",1);
+                    eleweighing.set("nckd_paymode","CREDIT");
+                    eleweighing.set("nckd_bucket",nckd_bucket);
+                    eleweighing.set("nckd_waterid",nckd_waterid);
+                    eleweighing.set("nckd_qygys",supplier);
+                    eleweighing.set("nckd_vehicle",vehicle);//车号
+                    eleweighing.set("nckd_driver",driver);//司机
+                    DynamicObjectCollection entryentity = eleweighing.getDynamicObjectCollection("entryentity");
+                    DynamicObject entry = entryentity.addNew();
+                    entry.set("nckd_materiel",material);
+                    entry.set("nckd_unit",307797538013076480L);
+                    entry.set("nckd_baseunit",307797538013076480L);
+                    entry.set("nckd_qty",nckd_grossweight);
+                    OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweighing}, OperateOption.create());
+                    if (!saveOperationResult.isSuccess()){
+                        return CustomApiResult.fail("false","生成电子磅单失败");
+                    }
+                    return CustomApiResult.success("success");
+                } else {
                     return CustomApiResult.fail("false","传入业务类型和来源单据实体数据错误,系统未查询到相关单据");
                 }
 
