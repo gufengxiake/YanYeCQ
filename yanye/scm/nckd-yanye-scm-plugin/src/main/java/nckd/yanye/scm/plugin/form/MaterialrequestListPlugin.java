@@ -181,7 +181,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 // 组织范围内属性页签
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                 if (loadSingle != null) {
-                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> Objects.equals(d.getDynamicObject("nckd_org").getPkValue(), org.getPkValue())).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
                         // 计划基本信息
@@ -263,7 +263,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 // 组织范围内属性页签
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                 if (loadSingle != null) {
-                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> Objects.equals(d.getDynamicObject("nckd_org").getPkValue(), org.getPkValue())).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
                         // 计划基本信息

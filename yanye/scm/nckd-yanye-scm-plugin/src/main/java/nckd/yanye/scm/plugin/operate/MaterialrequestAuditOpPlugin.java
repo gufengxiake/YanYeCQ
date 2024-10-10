@@ -7,15 +7,19 @@ import kd.bd.master.util.GroupStandardUtils;
 import kd.bd.master.util.MasterDataUtil;
 import kd.bd.master.vo.GroupStandMap;
 import kd.bd.master.vo.GroupVo;
+import kd.bos.algo.DataSet;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.db.DB;
+import kd.bos.db.DBRoute;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.exception.KDBizException;
+import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -23,6 +27,7 @@ import kd.bos.servicehelper.operation.DeleteServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
+import kd.hr.hbp.common.util.HRDBUtil;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -254,7 +259,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 // 组织范围内属性页签
                 DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, object.getDynamicObject("org").getPkValue())});
                 if (loadSingle != null) {
-                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> d.getDynamicObject("nckd_org").getPkValue() == object.getDynamicObject("org").getPkValue()).collect(Collectors.toList());
+                    List<DynamicObject> collect = loadSingle.getDynamicObjectCollection("nckd_entryentity").stream().filter(d -> Objects.equals(d.getDynamicObject("nckd_org").getPkValue(), object.getDynamicObject("org").getPkValue())).collect(Collectors.toList());
                     List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                     if (materialproperty.contains("2")) {
                         // 计划基本信息
@@ -278,7 +283,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             if (!operationResult.isSuccess()) {
                 errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败");
             } else {
-                if(!"3".equals(billType)){
+                if (!"3".equals(billType)) {
                     // 提交
                     OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
                     if (!submitOperate.isSuccess()) {
@@ -375,21 +380,49 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 materialObject.set("enableasset", true);//可资产
                 break;
         }
-        if (dynamicObject.getBoolean("nckd_producmaterial")) {
+//        if (dynamicObject.getBoolean("nckd_producmaterial")) {
+//            materialObject.set("isuseauxpty", true);//启用辅助属性
+//            DynamicObjectCollection entryentity = materialObject.getDynamicObjectCollection("auxptyentry");
+//            //查询辅助属性matscmproapentry
+//            QFilter qFilter = new QFilter("flexid.formid", QCP.equals, "bd_flexauxprop");
+//            DynamicObject[] matscmproapentry = BusinessDataServiceHelper.load("bd_auxproperty", "id,number,name,valuetype,valuesource", qFilter.toArray());
+//            Arrays.stream(matscmproapentry).forEach(dynamicObject1 -> {
+//                DynamicObject addNew = entryentity.addNew();
+//                // 辅助属性
+//                addNew.set("auxpty", dynamicObject1);
+//                // 影响计划
+//                addNew.set("isaffectplan", false);
+//            });
+//
+//        }
+
+        // 辅助属性
+        QFilter qFilter = new QFilter("nckd_entryentity.nckd_materialclassify", QCP.equals, dynamicObject.getDynamicObject("nckd_materialclassify").getLong("id"))
+                .and("nckd_entryentity.nckd_auxptyflag", QCP.equals, "1");
+        DynamicObject object = BusinessDataServiceHelper.loadSingle("nckd_owningauxpty", qFilter.toArray());
+        if (object != null) {
+            DynamicObject object1 = object.getDynamicObjectCollection("nckd_entryentity").stream()
+                    .filter(t -> t.getDynamicObject("nckd_materialclassify").getLong("id") == dynamicObject.getDynamicObject("nckd_materialclassify").getLong("id") && t.getBoolean("nckd_auxptyflag"))
+                    .findFirst().orElse(null);
+
+            // 获取辅助属性（多选基础资料）
+            StringBuffer stringBuffer = new StringBuffer("select t.fbasedataid from tk_nckd_owningauxptyattri t where t.fentryid = ?");
+            Object[] param = {object1.getPkValue()};
+            DataSet dataSet = DB.queryDataSet("tk_nckd_owningauxptyattri", new DBRoute("scm"), stringBuffer.toString(), param);
+            ORM orm = ORM.create();
+            DynamicObjectCollection dynamicObjects = orm.toPlainDynamicObjectCollection(dataSet);
+
             materialObject.set("isuseauxpty", true);//启用辅助属性
             DynamicObjectCollection entryentity = materialObject.getDynamicObjectCollection("auxptyentry");
-            //查询辅助属性matscmproapentry
-            QFilter qFilter = new QFilter("flexid.formid", QCP.equals, "bd_flexauxprop");
-            DynamicObject[] matscmproapentry = BusinessDataServiceHelper.load("bd_auxproperty", "id,number,name,valuetype,valuesource", qFilter.toArray());
-            Arrays.stream(matscmproapentry).forEach(dynamicObject1 -> {
+            dynamicObjects.stream().forEach(t -> {
                 DynamicObject addNew = entryentity.addNew();
                 // 辅助属性
-                addNew.set("auxpty", dynamicObject1);
+                addNew.set("auxpty", BusinessDataServiceHelper.loadSingle(t.get("fbasedataid"),"bd_auxproperty"));
                 // 影响计划
                 addNew.set("isaffectplan", false);
             });
-
         }
+
         //调用保存操作
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
         if (!saveOperationResult.isSuccess()) {
