@@ -107,7 +107,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                         // 物料采购员信息
                         this.buyerInfo(data);
                         // 质检基本信息
-                        this.inspectInfo(data);
+//                        this.inspectInfo(data);
                         break;
                 }
             }
