@@ -15,7 +15,6 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.fi.fa.business.enums.lease.LeaseContractRentSettleStatus;
 import kd.fi.fa.business.utils.FaMutexRequireUtil;
 import kd.fi.fa.po.GenInterestDetailParamPo;
-import nckd.yanye.fi.plugin.operate.SalaryRetirRentSettleGenerator;
 import nckd.yanye.fi.plugin.validator.SalaryRetirSettleValidator;
 
 

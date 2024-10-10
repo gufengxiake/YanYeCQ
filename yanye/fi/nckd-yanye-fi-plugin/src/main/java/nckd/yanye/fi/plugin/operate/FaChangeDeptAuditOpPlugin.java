@@ -16,7 +16,8 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.workflow.MessageCenterServiceHelper;
 import kd.bos.workflow.engine.msg.info.MessageInfo;
-import kd.tmc.cim.common.util.StringUtils;
+import org.apache.commons.lang3.StringUtils;
+
 
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;

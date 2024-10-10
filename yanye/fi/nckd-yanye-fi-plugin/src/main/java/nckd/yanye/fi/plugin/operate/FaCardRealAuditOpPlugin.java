@@ -1,15 +1,12 @@
 package nckd.yanye.fi.plugin.operate;
 
 
-import com.icbc.api.internal.apache.http.impl.cookie.S;
-import kd.bos.bec.api.IEventServicePlugin;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.ILocaleString;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
-import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.logging.Log;
@@ -20,10 +17,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.workflow.MessageCenterServiceHelper;
 import kd.bos.workflow.engine.msg.info.MessageInfo;
-import kd.scmc.scmdi.common.vo.bos.MessageChannel;
-import kd.tmc.cim.common.util.StringUtils;
-
-
+import org.apache.commons.lang3.StringUtils;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
