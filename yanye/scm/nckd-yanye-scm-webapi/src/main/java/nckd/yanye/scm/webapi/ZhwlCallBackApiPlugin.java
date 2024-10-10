@@ -143,21 +143,47 @@ public class ZhwlCallBackApiPlugin implements Serializable {
         if (Objects.isNull(nckd_billtype)){
             return CustomApiResult.fail("false","传入业务类型数据错误");
         }
-        //派车单号
-        if (Objects.isNull(nckd_carsysno)){
-            return CustomApiResult.fail("false","传入派车单号数据错误");
-        }
-        //来源单据ID
-        if (Objects.isNull(nckd_orderid)){
-            return CustomApiResult.fail("false","传入来源单据ID数据错误");
-        }
-        //来源单据实体
-        if (Objects.isNull(nckd_srcbillentity)){
-            return CustomApiResult.fail("false","传入来源单据实体数据错误");
-        }
-        //单据日期
-        if (Objects.isNull(nckd_date)){
-            return CustomApiResult.fail("false","传入单据日期数据错误");
+        if("1".equals(nckd_billtype) || "2".equals(nckd_billtype)){
+            //派车单号
+            if (Objects.isNull(nckd_carsysno)){
+                return CustomApiResult.fail("false","传入派车单号数据错误");
+            }
+            //来源单据ID
+            if (Objects.isNull(nckd_orderid)){
+                return CustomApiResult.fail("false","传入来源单据ID数据错误");
+            }
+            //来源单据实体
+            if (Objects.isNull(nckd_srcbillentity)){
+                return CustomApiResult.fail("false","传入来源单据实体数据错误");
+            }
+            //单据日期
+            if (Objects.isNull(nckd_date)){
+                return CustomApiResult.fail("false","传入单据日期数据错误");
+            }
+            //来源单据ID(表体)
+            if (Objects.isNull(nckd_srcbillid)){
+                return CustomApiResult.fail("false","传入来源单据ID(表体)数据错误");
+            }
+            //发货仓库编码
+            if (Objects.isNull(nckd_warehouse)){
+                return CustomApiResult.fail("false","传入发货仓库编码数据错误");
+            }
+            //入库仓库编码
+            if (Objects.isNull(nckd_inwarehouse)){
+                return CustomApiResult.fail("false","传入入库仓库编码数据错误");
+            }
+            //皮重
+            if (Objects.isNull(nckd_tare)){
+                return CustomApiResult.fail("false","传入皮重数据错误");
+            }
+            //净重
+            if (Objects.isNull(nckd_netweight)){
+                return CustomApiResult.fail("false","传入净重数据错误");
+            }
+            //发货数量
+            if (Objects.isNull(nckd_qty)){
+                return CustomApiResult.fail("false","传入发货数量数据错误");
+            }
         }
         //司机
         if (Objects.isNull(nckd_driver)){
@@ -167,33 +193,9 @@ public class ZhwlCallBackApiPlugin implements Serializable {
         if (Objects.isNull(carno)){
             return CustomApiResult.fail("false","传入车辆号数据错误");
         }
-        //来源单据ID(表体)
-        if (Objects.isNull(nckd_srcbillid)){
-            return CustomApiResult.fail("false","传入来源单据ID(表体)数据错误");
-        }
-        //发货仓库编码
-        if (Objects.isNull(nckd_warehouse)){
-            return CustomApiResult.fail("false","传入发货仓库编码数据错误");
-        }
-        //入库仓库编码
-        if (Objects.isNull(nckd_inwarehouse)){
-            return CustomApiResult.fail("false","传入入库仓库编码数据错误");
-        }
         //毛重
         if (Objects.isNull(nckd_grossweight)){
             return CustomApiResult.fail("false","传入毛重数据错误");
-        }
-        //皮重
-        if (Objects.isNull(nckd_tare)){
-            return CustomApiResult.fail("false","传入皮重数据错误");
-        }
-        //净重
-        if (Objects.isNull(nckd_netweight)){
-            return CustomApiResult.fail("false","传入净重数据错误");
-        }
-        //发货数量
-        if (Objects.isNull(nckd_qty)){
-            return CustomApiResult.fail("false","传入发货数量数据错误");
         }
 
         //加事务
