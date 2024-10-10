@@ -41,7 +41,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
         this.addItemClickListeners("nckd_generateinventory");
     }
 
-    @Override
+    /*@Override
     public void itemClick(ItemClickEvent evt) {
         super.itemClick(evt);
         String itemKey = evt.getItemKey();
@@ -49,7 +49,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             //巴拉巴拉
             String operationKey = evt.getOperationKey();
         }
-    }
+    }*/
 
     @Override
     public void afterDoOperation(AfterDoOperationEventArgs afterDoOperationEventArgs) {
