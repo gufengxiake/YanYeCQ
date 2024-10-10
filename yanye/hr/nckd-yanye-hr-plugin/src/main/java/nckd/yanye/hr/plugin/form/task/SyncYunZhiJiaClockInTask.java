@@ -73,7 +73,9 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
         DynamicObject[] signcards = BusinessDataServiceHelper.load(
                 "wtpd_signcard",
                 "attcard,nckd_cardid",
-                null
+                new QFilter[]{
+                        new QFilter("signpoint", QCP.large_equals, new Date().getTime() - 5 * 24 * 60 * 60 * 1000)
+                }
         );
         HashSet<String> signCardSet = new HashSet<>();
         for (DynamicObject signcard : signcards) {

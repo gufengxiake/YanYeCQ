@@ -8,11 +8,10 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.StringUtils;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.IDecAdjApprExtPlugin;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.event.AfterF7PersonSelectEvent;
-import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
+import nckd.base.common.utils.capp.CappConfig;
 
-import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -44,14 +43,17 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
             if (salaryadjrsn == null) {
                 return;
             }
-            // 组织范围：针对晶昊公司和富达公司
+            // 组织范围：针对晶昊公司
             DynamicObject org = adjapprBill.getDynamicObject("org");
-            String orgName = org.getString("name");
+            String orgNumber = org.getString("number");
+            String orgNumberString = CappConfig.getConfigValue("jinghao_orgnumber", "119.01");
+            String[] checkOrgNumbers = orgNumberString.split(",");
+
             String salaryadjrsnName = salaryadjrsn.getString("name");
             // 生效日期
             Date effectivedate = adjapprBill.getDate("effectivedate");
             if ("年度绩效调薪".equals(salaryadjrsnName) &&
-                    ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
+                    Arrays.asList(checkOrgNumbers).contains(orgNumber)) {
                 addAllYearPerson(adjObj, effectivedate);
             }
         }

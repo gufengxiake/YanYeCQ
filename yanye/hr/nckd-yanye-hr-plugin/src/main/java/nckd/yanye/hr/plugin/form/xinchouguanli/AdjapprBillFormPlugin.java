@@ -16,6 +16,7 @@ import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
 import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
+import nckd.base.common.utils.capp.CappConfig;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -41,11 +42,13 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             return;
         }
         String salaryadjrsnName = salaryadjrsn.getString("name");
-        // 定调薪范围-调动调薪  组织范围-针对晶昊公司和富达公司
+        // 定调薪范围-调动调薪  组织范围-针对晶昊公司
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
-        String orgName = org.getString("name");
+        String orgNumber = org.getString("number");
+        String orgNumberString = CappConfig.getConfigValue("jinghao_orgnumber", "119.01");
+        String[] checkOrgNumbers = orgNumberString.split(",");
         if ("调动调薪".equals(salaryadjrsnName) &&
-                ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
+                Arrays.asList(checkOrgNumbers).contains(orgNumber)) {
             for (int rowIndex = 0; rowIndex < entryentity.size(); rowIndex++) {
                 DecAdjApprFormUtils.setEnable(this.getView(), Boolean.FALSE, rowIndex, "dy_rank");
             }
@@ -73,14 +76,17 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         if (salaryadjrsn == null) {
             return;
         }
-        // 组织范围：针对晶昊公司和富达公司
+        // 组织范围：针对晶昊公司
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         String orgName = org.getString("name");
+        String orgNumber = org.getString("number");
+        String orgNumberString = CappConfig.getConfigValue("jinghao_orgnumber", "119.01");
+        String[] checkOrgNumbers = orgNumberString.split(",");
         String salaryadjrsnName = salaryadjrsn.getString("name");
 
         if ("dy_grade".equals(propertyName)) {
             if ("调动调薪".equals(salaryadjrsnName) &&
-                    ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
+                    Arrays.asList(checkOrgNumbers).contains(orgNumber)) {
                 autoGetRank(model, changeRowIndex);
             }
         }
@@ -92,12 +98,14 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         String itemKey = e.getItemKey();
         // 添加所有年度绩效调薪人员
         if ("advconbaritemap".equals(itemKey)) {
-            // 组织范围：针对晶昊公司和富达公司
+            // 组织范围：针对晶昊公司
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             if (org == null) {
                 throw new KDBizException("请先填写基本信息中的薪酬管理组织");
             }
-            String orgName = org.getString("name");
+            String orgNumber = org.getString("number");
+            String orgNumberString = CappConfig.getConfigValue("jinghao_orgnumber", "119.01");
+            String[] checkOrgNumbers = orgNumberString.split(",");
             DynamicObject salaryadjrsn = (DynamicObject) this.getModel().getValue("salaryadjrsn");
             if (salaryadjrsn == null) {
                 throw new KDBizException("请先填写基本信息中的定调薪类型");
@@ -106,7 +114,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             String salaryadjrsnName = salaryadjrsn.getString("name");
 
             if ("年度绩效调薪".equals(salaryadjrsnName) &&
-                    ("晶昊本部".equals(orgName) || "江西富达盐化有限公司".equals(orgName))) {
+                    Arrays.asList(checkOrgNumbers).contains(orgNumber)) {
                 // 默认生效日期
                 Date defaultEffectiveDate = (Date) this.getModel().getValue("effectivedate");
                 if (defaultEffectiveDate == null) {
