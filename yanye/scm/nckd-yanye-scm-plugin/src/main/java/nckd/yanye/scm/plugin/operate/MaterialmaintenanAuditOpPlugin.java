@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.ObjectUtil;
@@ -77,7 +78,7 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
                         // 组织范围内属性页签
                         DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
                         if (dynamicObject != null) {
-                            List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> dynamic.getDynamicObject("nckd_org").getPkValue() == org.getPkValue()).collect(Collectors.toList());
+                            List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> Objects.equals(dynamic.getDynamicObject("nckd_org").getPkValue(), org.getPkValue())).collect(Collectors.toList());
                             List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
                             if (materialproperty.contains("2")) {
                                 // 计划基本信息
