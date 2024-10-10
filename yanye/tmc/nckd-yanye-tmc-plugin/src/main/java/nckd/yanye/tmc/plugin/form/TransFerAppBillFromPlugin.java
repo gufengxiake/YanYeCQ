@@ -28,8 +28,14 @@ public class TransFerAppBillFromPlugin extends AbstractBillPlugIn {
 
         //收款人带出申请人组织，付款组织默认集团本部，结算方式默认“电汇”；
         DynamicObject org = BusinessDataServiceHelper.loadSingle("1956460831289919488", "bos_org");
-        model.setValue("e_payorg", org);
-        model.setValue("e_payee", model.getValue("applyorg"));
+        DynamicObject applyorg = (DynamicObject) this.getModel().getValue("applyorg");
+        if (applyorg.getPkValue().equals(org.getPkValue())) {
+            model.setValue("e_payorg", null);
+            model.setValue("e_payee", model.getValue("applyorg"));
+        }else {
+            model.setValue("e_payorg", org);
+            model.setValue("e_payee", model.getValue("applyorg"));
+        }
     }
 
     @Override
@@ -47,6 +53,8 @@ public class TransFerAppBillFromPlugin extends AbstractBillPlugIn {
                 payeraccbanknumProp.setMustInput(true);
                 paymentchannelEdit.setMustInput(true);
                 paymentchannelProp.setMustInput(true);
+                this.getModel().setValue("e_payeeaccbanknum", null);
+                this.getModel().setValue("e_payeeaccbank", null);
                 this.getModel().setValue("e_payorg", null);
                 this.getModel().setValue("e_payee", null);
             } else {
@@ -57,8 +65,14 @@ public class TransFerAppBillFromPlugin extends AbstractBillPlugIn {
 
                 //收款人带出申请人组织，付款组织默认集团本部，结算方式默认“电汇”；
                 DynamicObject org = BusinessDataServiceHelper.loadSingle("1956460831289919488", "bos_org");
-                this.getModel().setValue("e_payorg", org);
-                this.getModel().setValue("e_payee", this.getModel().getValue("applyorg"));
+                DynamicObject applyorg = (DynamicObject) this.getModel().getValue("applyorg");
+                if (applyorg.getPkValue().equals(org.getPkValue())) {
+                    this.getModel().setValue("e_payorg", null);
+                    this.getModel().setValue("e_payee", this.getModel().getValue("applyorg"));
+                }else {
+                    this.getModel().setValue("e_payorg", org);
+                    this.getModel().setValue("e_payee", this.getModel().getValue("applyorg"));
+                }
             }
         }
     }
