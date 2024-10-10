@@ -69,18 +69,19 @@ public class PurcontractOpPlugin extends AbstractOperationServicePlugIn {
                         //构造成key = id ; value = 物料名称
                         Map<Object, String> mapIdAndName = entryColl.stream().filter(e -> !ObjectUtils.isEmpty(e.getDynamicObject("material")))
                                 .collect(Collectors.toMap(k -> k.getDynamicObject("material").getPkValue(), v -> v.getDynamicObject("material").getDynamicObject("masterid").getString("name")));
-                        //构造查询条件 ，这里没办法 每个合同的条件都不一样
-                        QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue())
-                                .and("billstatus", QCP.equals, "C")
-                                .and("validstatus", QCP.equals, "B")
-                                .and("closestatus", QCP.equals, "A")
-                                .and("terminatestatus", QCP.equals, "A")
-                                .and("billentry.material", QCP.in, mapIdAndSeq.keySet())
+                        //构造查询条件 ，这里没办法 每个合同的条件都不一样 //  QFilter 条件注释清楚
+                        QFilter qFilter = new QFilter("org", QCP.equals, org.getPkValue()) //采购组织
+                                .and("billstatus", QCP.equals, "C") //单据状态
+                                .and("validstatus", QCP.equals, "B") //生效状态
+                                .and("closestatus", QCP.equals, "A") //关闭状态
+                                .and("terminatestatus", QCP.equals, "A") //种植状态
+                                .and("billentry.material", QCP.in, mapIdAndSeq.keySet()) //物料编码
+                                //起始日期 截止日期
                                 .and(new QFilter("biztimebegin", QCP.less_equals, biztimebegin).and("biztimeend", QCP.large_equals, biztimebegin)
                                         .or(new QFilter("biztimebegin", QCP.less_equals, biztimeend).and("biztimeend", QCP.large_equals, biztimeend))
                                         .or(new QFilter("biztimebegin", QCP.large_equals, biztimebegin).and("biztimeend", QCP.less_equals, biztimeend)));
                         if (ObjectUtil.isNotEmpty(supplier)) {
-                            qFilter.and("supplier", QCP.equals, supplier.getPkValue());
+                            qFilter.and("supplier", QCP.equals, supplier.getPkValue()); //订货供应商
                         }
                         //String entityName, String selectProperties, QFilter[] filters
                         DynamicObject[] purcontractArr = BusinessDataServiceHelper.load("conm_purcontract", "id,billno,billentry.material,billentry.seq", qFilter.toArray());
