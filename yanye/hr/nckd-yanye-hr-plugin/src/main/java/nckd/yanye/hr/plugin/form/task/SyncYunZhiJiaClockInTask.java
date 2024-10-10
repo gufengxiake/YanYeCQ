@@ -74,7 +74,7 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
                 "wtpd_signcard",
                 "attcard,nckd_cardid",
                 new QFilter[]{
-                        new QFilter("signpoint", QCP.large_equals, new Date().getTime() - 5 * 24 * 60 * 60 * 1000)
+                        new QFilter("signpoint", QCP.large_equals, new Date(new Date().getTime() - 5 * 24 * 60 * 60 * 1000))
                 }
         );
         HashSet<String> signCardSet = new HashSet<>();
