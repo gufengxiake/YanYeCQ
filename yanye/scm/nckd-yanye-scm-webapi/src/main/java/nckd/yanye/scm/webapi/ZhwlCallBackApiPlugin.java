@@ -28,10 +28,8 @@ import org.apache.cxf.Bus;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 对接智慧物流系统api
@@ -137,7 +135,8 @@ public class ZhwlCallBackApiPlugin implements Serializable {
             @ApiParam(value = "车皮号") String nckd_railwaywagon,
             @ApiParam(value = "客户名称") String nckd_customer,
             @ApiParam(value = "采样流水id") String nckd_waterid,
-            @ApiParam(value = "采样桶号") String nckd_bucket
+            @ApiParam(value = "采样桶号") String nckd_bucket,
+            @ApiParam(value = "毛重时间") String nckd_grosstime
     ) {
         //业务类型
         if (Objects.isNull(nckd_billtype)){
@@ -318,28 +317,49 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                     if (Objects.isNull(nckd_bucket)){
                         return CustomApiResult.fail("false","业务类型为采购时，采样桶号必填");
                     }
+                    //毛重时间
+                    if (Objects.isNull(nckd_grosstime)){
+                        return CustomApiResult.fail("false","业务类型为采购时，毛重时间必填");
+                    }
                     //生成电子磅单
                     DynamicObject eleweighing = BusinessDataServiceHelper.newDynamicObject("nckd_eleweighing");
                     CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(eleweighing.getDataEntityType().getName(), eleweighing, null);
                     String number = CodeRuleServiceHelper.getNumber(codeRule, eleweighing);
                     //DynamicObject billType = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("id", QCP.equals, "2057962852278348800")});
-                    DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier", "id,name", new QFilter[]{new QFilter("name", QCP.equals, nckd_customer)});
+                    //DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier", "id,name", new QFilter[]{new QFilter("name", QCP.equals, nckd_customer)});
                     DynamicObject vehicle = BusinessDataServiceHelper.loadSingle( "nckd_vehicle","id,name",new QFilter[]{new QFilter("name",QCP.equals,carno)});
                     DynamicObject driver = BusinessDataServiceHelper.loadSingle("nckd_driver","id,name",new QFilter[]{new QFilter("name",QCP.equals,nckd_driver)});
                     DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", "id,name", new QFilter[]{new QFilter("name", QCP.equals, "石灰石（60一120mm）")});
+                    SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+                    DynamicObject supplierControl = BusinessDataServiceHelper.loadSingle("nckd_supplier_control", "id,nckd_entryentity,nckd_entryentity.nckd_suppliername,nckd_entryentity.nckd_supplier", new QFilter[]{new QFilter("nckd_entryentity.nckd_suppliername", QCP.equals, nckd_customer)});
 
                     eleweighing.set("billno",number);
                     eleweighing.set("billstatus","A");
-                    eleweighing.set("org",100000);
+                    eleweighing.set("org",1994936229107338240L);
+                    eleweighing.set("nckd_stockorg",1994936229107338240L);
                     eleweighing.set("nckd_billtype",2057962852278348800L);
                     eleweighing.set("nckd_currency",1);
                     eleweighing.set("nckd_settlecurrency",1);
                     eleweighing.set("nckd_paymode","CREDIT");
                     eleweighing.set("nckd_bucket",nckd_bucket);
                     eleweighing.set("nckd_waterid",nckd_waterid);
-                    eleweighing.set("nckd_qygys",supplier);
                     eleweighing.set("nckd_vehicle",vehicle);//车号
                     eleweighing.set("nckd_driver",driver);//司机
+                    eleweighing.set("nckd_statu","A");
+                    eleweighing.set("nckd_remarks",carno);
+                    Date date = null;
+                    try {
+                        date =  simpleDateFormat.parse(nckd_grosstime);
+                        eleweighing.set("nckd_date",date);
+                    }catch (Exception e){
+                        eleweighing.set("nckd_date",date);
+                    }
+                    if (supplierControl == null){
+                        eleweighing.set("nckd_qygys",null);
+                    }else {
+                        DynamicObject supplier = supplierControl.getDynamicObjectCollection("nckd_entryentity").size() > 0 ? supplierControl.getDynamicObjectCollection("nckd_entryentity").get(0).getDynamicObject("nckd_supplier") : null;
+                        eleweighing.set("nckd_supplier",supplier);
+                    }
                     DynamicObjectCollection entryentity = eleweighing.getDynamicObjectCollection("entryentity");
                     DynamicObject entry = entryentity.addNew();
                     entry.set("nckd_materiel",material);
