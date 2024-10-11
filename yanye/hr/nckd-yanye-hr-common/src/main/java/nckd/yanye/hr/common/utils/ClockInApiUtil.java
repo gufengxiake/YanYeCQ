@@ -57,8 +57,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                bodyString.substring(0, Math.min(2000, bodyString.length())),
-                responseJsonString.substring(0, Math.min(2000, responseJsonString.length()))
+                bodyString,
+                responseJsonString
         );
 
         if (responseJson.getBoolean("success")) {
@@ -124,8 +124,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                bodyString.substring(0, Math.min(2000, bodyString.length())),
-                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
+                bodyString,
+                responseObjString
         );
         if (responseObj.getBoolean("success")) {
             JSONArray data = responseObj.getJSONArray("data");
@@ -164,8 +164,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                formString.substring(0, Math.min(2000, formString.length())),
-                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
+                formString,
+                responseObjString
         );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
@@ -261,8 +261,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                bodyString.substring(0, Math.min(2000, bodyString.length())),
-                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
+                bodyString,
+                responseObjString
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj;
@@ -328,8 +328,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                bodyString.substring(0, Math.min(2000, bodyString.length())),
-                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
+                bodyString,
+                responseObjString
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj.getJSONObject("result").getJSONArray("dept_id_list");
@@ -401,8 +401,8 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                bodyString.substring(0, Math.min(2000, bodyString.length())),
-                responseString.substring(0, Math.min(2000, responseString.length()))
+                bodyString,
+                responseString
         );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
