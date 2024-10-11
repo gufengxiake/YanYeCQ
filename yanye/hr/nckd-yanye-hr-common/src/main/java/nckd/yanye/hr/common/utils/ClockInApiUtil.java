@@ -55,7 +55,7 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
+                body.toString(),
                 responseJson.toString()
         );
 
@@ -120,7 +120,7 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
+                body.toString(),
                 responseObj.toString()
         );
         if (responseObj.getBoolean("success")) {
@@ -253,7 +253,7 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
+                body.toString(),
                 responseObj.toString()
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
@@ -318,7 +318,7 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
+                body.toString(),
                 responseObj.toString()
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
@@ -389,7 +389,7 @@ public class ClockInApiUtil {
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
+                body.toString(),
                 responseObj.toString()
         );
 

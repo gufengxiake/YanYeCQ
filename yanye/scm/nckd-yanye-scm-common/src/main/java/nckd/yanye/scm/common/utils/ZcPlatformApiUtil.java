@@ -316,7 +316,7 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                httpRequest.form().toString(),
+                string,
                 responseObj.toString()
         );
         return responseObj;
@@ -367,7 +367,7 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                httpRequest.form().toString(),
+                cancelJson.toString(),
                 responseObj.toString()
         );
         return responseObj;
@@ -484,12 +484,13 @@ public class ZcPlatformApiUtil {
         httpRequest.setMethod(Method.POST);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
-        httpRequest.body(new JSONObject() {
+        String string = new JSONObject() {
             {
                 put("bizType", bizType);
                 put("attachmentType", attachmentType);
             }
-        }.toString());
+        }.toString();
+        httpRequest.body(string);
 
         HttpResponse execute = httpRequest.execute();
 
@@ -500,7 +501,7 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                httpRequest.form().toString(),
+                string,
                 responseObj.toString()
         );
 
@@ -748,7 +749,7 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                httpRequest.form().toString(),
+                jsonObject.toString(),
                 responseObj.toString()
         );
 
@@ -799,7 +800,7 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                httpRequest.form().toString(),
+                jsonObject.toString(),
                 responseObj.toString()
         );
 
