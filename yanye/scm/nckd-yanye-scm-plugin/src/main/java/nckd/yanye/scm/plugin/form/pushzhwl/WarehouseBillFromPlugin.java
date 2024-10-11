@@ -20,11 +20,14 @@ public class WarehouseBillFromPlugin extends AbstractBillPlugIn {
         super.afterDoOperation(e);
         String key = e.getOperateKey();
         if ("audit".equals(key)){
-            OperationResult operationResult = e.getOperationResult();
-            if (operationResult.isSuccess()){
-                OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_warehouse", new DynamicObject[]{getModel().getDataEntity()}, OperateOption.create());
-                if (!pushzhwl.isSuccess()){
-                    this.getView().showMessage(pushzhwl.getMessage());
+            Boolean push = (Boolean) this.getModel().getValue("nckd_ispushwms");
+            if (push){
+                OperationResult operationResult = e.getOperationResult();
+                if (operationResult.isSuccess()){
+                    OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_warehouse", new DynamicObject[]{getModel().getDataEntity()}, OperateOption.create());
+                    if (!pushzhwl.isSuccess()){
+                        this.getView().showMessage(pushzhwl.getMessage());
+                    }
                 }
             }
         }

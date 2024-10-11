@@ -121,23 +121,23 @@ public class ZhwlCallBackApiPlugin implements Serializable {
     @ApiPostMapping(value = "/setEleWeigh", desc = "同步电子磅单数据")
     public CustomApiResult<Object> setEleWeigh(
             @ApiParam(value = "业务类型", required = true) String nckd_billtype,
-            @ApiParam(value = "派车单号", required = true) String nckd_carsysno,
-            @ApiParam(value = "来源单据实体", required = true) String nckd_srcbillentity,
-            @ApiParam(value = "来源单据ID", required = true) String nckd_orderid,
-            @ApiParam(value = "单据日期", required = true) String nckd_date,
-            @ApiParam(value = "司机", required = true) String nckd_driver,
-            @ApiParam(value = "车辆号", required = true) String carno,
-            @ApiParam(value = "来源单据ID(表体)", required = true) String nckd_srcbillid,
-            @ApiParam(value = "发货仓库编码", required = true) String nckd_warehouse,
-            @ApiParam(value = "入库仓库编码", required = true) String nckd_inwarehouse,
-            @ApiParam(value = "毛重", required = true) BigDecimal nckd_grossweight,
-            @ApiParam(value = "皮重", required = true) BigDecimal nckd_tare,
-            @ApiParam(value = "净重", required = true) BigDecimal nckd_netweight,
-            @ApiParam(value = "发货数量", required = true) BigDecimal nckd_qty,
-            @ApiParam(value = "车皮号", required = true) String nckd_railwaywagon,
-            @ApiParam(value = "客户名称", required = true) String nckd_customer,
-            @ApiParam(value = "采样流水id", required = true) String nckd_waterid,
-            @ApiParam(value = "采样桶号", required = true) String nckd_bucket
+            @ApiParam(value = "派车单号") String nckd_carsysno,
+            @ApiParam(value = "来源单据实体") String nckd_srcbillentity,
+            @ApiParam(value = "来源单据ID") String nckd_orderid,
+            @ApiParam(value = "单据日期") String nckd_date,
+            @ApiParam(value = "司机") String nckd_driver,
+            @ApiParam(value = "车辆号") String carno,
+            @ApiParam(value = "来源单据ID(表体)") String nckd_srcbillid,
+            @ApiParam(value = "发货仓库编码") String nckd_warehouse,
+            @ApiParam(value = "入库仓库编码") String nckd_inwarehouse,
+            @ApiParam(value = "毛重") BigDecimal nckd_grossweight,
+            @ApiParam(value = "皮重") BigDecimal nckd_tare,
+            @ApiParam(value = "净重") BigDecimal nckd_netweight,
+            @ApiParam(value = "发货数量") BigDecimal nckd_qty,
+            @ApiParam(value = "车皮号") String nckd_railwaywagon,
+            @ApiParam(value = "客户名称") String nckd_customer,
+            @ApiParam(value = "采样流水id") String nckd_waterid,
+            @ApiParam(value = "采样桶号") String nckd_bucket
     ) {
         //业务类型
         if (Objects.isNull(nckd_billtype)){

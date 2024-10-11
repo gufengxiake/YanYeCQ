@@ -29,9 +29,12 @@ public class WarehouseListPlugin extends AbstractListPlugin {
             if (operationResult.isSuccess()){
                 for (ListSelectedRow row : selectedRows) {
                     DynamicObject warehouse = BusinessDataServiceHelper.loadSingle(row.getPrimaryKeyValue(), "bd_warehouse");
-                    OperationResult pushzzwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_warehouse", new DynamicObject[]{warehouse}, OperateOption.create());
-                    if (!pushzzwl.isSuccess()){
-                        this.getView().showMessage("仓库：" +warehouse.getString("name") + pushzzwl.getMessage());
+                    boolean push = warehouse.getBoolean("nckd_ispushwms");
+                    if (push){
+                        OperationResult pushzzwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_warehouse", new DynamicObject[]{warehouse}, OperateOption.create());
+                        if (!pushzzwl.isSuccess()){
+                            this.getView().showMessage("仓库：" +warehouse.getString("name") + pushzzwl.getMessage());
+                        }
                     }
                 }
             }

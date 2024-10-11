@@ -107,6 +107,6 @@ public class HttpRequestUtils {
         generalLog.set("status", "C");
         generalLog.set("enable", "1");
 
-        OperationServiceHelper.executeOperate("save", map.get("number").toString(), new DynamicObject[]{generalLog}, OperateOption.create());
+        SaveServiceHelper.save(new DynamicObject[]{generalLog});
     }
 }
