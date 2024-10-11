@@ -171,9 +171,9 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             // 本次薪酬标准表
             DynamicObject salarystd = entry.getDynamicObject("dy_salarystd");
             long salaryStdId = salarystd.getLong("id");
-            // 上次薪酬标准表
-            DynamicObject preSalarystd = entry.getDynamicObject("dy_presalarystd");
-            long preSalaryStdId = preSalarystd.getLong("id");
+            // 上次薪酬标准表 （并不需要用到上次薪酬标准表）
+//            DynamicObject preSalarystd = entry.getDynamicObject("dy_presalarystd");
+//            long preSalaryStdId = preSalarystd.getLong("id");
 
             // SPI接口2：获取标准表的薪档信息
             Map<Long, List<Map<String, Object>>> resultMap = SalaryStdQueryService.get().getRankInfo(Collections.singleton(salaryStdId));
@@ -199,36 +199,14 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     .map(map -> (Long) map.get("rankId"))
                     .collect(Collectors.toList());
 
-
-            // 上次1档id和2档id，所有档
-            Map<Long, List<Map<String, Object>>> preResultMap = SalaryStdQueryService.get().getRankInfo(Collections.singleton(preSalaryStdId));
-            if (preResultMap == null || preResultMap.isEmpty()) {
-                continue;
-            }
-            List<Map<String, Object>> preRankMap = preResultMap.get(preSalaryStdId);
-
-            Long preRankId1 = preRankMap.stream()
-                    .filter(map -> (int) map.get("rankIndex") == 1)
-                    .map(map -> (Long) map.get("rankId"))
-                    .findFirst()
-                    .orElse(null);
-
-            Long preRankId2 = preRankMap.stream()
-                    .filter(map -> (int) map.get("rankIndex") == 2)
-                    .map(map -> (Long) map.get("rankId"))
-                    .findFirst()
-                    .orElse(null);
-
-            List<Long> preRankList = preRankMap.stream()
-                    .map(map -> (Long) map.get("rankId"))
-                    .collect(Collectors.toList());
-
             // 定调薪项目id
             long itemId = entry.getDynamicObject("dy_standarditem").getLong("id");
             // 本次薪等id
             long gradeId = grade.getLong("id");
             // 上次薪等id
             long preGradeId = pregrade.getLong("id");
+            // 由于上次和本次的薪酬标准表会不同，把上次的薪等id转换为本次的对应薪等id
+            preGradeId = test(salaryStdId, preGradeIndex);
 
 
             // 获取金额
@@ -245,12 +223,12 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             );
             queryParams.add(
                     getStdAmountQueryParam(
-                            preSalaryStdId, itemId, preGradeId, preRankId1, "pre1"
+                            salaryStdId, itemId, preGradeId, rankId1, "pre1"
                     )
             );
             queryParams.add(
                     getStdAmountQueryParam(
-                            preSalaryStdId, itemId, preGradeId, preRankId2, "pre2"
+                            salaryStdId, itemId, preGradeId, rankId2, "pre2"
                     )
             );
             // 查询
@@ -323,7 +301,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 // 查询
                 List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults =
                         getSalaryCountAmountMatchResults(
-                                preSalaryStdId, itemId, preGradeId, finalAmount, preRankList, "down", "3", "1"
+                                salaryStdId, itemId, preGradeId, finalAmount, rankList, "down", "3", "1"
                         );
 
                 finalRankId = salaryCountAmountMatchResults.stream()
@@ -333,7 +311,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 if (finalRankId == null) {
                     Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream().filter(r -> "down".equals(r.getUnionId()))
                             .findFirst().map(SalaryCountAmountMatchResult::getPositionInfo).orElse(null);
-                    Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
+                    Pair<Long, Long> longLongPair = positionInfo.get(preGradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
             }
@@ -344,6 +322,16 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
             model.setValue("dy_nckd_notesinfo", notesInfo, thisRowIndex);
             DecAdjApprFormUtils.setEnable(this.getView(), Boolean.FALSE, thisRowIndex, "dy_rank");
         }
+    }
+
+    private Long test(long salaryStdId, int preGradeIndex) {
+        // 本次标准表的薪等信息
+        Map<Long, List<Map<String, Object>>> thisGradeInfo = SalaryStdQueryService.get().getGradeInfo(Collections.singleton(salaryStdId));
+        // 获取上次标准表中的薪等序号，所对应本次的薪等的id
+        Long preGradeId = thisGradeInfo.get(salaryStdId).stream()
+                .filter(v -> v.get("gradeIndex").equals(preGradeIndex))
+                .findFirst().map(v -> (Long) v.get("gradeId")).orElse(null);
+        return preGradeId;
     }
 
 
