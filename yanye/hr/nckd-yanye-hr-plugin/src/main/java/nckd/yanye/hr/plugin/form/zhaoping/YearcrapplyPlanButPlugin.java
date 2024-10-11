@@ -1,9 +1,6 @@
-package nckd.yanye.hr.plugin.form.bianzhi;
+package nckd.yanye.hr.plugin.form.zhaoping;
 
 
-
-
-import java.util.*;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.logging.Log;
@@ -12,19 +9,23 @@ import kd.bos.orm.query.QFilter;
 import kd.swc.hsbp.business.servicehelper.SWCDataServiceHelper;
 import kd.swc.hsbp.opplugin.web.SWCCoreBaseBillOp;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 /**
- * Module           :HR中控服务云-HR基础组织-人力编制-编制调整申请 审批流按钮操作插件
+ * Module           :人才供应云-招聘直通车-首页-年度招聘计划
  * Description      :审批流按钮操作插件
  *
  * @author guozhiwei
- * @date  2024/9/25 11：21
- * 标识 nckd_preadjustapplic
+ * @date  2024/10/11 11：06
+ * 标识 nckd_yearapply
  */
 
-public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
 
-    private static Log logger = LogFactory.getLog(PrepareAdjustButPlugin.class);
+public class YearcrapplyPlanButPlugin extends SWCCoreBaseBillOp {
+
+    private static Log logger = LogFactory.getLog(YearcrapplyPlanButPlugin.class);
 
 
     public void beginOperationTransaction(BeginOperationTransactionArgs args) {
@@ -40,25 +41,21 @@ public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
             billIdList.add(id);
         }
 
-        SWCDataServiceHelper helper = new SWCDataServiceHelper("nckd_preadjustapplic");
+        SWCDataServiceHelper helper = new SWCDataServiceHelper("nckd_yearcasreplan");
         QFilter filter = new QFilter("id", "in", billIdList);
         DynamicObject[] needUpdateBillDy = helper.query("id,billstatus", new QFilter[]{filter});
 
         switch (args.getOperationKey()) {
             case "wfauditnotpass":
-                // 审批不通过
                 this.setApproveStatus(needUpdateBillDy, "E");
                 break;
             case "wfrejecttosubmit":
-                // 驳回到提交人
                 this.setApproveStatus(needUpdateBillDy, "A");
                 break;
             case "wfauditing":
-                // 审批中
                 this.setApproveStatus(needUpdateBillDy, "D");
                 break;
             case "wfauditpass":
-                // 审批通过
                 this.setApproveStatus(needUpdateBillDy, "C");
                 break;
             default:
@@ -71,6 +68,8 @@ public class PrepareAdjustButPlugin extends SWCCoreBaseBillOp {
     private void setApproveStatus(DynamicObject[] regBillObjs, String billstatus) {
         DynamicObject[] var3 = regBillObjs;
         int var4 = regBillObjs.length;
+
+
 
         for(int var5 = 0; var5 < var4; ++var5) {
             DynamicObject dynamicObject = var3[var5];
