@@ -46,17 +46,19 @@ public class ClockInApiUtil {
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.POST);
-        httpRequest.body(body.toString());
+        String bodyString = body.toString();
+        httpRequest.body(bodyString);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseJson = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseJsonString = responseJson.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                body.toString(),
-                responseJson.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseJsonString.substring(0, Math.min(2000, responseJsonString.length()))
         );
 
         if (responseJson.getBoolean("success")) {
@@ -111,17 +113,19 @@ public class ClockInApiUtil {
                 .fluentPut("openIds", userIds);
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.POST);
-        httpRequest.body(body.toString());
+        String bodyString = body.toString();
+        httpRequest.body(bodyString);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseObjString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                body.toString(),
-                responseObj.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
         );
         if (responseObj.getBoolean("success")) {
             JSONArray data = responseObj.getJSONArray("data");
@@ -153,13 +157,15 @@ public class ClockInApiUtil {
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String formString = httpRequest.form().toString();
+        String responseObjString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                httpRequest.form().toString(),
-                responseObj.toString()
+                formString.substring(0, Math.min(2000, formString.length())),
+                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
         );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {
@@ -244,17 +250,19 @@ public class ClockInApiUtil {
                 .fluentPut("language", "zh_CN")
                 // 部门ID
                 .fluentPut("dept_id", deptId);
-        httpRequest.body(body.toString());
+        String bodyString = body.toString();
+        httpRequest.body(bodyString);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseObjString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                body.toString(),
-                responseObj.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj;
@@ -309,17 +317,19 @@ public class ClockInApiUtil {
         httpRequest.setMethod(Method.POST);
         JSONObject body = new JSONObject()
                 .fluentPut("dept_id", deptId);
-        httpRequest.body(body.toString());
+        String bodyString = body.toString();
+        httpRequest.body(bodyString);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseObjString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                body.toString(),
-                responseObj.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
         );
         if ("ok".equals(responseObj.getString("errmsg"))) {
             return responseObj.getJSONObject("result").getJSONArray("dept_id_list");
@@ -380,17 +390,19 @@ public class ClockInApiUtil {
 
         HttpRequest httpRequest = HttpRequest.of(url);
         httpRequest.setMethod(Method.POST);
-        httpRequest.body(body.toString());
+        String bodyString = body.toString();
+        httpRequest.body(bodyString);
         HttpResponse execute = httpRequest.execute();
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_wtpd_signcard_ext",
                 "原始卡记录",
                 "dksj",
                 url,
-                body.toString(),
-                responseObj.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseString.substring(0, Math.min(2000, responseString.length()))
         );
 
         if ("ok".equals(responseObj.getString("errmsg"))) {

@@ -15,6 +15,7 @@ import nckd.yanye.scm.common.ZcPlatformConst;
 
 import java.io.File;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * 招采平台接口工具类
@@ -43,13 +44,14 @@ public class ZcPlatformApiUtil {
         // 输出响应内容
         JSONObject responseObj = JSON.parseObject(execute.body());
         // 记录调用日志
+        String responseObjString = responseObj.toString();
         LogUtil.newApiLog(
                 "nckd_pm_purapplybill_ext",
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObjString.substring(0, Math.min(2000, responseObjString.length()))
         );
 
         if ((boolean) responseObj.get("success")) {
@@ -92,7 +94,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if ((boolean) responseObj.get("success")) {
             JSONObject dataObject = responseObj.getJSONObject("data");
@@ -133,7 +135,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         JSONObject data = responseObj.getJSONObject("data");
         JSONArray record = data.getJSONArray("records");
@@ -178,7 +180,7 @@ public class ZcPlatformApiUtil {
                     "cggl",
                     httpRequest.getUrl(),
                     httpRequest.form().toString(),
-                    responseObj.toString()
+                    responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
             );
             if (!responseObj.getBooleanValue("success")) {
                 break;
@@ -225,7 +227,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
@@ -261,7 +263,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (!responseObj.getBooleanValue("success")) {
             throw new KDBizException("查询公司信息失败!" + responseObj.getString("message"));
@@ -279,7 +281,7 @@ public class ZcPlatformApiUtil {
      * @return 结果
      */
     public static JSONObject addOrder(ZcPlatformConst zcPlatformConst, JSONObject bodyJson, String bizType) {
-        String string = bodyJson.toString();
+        String bodyString = bodyJson.toString();
         String accessToken = getZcAccessToken(zcPlatformConst);
 
         String addorderUrl = "";
@@ -300,7 +302,7 @@ public class ZcPlatformApiUtil {
         HttpRequest httpRequest = HttpRequest.of(ZcPlatformConst.ZC_URL + addorderUrl);
 
         httpRequest.setMethod(Method.POST);
-        httpRequest.body(string);
+        httpRequest.body(bodyString);
         httpRequest.header("Authorization", "Bearer " + accessToken);
         httpRequest.header("X-Open-App-Id", zcPlatformConst.getClientId());
         httpRequest.header("x-trade-employee-id", getZcUserId(zcPlatformConst));
@@ -316,8 +318,8 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                string,
-                responseObj.toString()
+                bodyString.substring(0, Math.min(2000, bodyString.length())),
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         return responseObj;
     }
@@ -367,8 +369,8 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                cancelJson.toString(),
-                responseObj.toString()
+                cancelJson.toString().substring(0, Math.min(2000, cancelJson.toString().length())),
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         return responseObj;
     }
@@ -453,7 +455,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
 
         Integer attachmentId;
@@ -501,8 +503,8 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                string,
-                responseObj.toString()
+                string.substring(0, Math.min(2000, string.length())),
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
 
         Integer groupId;
@@ -543,7 +545,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
@@ -579,7 +581,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
@@ -616,7 +618,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONObject("data");
@@ -700,7 +702,7 @@ public class ZcPlatformApiUtil {
                 "cggl",
                 httpRequest.getUrl(),
                 httpRequest.form().toString(),
-                responseObj.toString()
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
         if (responseObj.getBooleanValue("success")) {
             return responseObj.getJSONArray("data");
@@ -749,8 +751,8 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                jsonObject.toString(),
-                responseObj.toString()
+                jsonObject.toString().substring(0, Math.min(2000, jsonObject.toString().length())),
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
 
         if (responseObj.getBooleanValue("success")) {
@@ -800,8 +802,8 @@ public class ZcPlatformApiUtil {
                 "采购申请单",
                 "cggl",
                 httpRequest.getUrl(),
-                jsonObject.toString(),
-                responseObj.toString()
+                jsonObject.toString().substring(0, Math.min(2000, jsonObject.toString().length())),
+                responseObj.toString().substring(0, Math.min(2000, responseObj.toString().length()))
         );
 
         if (responseObj.getBooleanValue("success")) {
