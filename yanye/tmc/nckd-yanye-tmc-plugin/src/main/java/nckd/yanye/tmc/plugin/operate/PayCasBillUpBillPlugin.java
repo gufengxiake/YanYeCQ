@@ -15,6 +15,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Module           :财务云-出纳-付款处理-付款金额(大写)字段回写
@@ -34,7 +35,10 @@ public class PayCasBillUpBillPlugin implements IEventServicePlugin {
         logger.info("付款处理保存处理执行插件:-------------------");
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
-        DynamicObject[] load = BusinessDataServiceHelper.load("cas_paybill", "", new QFilter[]{new QFilter("id", QCP.in, businesskeys)});
+        List<Long> businessKeyLongs = businesskeys.stream()
+                .map(Long::valueOf) // 将每个 String 转换为 Long
+                .collect(Collectors.toList());
+        DynamicObject[] load = BusinessDataServiceHelper.load("cas_paybill", "id,nckd_actpayamtupper,actpayamt", new QFilter[]{new QFilter("id", QCP.in, businessKeyLongs)});
         for (DynamicObject casPaybill : load) {
             String nckdActpayamtupper = casPaybill.getString("nckd_actpayamtupper");
             if(StringUtils.isNotEmpty(nckdActpayamtupper)){
