@@ -354,29 +354,20 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
         String dateStr = sdf.format(date);
 
         // 拼接 SQL 查询
-        StringBuilder sql = new StringBuilder("SELECT a.fid AS id, a.fboid AS boid, A.fparentid as parentorg, "
-                + "t.flevel as level1, t.fstructlongnumber as structlongnumber, ST.fcount as count,ST.fcontainsubcount as containsubcount, "
-//                    + "(select top 1 N.fstaffcount  from t_haos_adminorg M where a.fparentid = M.fboid ) as "
-                + "(select top 1 N.fstaffcount  from t_haos_adminorg M left join t_haos_dutyorgdetail N on N.fdutyorgid = M.fid "
-                + "where M.fenable ='1'  and M.fboid  =a.fboid "
-                + "AND M.fbsed <= '" + dateStr + "' AND M.fbsled >= '" + dateStr + "'  "
-                + "order by M.fhisversion desc) as staffcount "
+        // 拼接 SQL 查询 haos_stafforgempcount
+        StringBuilder sql = new StringBuilder("SELECT DISTINCT T.fstructlongnumber,ST.fcount as count "
                 + "FROM T_HAOS_ADMINORG A "
-                + "LEFT JOIN T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
-                + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON A.fboid = T.fadminorgid "
-                + "AND T.fiscurrentversion = '0' AND T.fdatastatus = '1' AND T.fstructprojectid = 1010 "
-                + "AND T.finitstatus = '2' AND T.fbsed <= '" + dateStr + "' "
-                + "AND T.fbsled >= '" + dateStr + "' AND T.fenable = '1' "
-                + "LEFT JOIN T_HAOS_ORGSORTCODE S ON S.FADMINORGID = A.fboid "
-                + "AND S.fiscurrentversion = '0' AND S.fdatastatus = '1' AND S.finitstatus = '2' "
-                + "AND S.fbsed <= '" + dateStr + "' AND S.fbsled >= '" + dateStr + "' "
-                + "AND S.fenable = '1' "
-                + "LEFT JOIN T_HAOS_DUTYORGDETAIL M ON M.fdutyorgid = A.fboid "
+                + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON a.fboid = T.fadminorgid "
+                + "left join T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
                 + "WHERE A.fiscurrentversion = '0' AND A.fdatastatus = '1' AND A.finitstatus = '2' "
                 + "AND A.fbsed <= '" + dateStr + "' AND A.fbsled >= '" + dateStr + "' "
                 + "AND A.fenable = '1' "
-                + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ?) " +") "
-                + "ORDER BY S.fsortcode");
+                + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ? "
+                + "AND F.fiscurrentversion = '0' AND F.fdatastatus = '1' AND F.fstructprojectid = 1010 "
+                + "AND F.finitstatus = '2' AND F.fbsed <= '" + dateStr + "' "
+                + "AND F.fbsled >= '" + dateStr + "' AND F.fenable = '1' "
+                +") " +") "
+        );
         Object[] param = new Object[]{(Long) orgId};
         DataSet dataSet = HRDBUtil.queryDataSet("haos_adminOrgHisSearch", new DBRoute("hr"), sql.toString(), param);
 

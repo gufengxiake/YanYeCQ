@@ -65,6 +65,7 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         super.beforeBindData(e);
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         //  组织id
+        /*
         Long pkValue = (Long) org.getPkValue();
         List<Long> longs = new ArrayList<Long>();
         longs.add(pkValue);
@@ -82,8 +83,55 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
             }
 //            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
         }
+        */
+        updateStaffCount();
         // 实际人数
         this.getModel().setValue("nckd_relnum",YearcrapplyFormPlugin.getStaffCount(org.getPkValue()));
+    }
+
+    private void updateStaffCount(){
+
+        DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+        //  组织id
+        Long pkValue = (Long) org.getPkValue();
+        List<Long> longs = new ArrayList<Long>();
+        longs.add(pkValue);
+        QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
+        // 获取组织历史查询
+        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
+        if(ObjectUtils.isNotEmpty(query)){
+            long boid = query.get(0).getLong("id");
+            // 获取填写的年度 nckd_year
+            Object nckdYear =  this.getModel().getValue("nckd_year");
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy");
+
+            if(ObjectUtils.isEmpty(nckdYear)){
+                nckdYear = new Date();
+            }else{
+                nckdYear = (Date) nckdYear;
+            }
+            String dateStr = sdf.format(nckdYear);
+//            QFilter qFilter2 = new QFilter("staff.year", QCP.like, dateStr + "%");
+            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
+
+            DynamicObject[] haosDutyorgdetail = BusinessDataServiceHelper.load( "haos_dutyorgdetail","id,dutyorg,staff,staffcount",new QFilter[]{qFilter1});
+            if(ObjectUtils.isNotEmpty(haosDutyorgdetail)){
+                for (DynamicObject dynamicObject : haosDutyorgdetail) {
+                    String format = sdf.format(dynamicObject.getDate("staff.year"));
+                    if(dateStr.equals(format)){
+                        int staffcount = dynamicObject.getInt("staffcount");
+                        this.getModel().setValue("nckd_sftaffcount",staffcount);
+                        return;
+                    }
+                }
+            }
+            this.getModel().setValue("nckd_sftaffcount",null);
+
+//            int staffcount = ObjectUtils.isNotEmpty(haosDutyorgdetail) ? haosDutyorgdetail.getInt("staffcount"):null;
+//            this.getModel().setValue("nckd_sftaffcount",staffcount);
+
+        }
+
     }
 
     @Override
@@ -100,6 +148,9 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         Object oldValue = changeData[0].getOldValue();
         int iRow = changeData[0].getRowIndex();
         switch (key) {
+            case "nckd_year":
+                updateStaffCount();
+                break;
             case "nckd_recruitcompany":
                 // 公司为空清除部门岗位
                 if(!isNotEmpty(newValue)){
