@@ -10,12 +10,7 @@ import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.parameter.SystemParamServiceHelper;
-import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
 import java.util.Map;

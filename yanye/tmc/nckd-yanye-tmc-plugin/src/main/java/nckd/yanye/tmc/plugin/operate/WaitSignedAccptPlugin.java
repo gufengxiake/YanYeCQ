@@ -15,6 +15,7 @@ import org.apache.commons.lang3.ObjectUtils;
 
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Module           :cdm_electronic_sign_deal
@@ -34,10 +35,13 @@ public class WaitSignedAccptPlugin implements IEventServicePlugin {
         logger.info("待签收票据处理执行插件:-------------------");
         logger.info("插件参数businesskeys：{}", ((EntityEvent) evt).getBusinesskeys());
         List<String> businesskeys = ((EntityEvent) evt).getBusinesskeys();
-
+        // 将 List<String> 转换为 List<Long>
+        List<Long> businessKeyLongs = businesskeys.stream()
+                .map(Long::valueOf) // 将每个 String 转换为 Long
+                .collect(Collectors.toList());
         String newAcceptancePeriod = null;
 
-        DynamicObject[] transdetails = BusinessDataServiceHelper.load("cdm_electronic_sign_deal", "id,issueticketdate,exchangebillexpiredate,nckd_acceptance_period", new QFilter[]{new QFilter("id", QCP.in, businesskeys)});
+        DynamicObject[] transdetails = BusinessDataServiceHelper.load("cdm_electronic_sign_deal", "id,issueticketdate,exchangebillexpiredate,nckd_acceptance_period", new QFilter[]{new QFilter("id", QCP.in, businessKeyLongs)});
         for (DynamicObject transdetail : transdetails) {
             Date issueticketdate = transdetail.getDate("issueticketdate");
             Date exchangebillexpiredate = transdetail.getDate("exchangebillexpiredate");
