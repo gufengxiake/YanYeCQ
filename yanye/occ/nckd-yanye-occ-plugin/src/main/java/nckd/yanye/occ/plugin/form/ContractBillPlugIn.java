@@ -17,8 +17,9 @@ date:2024/09/24
 public class ContractBillPlugIn extends AbstractBillPlugIn {
     @Override
     public void afterCreateNewData(EventObject e) {
-        Object orgId = ((DynamicObject)this.getModel().getValue("org")).getPkValue();
-        if (orgId != null) {
+        DynamicObject org = ((DynamicObject) this.getModel().getValue("org"));
+        if (org != null) {
+            Object orgId = org.getPkValue();
             // 构造QFilter  org  业务组织   enable 可用
             QFilter qFilter = new QFilter("org.id", QCP.equals, orgId)
                     .and("enable", QCP.equals, "1");
@@ -37,9 +38,9 @@ public class ContractBillPlugIn extends AbstractBillPlugIn {
                     //联系人电话
                     this.getModel().setValue("phone1st", contpartiesItem.get("phone"));
                 } else {
-                    this.getModel().setValue("party1st", (Object)null);
-                    this.getModel().setValue("contactperson1st", (Object)null);
-                    this.getModel().setValue("phone1st", (Object)null);
+                    this.getModel().setValue("party1st", (Object) null);
+                    this.getModel().setValue("contactperson1st", (Object) null);
+                    this.getModel().setValue("phone1st", (Object) null);
                 }
             }
 
