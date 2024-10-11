@@ -1,5 +1,6 @@
 package nckd.yanye.occ.plugin.operate;
 
+import com.ccb.core.date.DateUtil;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
@@ -42,6 +43,7 @@ public class SalOutSaveOperationPlugIn extends AbstractOperationServicePlugIn im
         e.getFieldKeys().add("billentry.nckd_remainpayamount");//剩余应付金额
         e.getFieldKeys().add("billentry.nckd_premiumamount");//溢价金额
         e.getFieldKeys().add("billentry.nckd_pricefielpsf");//配送费单价
+
         e.getFieldKeys().add("billentry.nckd_basicqtyps");//配送结算基本数量
     }
 
@@ -121,8 +123,8 @@ public class SalOutSaveOperationPlugIn extends AbstractOperationServicePlugIn im
                 .and("validstatus", QCP.equals, "B")
                 .and("billstatus", QCP.equals, "C")
                 .and("closestatus", QCP.equals, "A")
-                .and("biztimeend", QCP.large_equals, biztime)
-                .and("biztimebegin", QCP.less_equals, biztime);
+                .and("biztimeend", QCP.large_equals, DateUtil.beginOfDay(biztime))
+                .and("biztimebegin", QCP.less_equals, DateUtil.endOfDay(biztime));
         DynamicObjectCollection conmPurcontract = QueryServiceHelper.query("conm_purcontract", "billentry.priceandtax as priceandtax,org,supplier"
                 , new QFilter[]{qFilter}, "biztimebegin desc");
         if (conmPurcontract == null || conmPurcontract.isEmpty()) {
