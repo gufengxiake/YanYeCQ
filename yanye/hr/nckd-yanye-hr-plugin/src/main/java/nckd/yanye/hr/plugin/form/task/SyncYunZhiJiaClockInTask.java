@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.exception.KDBizException;
 import kd.bos.exception.KDException;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -56,18 +57,22 @@ public class SyncYunZhiJiaClockInTask extends AbstractTask {
                 "id,name,number",
                 new QFilter[]{new QFilter("number", QCP.equals, "Asia/Shanghai")}
         );
+
         // 打卡设备
         DynamicObject device = BusinessDataServiceHelper.loadSingle(
                 "wtpm_punchcardequip",
                 "id,name",
-                new QFilter[]{new QFilter("name", QCP.equals, "默认云之家打卡")}
+                new QFilter[]{new QFilter("name", QCP.equals, "接口同步云之家打卡")}
         );
+        Optional.ofNullable(device).orElseThrow(() -> new KDBizException("未找到名为“接口同步云之家打卡”的打卡设备"));
+
         // 打卡来源
         DynamicObject source = BusinessDataServiceHelper.loadSingle(
                 "wtbd_signsource",
                 "id,name",
-                new QFilter[]{new QFilter("name", QCP.equals, "云之家")}
+                new QFilter[]{new QFilter("name", QCP.equals, "接口同步")}
         );
+        Optional.ofNullable(source).orElseThrow(() -> new KDBizException("未找到名为“接口同步”的打卡来源"));
 
         // 预先加载所有原始卡记录信息的唯一id信息
         DynamicObject[] signcards = BusinessDataServiceHelper.load(
