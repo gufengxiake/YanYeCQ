@@ -243,6 +243,8 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             materialmaintenanObject.set("nckd_sales", dynamicObject.get("nckd_sales"));//销售
             materialmaintenanObject.set("nckd_selfmade", dynamicObject.get("nckd_selfmade"));//自制
             materialmaintenanObject.set("nckd_purchase", dynamicObject.get("nckd_purchase"));//采购
+            materialmaintenanObject.set("nckd_enablelot", dynamicObject.get("nckd_enablelot"));//启用批号管理
+            materialmaintenanObject.set("nckd_lotcoderule", dynamicObject.get("nckd_lotcoderule"));//批号规则
 
             if ("1".equals(billType)) {
                 // 生产基本信息

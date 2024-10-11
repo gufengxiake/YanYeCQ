@@ -361,12 +361,12 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         newDynamicObject.set("ismaxinvalert", dynamicObject.get("nckd_ismaxinvalert"));
         // 最大库存
         newDynamicObject.set("maxinvqty", dynamicObject.get("nckd_maxinvqty"));
-        if (dynamicObject.get("nckd_lotcoderule") != null) {
+//        if (dynamicObject.get("nckd_lotcoderule") != null) {
             // 启用批号管理
-            newDynamicObject.set("enablelot", 1);
+            newDynamicObject.set("enablelot", dynamicObject.get("nckd_enablelot"));
             // 批号规则
             newDynamicObject.set("lotcoderule", dynamicObject.get("nckd_lotcoderule"));
-        }
+//        }
         if (dynamicObject.getBoolean("nckd_enableshelflifemgr")) {
             // 保质期管理
             newDynamicObject.set("enableshelflifemgr", dynamicObject.get("nckd_enableshelflifemgr"));
