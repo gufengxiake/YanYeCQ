@@ -9,6 +9,9 @@ import kd.bos.schedule.executor.AbstractTask;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.scm.plugin.form.NegainventoryOrderListPlugin;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -26,8 +29,13 @@ public class NegainventoryorderTask extends AbstractTask {
         //查询所有得5G工厂类型得负库存数据
         QFilter qFilter = new QFilter("nckd_datasources", QCP.equals,"2")
                 .and("billstatus",QCP.equals,"C");
-        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_negainventoryorder", "id,masterid", new QFilter[]{qFilter});
+        DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_negainventoryorder", "id,masterid,nckd_isgenerate,billno", new QFilter[]{qFilter});
+        List<DynamicObject> objects = new ArrayList<>();
+        for (DynamicObject dynamicObject : Arrays.asList(dynamicObjects)){
+            DynamicObject dynamicObj = BusinessDataServiceHelper.loadSingle(dynamicObject.getPkValue(),"nckd_negainventoryorder");
+            objects.add(dynamicObj);
+        }
         NegainventoryOrderListPlugin plugin = new NegainventoryOrderListPlugin();
-        plugin.handleBussProcessOrder(dynamicObjects,"2");
+        plugin.handleBussProcessOrder(objects.toArray(new DynamicObject[0]),"2");
     }
 }
