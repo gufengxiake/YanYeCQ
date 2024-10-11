@@ -1,22 +1,14 @@
 package nckd.yanye.occ.plugin.mobile;
 
-import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
-import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.imsc.dmw.utils.StringUtil;
 import kd.imsc.imbd.common.consts.PC;
-import kd.occ.ocbase.business.b2b.B2BUserHelper;
 import kd.occ.ocbase.common.pagemodel.OcdbdChannelAuthorize;
 
-import java.util.ArrayList;
 import java.util.EventObject;
-import java.util.List;
 
 /*
  * 移动购物车过滤下单渠道

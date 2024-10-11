@@ -1,9 +1,5 @@
 package nckd.yanye.occ.plugin.operate;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashSet;
-
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.formula.RowDataModel;
@@ -14,6 +10,8 @@ import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
+
+import java.util.HashSet;
 
 /**
  * 签收单反审核校验上游销售出库单是否已下推销售出库

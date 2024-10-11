@@ -1,14 +1,10 @@
 package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.basedata.BaseDataResponse;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
-import kd.bos.orm.query.QCP;
-import kd.bos.orm.query.QFilter;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.basedata.BaseDataServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 

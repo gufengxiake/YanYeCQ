@@ -1,8 +1,6 @@
 package nckd.yanye.occ.plugin.mobile;
 
-import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.container.Tab;
 import kd.bos.form.control.Control;
@@ -11,21 +9,16 @@ import kd.bos.form.control.events.TabSelectListener;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
 import kd.bos.list.BillList;
-import kd.bos.list.MobileSearch;
 import kd.bos.list.events.ListRowClickEvent;
 import kd.bos.list.events.ListRowClickListener;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
-import kd.bos.orm.query.fulltext.QMatches;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.occ.ocbase.common.util.MobileControlUtils;
-import kd.occ.ocbase.common.util.StringUtils;
 import kd.occ.ocdma.business.order.SaleOrderHelper;
 
-import javax.xml.crypto.Data;
-import java.time.LocalDateTime;
 import java.util.*;
 
 public class MobileSalOrderFhListPlugIn extends AbstractMobFormPlugin implements TabSelectListener,ListRowClickListener {

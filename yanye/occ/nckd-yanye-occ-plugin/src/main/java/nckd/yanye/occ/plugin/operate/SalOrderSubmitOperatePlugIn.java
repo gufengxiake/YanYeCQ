@@ -4,7 +4,6 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
-import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 

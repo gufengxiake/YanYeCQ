@@ -2,7 +2,6 @@ package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.entity.botp.runtime.BFRow;
 import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
@@ -13,14 +12,16 @@ import kd.bos.exception.KDBizException;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
-import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 
-import static kd.bos.mservice.qing.dmo.model.DWNodeType.obj;
-
+/**
+ * 销售出库单列表拒签
+ * 表单标识：nckd_im_saloutbill_ext
+ * author:wgq
+ * date:2024/09/26
+ */
 public class SalOutUnsignOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

@@ -3,26 +3,22 @@ package nckd.yanye.occ.plugin.mobile;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.field.BasedataEdit;
-import kd.bos.form.field.FieldEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
-import kd.bos.list.BillList;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
-import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
-import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.formplugin.base.OcbaseFormMobPlugin;
-import kd.occ.ocdma.formplugin.order.SaleOrderBillPlugin;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
 
 /*
  * 要货订单移动表单插件

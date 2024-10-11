@@ -3,7 +3,6 @@ package nckd.yanye.occ.plugin.mobile;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.IFormView;
 import kd.bos.form.MobileFormShowParameter;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.Control;
@@ -13,16 +12,15 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.helper.CUserHelper;
-import kd.occ.ocbase.common.status.Status;
 import kd.occ.ocbase.common.util.CommonUtils;
 import kd.occ.ocbase.common.util.DateUtil;
 import kd.occ.ocbase.common.util.StringUtils;
 import kd.occ.ocsaa.formplugin.OcsaaFormMobPlugin;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
-import java.util.*;
+import java.util.EventObject;
+import java.util.List;
 
 /*
  * 销售助手首页插件

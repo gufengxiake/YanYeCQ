@@ -5,13 +5,10 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
-import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
-import kd.bos.entity.property.AssistantProp;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
-import kd.bos.servicehelper.operation.OperationServiceHelper;
 
 /*
  * 客户基础资料保存获取分组

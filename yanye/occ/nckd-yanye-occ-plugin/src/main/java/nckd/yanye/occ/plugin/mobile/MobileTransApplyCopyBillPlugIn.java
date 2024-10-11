@@ -1,11 +1,9 @@
 package nckd.yanye.occ.plugin.mobile;
 
 import kd.bos.bill.BillShowParameter;
-import kd.bos.coderule.api.CodeRuleInfo;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
@@ -21,12 +19,8 @@ import kd.bos.mvc.SessionManager;
 import kd.bos.mvc.bill.BillModel;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
-import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
-
-import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
-import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.util.EventObject;
 import java.util.List;

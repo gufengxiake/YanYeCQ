@@ -3,7 +3,6 @@ package nckd.yanye.occ.plugin.mobile;
 import kd.bos.bill.BillShowParameter;
 import kd.bos.bill.MobileFormPosition;
 import kd.bos.context.RequestContext;
-import kd.bos.data.ParameterHelper;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -15,15 +14,10 @@ import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.entity.param.BillParam;
 import kd.bos.form.*;
-import kd.bos.form.cardentry.CardEntry;
 import kd.bos.form.control.Control;
-import kd.bos.form.control.Toolbar;
-import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
-import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
@@ -39,12 +33,11 @@ import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
-import kd.occ.ocbase.common.util.CommonUtils;
-import kd.occ.ocbase.common.util.DynamicObjectUtils;
-import kd.occ.ocdma.business.item.ItemHelper;
 
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.EventObject;
+import java.util.List;
 
 /*
 调拨申请单移动表单插件

@@ -6,7 +6,6 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityType;
 import kd.bos.entity.EntityMetadataCache;
-import kd.bos.entity.ExtendedDataEntity;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;

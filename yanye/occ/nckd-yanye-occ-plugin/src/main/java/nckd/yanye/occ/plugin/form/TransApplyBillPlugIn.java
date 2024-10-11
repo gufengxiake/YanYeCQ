@@ -7,26 +7,19 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
-import kd.bos.entity.datamodel.RowDataEntity;
-import kd.bos.entity.datamodel.events.AfterAddRowEventArgs;
-import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.flydb.core.interpreter.scalar.IsNullOrNot;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
-import kd.bos.form.ShowType;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
-import kd.bos.imageplatform.axis.IScanWebServiceImplServiceStub;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
-
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

@@ -2,7 +2,6 @@ package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.datamodel.RowDataEntity;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;

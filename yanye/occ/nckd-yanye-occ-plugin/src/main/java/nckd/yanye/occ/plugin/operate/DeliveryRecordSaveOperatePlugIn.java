@@ -5,7 +5,6 @@ import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
-import kd.occ.ocbsoc.opplugin.delivery.DeliveryRecordSavePlugin;
 
 /*
  * 发货记录保存服务插件，自动签收
