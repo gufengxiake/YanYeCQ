@@ -7,6 +7,7 @@ import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
+import nckd.yanye.scm.common.utils.ZhWlUtil;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -34,17 +35,17 @@ public class CustomerPushOpPlugin extends AbstractOperationServicePlugIn {
         super.beforeExecuteOperationTransaction(e);
         DynamicObject[] dataEntities = e.getDataEntities();
         JSONObject tokenJson = new JSONObject();
-        tokenJson.put("UserName","30001");
-        tokenJson.put("Password","123456");
-        tokenJson.put("grant_type","password");
-        JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenJson,null);
+        tokenJson.put("UserName", ZhWlUtil.USERNAME);
+        tokenJson.put("Password",ZhWlUtil.PASSWORD);
+        tokenJson.put("grant_type",ZhWlUtil.GRANTTYPE);
+        JSONObject resultToken = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/token", tokenJson,null);
 
         Map<String,Object> tokenMap = new HashMap<>();
         tokenMap.put("number","bd_customer");
         tokenMap.put("name","客户");
         tokenMap.put("creator", RequestContext.get().getCurrUserId());
         tokenMap.put("nckd_system", "zhwl");
-        tokenMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/token");
+        tokenMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/token");
         tokenMap.put("createtime", new Date());
         tokenMap.put("nckd_parameter", tokenJson.toJSONString());
 
@@ -67,14 +68,14 @@ public class CustomerPushOpPlugin extends AbstractOperationServicePlugIn {
             bodyJson.put("VenPK", dataEntity.getPkValue().toString());
             bodyJson.put("VenCCode", dataEntity.getDynamicObject("group") == null ? null : dataEntity.getDynamicObject("group").getString("number"));
             bodyJson.put("Status", "0");
-            JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/PushCustom", bodyJson, accessToken);
+            JSONObject result = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/Business/PushCustom", bodyJson, accessToken);
 
             Map<String,Object> parmMap = new HashMap<>();
             parmMap.put("number","bd_customer");
             parmMap.put("name","客户");
             parmMap.put("creator", RequestContext.get().getCurrUserId());
             parmMap.put("nckd_system", "zhwl");
-            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/PushCustom");
+            parmMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/Business/PushCustom");
             parmMap.put("createtime", new Date());
             parmMap.put("nckd_parameter", bodyJson.toJSONString());
 

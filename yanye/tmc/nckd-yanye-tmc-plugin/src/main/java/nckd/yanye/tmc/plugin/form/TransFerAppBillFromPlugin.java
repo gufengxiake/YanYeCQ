@@ -53,10 +53,6 @@ public class TransFerAppBillFromPlugin extends AbstractBillPlugIn {
                 payeraccbanknumProp.setMustInput(true);
                 paymentchannelEdit.setMustInput(true);
                 paymentchannelProp.setMustInput(true);
-                this.getModel().setValue("e_payeeaccbanknum", null);
-                this.getModel().setValue("e_payeeaccbank", null);
-                this.getModel().setValue("e_payorg", null);
-                this.getModel().setValue("e_payee", null);
             } else {
                 payeraccbanknumEdit.setMustInput(false);
                 payeraccbanknumProp.setMustInput(false);

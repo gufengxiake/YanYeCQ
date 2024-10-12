@@ -9,6 +9,7 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.utils.StringUtils;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
+import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
@@ -378,6 +379,34 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
                 formView.close();
             }
         }
+
+
+    }
+
+    private void save1() {
+        Long pkId = this.getPkId();
+        //单据类型
+        DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype");
+        //业务员
+        DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
+        DynamicObject dataObject=BusinessDataServiceHelper.newDynamicObject("im_transapply");
+        dataObject.set("billtype",billtype);
+        dataObject.set("nckd_ywy", ywy);
+        DynamicObjectCollection entry=dataObject.getDynamicObjectCollection("billentry");
+        DynamicObjectCollection thisEntry = this.getModel().getEntryEntity("billentry");
+        for (DynamicObject thisEntryRow : thisEntry) {
+            DynamicObject entryRow=entry.addNew();
+            entryRow.set("material",thisEntryRow.getDynamicObject("material"));
+            entryRow.set("unit",thisEntryRow.getDynamicObject("unit"));
+            entryRow.set("qty",thisEntryRow.getBigDecimal("qty"));
+            entryRow.set("warehouse",thisEntryRow.getDynamicObject("warehouse"));
+            entryRow.set("inwarehouse",thisEntryRow.getDynamicObject("inwarehouse"));
+            entryRow.set("lotnumber",thisEntryRow.getDynamicObject("lotnumber"));
+            entry.add(entryRow);
+        }
+
+
+
 
 
     }

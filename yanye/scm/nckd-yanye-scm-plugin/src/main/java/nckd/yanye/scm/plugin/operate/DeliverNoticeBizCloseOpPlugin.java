@@ -12,6 +12,7 @@ import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
+import nckd.yanye.scm.common.utils.ZhWlUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
@@ -59,17 +60,17 @@ public class DeliverNoticeBizCloseOpPlugin extends AbstractOperationServicePlugI
             }
             //获取token
             JSONObject tokenjson = new JSONObject();
-            tokenjson.put("UserName","30001");
-            tokenjson.put("Password","123456");
-            tokenjson.put("grant_type","password");
-            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenjson,null);
+            tokenjson.put("UserName", ZhWlUtil.USERNAME);
+            tokenjson.put("Password",ZhWlUtil.PASSWORD);
+            tokenjson.put("grant_type",ZhWlUtil.GRANTTYPE);
+            JSONObject resultToken = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/token", tokenjson,null);
 
             Map<String,Object> tokenMap = new HashMap<>();
             tokenMap.put("number","sm_delivernotice");
             tokenMap.put("name","发货通知单");
             tokenMap.put("creator", RequestContext.get().getCurrUserId());
             tokenMap.put("nckd_system", "zhwl");
-            tokenMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/token");
+            tokenMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/token");
             tokenMap.put("createtime", new Date());
             tokenMap.put("nckd_parameter", tokenjson.toJSONString());
 
@@ -86,14 +87,14 @@ public class DeliverNoticeBizCloseOpPlugin extends AbstractOperationServicePlugI
             String accessToken = resultToken.getString("access_token");
             JSONObject bodyJson = new JSONObject();
             bodyJson.put("DeliveryOrderCode", dataEntity.getString("billno"));
-            JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState", bodyJson, accessToken);
+            JSONObject result = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/Business/GetSaleBillState", bodyJson, accessToken);
 
             Map<String,Object> parmMap = new HashMap<>();
             parmMap.put("number","sm_delivernotice");
             parmMap.put("name","发货通知单");
             parmMap.put("creator", RequestContext.get().getCurrUserId());
             parmMap.put("nckd_system", "zhwl");
-            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState");
+            parmMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/Business/GetSaleBillState");
             parmMap.put("createtime", new Date());
             parmMap.put("nckd_parameter", bodyJson.toJSONString());
 
@@ -129,14 +130,14 @@ public class DeliverNoticeBizCloseOpPlugin extends AbstractOperationServicePlugI
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许关闭");
                 continue;
             }
-            JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill", bodyJson, accessToken);
+            JSONObject deResult = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/Business/EndSaleBill", bodyJson, accessToken);
 
             Map<String,Object> deMap = new HashMap<>();
             deMap.put("number","sm_delivernotice");
             deMap.put("name","发货通知单");
             deMap.put("creator", RequestContext.get().getCurrUserId());
             deMap.put("nckd_system", "zhwl");
-            deMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill");
+            deMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/Business/EndSaleBill");
             deMap.put("createtime", new Date());
             deMap.put("nckd_parameter", bodyJson.toJSONString());
 
