@@ -16,12 +16,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 华康地市公司业务情况（交易客户）-报表取数插件
- * 表单标识：nckd_hkcitybusicustom_rpt
+ * 片区情况一览表（交易客户）-报表取数插件
+ * 表单标识：nckd_areasituationcus_rpt
  * author:zhangzhilong
- * date:2024/10/10
+ * date:2024/10/12
  */
-public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
+public class AreaSituationCustomerReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
@@ -48,8 +48,8 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
 
         //公司
         String outFields = "bizorg as out_bizorg," +
-                //公司名称
-                "bizorg.name as out_bizorgname," +
+                //部门
+                "bizdept as out_bizdept," +
                 //收货客户
                 "customer as out_customer," +
                 //业务日期
@@ -69,21 +69,21 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
 
         //计算月度和年度精品交易客户并关联
         DataSet jpMonthSum = imSaloutbill.filter("isjp = '精品'").filter("nckd_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname"}).count("monthSumJPCustomer").finish();
-        DataSet jpYearSum = imSaloutbill.filter("isjp = '精品'").groupBy(new String[]{"out_bizorg", "out_bizorgname", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname"}).count("yearSumJPCustomer").finish();
+                .groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("monthSumJPCustomer").finish();
+        DataSet jpYearSum = imSaloutbill.filter("isjp = '精品'").groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("yearSumJPCustomer").finish();
         jpYearSum = jpYearSum.leftJoin(jpMonthSum).on("out_bizorg","out_bizorg")
-                .select(new String[]{"out_bizorg", "out_bizorgname","monthSumJPCustomer","yearSumJPCustomer"}).finish();
+                .select(new String[]{"out_bizorg", "out_bizdept","monthSumJPCustomer","yearSumJPCustomer"}).finish();
 
         //计算月度和年度交易客户并关联
         DataSet monthSum = imSaloutbill.filter("nckd_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname"}).count("monthSumCustomer").finish();
-        DataSet yearSum = imSaloutbill.groupBy(new String[]{"out_bizorg", "out_bizorgname", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizorgname"}).count("yearSumCustomer").finish();
+                .groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("monthSumCustomer").finish();
+        DataSet yearSum = imSaloutbill.groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("yearSumCustomer").finish();
         yearSum = yearSum.leftJoin(monthSum).on("out_bizorg","out_bizorg")
-                .select(new String[]{"out_bizorg", "out_bizorgname","monthSumCustomer","yearSumCustomer"}).finish();
+                .select(new String[]{"out_bizorg", "out_bizdept","monthSumCustomer","yearSumCustomer"}).finish();
 
         imSaloutbill = yearSum.leftJoin(jpYearSum).on("out_bizorg","out_bizorg")
                 .select(yearSum.getRowMeta().getFieldNames(),new String[]{"monthSumJPCustomer","yearSumJPCustomer"}).finish();
@@ -94,6 +94,10 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
 
         //获取华康年度计划表
         String hkFields = "org as hk_org," +
+                //经营团队
+                "entryentity.nckd_jytd as nckd_jytd," +
+                //业务团队
+                "entryentity.nckd_dqfl as nckd_ywtd," +
                 "entryentity.nckd_date as hk_date," +
                 //月度交易客户数目标
                 "entryentity.nckd_ydjykh as nckd_ydjykh," +
@@ -105,18 +109,18 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
                 "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
         //汇总月度和年度目标并关联
         DataSet hkMonthSum = nckdHkndjhb.filter("hk_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"hk_org"}).sum("nckd_ydjykh", "month_nckd_ydjykh")
+                .groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"}).sum("nckd_ydjykh", "month_nckd_ydjykh")
                 .sum("nckd_ydjpzdkh","month_nckd_ydjpzdkh").finish();
-        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org"}).sum("nckd_ydjykh", "year_nckd_ydjykh")
+        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"}).sum("nckd_ydjykh", "year_nckd_ydjykh")
                 .sum("nckd_ydjpzdkh","year_nckd_ydjpzdkh").finish();
-        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum).on("hk_org","hk_org")
-                .select(new String[]{"hk_org","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
+        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum).on("hk_org","hk_org").on("nckd_jytd","nckd_jytd").on("nckd_ywtd","nckd_ywtd")
+                .select(new String[]{"hk_org","nckd_jytd","nckd_ywtd","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
 
         //交易客户关联华康年度计划表
-        imSaloutbill = imSaloutbill.leftJoin(nckdHkndjhb).on("out_bizorg","hk_org")
-                .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
+        imSaloutbill = imSaloutbill.leftJoin(nckdHkndjhb).on("out_bizorg","hk_org").on("out_bizdept","nckd_jytd")
+                .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"nckd_ywtd","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
 
-        imSaloutbill = imSaloutbill.leftJoin(this.getChannelSumKS()).on("out_bizorg","ocdbd_org")
+        imSaloutbill = imSaloutbill.leftJoin(this.getChannelSumKS()).on("out_bizorg","ocdbd_org").on("out_bizdept","ocdbd_department")
                 .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"channelSumKS"}).finish();
 
         return imSaloutbill;
@@ -130,30 +134,37 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
                 "ocdbd_channel",
                 //销售组织
                 "slaeorginfo.saleorginfonum as ocdbd_org," +
+                        //部门
+                        "slaeorginfo.department as ocdbd_department," +
+                        //业务员
+                        "slaeorginfo.saler as ocdbd_saler," +
+                        //销售片区
+                        "nckd_regiongroup as ocdbd_regiongroup," +
                         //客户
                         "customer as ocdbd_customer," +
                         //渠道主键
                         "id as ocdbd_id", new QFilter[]{qFilter}, null);
-        return ocdbdChannel.groupBy(new String[]{"ocdbd_org"}).count("channelSumKS").finish();
+        return ocdbdChannel.groupBy(new String[]{"ocdbd_org","ocdbd_department","ocdbd_regiongroup"}).count("channelSumKS").finish();
     }
+
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
-        columns.add(createReportColumn("out_bizorgname",ReportColumn.TYPE_TEXT,"公司简称"));
-        columns.add(createReportColumn("channelSumKS",ReportColumn.TYPE_INTEGER,"登记客商"));
+        columns.add(createBaseDataColumn("out_bizorg","bos_org","公司名称"));
+        columns.add(createBaseDataColumn("out_bizdept","bos_org","经营团队"));
+        columns.add(createBaseDataColumn("nckd_ywtd","nckd_regiongroup","片区"));
+//        columns.add(createBaseDataColumn("","","责任人"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"责任人"));
 
-        ReportColumnGroup jykh = new ReportColumnGroup();
-        jykh.setFieldKey("jykh");
-        jykh.setCaption(new LocaleString("交易客户情况"));
-        ReportColumnGroup monthjykh = new ReportColumnGroup();
-        monthjykh.setFieldKey("monthjykh");
-        monthjykh.setCaption(new LocaleString("月度"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_INTEGER,"属性"));
+        columns.add(createReportColumn("channelSumKS",ReportColumn.TYPE_INTEGER,"登记客商数"));
+
+        ReportColumnGroup jykh = createReportColumnGroup("jykh","交易客户情况");
+        ReportColumnGroup monthjykh = createReportColumnGroup("monthjykh","月度");
         monthjykh.getChildren().add(createReportColumn("month_nckd_ydjykh",ReportColumn.TYPE_INTEGER,"月度交易客户数目标"));
         monthjykh.getChildren().add(createReportColumn("monthSumCustomer",ReportColumn.TYPE_INTEGER,"本月客户"));
         monthjykh.getChildren().add(createReportColumn("monthCustomer",ReportColumn.TYPE_TEXT,"月客户完成率"));
-        ReportColumnGroup yearjykh = new ReportColumnGroup();
-        yearjykh.setFieldKey("yearjykh");
-        yearjykh.setCaption(new LocaleString("年度"));
+        ReportColumnGroup yearjykh = createReportColumnGroup("yearjykh","年度");
         yearjykh.getChildren().add(createReportColumn("year_nckd_ydjykh",ReportColumn.TYPE_INTEGER,"交易客户目标"));
         yearjykh.getChildren().add(createReportColumn("yearSumCustomer",ReportColumn.TYPE_INTEGER,"交易客户累计"));
         yearjykh.getChildren().add(createReportColumn("yearCustomer",ReportColumn.TYPE_TEXT,"交易客户完成"));
@@ -161,18 +172,12 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
         jykh.getChildren().add(yearjykh);
         columns.add(jykh);
 
-        ReportColumnGroup jpjykh = new ReportColumnGroup();
-        jpjykh.setFieldKey("jpjykh");
-        jpjykh.setCaption(new LocaleString("精品客户情况"));
-        ReportColumnGroup jpmonthjykh = new ReportColumnGroup();
-        jpmonthjykh.setFieldKey("jpmonthjykh");
-        jpmonthjykh.setCaption(new LocaleString("月度"));
+        ReportColumnGroup jpjykh = createReportColumnGroup("jpjykh","精品客户情况");
+        ReportColumnGroup jpmonthjykh = createReportColumnGroup("jpmonthjykh","月度");
         jpmonthjykh.getChildren().add(createReportColumn("month_nckd_ydjpzdkh",ReportColumn.TYPE_INTEGER,"月度精品客户目标"));
         jpmonthjykh.getChildren().add(createReportColumn("monthSumJPCustomer",ReportColumn.TYPE_INTEGER,"本月精品客户"));
         jpmonthjykh.getChildren().add(createReportColumn("monthJPCustomer",ReportColumn.TYPE_TEXT,"月度精品客户完成"));
-        ReportColumnGroup jpyearjykh = new ReportColumnGroup();
-        jpyearjykh.setFieldKey("jpyearjykh");
-        jpyearjykh.setCaption(new LocaleString("年度"));
+        ReportColumnGroup jpyearjykh =  createReportColumnGroup("jpyearjykh","年度");
         jpyearjykh.getChildren().add(createReportColumn("year_nckd_ydjpzdkh",ReportColumn.TYPE_INTEGER,"精品客户目标"));
         jpyearjykh.getChildren().add(createReportColumn("yearSumJPCustomer",ReportColumn.TYPE_INTEGER,"精品客户累计"));
         jpyearjykh.getChildren().add(createReportColumn("yearJPCustomer",ReportColumn.TYPE_TEXT,"精品客户完成"));
@@ -180,6 +185,8 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
         jpjykh.getChildren().add(jpyearjykh);
         columns.add(jpjykh);
 
+//        columns.add(createBaseDataColumn("","","所属地区"));
+        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"所属地区"));
         return columns;
     }
 
@@ -192,5 +199,19 @@ public class HKCityBusinessCustomerReportListDataPlugin extends AbstractReportLi
             column.setScale(2);
         }
         return column;
+    }
+
+    public ReportColumn createBaseDataColumn(String fileKey, String entityId, String name) {
+        ReportColumn column = ReportColumn.createBaseDataColumn(fileKey, entityId);
+        column.setFieldKey(fileKey);
+        column.setCaption(new LocaleString(name));
+        return column;
+    }
+
+    public ReportColumnGroup createReportColumnGroup(String fileKey, String name) {
+        ReportColumnGroup group = new ReportColumnGroup();
+        group.setFieldKey(fileKey);
+        group.setCaption(new LocaleString(name));
+        return group;
     }
 }
