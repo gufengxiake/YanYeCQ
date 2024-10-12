@@ -10,7 +10,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.dataentity.utils.StringUtils;
 /**
- * 销售订单勾选清运供应商，根据商务伙伴基础资料自动获取，同时行类别需要同步为“服务（数量）”
+     * 销售订单勾选清运供应商，根据商务伙伴基础资料自动获取，同时行类别需要同步为“服务（数量）”
  * 表单插件  nckd_sm_salorder_ext
  * author:黄文波 2024-09-23
  */
@@ -39,7 +39,6 @@ public class SalOrderBillqyPlugIn extends AbstractBillPlugIn {
             //Date billDate = DateTime.now().toDate();
 
             String ynqy= this.getModel().getValue("nckd_xsqy").toString();
-
             if("true".equals(ynqy)) {
                 DynamicObject customer = (DynamicObject) this.getModel().getValue("customer");
                 if (customer == null) return;
@@ -48,8 +47,6 @@ public class SalOrderBillqyPlugIn extends AbstractBillPlugIn {
                 customer = BusinessDataServiceHelper.loadSingle(customerId, customer.getDynamicObjectType().getName());
 
                 String custname = customer.getString("name");
-
-
                 //查询客户，找到商务伙伴ID
                 DynamicObject customerDy = BusinessDataServiceHelper.loadSingle(customerId, "bd_customer");
                 DynamicObject FBizPartner = customerDy.getDynamicObject("bizpartner");
@@ -84,7 +81,6 @@ public class SalOrderBillqyPlugIn extends AbstractBillPlugIn {
 
 
            String ynqy= this.getModel().getValue("nckd_xsqy").toString();
-
             if("true".equals(ynqy)) {
                 DynamicObject customer = (DynamicObject) this.getModel().getValue("customer");
                 if (customer == null) return;
@@ -93,8 +89,6 @@ public class SalOrderBillqyPlugIn extends AbstractBillPlugIn {
                 customer = BusinessDataServiceHelper.loadSingle(customerId, customer.getDynamicObjectType().getName());
 
                 String custname = customer.getString("name");
-
-
                 //查询客户，找到商务伙伴ID
                 DynamicObject customerDy = BusinessDataServiceHelper.loadSingle(customerId, "bd_customer");
                 DynamicObject FBizPartner = customerDy.getDynamicObject("bizpartner");
@@ -164,7 +158,6 @@ public class SalOrderBillqyPlugIn extends AbstractBillPlugIn {
         // 插件可以在此修改新行字段默认值，或者调整界面上控件的状态
         if (StringUtils.equals("billentry", e.getEntryProp().getName())){
 
- 
             String ynqy= this.getModel().getValue("nckd_xsqy").toString();
 
             if("true".equals(ynqy)) {
