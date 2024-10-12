@@ -27,8 +27,8 @@ public class AuditEleWeighingTask extends AbstractTask {
     @Override
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         Set idList = new HashSet();
-        //查找已提交的电子磅单
-        QFilter qFilter = new QFilter("billstatus", QCP.equals, "B");
+        //查找已暂存的电子磅单
+        QFilter qFilter = new QFilter("billstatus", QCP.equals, "A");
         DynamicObjectCollection collections = QueryServiceHelper.query("nckd_eleweighing","id", qFilter.toArray(), "");
         if(!collections.isEmpty()){
             for (DynamicObject saleData : collections) {
