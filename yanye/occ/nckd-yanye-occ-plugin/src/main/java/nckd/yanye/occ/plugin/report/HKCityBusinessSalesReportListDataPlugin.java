@@ -18,7 +18,10 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 报表取数插件
+ * 华康地市公司业务情况（销售同比）-报表取数插件
+ * 表单标识：nckd_hkcitybusisal_rpt
+ * author:zhangzhilong
+ * date:2024/10/11
  */
 public class HKCityBusinessSalesReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
@@ -72,18 +75,18 @@ public class HKCityBusinessSalesReportListDataPlugin extends AbstractReportListD
 
         //根据物料分类和年份进行汇总
         GroupbyDataSet groupbyDataSet = yearDS.groupBy(new String[]{"out_org", "out_orgname"});
-        String [] salts= {"待分类","小包盐","竞品盐","深井盐","高端盐","高端产品","果蔬盐","小苏打","深海盐","晶粒盐"};
-        String [] saltEen= {"dfl","xby","jpy","sjy","gdy","gdcp","gsy","xsd","shy","jly"};
+        String [] salts= {"小包盐","竞品盐","深井盐","高端盐","高端产品","果蔬盐","小苏打","深海盐","晶粒盐"};
+        String [] saltEen= {"xby","jpy","sjy","gdy","gdcp","gsy","xsd","shy","jly"};
         for (int i = 0; i < salts.length ; i++) {
             groupbyDataSet.sum("case when year = 1 and out_groupname like '%" + salts[i] + "%' then out_baseqty else 0 end", saltEen[i] + "QtyThisYear")
                     .sum("case when year = 2 and out_groupname like '%" + salts[i] + "%' then out_baseqty else 0 end", saltEen[i] + "QtyLastYear")
                     .sum("case when year = 1 and out_groupname like '%" + salts[i] + "%' then out_amount else 0 end", saltEen[i] + "AmountThisYear")
                     .sum("case when year = 2 and out_groupname like '%" + salts[i] + "%' then out_amount else 0 end", saltEen[i] + "AmountLastYear");
         }
-//        groupbyDataSet.sum("case when year = 3 and out_groupname like '%小包盐%' then out_baseqty else 0 end","XBYThisMonth")
-//                .sum("case when year = 4 and out_groupname like '%小包盐%' then out_baseqty else 0 end","XBYLastMonth");
-        groupbyDataSet.sum("case when year = 3 and out_groupname like '%待分类%' then out_baseqty else 0 end","XBYThisMonth")
-                .sum("case when year = 4 and out_groupname like '%待分类%' then out_baseqty else 0 end","XBYLastMonth");
+        groupbyDataSet.sum("case when year = 3 and out_groupname like '%小包盐%' then out_baseqty else 0 end","XBYThisMonth")
+                .sum("case when year = 4 and out_groupname like '%小包盐%' then out_baseqty else 0 end","XBYLastMonth");
+//        groupbyDataSet.sum("case when year = 3 and out_groupname like '%待分类%' then out_baseqty else 0 end","XBYThisMonth")
+//                .sum("case when year = 4 and out_groupname like '%待分类%' then out_baseqty else 0 end","XBYLastMonth");
         yearDS = groupbyDataSet.finish();
 
         //关联获取月度目标数
@@ -205,37 +208,37 @@ public class HKCityBusinessSalesReportListDataPlugin extends AbstractReportListD
         ReportColumnGroup gdcpsr = createReportColumnGroup("gdcpsr","高端产品收入");
         gdcpsr.getChildren().add(createReportColumn("gdcpAmountThisYear",ReportColumn.TYPE_DECIMAL,"高端产品收入"));
         gdcpsr.getChildren().add(createReportColumn("gdcpAmountLastYear",ReportColumn.TYPE_DECIMAL,"同期高端产品收入"));
-        gdcpsr.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"高端收入同比"));
+        gdcpsr.getChildren().add(createReportColumn("gdsrtb",ReportColumn.TYPE_TEXT,"高端收入同比"));
         columns.add(gdcpsr);
 
         ReportColumnGroup gdcpsl = createReportColumnGroup("gdcpsl","高端产品数量");
         gdcpsl.getChildren().add(createReportColumn("gdcpQtyThisYear",ReportColumn.TYPE_DECIMAL,"高端产品数量"));
         gdcpsl.getChildren().add(createReportColumn("gdcpQtyLastYear",ReportColumn.TYPE_DECIMAL,"高端产品数量同期"));
-        gdcpsl.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"高端数量同比"));
+        gdcpsl.getChildren().add(createReportColumn("gdsltb",ReportColumn.TYPE_TEXT,"高端数量同比"));
         columns.add(gdcpsl);
 
         ReportColumnGroup gsy = createReportColumnGroup("gsy","果蔬盐");
         gsy.getChildren().add(createReportColumn("gsyQtyThisYear",ReportColumn.TYPE_DECIMAL,"果蔬盐销量"));
         gsy.getChildren().add(createReportColumn("gsyQtyLastYear",ReportColumn.TYPE_DECIMAL,"果蔬盐销量（上）"));
-        gsy.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"果蔬盐同比"));
+        gsy.getChildren().add(createReportColumn("gsytb",ReportColumn.TYPE_TEXT,"果蔬盐同比"));
         columns.add(gsy);
 
         ReportColumnGroup xsd = createReportColumnGroup("xsd","小苏打");
         xsd.getChildren().add(createReportColumn("xsdQtyThisYear",ReportColumn.TYPE_DECIMAL,"小苏打销量"));
         xsd.getChildren().add(createReportColumn("xsdQtyLastYear",ReportColumn.TYPE_DECIMAL,"小苏打销量（上）"));
-        xsd.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"小苏打同比"));
+        xsd.getChildren().add(createReportColumn("xsdtb",ReportColumn.TYPE_TEXT,"小苏打同比"));
         columns.add(xsd);
 
         ReportColumnGroup shy = createReportColumnGroup("shy","深海盐");
         shy.getChildren().add(createReportColumn("shyQtyThisYear",ReportColumn.TYPE_DECIMAL,"深海盐销量"));
         shy.getChildren().add(createReportColumn("shyQtyLastYear",ReportColumn.TYPE_DECIMAL,"深海盐销量（上）"));
-        shy.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"深海盐同比"));
+        shy.getChildren().add(createReportColumn("shytb",ReportColumn.TYPE_TEXT,"深海盐同比"));
         columns.add(shy);
 
         ReportColumnGroup jly = createReportColumnGroup("jly","晶粒盐");
         jly.getChildren().add(createReportColumn("jlyQtyThisYear",ReportColumn.TYPE_DECIMAL,"晶粒盐销量"));
         jly.getChildren().add(createReportColumn("jlyQtyLastYear",ReportColumn.TYPE_DECIMAL,"晶粒盐销量（上）"));
-        jly.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"晶粒盐同比"));
+        jly.getChildren().add(createReportColumn("jlytb",ReportColumn.TYPE_TEXT,"晶粒盐同比"));
         columns.add(jly);
 
         ReportColumnGroup channel = createReportColumnGroup("channel","渠道情况");
