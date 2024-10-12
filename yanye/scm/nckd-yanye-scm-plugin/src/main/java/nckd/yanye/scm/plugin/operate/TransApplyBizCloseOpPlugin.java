@@ -11,6 +11,7 @@ import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.HttpRequestUtils;
+import nckd.yanye.scm.common.utils.ZhWlUtil;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
@@ -58,17 +59,17 @@ public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
             }
             //获取token
             JSONObject tokenJson = new JSONObject();
-            tokenJson.put("UserName","30001");
-            tokenJson.put("Password","123456");
-            tokenJson.put("grant_type","password");
-            JSONObject resultToken = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/token", tokenJson,null);
+            tokenJson.put("UserName", ZhWlUtil.USERNAME);
+            tokenJson.put("Password",ZhWlUtil.PASSWORD);
+            tokenJson.put("grant_type",ZhWlUtil.GRANTTYPE);
+            JSONObject resultToken = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/token", tokenJson,null);
 
             Map<String,Object> tokenMap = new HashMap<>();
             tokenMap.put("number","im_transapply");
             tokenMap.put("name","调拨申请单");
             tokenMap.put("creator", RequestContext.get().getCurrUserId());
             tokenMap.put("nckd_system", "zhwl");
-            tokenMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/token");
+            tokenMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/token");
             tokenMap.put("createtime", new Date());
             tokenMap.put("nckd_parameter", tokenJson.toJSONString());
 
@@ -85,14 +86,14 @@ public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
             String accessToken = resultToken.getString("access_token");
             JSONObject bodyJson = new JSONObject();
             bodyJson.put("DeliveryOrderCode", dataEntity.getString("billno"));
-            JSONObject result = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState", bodyJson, accessToken);
+            JSONObject result = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/Business/GetSaleBillState", bodyJson, accessToken);
 
             Map<String,Object> parmMap = new HashMap<>();
             parmMap.put("number","im_transapply");
             parmMap.put("name","调拨申请单");
             parmMap.put("creator", RequestContext.get().getCurrUserId());
             parmMap.put("nckd_system", "zhwl");
-            parmMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/GetSaleBillState");
+            parmMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/Business/GetSaleBillState");
             parmMap.put("createtime", new Date());
             parmMap.put("nckd_parameter", bodyJson.toJSONString());
 
@@ -128,14 +129,14 @@ public class TransApplyBizCloseOpPlugin extends AbstractOperationServicePlugIn {
                 e.setCancelMessage("单据" + dataEntity.getString("billno") + "对应派车单状态为：" + resultMsg + ",不允许关闭");
                 continue;
             }
-            JSONObject deResult = HttpRequestUtils.httpPost("http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill", bodyJson, accessToken);
+            JSONObject deResult = HttpRequestUtils.httpPost(ZhWlUtil.URL + "/api/Business/EndSaleBill", bodyJson, accessToken);
 
             Map<String,Object> deMap = new HashMap<>();
             deMap.put("number","im_transapply");
             deMap.put("name","调拨申请单");
             deMap.put("creator", RequestContext.get().getCurrUserId());
             deMap.put("nckd_system", "zhwl");
-            deMap.put("nckd_interfaceurl", "http://5zb5775265qa.vicp.fun/api/Business/EndSaleBill");
+            deMap.put("nckd_interfaceurl", ZhWlUtil.URL + "/api/Business/EndSaleBill");
             deMap.put("createtime", new Date());
             deMap.put("nckd_parameter", bodyJson.toJSONString());
 

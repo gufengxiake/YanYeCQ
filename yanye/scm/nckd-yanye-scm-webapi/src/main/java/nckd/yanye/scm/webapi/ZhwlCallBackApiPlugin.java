@@ -358,7 +358,7 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         eleweighing.set("nckd_qygys",null);
                     }else {
                         DynamicObject supplier = supplierControl.getDynamicObjectCollection("nckd_entryentity").size() > 0 ? supplierControl.getDynamicObjectCollection("nckd_entryentity").get(0).getDynamicObject("nckd_supplier") : null;
-                        eleweighing.set("nckd_supplier",supplier);
+                        eleweighing.set("nckd_qygys",supplier);
                     }
                     DynamicObjectCollection entryentity = eleweighing.getDynamicObjectCollection("entryentity");
                     DynamicObject entry = entryentity.addNew();
