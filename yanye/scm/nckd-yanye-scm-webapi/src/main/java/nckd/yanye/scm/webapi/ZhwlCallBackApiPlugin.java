@@ -11,6 +11,8 @@ import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.OperateOptionConst;
+import kd.bos.entity.operate.result.IOperateInfo;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.openapi.common.custom.annotation.*;
 import kd.bos.openapi.common.result.CustomApiResult;
@@ -338,12 +340,15 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                     DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", "id,name", new QFilter[]{new QFilter("name", QCP.equals, "石灰石（60一120mm）")});
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     DynamicObject supplierControl = BusinessDataServiceHelper.loadSingle("nckd_supplier_control", "id,nckd_entryentity,nckd_entryentity.nckd_suppliername,nckd_entryentity.nckd_supplier", new QFilter[]{new QFilter("nckd_entryentity.nckd_suppliername", QCP.equals, nckd_customer)});
+                    DynamicObject org = BusinessDataServiceHelper.loadSingle(1994936229107338240L, "bos_org");
+                    DynamicObject bosBilltype = BusinessDataServiceHelper.loadSingle(2057962852278348800L, "bos_billtype");
+                    DynamicObject unit = BusinessDataServiceHelper.loadSingle(307797538013076480L, "bd_measureunits");
 
                     eleweighing.set("billno",number);
                     eleweighing.set("billstatus","A");
-                    eleweighing.set("org",1994936229107338240L);
-                    eleweighing.set("nckd_stockorg",1994936229107338240L);
-                    eleweighing.set("nckd_billtype",2057962852278348800L);
+                    eleweighing.set("org",org);
+                    eleweighing.set("nckd_stockorg",org);
+                    eleweighing.set("nckd_billtype",bosBilltype);
                     eleweighing.set("nckd_currency",1);
                     eleweighing.set("nckd_settlecurrency",1);
                     eleweighing.set("nckd_paymode","CREDIT");
@@ -369,12 +374,39 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                     DynamicObjectCollection entryentity = eleweighing.getDynamicObjectCollection("entryentity");
                     DynamicObject entry = entryentity.addNew();
                     entry.set("nckd_materiel",material);
-                    entry.set("nckd_unit",307797538013076480L);
-                    entry.set("nckd_baseunit",307797538013076480L);
-                    entry.set("nckd_qty",nckd_grossweight);
+                    entry.set("nckd_unit",unit);
+                    entry.set("nckd_baseunit",unit);
+                    entry.set("nckd_qty",nckd_netweight);
+                    entry.set("nckd_grossweight",nckd_grossweight);//毛重
+                    entry.set("nckd_tare",nckd_tare);//皮重
+                    entry.set("nckd_netweight",nckd_netweight);//净重
                     OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweighing}, OperateOption.create());
                     if (!saveOperationResult.isSuccess()){
                         return CustomApiResult.fail("false","生成电子磅单失败");
+                    }
+                    Object savePk = saveOperationResult.getSuccessPkIds().get(0);
+                    DynamicObject[] load = BusinessDataServiceHelper.load("nckd_eleweighing", "id,billstatus,nckd_billtype,nckd_currency,nckd_settlecurrency,nckd_paymode,billno", new QFilter[]{new QFilter("id", QCP.equals, savePk)});
+                    OperateOption auditOption = OperateOption.create();
+                    auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                    auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                    OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_eleweighing", load, auditOption);
+                    if (!submit.isSuccess()){
+                        StringBuilder stringBuilder = new StringBuilder();
+                        List<IOperateInfo> allErrorOrValidateInfo = submit.getAllErrorOrValidateInfo();
+                        for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                            stringBuilder.append(iOperateInfo.getMessage()+",");
+                        }
+                        return CustomApiResult.fail("false","提交电子磅单失败："+stringBuilder);
+                    }
+                    DynamicObject submitLoad = BusinessDataServiceHelper.loadSingle(savePk,"nckd_eleweighing");
+                    OperationResult result = OperationServiceHelper.executeOperate("audit", "nckd_eleweighing", new DynamicObject[]{submitLoad}, OperateOption.create());
+                    if (!result.isSuccess()){
+                        StringBuilder stringBuilder = new StringBuilder();
+                        List<IOperateInfo> allErrorOrValidateInfo = submit.getAllErrorOrValidateInfo();
+                        for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                            stringBuilder.append(iOperateInfo.getMessage()+",");
+                        }
+                        return CustomApiResult.fail("false","审核电子磅单失败："+stringBuilder);
                     }
                     return CustomApiResult.success("success");
                 } else {
