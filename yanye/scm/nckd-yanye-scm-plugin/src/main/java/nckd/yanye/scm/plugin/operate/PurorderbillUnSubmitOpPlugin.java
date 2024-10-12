@@ -150,10 +150,10 @@ public class PurorderbillUnSubmitOpPlugin extends AbstractOperationServicePlugIn
                     //以下字段来源于采购合同
                     DynamicObject purcontractBillEntryDy = purcontractBillEntryMap.get(materialId);
                     // 带参数
-                    boolean result = deleteTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
-                    if (result) {
-                        deleteTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
-                    }
+                    deleteTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
+
+                    deleteTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
+
                 }
             }
         }
@@ -176,21 +176,12 @@ public class PurorderbillUnSubmitOpPlugin extends AbstractOperationServicePlugIn
     /**
      * 删除botp规则表
      */
-    private static boolean deleteTBotpBilltracker(Object sbillid, Object tbillid) {
+    private static void deleteTBotpBilltracker(Object sbillid, Object tbillid) {
         String botpSql = "DELETE FROM t_botp_billtracker WHERE fstableid = ? AND fsbillid = ? AND fttableid = ? AND ftbillid = ? ;";
         Long fstableid = 719529409035381761L;
         Long fsbillid = Convert.toLong(sbillid);
         Long fttableid = 602924326097811460L;
         Long ftbillid = Convert.toLong(tbillid);
-        Date fcreatetime = new Date();
-        //先判断有没有这个botp关系，有就不再添加
-        QFilter qFilter = new QFilter("stableid", QCP.equals, 719529409035381761L).and("sbillid", QCP.equals, sbillid)
-                .and("ttableid", QCP.equals, 602924326097811460L).and("tbillid", QCP.equals, tbillid);
-        DynamicObject botpBilltracker = BusinessDataServiceHelper.loadSingle("botp_billtracker", "id,stableid,sbillid,ttableid,tbillid,createtime", qFilter.toArray());
-        if (ObjectUtil.isNotEmpty(botpBilltracker)) {
-            return false;
-        }
-        boolean result = DB.execute(DBRoute.basedata, botpSql, new Object[]{fstableid, fsbillid, fttableid, ftbillid});
-        return result;
+        DB.execute(DBRoute.basedata, botpSql, new Object[]{fstableid, fsbillid, fttableid, ftbillid});
     }
 }
