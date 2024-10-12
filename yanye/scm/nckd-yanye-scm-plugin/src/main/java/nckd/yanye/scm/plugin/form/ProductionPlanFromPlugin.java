@@ -56,12 +56,16 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         EntryGrid grid = this.getControl("pom_planning_entry");
         grid.addRowClickListener(this);
         //监听Before7
-        BasedataEdit produceDept = this.getView().getControl("nckd_producedept");
+        BasedataEdit produceDept = this.getView().getControl("nckd_producedept");//生产部门
         produceDept.addBeforeF7SelectListener(this);
-        BasedataEdit fieldEdit = this.getView().getControl("material");
+        BasedataEdit fieldEdit = this.getView().getControl("material");//物料
         fieldEdit.addAfterF7SelectListener(this);
     }
 
+    /**
+     * 单据体点击事件
+     * @param evt
+     */
     @Override
     public void entryRowClick(RowClickEvent evt) {
         RowClickEventListener.super.entryRowClick(evt);
@@ -70,57 +74,72 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         if (row < 0) {
             return;
         }
-        String number = data.getString("billno");
+        String number = data.getString("billno");//单据编码
         if (number == null) {
             return;
         }
+        //获取当前选中单据体行
         DynamicObject entry = this.getModel().getEntryEntity("pom_planning_entry").get(row);
+        //选中行物料
         DynamicObject material = entry.getDynamicObject("material");
         if (material == null) {
             return;
         }
+        //获取子单据体
         DynamicObjectCollection subentryentity = entry.getDynamicObjectCollection("nckd_subentryentity");
+        //如果产品类型不是主产品则清空子单据体
         if (!"C".equals(entry.getString("nckd_producttype"))) {
             subentryentity.clear();
             this.getView().updateView("nckd_subentryentity");
             return;
         }
+        //获取当前选中行数量
         BigDecimal nckdYield = entry.getBigDecimal("nckd_yield");
         if (nckdYield.compareTo(BigDecimal.ZERO) < 1) {
             return;
         }
+        //以上校验都通过则先清除子单据体数据
         if (subentryentity.size() > 0) {
             subentryentity.clear();
             this.getView().updateView("nckd_subentryentity");
         }
-        DynamicObject nckdBomid = entry.getDynamicObject("nckd_bomid");//1
+        //获取当前选中行bom
+        DynamicObject nckdBomid = entry.getDynamicObject("nckd_bomid");
         if (nckdBomid == null) {
             return;
         }
         nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
+        //查bom组件
         DynamicObjectCollection bomEntry = nckdBomid.getDynamicObjectCollection("entry");
         if (bomEntry.size() <= 0) {
             return;
         }
         for (DynamicObject b : bomEntry) {
+            //获取bom组件物料
             DynamicObject entrymaterial = b.getDynamicObject("entrymaterial");
             DynamicObject pBom = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material,entry", new QFilter[]{new QFilter("material.id", QCP.equals, entrymaterial.getPkValue())});
             if (pBom == null) {
                 continue;
             }
+            //查组件上的物料对应的bom
             pBom = BusinessDataServiceHelper.loadSingle(pBom.getPkValue(), "pdm_mftbom");
+            //拿到组件物料对应bom的组件信息
             DynamicObjectCollection newBomEntry = pBom.getDynamicObjectCollection("entry");
             if (newBomEntry.size() > 0) {
+                //子单据体新增一条数据存当前组件信息展示
                 DynamicObject subentry = subentryentity.addNew();
+                //查物料生产信息
                 entrymaterial = BusinessDataServiceHelper.loadSingle(entrymaterial.getPkValue(), "bd_materialmftinfo");
+                //获取bom组件的分子分母，计算公式：主产品数量*bom中子项自制件分子/分母
                 BigDecimal entryqtynumerator = b.getBigDecimal("entryqtynumerator");
                 BigDecimal entryqtydenominator = b.getBigDecimal("entryqtydenominator");
                 BigDecimal result = (nckdYield.multiply(entryqtynumerator).divide(entryqtydenominator)).setScale(2, BigDecimal.ROUND_HALF_UP);
-                subentry.set("nckd_material", entrymaterial);
-                subentry.set("nckd_mname", entrymaterial.getDynamicObject("masterid").get("name"));
-                subentry.set("producedept", entrymaterial.getDynamicObject("departmentorgid"));
-                subentry.set("yiel", result);
-                subentry.set("unit", b.getDynamicObject("entryunit"));
+                subentry.set("nckd_material", entrymaterial);//子单据体物料
+                subentry.set("nckd_mname", entrymaterial.getDynamicObject("masterid").get("name"));//物料名称
+                subentry.set("producedept", entrymaterial.getDynamicObject("departmentorgid"));//生产部门
+                subentry.set("yiel", result);//数量
+                subentry.set("unit", b.getDynamicObject("entryunit"));//单位
+                //因为不清楚一个主产品有多少个半成品组件，这里用递归
                 setSubentry(pBom, subentryentity, result);
             }
 
@@ -129,6 +148,12 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         this.getView().updateView("nckd_subentryentity");
     }
 
+    /**
+     * 递归查询产品组件并赋值
+     * @param nckdBomid
+     * @param subentryentity
+     * @param nckdYield
+     */
     private void setSubentry(DynamicObject nckdBomid, DynamicObjectCollection subentryentity, BigDecimal nckdYield) {
         DynamicObjectCollection bomEntry = nckdBomid.getDynamicObjectCollection("entry");
         for (DynamicObject b : bomEntry) {
@@ -156,14 +181,19 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         }
     }
 
+    /**
+     * 按钮监听
+     * @param evt
+     */
     @Override
     public void itemClick(ItemClickEvent evt) {
         super.itemClick(evt);
         String itemKey = evt.getItemKey();
+        //新增分录
         if (StringUtils.equals(itemKey, "tb_new")) {
-            Object data = this.getModel().getValue("nckd_plan_month");
+            Object data = this.getModel().getValue("nckd_plan_month");//计划月份
             if (data != null) {
-                //获取所在月份最后一天
+                //默认计划开始时间为月初，计划结束时间为月末
                 SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                 SimpleDateFormat simpleDateFormat_day = new SimpleDateFormat("yyyy-MM-dd");
                 Calendar cal = Calendar.getInstance();
@@ -180,40 +210,40 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 int[] rows = treeEntryEntity.getSelectRows();
                 if (rows != null && rows.length > 0) {
                     for (int row : rows) {
-                        this.getModel().setValue("nckd_planstarttime", data, row);
-                        this.getModel().setValue("nckd_planendtime", formatData, row);
+                        this.getModel().setValue("nckd_planstarttime", data, row);//计划开始时间
+                        this.getModel().setValue("nckd_planendtime", formatData, row);//计划结束时间
                     }
                 }
             }
         }
-        if (StringUtils.equals(itemKey, "nckd_baritemap")) {
-            DynamicObjectCollection entity = this.getModel().getEntryEntity("pom_planning_entry");
-            if (entity.size() > 0) {
-                this.getModel().setValue("nckd_materiel", entity.get(0).getDynamicObject("material"));
-            }
-        }
+        //关联生成（下推生产工单）
         if (StringUtils.equals(itemKey, "nckd_bar")) {
-            //判断状态，审核完成才可以提交
+            //判断状态，审核完成才可以下推
             Object billstatus = this.getModel().getValue("billstatus");
             if (!"C".equals(billstatus)) {
                 this.getView().showErrorNotification("该单据未审核完成，不可下推");
                 return;
             }
+            //校验该单据是否已经下推生产工单
             DynamicObject dataEntity = this.getModel().getDataEntity();
             DynamicObject pom = BusinessDataServiceHelper.loadSingle("pom_mftorder", "id,billno,nckd_sourcebill", new QFilter[]{new QFilter("nckd_sourcebill", QCP.equals, dataEntity.getString("billno"))});
             if (pom != null) {
                 this.getView().showErrorNotification("请勿重复下推");
                 return;
             }
+            //拿到单据体数据
             DynamicObjectCollection entity = this.getModel().getEntryEntity("pom_planning_entry");
+            //bom上下级没有直接可以关联查询的字段，只能通过拿到当前bom组件物料去查该物料对应的主产品bom，如果查到了则说明有下级关系，反之则没有
             if (entity != null && entity.size() > 0) {
+                //拿到计划单每行分录物料信息去查该物料是否有下级关系，有则count+1，count>0则需要拆成多个工单
                 int count = 0;
                 for (DynamicObject d : entity) {
-                    DynamicObject pdm = d.getDynamicObject("nckd_bomid");
+                    DynamicObject pdm = d.getDynamicObject("nckd_bomid");//bom
                     pdm = BusinessDataServiceHelper.loadSingle(pdm.getPkValue(), "pdm_mftbom");
-                    DynamicObjectCollection entry = pdm.getDynamicObjectCollection("entry");
+                    DynamicObjectCollection entry = pdm.getDynamicObjectCollection("entry");//bom组件
                     if (entry.size() > 0) {
-                        DynamicObject entrymaterial = entry.get(0).getDynamicObject("entrymaterial");
+                        DynamicObject entrymaterial = entry.get(0).getDynamicObject("entrymaterial");//组件物料
+                        //通过物料查bom
                         pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
                         if (pdm != null) {
                             count = count + 1;
@@ -229,65 +259,79 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
         }
     }
 
-    //半成品计划单下推
+    /**
+     * 计划单信息下推生产工单（合并拆分）
+     * @param entity
+     */
     private void setFinishToMft(DynamicObjectCollection entity) {
 
         DynamicObject dataEntity = this.getModel().getDataEntity();
         for (int i = 0; i < entity.size(); i++) {
+            //主产品才生成工单，联副产品不单独生成工单，放在对应主产品下面保留树形结构
             if (!"C".equals(entity.get(i).getString("nckd_producttype"))) {
                 continue;
             }
+            //拿到生产工单树形单据体
             DynamicObject pomMftorder = BusinessDataServiceHelper.newDynamicObject("pom_mftorder");
-            DynamicObjectCollection treeentryentity = pomMftorder.getDynamicObjectCollection("treeentryentity");//拿到生产工单树形单据体
+            DynamicObjectCollection treeentryentity = pomMftorder.getDynamicObjectCollection("treeentryentity");
 
+            //获取生产工单编码规则生成编码
             CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(pomMftorder.getDataEntityType().getName(), pomMftorder, null);
             String number = CodeRuleServiceHelper.readNumber(codeRule, pomMftorder);
 
+            //查询生产工单单据类型
             DynamicObject pmf = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("number", QCP.equals, "pom_mftorder_BT_S")});
+            //计划单分录行
             DynamicObject oldEntity = entity.get(i);
-            pomMftorder.set("billno", number);
-            pomMftorder.set("org", dataEntity.getDynamicObject("org"));
-            pomMftorder.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));
-            pomMftorder.set("billdate", new Date());
-            pomMftorder.set("billstatus", "A");
-            pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));
+            pomMftorder.set("billno", number);//编码
+            pomMftorder.set("org", dataEntity.getDynamicObject("org"));//生产组织
+            pomMftorder.set("transactiontype", dataEntity.getDynamicObject("nckd_transactiontype"));//生产事务类型
+            pomMftorder.set("billdate", new Date());//单据日期
+            pomMftorder.set("billstatus", "A");//单据状态
+            pomMftorder.set("nckd_sourcebill", dataEntity.get("billno"));//来源单据编号
             pomMftorder.set("billtype", pmf);//单据类型
             pomMftorder.set("entryinwardept", dataEntity.getDynamicObject("org"));//入库组织
             pomMftorder.set("nckd_plan_month", dataEntity.get("nckd_plan_month"));//计划月份
             pomMftorder.set("nckd_plan_unit", dataEntity.getDynamicObject("nckd_plan_unit"));//计划下达单位
-            pomMftorder.set("nckd_planorg", oldEntity.getDynamicObject("nckd_producedept"));
-            pomMftorder.set("nckd_planmaterial", oldEntity.getDynamicObject("material"));
-            pomMftorder.set("entrybaseqty", oldEntity.getBigDecimal("nckd_yield"));
+            pomMftorder.set("nckd_planorg", oldEntity.getDynamicObject("nckd_producedept"));//计划单成品生产部门
+            pomMftorder.set("nckd_planmaterial", oldEntity.getDynamicObject("material"));//计划单成品物料
+            pomMftorder.set("entrybaseqty", oldEntity.getBigDecimal("nckd_yield"));//
             DynamicObject nckdBomid = oldEntity.getDynamicObject("nckd_bomid");
             if (nckdBomid == null) {
                 return;
             }
+            //查bom
             nckdBomid = BusinessDataServiceHelper.loadSingle(nckdBomid.getPkValue(), "pdm_mftbom");
+            //获取bom主产品物料
             DynamicObject material = nckdBomid.getDynamicObject("material");
             material = BusinessDataServiceHelper.loadSingle(material.getPkValue(), "bd_materialmftinfo");
+            //生成随机单据体id
             long id = DB.genLongId("t_pom_mftorderentry");
+            //计划数量
             BigDecimal yield = oldEntity.getBigDecimal("nckd_yield");
             DynamicObject newOne = treeentryentity.addNew();
             newOne.set("id", id);//随机生成一个long类型的id
             newOne.set("producttype", "C");
             newOne.set("material", material);//物料
-            newOne.set("materielmasterid", nckdBomid.getDynamicObject("material").get("masterid"));//物料
-            newOne.set("producedept", oldEntity.getDynamicObject("nckd_producedept"));
-            newOne.set("qty", yield);
-            newOne.set("unit", material.getDynamicObject("mftunit"));
-            newOne.set("bomid", nckdBomid);
-            newOne.set("planbegintime", oldEntity.get("nckd_planstarttime"));
-            newOne.set("planendtime", oldEntity.get("nckd_planendtime"));
-            newOne.set("planstatus", "B");
-            newOne.set("baseunit", material.getDynamicObject("mftunit"));
-            newOne.set("expendbomtime", oldEntity.get("nckd_planendtime"));
-            newOne.set("inwardept", dataEntity.getDynamicObject("org"));
-            newOne.set("planpreparetime", oldEntity.get("nckd_planstarttime"));
-            newOne.set("baseqty", yield);
-            pomMftorder.set("remark", pomMftorder.get("remark") == null ? oldEntity.getString("nckd_remark") : oldEntity.getString("nckd_remark") + pomMftorder.getString("remark"));
+            newOne.set("materielmasterid", nckdBomid.getDynamicObject("material").get("masterid"));//物料(主数据)
+            newOne.set("producedept", oldEntity.getDynamicObject("nckd_producedept"));//生产部门
+            newOne.set("qty", yield);//数量
+            newOne.set("unit", material.getDynamicObject("mftunit"));//计量单位
+            newOne.set("bomid", nckdBomid);//bom
+            newOne.set("planbegintime", oldEntity.get("nckd_planstarttime"));//计划开工时间
+            newOne.set("planendtime", oldEntity.get("nckd_planendtime"));//计划完工时间
+            newOne.set("planstatus", "B");//计划状态
+            newOne.set("baseunit", material.getDynamicObject("mftunit"));//基本单位
+            newOne.set("expendbomtime", oldEntity.get("nckd_planendtime"));//展开时间
+            newOne.set("inwardept", dataEntity.getDynamicObject("org"));//入库组织
+            newOne.set("planpreparetime", oldEntity.get("nckd_planstarttime"));//计划准备时间
+            newOne.set("baseqty", yield);//基本数量
+            pomMftorder.set("remark", pomMftorder.get("remark") == null ? oldEntity.getString("nckd_remark") : oldEntity.getString("nckd_remark") + pomMftorder.getString("remark"));//备注
             pomMftorder.set("nckd_planentryid", oldEntity.getPkValue());
+            //获取bom对应的联副产品
             DynamicObjectCollection copent = nckdBomid.getDynamicObjectCollection("copentry");
             if (copent.size() > 0) {
+                //生成联副产品对应分录
                 for (int j = 0; j < copent.size(); j++) {
                     DynamicObject cop = copent.get(j);
                     DynamicObject newTwo = treeentryentity.addNew();
@@ -298,7 +342,6 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     } else {
                         newTwo.set("producttype", "B");
                     }
-                    //newTwo.set("producttype", cop.getString("copentrytype"));
                     DynamicObject copentrymaterial = cop.getDynamicObject("copentrymaterial") == null ? cop.getDynamicObject("copentrymaterial") : BusinessDataServiceHelper.loadSingle(cop.getDynamicObject("copentrymaterial").getPkValue(), "bd_materialmftinfo");
                     newTwo.set("materielmasterid", copentrymaterial == null ? null : cop.getDynamicObject("copentrymaterial"));//物料
                     newTwo.set("material", copentrymaterial);
@@ -323,56 +366,6 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 this.getView().showMessage(result1.getMessage());
                 return;
             }
-            /**
-             * 再次下推生成组件清单
-             */
-            //构建选中行数据包
-            //List<ListSelectedRow> selectedRows = new ArrayList();
-            //ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder.getPkValue());
-            //selectedRows.add(selectedRow);
-            ////获取转换规则id
-            //ConvertRuleReader read = new ConvertRuleReader();
-            //List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-            //// 创建下推参数
-            //PushArgs pushArgs = new PushArgs();
-            //// 源单标识，必填
-            //pushArgs.setSourceEntityNumber("pom_mftorder");
-            //// 目标单据标识，必填
-            //pushArgs.setTargetEntityNumber("pom_mftstock");
-            //// 生成转换结果报告，必填
-            //pushArgs.setBuildConvReport(true);
-            ////不检查目标单新增权限,非必填
-            //pushArgs.setHasRight(true);
-            ////传入下推使用的转换规则id，不填则使用默认规则
-            ////pushArgs.setRuleId("2027100530894974976");
-            ////下推默认保存，必填
-            //pushArgs.setAutoSave(false);
-            //// 设置源单选中的数据包，必填
-            //pushArgs.setSelectedRows(selectedRows);
-            //// 执行下推操作
-            //ConvertOperationResult operationResult = ConvertServiceHelper.push(pushArgs);
-            //if (operationResult.isSuccess()) {
-            //    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
-            //    List<DynamicObject> targetBillObjs = operationResult.loadTargetDataObjects(new IRefrencedataProvider() {
-            //        @Override
-            //        public void fillReferenceData(Object[] objs, IDataEntityType dType) {
-            //            BusinessDataReader.loadRefence(objs, dType);
-            //        }
-            //    }, mainEntityType);
-            //    DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
-            //    OperationResult result = OperationServiceHelper.executeOperate("save", "pom_mftstock", saveDynamicObject, OperateOption.create());
-            //    if (result.isSuccess()){
-            //        OperateOption auditOption = OperateOption.create();
-            //        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-            //        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-            //        OperationResult result2 = OperationServiceHelper.executeOperate("submit", "pom_mftstock", saveDynamicObject, OperateOption.create());
-            //        if (result2.isSuccess()) {
-            //            OperationServiceHelper.executeOperate("audit", "pom_mftstock", saveDynamicObject, OperateOption.create());
-            //        }
-            //    }
-            //}
-
-
             //TODO
             //递归关联查找到BOM对应的半成品并生成工单
             setProducts(nckdBomid, oldEntity, pmf, pomMftorder, yield);
@@ -604,45 +597,6 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         this.getView().showMessage(result.getMessage());
                         return;
                     }
-                    /**
-                     * 再次下推生成组件清单
-                     */
-                    //构建选中行数据包
-                    //List<ListSelectedRow> selectedRows = new ArrayList();
-                    //ListSelectedRow selectedRow = new ListSelectedRow(pomMftorder_a.getPkValue());
-                    //selectedRows.add(selectedRow);
-                    ////获取转换规则id
-                    //ConvertRuleReader read = new ConvertRuleReader();
-                    //List<String> loadRuleIds = read.loadRuleIds("pom_mftorder", "pom_mftstock", false);
-                    //// 创建下推参数
-                    //PushArgs pushArgs = new PushArgs();
-                    //// 源单标识，必填
-                    //pushArgs.setSourceEntityNumber("pom_mftorder");
-                    //// 目标单据标识，必填
-                    //pushArgs.setTargetEntityNumber("pom_mftstock");
-                    //// 生成转换结果报告，必填
-                    //pushArgs.setBuildConvReport(true);
-                    ////不检查目标单新增权限,非必填
-                    //pushArgs.setHasRight(true);
-                    ////传入下推使用的转换规则id，不填则使用默认规则
-                    //pushArgs.setRuleId("2027100530894974976");
-                    ////下推默认保存，必填
-                    //pushArgs.setAutoSave(false);
-                    //// 设置源单选中的数据包，必填
-                    //pushArgs.setSelectedRows(selectedRows);
-                    //// 执行下推操作
-                    //ConvertOperationResult operationResult = ConvertServiceHelper.push(pushArgs);
-                    //if (operationResult.isSuccess()) {
-                    //    MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
-                    //    List<DynamicObject> targetDos = operationResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
-                    //    DynamicObject targe = targetDos.get(0);
-                    //    targe.set("billstatus","C");
-                    //    OperationResult result1 = OperationServiceHelper.executeOperate("submit", "pom_mftstock", new DynamicObject[]{targe}, OperateOption.create());
-                    //    if (!result1.isSuccess()) {
-                    //        OperationServiceHelper.executeOperate("audit", "pom_mftstock", new DynamicObject[]{targe}, OperateOption.create());
-                    //    }
-                    //}
-                    //this.getModel().setValue("nckd_pom", "工单1：" + number + ",工单2：" + number_a, i);
                     setProducts(pdm, oldEntity, pmf, pomMftorder_a, newQty);
                 }
             }
