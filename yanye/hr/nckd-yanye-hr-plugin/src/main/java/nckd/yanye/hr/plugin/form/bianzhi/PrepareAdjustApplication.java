@@ -399,6 +399,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(dataSet.copy());
             List<Long> collect2 = new ArrayList<Long>();
             Set<Long> longSet = new HashSet<Long>();
+            // 处理实际人数
             for (int i = 0; i < retDynCol.size(); i++) {
                 int index = this.getModel().insertEntryRow("nckd_bentryentity", i);
                 this.getModel().setValue("nckd_adminorg",retDynCol.get(i).get("BOID"),index);
@@ -416,7 +417,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
             }
             // 获取到部门key，根据部门key获取到岗位信息,HR岗位hbpm_positionhr
             QFilter qFilter = new QFilter("adminorg.id", QCP.in, collect2);
-
+            // 查询岗位信息
             Date date2 = DateUtils.stringToDate(dateStr, DatePattern.YYYY_MM_DD_HH_MM_SS);
             qFilter.and(new QFilter("bsled", QCP.large_equals, date2)).and("disabler",QCP.equals,0);
             DynamicObjectCollection query = QueryServiceHelper.query("hbpm_positionhr", "id,adminorg,adminorg.id,number,name,hisversion,createtime", new QFilter[]{qFilter}, "number,createtime desc,hisversion");

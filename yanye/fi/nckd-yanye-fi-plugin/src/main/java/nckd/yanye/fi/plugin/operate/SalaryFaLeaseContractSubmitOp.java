@@ -8,7 +8,7 @@ import kd.fi.fa.opplugin.lease.FaLeaseContractExemptPropertyValidator;
 /**
  * Module           :财务云-租赁管理-退养人员工资
  * Description      :退养人员工资提交生成付款计划
- *
+ *  nckd_fa_salary_retir
  * @author : guozhiwei
  * @date : 2024/8/7
  */

@@ -199,6 +199,7 @@ public class SalaryInterstDetailGenerator {
         DynamicObjectCollection detailEntry = interestDetail.getDynamicObjectCollection("detailentry");
         detailEntry.clear();
         Date detailBeginDate = this.getDetailBeginDate(leaseContract);
+        // 生成计息明细
         Date detailEndDate = this.getDetailEndDate(leaseContract, amountMap);
         interestDetail.set("dailyrate", BigDecimal.ZERO);
         int seq = 1;
@@ -492,6 +493,7 @@ public class SalaryInterstDetailGenerator {
         return leaseLiabOri.subtract(leaseLiab);
     }
 
+    // 生产计息明细
     private Date getDetailEndDate(DynamicObject leaseContract, Map<String, BigDecimal> amountMap) {
         Date leaseEndDate = leaseContract.getDate("leaseenddate");
         Date detailEndDate = leaseEndDate;
@@ -514,6 +516,7 @@ public class SalaryInterstDetailGenerator {
 
     private DynamicObject getLeaseInitFromLocalCache(long orgId) {
 
+        // 获取org会计账簿信息
         DynamicObject leaseInit = (DynamicObject)this.leaseInitMap.get(orgId);
         if (leaseInit == null) {
             String select = Fa.comma(new String[]{"curperiod", "periodtype"});

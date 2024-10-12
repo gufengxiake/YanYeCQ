@@ -52,8 +52,11 @@ import java.util.stream.Stream;
 public class SalaryLeaseContractListPlugin extends AbstractListPlugin {
 
     private static final String KEY_PUSH = "push";
+    // 计息操作
     private static final String KEY_RENT_SETTLE = "rentsettle";
+    // 联查退养摊销与计息
     private static final String KEY_QUERY_RENT_SETTLE = "queryrentsettle";
+    // 联查计息明细
     private static final String KEY_QUERY_INTEREST_DETAIL = "queryinterestdetail";
     public static final String PARAM_CONTRACT_ID = "param_contract_id";
     private static final String KEY_FULL_TERMINATION = "fulltermination";
@@ -93,14 +96,15 @@ public class SalaryLeaseContractListPlugin extends AbstractListPlugin {
         FormOperate formOperate = (FormOperate)args.getSource();
         String operateKey = formOperate.getOperateKey();
         List<String> errorInfo = new ArrayList(10);
+        // 操作校验
         switch (operateKey) {
-            case "push":
+            case KEY_PUSH:
                 errorInfo = this.validate4Push();
                 break;
-            case "queryrentsettle":
+            case KEY_QUERY_RENT_SETTLE:
                 errorInfo = this.validate4LinkQuery();
                 break;
-            case "queryinterestdetail":
+            case KEY_QUERY_INTEREST_DETAIL:
                 ListSelectedRowCollection selectedRows = ((IListView)this.getView()).getSelectedRows();
                 Set<Object> selectContractIds = (Set)selectedRows.stream().map(ListSelectedRow::getPrimaryKeyValue).collect(Collectors.toSet());
                 if (selectContractIds.size() > 1) {
@@ -122,23 +126,25 @@ public class SalaryLeaseContractListPlugin extends AbstractListPlugin {
         String operateKey = args.getOperateKey();
         OperationResult opResult = args.getOperationResult();
         switch (operateKey) {
-            case "rentsettle":
+            case KEY_RENT_SETTLE:
+                // 计息操作
                 if (opResult != null && opResult.isSuccess()) {
                     this.showRentSettleList();
                 }
                 break;
-            case "queryrentsettle":
+            case KEY_QUERY_RENT_SETTLE:
+                // 联查退养人员摊销与计息
                 this.showRentSettleList();
                 break;
-            case "queryinterestdetail":
+            case KEY_QUERY_INTEREST_DETAIL:
                 this.showInterestDetail();
                 break;
-            case "fulltermination":
+            case KEY_FULL_TERMINATION:
                 if (opResult != null && opResult.isSuccess()) {
                     this.showFullTerminationForm();
                 }
                 break;
-            case "undotermination":
+            case KEY_UNDO_TERMINATION:
                 if (opResult != null && opResult.isSuccess()) {
                     this.showUndoTerminationForm();
                 }
