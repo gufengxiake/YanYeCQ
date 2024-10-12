@@ -2,7 +2,8 @@ package nckd.yanye.scm.plugin.form;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
-
+import kd.bos.orm.query.QCP;
+import kd.bos.orm.query.QFilter;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.ExtendedDataEntity;
@@ -117,40 +118,110 @@ public class MaterialreqbiBillPlugin  extends AbstractOperationServicePlugIn {
                 rowDataModel.setRowContext(rowDataEntity.getDataEntity());
 //            Date deliveryDate = (Date)rowDataModel.getValue(KEY_DELIVERYDATE);
 //            Date lastDate = (Date)rowDataModel.getValue(KEY_LASTDATE);
-                String resut = "";
+                String resut001 = "";
+                String resut002 = "";
+                String resut003= "";
+                String resut04 = "";
+
                 DynamicObject material = (DynamicObject) rowDataModel.getValue(KEY_material);
                 DynamicObject auxpty = (DynamicObject) rowDataModel.getValue(KEY_auxpty);
 
                 //获取物料信息，根据物料信息查询是否启用的辅助属性
-                Object materialId = material.getPkValue();
-
+                int row=rowDataEntity.getRowIndex()+1;
 
                 if (material == null) return;
                 //商品Id
-                Object itemId = material.getPkValue();
-                material = BusinessDataServiceHelper.loadSingle(itemId, material.getDynamicObjectType().getName());
-                if (material.getBoolean("isuseauxpty")) {
-                    DynamicObjectCollection auxptyentry = material.getDynamicObjectCollection("auxptyentry");
+                DynamicObject masterid = material.getDynamicObject("masterid");
+                String masternum = masterid.getString("number");
+                Object materialId = masterid.getPkValue();
+//                DynamicObject item = BusinessDataServiceHelper.loadSingle(itemId, "bd_material");
+
+                DynamicObject item = BusinessDataServiceHelper.loadSingle( "bd_material",new QFilter[]{new QFilter("masterid", QCP.equals,materialId)});
+//
+
+                if (item.getBoolean("isuseauxpty")) {
+                    DynamicObjectCollection auxptyentry = item.getDynamicObjectCollection("auxptyentry");
                     for (DynamicObject auxptyent : auxptyentry) {
                         String num = DynamicObjectUtils.getDynamicObject(auxptyent, "auxpty").getString("number");
 //                     auxptyent.getDynamicObject("");
                         if ("001".equals(num)) {
-                            resut = "A";
+                            resut001 = "A";
+                            continue;
+                        }
+                        if ("002".equals(num)) {
+                            resut002 = "B";
+                            continue;
+                        }
+                        if ("003".equals(num)) {
+                            resut003 = "C";
+                            continue;
+                        }
+                        if ("04".equals(num)) {
+                            resut04 = "D";
                             continue;
                         }
 //                    System.out.println(num);
                     }
-                }
 
-                if ("A".equals(resut)) {
 
                     if (auxpty == null) {
                         this.addErrorMessage(rowDataEntity,
-                                String.format("预计送货日期(%s)，不能晚于最迟送货日期(%s)！"
+                                String.format("第(%s)行，物料(%s)启用了辅助属性，辅助属性字段不能为空！",row,masternum
                                 ));
 
                     }
+                    else
+                    {
+
+
+
+
+                        if ("A".equals(resut001)) {
+                            if(auxpty.toString().contains("f000027"))
+                            {
+
+                            }
+                            else
+                            {
+                                this.addErrorMessage(rowDataEntity,
+                                        String.format("第(%s)行，物料(%s)启用了辅助属性[需求部门]，辅助属性字段[需求部门]不能为空！",row,masternum
+                                        ));
+
+                            }
+                        }
+                        if ("B".equals(resut002)) {
+                            if(auxpty.toString().contains("f000028"))
+                            {
+
+                            }
+                            else
+                            {
+                                this.addErrorMessage(rowDataEntity,
+                                        String.format("第(%s)行，物料(%s)启用了辅助属性[品牌]，辅助属性字段[品牌]不能为空！",row,masternum
+                                        ));
+
+                            }
+                        }
+                        if ("C".equals(resut003)) {
+                            if(auxpty.toString().contains("f000029"))
+                            {
+
+                            }
+                            else
+                            {
+                                this.addErrorMessage(rowDataEntity,
+                                        String.format("第(%s)行，物料(%s)启用了辅助属性[项目]，辅助属性字段[项目]不能为空！",row,masternum
+                                        ));
+
+                            }
+                        }
+
+                    }
                 }
+
+
+
+
 
 //            if (deliveryDate.compareTo(lastDate) > 0 ){
 //                // 校验不通过，输出一条错误提示

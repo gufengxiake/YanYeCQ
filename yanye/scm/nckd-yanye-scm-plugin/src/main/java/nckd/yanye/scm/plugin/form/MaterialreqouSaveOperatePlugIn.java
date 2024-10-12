@@ -13,7 +13,7 @@ import java.util.Map;
 
 /**
  * 领用出库单，库存事务为研发领用时，领料出库单反写领料申请单对应的领用部门级库存事务、研发项目
- * 表单标识：nckd_im_materialreqou_ext
+ * 表单标识：nckd_im_materialreqou_ext》
  * author:黄文波 2024-10-12
  */
     public class MaterialreqouSaveOperatePlugIn extends AbstractOperationServicePlugIn {
@@ -37,45 +37,50 @@ import java.util.Map;
                 DynamicObject bizdept=dataObject.getDynamicObject("bizdept");
                 DynamicObject nckdyfxm=dataObject.getDynamicObject("nckd_yfxm");
 
-                if(invscheme!=null){
-                    Object billId=dataObject.getPkValue();
-                    Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber,new Long[]{(Long) billId});
-                    if (sourceBillIds.containsKey("im_materialreqbill")) {
-                        HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
-                        for (long id:botpbill1_Ids){
-                            //获取上游单据数据包
-                            DynamicObject date= BusinessDataServiceHelper.loadSingle(id,"im_materialreqbill");
-                            date.set("nckd_basedatafield5",invscheme);
-                            SaveServiceHelper.update(new DynamicObject[]{date});
+                //判断库存事务是否为JY-029（研发领用出库）
+                String invschemenum = invscheme.getString("number");
+
+                if(invschemenum=="JY-029") {
+                    if (invscheme != null) {
+                        Object billId = dataObject.getPkValue();
+                        Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, new Long[]{(Long) billId});
+                        if (sourceBillIds.containsKey("im_materialreqbill")) {
+                            HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
+                            for (long id : botpbill1_Ids) {
+                                //获取上游单据数据包
+                                DynamicObject date = BusinessDataServiceHelper.loadSingle(id, "im_materialreqbill");
+                                date.set("nckd_basedatafield5", invscheme);
+                                SaveServiceHelper.update(new DynamicObject[]{date});
+                            }
                         }
                     }
-                }
 
 
-                if(bizdept!=null){
-                    Object billId=dataObject.getPkValue();
-                    Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber,new Long[]{(Long) billId});
-                    if (sourceBillIds.containsKey("im_materialreqbill")) {
-                        HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
-                        for (long id:botpbill1_Ids){
-                            //获取上游单据数据包
-                            DynamicObject date= BusinessDataServiceHelper.loadSingle(id,"im_materialreqbill");
-                            date.set("applydept",bizdept);
-                            SaveServiceHelper.update(new DynamicObject[]{date});
+                    if (bizdept != null) {
+                        Object billId = dataObject.getPkValue();
+                        Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, new Long[]{(Long) billId});
+                        if (sourceBillIds.containsKey("im_materialreqbill")) {
+                            HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
+                            for (long id : botpbill1_Ids) {
+                                //获取上游单据数据包
+                                DynamicObject date = BusinessDataServiceHelper.loadSingle(id, "im_materialreqbill");
+                                date.set("applydept", bizdept);
+                                SaveServiceHelper.update(new DynamicObject[]{date});
+                            }
                         }
                     }
-                }
 
-                if(nckdyfxm!=null){
-                    Object billId=dataObject.getPkValue();
-                    Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber,new Long[]{(Long) billId});
-                    if (sourceBillIds.containsKey("im_materialreqbill")) {
-                        HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
-                        for (long id:botpbill1_Ids){
-                            //获取上游单据数据包
-                            DynamicObject date= BusinessDataServiceHelper.loadSingle(id,"im_materialreqbill");
-                            date.set("nckd_basedatafield3",nckdyfxm);
-                            SaveServiceHelper.update(new DynamicObject[]{date});
+                    if (nckdyfxm != null) {
+                        Object billId = dataObject.getPkValue();
+                        Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, new Long[]{(Long) billId});
+                        if (sourceBillIds.containsKey("im_materialreqbill")) {
+                            HashSet<Long> botpbill1_Ids = sourceBillIds.get("im_materialreqbill");
+                            for (long id : botpbill1_Ids) {
+                                //获取上游单据数据包
+                                DynamicObject date = BusinessDataServiceHelper.loadSingle(id, "im_materialreqbill");
+                                date.set("nckd_basedatafield3", nckdyfxm);
+                                SaveServiceHelper.update(new DynamicObject[]{date});
+                            }
                         }
                     }
                 }
