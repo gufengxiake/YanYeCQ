@@ -229,6 +229,9 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         DynamicObject entry = entryentity.get(0);
                         entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
                         entry.set("nckd_srcbillentity",nckd_srcbillentity);//来源单据主实体
+                        entry.set("nckd_grossweight",nckd_grossweight);//毛重
+                        entry.set("nckd_tare",nckd_tare);//皮重
+                        entry.set("nckd_netweight",nckd_netweight);//净重
 
                         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());
                         if (!saveOperationResult.isSuccess()){
@@ -278,6 +281,9 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         DynamicObject entry = entryentity.get(0);
                         entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
                         entry.set("nckd_srcbillentity",nckd_srcbillentity);//来源单据主实体
+                        entry.set("nckd_grossweight",nckd_grossweight);//毛重
+                        entry.set("nckd_tare",nckd_tare);//皮重
+                        entry.set("nckd_netweight",nckd_netweight);//净重
 
                         //SaveServiceHelper.update(eleweigh);
                         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());
