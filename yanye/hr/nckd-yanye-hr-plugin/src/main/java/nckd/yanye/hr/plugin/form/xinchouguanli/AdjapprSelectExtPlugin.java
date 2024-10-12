@@ -8,12 +8,17 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.StringUtils;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.IDecAdjApprExtPlugin;
 import kd.sdk.swc.hcdm.business.extpoint.adjapprbill.event.AfterF7PersonSelectEvent;
+import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
+import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
 import nckd.base.common.utils.capp.CappConfig;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -25,7 +30,6 @@ import java.util.stream.Collectors;
  * @since ：Created in 17:28 2024/9/11
  */
 public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
-
     /**
      * 在添加定调薪人员时，选择定调薪人员后，需要二开对新增的字段赋值
      *
@@ -172,6 +176,11 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
 
             // 员工上次薪等
             DynamicObject preGrade = entry.getDynamicObject("pregrade");
+            // 对象里没有薪等索引，直接用number里的数字代替
+            int preGradeIndex = preGrade.getInt("gradeindex");
+            // 由于上次和本次的薪酬标准表会不同，把上次的薪等转换为本次的对应薪等id
+            Long preGradeId = AdjapprBillFormPlugin.conversionGradeId(salaryStdId, preGradeIndex);
+
             // 员工上次薪档
             DynamicObject preRank = entry.getDynamicObject("prerank");
             Integer preRankIndex = preRankMap.get(preRank.getLong("id"));
@@ -198,7 +207,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                     default:
                         break;
                 }
-                entry.set("grade", preGrade);
+                entry.set("grade", preGradeId);
                 int thisRankIndex = preRankIndex + changeRank;
                 Long thisRankId = thisRankMap.get(thisRankIndex);
                 if (thisRankIndex > thisRankMap.size()) {
@@ -211,6 +220,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
             }
 
             // 中层管理人员：不等于 员工 或 其他
+            String downMsg = "";
             if (!"其他".equals(zhiJiName) && !"员工".equals(zhiJiName)) {
                 switch (lastYearKaoHeResult) {
                     case "优秀":
@@ -237,22 +247,67 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                 }
 
                 // 赋值薪等
-                entry.set("grade", preGrade);
+                entry.set("grade", preGradeId);
                 int thisRankIndex = preRankIndex + changeRank;
                 Long thisRankId = thisRankMap.get(thisRankIndex);
+                // 超过最高档，暂按最高档处理
                 if (thisRankIndex > thisRankMap.size()) {
                     entry.set("rank", thisMaxRankId);
+                    downMsg = "调整后超过最高档，按最高档处理";
                     // 最低档，次年工资下调10%
                 } else if (thisRankIndex <= 1) {
+                    downMsg = "调整后低于最低档，工资下调: 10%";
                     entry.set("calctype", 1);
                     entry.set("actualrange", -10.00);
                 } else {
                     entry.set("rank", thisRankId);
                 }
             }
+            // 赋值薪等薪档完毕，开始赋值其他需要的字段
+            test(entry);
+
             // “系统处理备注信息”字段：“上年度绩效考核”&值“，
-            entry.set("nckd_notesinfo", "上年度绩效考核：" + lastYearKaoHeResult);
+            entry.set("nckd_notesinfo", "上年度绩效考核：" + lastYearKaoHeResult + downMsg);
         }
+    }
+
+    private void test(DynamicObject entry) {
+        // 根据薪等薪档获取金额
+        List<StdAmountQueryParam> queryParams = new ArrayList<>();
+        queryParams.add(
+                AdjapprBillFormPlugin.getStdAmountQueryParam(
+                        entry.getDynamicObject("salarystd").getLong("id"),
+                        entry.getDynamicObject("standarditem").getLong("id"),
+                        entry.getLong("grade"),
+                        entry.getLong("rank"),
+                        "this"
+                )
+        );
+        // 查询
+        List<StdAmountAndSalaryCountQueryResult> stdAmountAndSalaryCountQueryResults =
+                SalaryStdQueryService.get().queryAmountAndSalaryCount(queryParams);
+        BigDecimal amount = stdAmountAndSalaryCountQueryResults.stream()
+                .filter(result -> "this".equals(result.getUnionId()))
+                .findFirst()
+                .map(StdAmountAndSalaryCountQueryResult::getAmount)
+                .orElse(BigDecimal.ZERO);
+
+        // 上一次金额
+        BigDecimal preSalary = entry.getBigDecimal("presalary");
+        // 赋值实际调幅（%）
+        entry.set("actualrange", amount.subtract(preSalary)
+                .divide(preSalary, 4, RoundingMode.HALF_UP)
+                .multiply(new BigDecimal("100"))
+                .setScale(2, RoundingMode.HALF_UP)
+        );
+        // 赋值实际调幅（金额）
+        entry.set("actualamount", amount.subtract(preSalary));
+        // 赋值金额
+        entry.set("amount", amount);
+        // 赋值薪酬比例（CR）薪酬比率=金额/(薪酬标准表相应薪等中位值*系数)*100
+//        entry.set("salarypercent", 0);
+        // 赋值薪酬渗透率（PR）薪酬渗透率=(金额-(薪酬标准表相应薪等区间最小值*系数))/(薪酬标准表相应薪等区间最大值*系数-薪酬标准表相应薪等区间最小值*系数)*100
+//        entry.set("salaryseeprate", 0);
     }
 
     private Map<String, List<Map<String, String>>> getYearKaoheMap() {
@@ -286,22 +341,5 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
                 ));
         return yearKaoheMap;
     }
-
-    private StdAmountQueryParam getStdAmountQueryParam(Long salaryStdId, Long itemId, Long gradeId, Long rankId1, String unionId) {
-        // 构建查询参数
-        StdAmountQueryParam queryParam = new StdAmountQueryParam();
-        // 对应薪酬标准表id
-        queryParam.setStdTabId(salaryStdId);
-        // 定调薪项目id
-        queryParam.setItemId(itemId);
-        // 薪等id
-        queryParam.setGradeId(gradeId);
-        // 薪档id
-        queryParam.setRankId(rankId1);
-        // UnionId 代表这组参数的唯一标识，通过该参数将入参和返回值对应起来，必传
-        queryParam.setUnionId(unionId);
-        return queryParam;
-    }
-
 
 }
