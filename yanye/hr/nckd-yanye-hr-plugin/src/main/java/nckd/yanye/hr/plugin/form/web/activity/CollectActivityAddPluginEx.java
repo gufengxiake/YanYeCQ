@@ -32,11 +32,17 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);
+
+        // 把单据每个字段的标识和页面显示id值列举出来; infoGroupEntityList数据结构： [{"imgKey":"","infoGroupFieldList":[{"fieldName":"是否退伍军人","fieldMustInput":true,"fieldKey":"nckd_veteran","fieldId":2004353791935130624}]}]
+        Map<String, Long> fieldForIdMap = fieldForIdMap(); // key: nckd_veteran ,value: 2004353791935130624
+        Long nckdBiyeyuanxinameId = fieldForIdMap.get("nckd_biyeyuanxiname"); // 毕业院系名称:nckd_biyeyuanxiname field2004400643116121089
+        String nckdBiyeyuanxinameIdff = "field" + nckdBiyeyuanxinameId; // 毕业院系名称 (二开字段)
+
         String key = e.getProperty().getName();
         if(StringUtils.equals("field1249297648691749891", key)) {
             // 学历：field1249297648691749891
             // 学位：field1249297648691749892
-            // 毕业院系名称:field2004400643116121089，毕业院校(旧)  field1249297648691749888
+            // 毕业院系名称:nckd_biyeyuanxiname field2004400643116121089，毕业院校(旧)  field1249297648691749888
             // 第一专业：field1249297648691749893
             IDataModel model = this.getModel();
             DynamicObject  xueli = (DynamicObject )model.getValue("field1249297648691749891");
@@ -52,7 +58,7 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
                 // 【学位】默认赋值基础资料码值为“1000_S 无”
                 model.setItemValueByNumber("field1249297648691749892","1000_S"); // 1000_S 无
                 // 【毕业院系名称】默认赋值为文本”无“ （二开新增字段）
-                model.setValue("field2004400643116121089","无");
+                model.setValue(nckdBiyeyuanxinameIdff,"无");
                 // 【第一专业】默认赋值为文本”无"
                 model.setValue("field1249297648691749893","无");
             }
@@ -76,5 +82,25 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
             }
         }
 
+    }
+
+    // 把单据每个字段的标识和页面显示id值列举出来;
+    private Map<String, Long> fieldForIdMap() {
+        FormShowParameter showParameter = this.getView().getFormShowParameter();
+        JSONObject jsonObject = (JSONObject)showParameter.getCustomParam("config");
+        JSONArray infoGroupEntityList = jsonObject.getJSONArray("infoGroupEntityList");
+        int k = infoGroupEntityList.size();
+        // 把单据每个字段的标识和页面显示id值列举出来; infoGroupEntityList数据结构： [{"imgKey":"","infoGroupFieldList":[{"fieldName":"是否退伍军人","fieldMustInput":true,"fieldKey":"nckd_veteran","fieldId":2004353791935130624}]}]
+        Map<String, Long> fieldForIdMap = new HashMap<String, Long>(); // key: nckd_veteran ,value: 2004353791935130624
+        for (int i=0; i < k ;i++) {
+            JSONObject info = infoGroupEntityList.getJSONObject(i);
+            JSONArray infoGroupFieldList = info.getJSONArray("infoGroupFieldList");
+            int size = infoGroupFieldList.size();
+            for (int j=0; j < size; j++) {
+                JSONObject jsonObject1 = infoGroupFieldList.getJSONObject(j);
+                fieldForIdMap.put(jsonObject1.getString("fieldKey"),jsonObject1.getLongValue("fieldId"));
+            }
+        }
+        return fieldForIdMap;
     }
 }
