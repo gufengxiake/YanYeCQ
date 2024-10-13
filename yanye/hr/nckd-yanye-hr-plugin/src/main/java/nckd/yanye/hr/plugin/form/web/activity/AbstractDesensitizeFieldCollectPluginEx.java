@@ -91,29 +91,31 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
         if ("savesingles001".equals(key)) {
             // 基本信息的保存按钮 savesingles001
             Long nckdVeteranId = fieldForIdMap.get("nckd_veteran"); // nckd_veteran:是否退伍军人字段   nckdVeteranId:2004353791935130624
+            String istuiwuId = "field" + nckdVeteranId; // fieldnull 值表示页面没有这个字段
 
-            String istuiwu = (String)this.getModel().getValue("field" + nckdVeteranId);
-            FormShowParameter showParameter = this.getView().getFormShowParameter();
-            if ("YES".equals(istuiwu)) {
-                // 入伍时间 field2004391669838916608
-                Date ruwudate = (Date)this.getModel().getValue("field" + fieldForIdMap.get("nckd_ruwudate")); // 入伍时间 2004391669838916608
-                String warnstr = "";
-                if (ruwudate == null) {
-                    warnstr = warnstr + "入伍时间、";
-                }
-                // 退伍时间 field2004391669838916609
-                Date tuiwudate = (Date)this.getModel().getValue("field" + fieldForIdMap.get("nckd_tuiwudate")); // 退伍时间 2004391669838916609
-                if (tuiwudate == null) {
-                    warnstr = warnstr + "退伍时间、";
-                }
-                if (warnstr.length() > 0) {
-                    this.getView().showTipNotification("以下信息为必填，请填写：" + warnstr.substring(0,warnstr.length() -1));
-                    evt.setCancel(true);
-                } else {
-                    // 日期比较
-                    if (!ruwudate.before(tuiwudate)) {
-                        this.getView().showTipNotification("退伍时间要大于入伍时间" );
+            if (!"fieldnull".equals(istuiwuId)) {
+                String istuiwu = (String)this.getModel().getValue(istuiwuId);
+                if ("YES".equals(istuiwu)) {
+                    // 入伍时间 field2004391669838916608
+                    Date ruwudate = (Date)this.getModel().getValue("field" + fieldForIdMap.get("nckd_ruwudate")); // 入伍时间 2004391669838916608
+                    String warnstr = "";
+                    if (ruwudate == null) {
+                        warnstr = warnstr + "入伍时间、";
+                    }
+                    // 退伍时间 field2004391669838916609
+                    Date tuiwudate = (Date)this.getModel().getValue("field" + fieldForIdMap.get("nckd_tuiwudate")); // 退伍时间 2004391669838916609
+                    if (tuiwudate == null) {
+                        warnstr = warnstr + "退伍时间、";
+                    }
+                    if (warnstr.length() > 0) {
+                        this.getView().showTipNotification("以下信息为必填，请填写：" + warnstr.substring(0,warnstr.length() -1));
                         evt.setCancel(true);
+                    } else {
+                        // 日期比较
+                        if (!ruwudate.before(tuiwudate)) {
+                            this.getView().showTipNotification("退伍时间要大于入伍时间" );
+                            evt.setCancel(true);
+                        }
                     }
                 }
             }

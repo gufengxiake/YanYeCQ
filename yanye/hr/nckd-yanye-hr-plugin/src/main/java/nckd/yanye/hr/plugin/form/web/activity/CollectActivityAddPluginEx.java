@@ -36,7 +36,7 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
         // 把单据每个字段的标识和页面显示id值列举出来; infoGroupEntityList数据结构： [{"imgKey":"","infoGroupFieldList":[{"fieldName":"是否退伍军人","fieldMustInput":true,"fieldKey":"nckd_veteran","fieldId":2004353791935130624}]}]
         Map<String, Long> fieldForIdMap = fieldForIdMap(); // key: nckd_veteran ,value: 2004353791935130624
         Long nckdBiyeyuanxinameId = fieldForIdMap.get("nckd_biyeyuanxiname"); // 毕业院系名称:nckd_biyeyuanxiname field2004400643116121089
-        String nckdBiyeyuanxinameIdff = "field" + nckdBiyeyuanxinameId; // 毕业院系名称 (二开字段)
+        String nckdBiyeyuanxinameIdff = "field" + nckdBiyeyuanxinameId; // 毕业院系名称 (二开字段)  如果没有该字段值为：fieldnull
 
         String key = e.getProperty().getName();
         if(StringUtils.equals("field1249297648691749891", key)) {
@@ -58,7 +58,9 @@ public class CollectActivityAddPluginEx  extends AbstractCollectDynViewPlugin im
                 // 【学位】默认赋值基础资料码值为“1000_S 无”
                 model.setItemValueByNumber("field1249297648691749892","1000_S"); // 1000_S 无
                 // 【毕业院系名称】默认赋值为文本”无“ （二开新增字段）
-                model.setValue(nckdBiyeyuanxinameIdff,"无");
+                if (!"fieldnull".equals(nckdBiyeyuanxinameIdff)) {
+                    model.setValue(nckdBiyeyuanxinameIdff,"无");
+                }
                 // 【第一专业】默认赋值为文本”无"
                 model.setValue("field1249297648691749893","无");
             }
