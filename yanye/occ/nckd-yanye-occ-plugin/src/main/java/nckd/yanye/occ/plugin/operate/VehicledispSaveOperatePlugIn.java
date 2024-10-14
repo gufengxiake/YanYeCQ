@@ -21,7 +21,7 @@ import java.util.List;
 /**
  * 派车信息单保存新增车辆和司机
  * 表单标识：nckd_im_transdirbill_ext
- * author:吴国强 2024-08-12
+ * author:吴国强 2024-09-12
  */
 public class VehicledispSaveOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
@@ -64,7 +64,6 @@ public class VehicledispSaveOperatePlugIn extends AbstractOperationServicePlugIn
                     if(collections.isEmpty()){
                         //不存在，新增
                         this.createDriver(drivername,idcardno,telephone);
-
                     }
                 }
             }

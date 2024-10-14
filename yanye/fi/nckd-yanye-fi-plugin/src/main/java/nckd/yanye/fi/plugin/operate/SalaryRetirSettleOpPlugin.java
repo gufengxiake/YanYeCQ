@@ -61,7 +61,7 @@ public class SalaryRetirSettleOpPlugin extends AbstractOperationServicePlugIn {
                 paramPos.add(new GenInterestDetailParamPo(v));
             });
 //            RentSettleGenerator generator = new RentSettleGenerator(paramPos);
-            // 替换成退养人员单据
+            // 替换成退养人员单据  生成摊销与计息
             SalaryRetirRentSettleGenerator generator = new SalaryRetirRentSettleGenerator(paramPos);
             generator.generate();
             DynamicObject[] var5 = e.getDataEntities();

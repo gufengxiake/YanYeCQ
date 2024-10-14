@@ -18,7 +18,7 @@ import kd.bos.list.BillList;
 
 /**
  * Module           :人才供应云-招聘直通车-首页-临时招聘申请
- * Description      :临时招聘申请单据插件
+ * Description      :临时招聘申请列表操作插件
  *
  * @author guozhiwei
  * @date  2024/9/18 16：20

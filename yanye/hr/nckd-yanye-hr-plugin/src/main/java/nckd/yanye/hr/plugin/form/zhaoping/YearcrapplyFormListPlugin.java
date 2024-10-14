@@ -19,8 +19,8 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 
 /**
- * Module           :人才供应云-招聘直通车-首页-临时招聘申请
- * Description      :临时招聘申请单据插件
+ * Module           :人才供应云-招聘直通车-首页-年度招聘申请
+ * Description      :年度招聘申请列表插件
  *
  * @author guozhiwei
  * @date  2024/9/18 16：20

@@ -64,27 +64,7 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
         super.beforeBindData(e);
         DynamicObject org = (DynamicObject) this.getModel().getValue("org");
         //  组织id
-        Long pkValue = (Long) org.getPkValue();
-        /*
-        List<Long> longs = new ArrayList<Long>();
-        longs.add(pkValue);
-        QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
-        // 获取组织历史查询
-        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-        if(ObjectUtils.isNotEmpty(query)){
-            long boid = query.get(0).getLong("id");
-            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            int staffcount = ObjectUtils.isNotEmpty(haosDutyorgdetail) ? haosDutyorgdetail.getInt("staffcount"):0;
-            this.getModel().setValue("nckd_sftaffcount",staffcount);
-
-//            QFilter qFilter1 = new QFilter("useorgbo", QCP.equals, boid);
-//            DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("haos_useorgdetail", "id,useorgbo,useorg.id,yearstaff", new QFilter[]{qFilter1});
-//            if(ObjectUtils.isNotEmpty(dynamicObject)){
-//                this.getModel().setValue("nckd_sftaffcount",dynamicObject.get("yearstaff"));
-//            }
-        }
-        */
+//        Long pkValue = (Long) org.getPkValue();
         updateStaffCount();
         this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
 
@@ -212,7 +192,7 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
             QFilter qFilter = new QFilter("org.id", QCP.in, allSubordinateOrgs);
             // 年度招聘计划数据
             DynamicObject[] loads = BusinessDataServiceHelper.load("nckd_yearapply", "id,org,org.id,billstatus,entryentity,entryentity.nckd_recruitorg," +
-                    "entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualification," +
+                    "entryentity.nckd_recruitpost,entryentity.nckd_recruitnum,entryentity.nckd_majortype,entryentity.nckd_qualifications," +
                     "entryentity.nckd_payrange,entryentity.nckd_employcategory,entryentity.nckd_recruittype,nckd_year", new QFilter[]{nckdYear1,qFilter,qBillstatus});
             if(ObjectUtils.isEmpty(loads)){
                 return;
@@ -231,14 +211,24 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
                     dynamicObjentryrow.set("nckd_recruitorg",object.getDynamicObject("nckd_recruitorg"));
                     dynamicObjentryrow.set("nckd_recruitpost",object.get("nckd_recruitpost"));
                     dynamicObjentryrow.set("nckd_recruitnum",object.get("nckd_recruitnum"));
+                    // 1专业类别
                     StringBuilder sqlBuilder = new StringBuilder("SELECT m.fbasedataid FROM tk_nckd_yearcrapp_major m WHERE m.fentryid = ?");
+                    // 2 学历
+                    StringBuilder sqlBuilder2 = new StringBuilder("SELECT m.fbasedataid FROM tk_nckd_yearcrapp_qualifi m WHERE m.fentryid = ?");
 
                     Object[] param = new Object[]{object.getPkValue()};
                     DataSet rows = HRDBUtil.queryDataSet("tk_nckd_yearcrapp_major", new DBRoute("tsc"), sqlBuilder.toString(), param);
+
+                    DataSet rows2 = HRDBUtil.queryDataSet("tk_nckd_yearcrapp_qualifi", new DBRoute("tsc"), sqlBuilder2.toString(), param);
+
                     // 多选基础资料key
                     DynamicObjectCollection retDynCol = orm.toPlainDynamicObjectCollection(rows);
                     MainEntityType type = EntityMetadataCache.getDataEntityType("nckd_specialityclass");
                     DynamicObjectCollection newColList = dynamicObjentryrow.getDynamicObjectCollection("nckd_majortype");
+
+                    DynamicObjectCollection retDynCol2 = orm.toPlainDynamicObjectCollection(rows2);
+                    MainEntityType type2 = EntityMetadataCache.getDataEntityType("hbss_diploma");
+                    DynamicObjectCollection newColList2 = dynamicObjentryrow.getDynamicObjectCollection("nckd_qualifications");
 
                     if(ObjectUtils.isNotEmpty(retDynCol)){
                         // 创建多选基础资料，
@@ -247,7 +237,13 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
                             dynamicObject2.set("fbasedataId", BusinessDataServiceHelper.loadSingle(dynamicObject1.get("fbasedataid"),type));
                         }
                     }
-                    dynamicObjentryrow.set("nckd_qualification",object.get("nckd_qualification"));
+                    if(ObjectUtils.isNotEmpty(retDynCol2)){
+                        // 创建多选基础资料，
+                        for (DynamicObject dynamicObject2 : retDynCol2) {
+                            DynamicObject dynamicObject3 = newColList2.addNew();
+                            dynamicObject3.set("fbasedataId", BusinessDataServiceHelper.loadSingle(dynamicObject2.get("fbasedataid"),type2));
+                        }
+                    }
                     dynamicObjentryrow.set("nckd_payrange",object.get("nckd_payrange"));
                     dynamicObjentryrow.set("nckd_employcategory",object.get("nckd_employcategory"));
                     dynamicObjentryrow.set("nckd_recruittype",object.get("nckd_recruittype"));
@@ -360,6 +356,9 @@ public class YearcrapplyPlanFormPlugin extends AbstractBillPlugIn implements Bef
                 + "LEFT JOIN T_HAOS_ADMINSTRUCT T ON a.fboid = T.fadminorgid "
                 + "left join T_HAOS_STAFFORGEMPCOUNT ST on A.fboid = ST.fuseorgboid "
                 + "WHERE A.fiscurrentversion = '0' AND A.fdatastatus = '1' AND A.finitstatus = '2' "
+                + "AND T.fiscurrentversion = '0' AND T.fdatastatus = '1' AND T.fstructprojectid = 1010 "
+                + "AND T.finitstatus = '2' AND T.fbsed <= '" + dateStr + "' "
+                + "AND T.fbsled >= '" + dateStr + "' AND T.fenable = '1' "
                 + "AND A.fbsed <= '" + dateStr + "' AND A.fbsled >= '" + dateStr + "' "
                 + "AND A.fenable = '1' "
                 + "AND ( T.fstructlongnumber LIKE ( select top 1 concat(F.fstructlongnumber,'%')  from  T_HAOS_ADMINSTRUCT F where  F.fadminorgid = ? "

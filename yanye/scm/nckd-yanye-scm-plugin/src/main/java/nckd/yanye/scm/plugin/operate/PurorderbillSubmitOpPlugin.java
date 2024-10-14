@@ -320,7 +320,9 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                     //采购合同已下单数量=采购合同的已下单数量+采购订单的数量
                     purcontractBillEntryDy.set("nckd_qty", nckdQty.add(qty1));
                     //采购合同已下单数量比例=采购合同的已下单数量/采购合同的数量
-                    purcontractBillEntryDy.set("nckd_qtyratio", nckdQty.add(qty1).divide(qty, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    if (qty.compareTo(new BigDecimal(0)) > 0) {
+                        purcontractBillEntryDy.set("nckd_qtyratio", nckdQty.add(qty1).divide(qty, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    }
                     //采购合同已下单金额=采购合同的已下单金额+采购订单的价税合计
                     purcontractBillEntryDy.set("nckd_amount", nckdAmount.add(amountandtax1));
                     //采购合同已下单金额比例=采购合同的已下单金额/采购合同的价税合计
@@ -374,10 +376,10 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                     //以下字段来源于采购合同
                     DynamicObject purcontractBillEntryDy = purcontractBillEntryMap.get(materialId);
                     // 带参数
-                    boolean result = insertTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
-                    if (result) {
-                        insertTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
-                    }
+                    insertTBotpBilltracker(purcontractBill.getPkValue(), purorderbill.getPkValue());
+
+                    insertTPmPurorderbillTc(purcontractBill.getPkValue(), purcontractBillEntryDy.getPkValue(), purorderbill.getPkValue(), entry.getPkValue());
+
                 }
             }
         }
@@ -395,13 +397,25 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         Long fsbillid = Convert.toLong(sbillid);
         Long fstableid = 719529409035381761L;
         Long fsid = Convert.toLong(sid);
-        DB.execute(DBRoute.of("scm"), purorderBillTcSql, new Object[]{fid, ftbillid, fttableid, ftid, fsbillid, fstableid, fsid});
+        //先判断有没有这个botp关系，有就不再添加
+        String queryPurorderBillTcSql = "SELECT fid FROM t_pm_purorderbill_tc WHERE ftbillid = ? AND ftid = ? AND fsbillid = ? AND fsid = ?);";
+        List<Long> query = DB.query(DBRoute.of("scm"), queryPurorderBillTcSql, new Object[]{ftbillid, ftid, fsbillid, fsid}, resultSet -> {
+            List<Long> valuetemp = new ArrayList<Long>();
+            while (resultSet.next()) {
+                valuetemp.add(resultSet.getLong("fid"));
+            }
+            return valuetemp;
+        });
+
+        if (query.size() == 0) {
+            DB.execute(DBRoute.of("scm"), purorderBillTcSql, new Object[]{fid, ftbillid, fttableid, ftid, fsbillid, fstableid, fsid});
+        }
     }
 
     /**
      * 插入botp规则表
      */
-    private static boolean insertTBotpBilltracker(Object sbillid, Object tbillid) {
+    private static void insertTBotpBilltracker(Object sbillid, Object tbillid) {
         String botpSql = "INSERT INTO t_botp_billtracker (fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime) VALUES (?, ?, ?, ?, ?, ?);";
         Long fid = DBServiceHelper.genGlobalLongId();
         Long fstableid = 719529409035381761L;
@@ -410,13 +424,10 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         Long ftbillid = Convert.toLong(tbillid);
         Date fcreatetime = new Date();
         //先判断有没有这个botp关系，有就不再添加
-        QFilter qFilter = new QFilter("stableid", QCP.equals, 719529409035381761L).and("sbillid", QCP.equals, sbillid)
-                .and("ttableid", QCP.equals, 602924326097811460L).and("tbillid", QCP.equals, tbillid);
+        QFilter qFilter = new QFilter("sbillid", QCP.equals, sbillid).and("tbillid", QCP.equals, tbillid);
         DynamicObject botpBilltracker = BusinessDataServiceHelper.loadSingle("botp_billtracker", "id,stableid,sbillid,ttableid,tbillid,createtime", qFilter.toArray());
         if (ObjectUtil.isNotEmpty(botpBilltracker)) {
-            return false;
+            DB.execute(DBRoute.basedata, botpSql, new Object[]{fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime});
         }
-        boolean result = DB.execute(DBRoute.basedata, botpSql, new Object[]{fid, fstableid, fsbillid, fttableid, ftbillid, fcreatetime});
-        return result;
     }
 }

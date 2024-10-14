@@ -37,17 +37,17 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
 
     @Override
     public void afterCreateNewData(EventObject e) {
-        DynamicObject billtype= (DynamicObject) this.getModel().getValue("billtype");
-        String number=billtype.getString("number");
+        DynamicObject billtype = (DynamicObject) this.getModel().getValue("billtype");
+        String number = billtype.getString("number");
         //小包装盐
-        if("pm_purorderbill_BT3".equals(number)){
+        if ("pm_purorderbill_BT3".equals(number)) {
             //承运组织 默认华康本部
             this.getModel().setItemValueByNumber("nckd_orgyf", "11401", 0);
 
-        }else if("pm_purorderbill_BT111".equals(number)){//大包装盐
-            DynamicObject purOrg= (DynamicObject) this.getModel().getValue("org");
+        } else if ("pm_purorderbill_BT111".equals(number)) {//大包装盐
+            DynamicObject purOrg = (DynamicObject) this.getModel().getValue("org");
             //承运组织默认采购组织
-            this.getModel().setValue("nckd_orgyf",purOrg);
+            this.getModel().setValue("nckd_orgyf", purOrg);
         }
 
     }
@@ -105,83 +105,27 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
             // 当前页面发送showform指令。注意也可以从其他页面发送指令，后续有文章介绍
             this.getView().showForm(formShowParameter);
         }
-        //获取运费单价
+        //获取运费/装卸单价
         else if ("nckd_getfreightprice".equalsIgnoreCase(itemKey)) {
             //运费承担方
             Object yunfei = this.getModel().getValue("nckd_yunfei", 0);
             //当承运方为企业
             if (yunfei != null && yunfei.toString().equalsIgnoreCase("A")) {
-                //物流路线
-                DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", 0);
-                if (address == null) {
-                    this.getView().showErrorNotification("物流路线为空!");
-                    return;
-                }
-                Object addressId = address.getPkValue();
-
                 //承运方类型
                 Object yfTepy = this.getModel().getValue("nckd_yunfeity", 0);
                 if (yfTepy == null || yfTepy.equals("")) {
                     this.getView().showErrorNotification("承运方类型不允许为空");
                     return;
-                } else if (yfTepy.equals("A")) {
-                    //承运方类型为组织
-                    DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("nckd_orgyf", 0);
-                    if (cyOrg == null) {
-                        this.getView().showErrorNotification("承运组织为空!");
-                        return;
-                    }
-                    Object cyOrgId = cyOrg.getPkValue();
-                    //装卸商
-                    DynamicObject zxssupplier = (DynamicObject) this.getModel().getValue("nckd_zxs", 0);
-                    if (zxssupplier == null) {
-                        this.getView().showErrorNotification("装卸商为空");
-                        return;
-                    }
-                    Object zxssupplierId = zxssupplier.getPkValue();
-                    //承运商
-                    DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_cys", 0);
-                    if (supplier == null) {
-                        this.getView().showErrorNotification("承运商为空");
-                        return;
-                    }
-                    Object supplierId = supplier.getPkValue();
-                    String message= this.setPrices(cyOrgId, supplierId, addressId);
-                    message+= this.zxfsetPrices(cyOrgId,zxssupplierId);
-                    if(message.length()>0){
-                        this.getView().showErrorNotification(message);
-                        return;
-                    }
-                } else if (yfTepy.equals("B")) {
-                    //承运方类型为供应商
-                    DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("org", 0);
-                    if (cyOrg == null) {
-                        this.getView().showErrorNotification("采购组织为空!");
-                        return;
-                    }
-                    Object cyOrgId = cyOrg.getPkValue();
-                    //承运方类型为供应商
-                    //装卸商
-                    DynamicObject zxssupplier = (DynamicObject) this.getModel().getValue("nckd_zxs", 0);
-                    if (zxssupplier == null) {
-                        this.getView().showErrorNotification("装卸商为空");
-                        return;
-                    }
-                    Object zxssupplierId = zxssupplier.getPkValue();
-                    DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_cys", 0);
-                    if (supplier == null) {
-                        this.getView().showErrorNotification("承运商为空");
-                        return;
-                    }
-                    Object supplierId = supplier.getPkValue();
-                    String message= this.setPrices(cyOrgId, supplierId, addressId);
-                    message+= this.zxfsetPrices(cyOrgId,zxssupplierId);
-                    if(message.length()>0){
-                        this.getView().showErrorNotification(message);
-                    }
-
                 }
-                this.getView().showSuccessNotification("获取完成！");
+                StringBuilder message=new StringBuilder();
+                message.append( this.setPrices(yfTepy));
+                message.append("\n");
+                message.append(this.zxfsetPrices(yfTepy)) ;
+                if (message.toString().contains("失败")) {
+                    this.getView().showErrorNotification(message.toString());
+                }else {
+                    this.getView().showSuccessNotification(message.toString());
+                }
 
             } else {
                 this.getView().showSuccessNotification("承运方未选择企业,无需获取运费/装卸费单价!");
@@ -192,7 +136,45 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
     }
 
     //获取运费单价
-    private String setPrices(Object cyOrgId, Object supplierId, Object addressId) {
+    private String setPrices(Object yfTepy) {
+        String message = "";
+        Object cyOrgId = null;
+        if (yfTepy.equals("A")) {
+            //承运方类型为组织  获取承运组织
+            DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("nckd_orgyf", 0);
+            if (cyOrg == null) {
+                message += "承运组织为空!";
+            } else {
+                cyOrgId = cyOrg.getPkValue();
+            }
+        } else if (yfTepy.equals("B")) {
+            //承运方类型为供应商  获取采购组织
+            DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("org", 0);
+            if (cyOrg == null) {
+                message += "采购组织为空!";
+            } else {
+                cyOrgId = cyOrg.getPkValue();
+            }
+        }
+        //物流路线
+        Object addressId = null;
+        DynamicObject address = (DynamicObject) this.getModel().getValue("nckd_address", 0);
+        if (address == null) {
+            message += "物流路线为空!";
+        } else {
+            addressId = address.getPkValue();
+        }
+        //承运商
+        Object supplierId = null;
+        DynamicObject supplier = (DynamicObject) this.getModel().getValue("nckd_cys", 0);
+        if (supplier == null) {
+            message += "承运商为空!";
+        } else {
+            supplierId = supplier.getPkValue();
+        }
+        if (cyOrgId == null || addressId == null || supplierId == null) {
+            return "获取运费单价失败[" + message + "]";
+        }
         //表单标识(采购合同)
         String number = "conm_purcontract";
         //查询字段
@@ -203,8 +185,8 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                 .and("billstatus", QCP.equals, "C")
                 .and("closestatus", QCP.equals, "A")
                 .and("billentry.nckd_route", QCP.equals, addressId)
-                .and("type.number",QCP.equals,"CGYFHT")//合同类型为运费合同
-                .and("billentry.nckd_basedatafieldfyxm.number",QCP.equals,"FYXM0025");//费用项目为运输费
+                .and("type.number", QCP.equals, "CGYFHT")//合同类型为运费合同
+                .and("billentry.nckd_basedatafieldfyxm.number", QCP.equals, "FYXM0025");//费用项目为运输费
         QFilter[] filters = new QFilter[]{qFilter};
         DynamicObjectCollection yfPricesDs = QueryServiceHelper.query(number, fieldkey, filters, "biztimebegin desc");
         if (yfPricesDs.size() > 0) {
@@ -214,27 +196,57 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
                 for (int i = 0; i < row; i++) {
                     this.getModel().setValue("nckd_pricefieldyf", prices, i);//运费单价
                 }
-
             }
         } else {
             return "未查询到对应单价,请检查采购合同是否维护运费单价!";
         }
-        return "";
+        return "运费获取成功！";
     }
 
     //获取装卸费单价
-    private String zxfsetPrices(Object cyOrgId, Object supplierId) {
+    private String zxfsetPrices(Object yfTepy) {
+        String message = "";
+        Object cyOrgId = null;
+        if (yfTepy.equals("A")) {
+            //承运方类型为组织  获取承运组织
+            DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("nckd_orgyf", 0);
+            if (cyOrg == null) {
+                message += "承运组织为空!";
+            } else {
+                cyOrgId = cyOrg.getPkValue();
+            }
+        } else if (yfTepy.equals("B")) {
+            //承运方类型为供应商  获取采购组织
+            DynamicObject cyOrg = (DynamicObject) this.getModel().getValue("org", 0);
+            if (cyOrg == null) {
+                message += "采购组织为空!";
+            } else {
+                cyOrgId = cyOrg.getPkValue();
+            }
+        }
+
+        //装卸商
+        Object zxssupplierId = null;
+        DynamicObject zxssupplier = (DynamicObject) this.getModel().getValue("nckd_zxs", 0);
+        if (zxssupplier == null) {
+            message += "装卸商为空";
+        } else {
+            zxssupplierId = zxssupplier.getPkValue();
+        }
+        if (cyOrgId == null || zxssupplierId == null) {
+            return "获取装卸费单价失败[" + message + "]";
+        }
         //表单标识(采购合同)
         String number = "conm_purcontract";
         //查询字段
         String fieldkey = "id,billno,biztimebegin,billentry.id as entryId,billentry.priceandtax price";
 
         QFilter qFilter = new QFilter("org", QCP.equals, cyOrgId)
-                .and("supplier", QCP.equals, supplierId)//装卸商
+                .and("supplier", QCP.equals, zxssupplierId)//装卸商
                 .and("billstatus", QCP.equals, "C")
                 .and("closestatus", QCP.equals, "A")
-                .and("type.number",QCP.equals,"CGYFHT")//合同类型为运费合同
-                .and("billentry.nckd_basedatafieldfyxm.number",QCP.equals,"FYXM0026");//费用项目为装卸费
+                .and("type.number", QCP.equals, "CGYFHT")//合同类型为运费合同
+                .and("billentry.nckd_basedatafieldfyxm.number", QCP.equals, "FYXM0026");//费用项目为装卸费
         QFilter[] filters = new QFilter[]{qFilter};
         DynamicObjectCollection yfPricesDs = QueryServiceHelper.query(number, fieldkey, filters, "biztimebegin desc");
         if (yfPricesDs.size() > 0) {
@@ -249,6 +261,6 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
         } else {
             return "未查询到对应单价,请检查采购合同是否维护装卸单价!";
         }
-        return "";
+        return "装卸费获取成功！";
     }
 }

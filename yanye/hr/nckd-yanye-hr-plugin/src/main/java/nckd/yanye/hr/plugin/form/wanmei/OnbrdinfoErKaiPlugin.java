@@ -298,6 +298,12 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
         } else {
             hideList.add("handler");
         }
+        // 招聘来源
+        if (Objects.isNull(model.getValue("recruittype"))) {
+            showList.add("recruittype");
+        } else {
+            hideList.add("recruittype");
+        }
         showTips(showList, hideList, view);
     }
 
