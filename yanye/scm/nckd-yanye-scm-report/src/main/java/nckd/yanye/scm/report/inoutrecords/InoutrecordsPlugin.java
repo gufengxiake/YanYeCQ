@@ -305,13 +305,16 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftmanuinbill", "A");
 
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_finishcosttranfer");
+
         // 获取凭证号
         // 完工成本结转单
-        DataSet acaFinishcosttranfer = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_finishcosttranfer", "id finishcosttranferId,sourcecalid", null, null);
-        DataSet calCcostrecordDataSet = finish1.leftJoin(acaFinishcosttranfer).on("id", "sourcecalid").select(finish1.getRowMeta().getFieldNames(), new String[]{"finishcosttranferId"}).finish();
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_finishcosttranfer")}, null);
-        DataSet ccostrecordDataSet = calCcostrecordDataSet.leftJoin(glVoucher).on("finishcosttranferId", "sourcebill").select(calCcostrecordDataSet.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet acaFinishcosttranfer = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_finishcosttranfer", "id finishcosttranferId,sourcecalid", null, null);
+//        DataSet calCcostrecordDataSet = finish1.leftJoin(acaFinishcosttranfer).on("id", "sourcecalid").select(finish1.getRowMeta().getFieldNames(), new String[]{"finishcosttranferId"}).finish();
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_finishcosttranfer")}, null);
+//        DataSet ccostrecordDataSet = calCcostrecordDataSet.leftJoin(glVoucher).on("finishcosttranferId", "sourcebill").select(calCcostrecordDataSet.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
 
         // =====================二级=========================
@@ -330,7 +333,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imPurinbill, filter);
 
         // 核算成本和完工入库单关联
-        DataSet finish4 = this.firstUnionSecond2(ccostrecordDataSet, finish3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 生产工单
@@ -373,13 +376,16 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftreturnbill", "A");
 
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_finishcosttranfer");
+
         // 获取凭证号
         // 完工成本结转单
-        DataSet acaFinishcosttranfer = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_finishcosttranfer", "id finishcosttranferId,sourcecalid", null, null);
-        DataSet calCcostrecordDataSet = finish1.leftJoin(acaFinishcosttranfer).on("id", "sourcecalid").select(finish1.getRowMeta().getFieldNames(), new String[]{"finishcosttranferId"}).finish();
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_finishcosttranfer")}, null);
-        DataSet ccostrecordDataSet = calCcostrecordDataSet.leftJoin(glVoucher).on("finishcosttranferId", "sourcebill").select(calCcostrecordDataSet.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet acaFinishcosttranfer = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_finishcosttranfer", "id finishcosttranferId,sourcecalid", null, null);
+//        DataSet calCcostrecordDataSet = finish1.leftJoin(acaFinishcosttranfer).on("id", "sourcecalid").select(finish1.getRowMeta().getFieldNames(), new String[]{"finishcosttranferId"}).finish();
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_finishcosttranfer")}, null);
+//        DataSet ccostrecordDataSet = calCcostrecordDataSet.leftJoin(glVoucher).on("finishcosttranferId", "sourcebill").select(calCcostrecordDataSet.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
 
         // =====================二级=========================
@@ -398,7 +404,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imMdcMftreturnbill, filter);
 
         // 核算成本和完工退库单关联
-        DataSet finish4 = this.firstUnionSecond2(ccostrecordDataSet, finish3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 完工入库单
@@ -442,6 +448,9 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_materialreqoutbill", "B");
 
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_matalloc");
+
         // =====================二级=========================
         // 领料出库单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
@@ -459,16 +468,16 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 获取凭证号
         // 材料耗用分配
-        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
-        DataSet imMaterialreqoutbill2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
-
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
-        DataSet imMaterialreqoutbill3 = imMaterialreqoutbill2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMaterialreqoutbill2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
+//        DataSet imMaterialreqoutbill2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
+//
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
+//        DataSet imMaterialreqoutbill3 = imMaterialreqoutbill2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMaterialreqoutbill2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
 
         // 核算成本和领料出库单关联
-        DataSet finish4 = this.firstUnionSecond(finish1, imMaterialreqoutbill3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         DataSet finish4Copy1 = finish4.copy();
@@ -590,8 +599,11 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish1 = this.getCalCcostrecord(filter, "im_saloutbill", "B");
 
         // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
-        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
+//        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "cal_costrecord_subentity");
 
         // =====================二级=========================
         // 销售出库单
@@ -609,7 +621,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish3 = this.relevancyMaterial(imSaloutbill, filter);
 
         // 核算成本和销售出库单关联
-        DataSet finish4 = this.firstUnionSecond2(costrecordSubentity, finish3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 所属三级单据有多个待定
@@ -648,6 +660,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // ======================一级========================
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftproorder", "B");
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_matalloc");
 
         // =====================二级=========================
         // 生产领料单
@@ -668,15 +682,15 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 获取凭证号
         // 材料耗用分配
-        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
-        DataSet imMdcMftproorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
-
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
-        DataSet imMdcMftproorder3 = imMdcMftproorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftproorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
+//        DataSet imMdcMftproorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
+//
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
+//        DataSet imMdcMftproorder3 = imMdcMftproorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftproorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // 核算成本和生产领料单关联
-        DataSet finish4 = this.firstUnionSecond(finish1, imMdcMftproorder3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 生产组件清单
@@ -718,6 +732,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // ======================一级========================
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftreturnorder", "B");
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_matalloc");
 
         // =====================二级=========================
         // 生产退料单
@@ -738,15 +754,15 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 获取凭证号
         // 材料耗用分配
-        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
-        DataSet imMdcMftreturnorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
-
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
-        DataSet imMdcMftreturnorder3 = imMdcMftreturnorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftreturnorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
+//        DataSet imMdcMftreturnorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
+//
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
+//        DataSet imMdcMftreturnorder3 = imMdcMftreturnorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftreturnorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // 核算成本和生产退料单关联
-        DataSet finish4 = this.firstUnionSecond(finish1, imMdcMftreturnorder3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 生产领料单/生产补料单
@@ -789,6 +805,9 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         // 核算成本记录
         DataSet finish1 = this.getCalCcostrecord(filter, "im_mdc_mftfeedorder", "B");
 
+        // 通过核算成本记录获取凭证号
+        DataSet costrecordUnionVoucher = this.costrecordUnionVoucher(finish1, "aca_matalloc");
+
         // =====================二级=========================
         // 生产补料单
         QFilter qFilter2 = this.buildImPurinbillFilter(filter, "3");
@@ -808,15 +827,15 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 获取凭证号
         // 材料耗用分配
-        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
-        DataSet imMdcMftfeedorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
-
-        // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
-        DataSet imMdcMftfeedorder3 = imMdcMftfeedorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftfeedorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+//        DataSet scaMatalloc = QueryServiceHelper.queryDataSet(this.getClass().getName(), "aca_matalloc", "id matallocId,sourcebillid", null, null);
+//        DataSet imMdcMftfeedorder2 = finish3.leftJoin(scaMatalloc).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"matallocId"}).finish();
+//
+//        // 凭证
+//        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "aca_matalloc")}, null);
+//        DataSet imMdcMftfeedorder3 = imMdcMftfeedorder2.leftJoin(glVoucher).on("matallocId", "sourcebill").select(imMdcMftfeedorder2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // 核算成本和生产补料单关联
-        DataSet finish4 = this.firstUnionSecond(finish1, imMdcMftfeedorder3);
+        DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
         // 生产退料单
@@ -841,6 +860,20 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         }
 
         return dataSet;
+    }
+
+    /**
+     * 核算成本记录关联凭证
+     * @param finish1   核算成本记录
+     * @param sourcebilltype   主体标识
+     * @return
+     */
+    private DataSet costrecordUnionVoucher(DataSet finish1,String sourcebilltype){
+        // 凭证
+        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, sourcebilltype)}, null);
+        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+
+        return costrecordSubentity;
     }
 
     /**

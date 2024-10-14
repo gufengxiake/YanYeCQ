@@ -128,7 +128,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
             if(leaseInit == null){
                 return;
             }
-            this.initLeaseContractCheck(leaseInit);
+//            this.initLeaseContractCheck(leaseInit);
         }
 
         this.setFreeLeaseStartDateRange();
@@ -221,6 +221,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         this.setDiscountRateEnable();
     }
 
+    // 业务页签切换战术数据
     public void hyperLinkClick(HyperLinkClickEvent evt) {
         String fieldName = evt.getFieldName();
         int rowIndex = evt.getRowIndex();
@@ -270,6 +271,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     }
 
     private void initLeaseContractCheck(DynamicObject leaseInit) {
+        // 不用校验 租赁初始化状态
         String entityName = this.getModel().getDataEntityType().getName();
         if ("fa_lease_contract_init".equals(entityName)) {
 //            Date sysSwitchDate = leaseInit.getDate("systemswitchday");
@@ -357,6 +359,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     }
 
     private void setInitConfirmDate() {
+        // 计算退养 初始确认日
         LeaseContractCal.setInitConfirmDate(this.buildObjWrapper());
     }
 
@@ -369,6 +372,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     }
 
     private void setDiscountRate() {
+        // 获取币别信息，如果不存在默认使用人名币
         String formId = this.getView().getFormShowParameter().getFormId();
         if (!"fa_lease_contract".equalsIgnoreCase(formId) && !"fa_lease_contract_init".equalsIgnoreCase(formId)) {
             BigDecimal discountRate = (BigDecimal)this.getModel().getValue("discountrate");

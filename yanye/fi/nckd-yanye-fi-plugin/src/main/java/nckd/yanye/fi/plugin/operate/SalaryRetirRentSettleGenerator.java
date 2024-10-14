@@ -55,6 +55,7 @@ public class SalaryRetirRentSettleGenerator {
         while(var4.hasNext()) {
             DynamicObject interestDetail = (DynamicObject)var4.next();
             DynamicObject leaseContract = interestDetail.getDynamicObject("leasecontract");
+            // 生成摊销与计息
             rentSettles.addAll(this.generateByInterestDetail(interestDetail, leaseContract));
         }
 
@@ -64,6 +65,7 @@ public class SalaryRetirRentSettleGenerator {
     }
 
     protected List<DynamicObject> generateByInterestDetail(DynamicObject interestDetail, DynamicObject leaseContract) {
+        // 生成摊销与计息
         List<DynamicObject> rentSettleList = new ArrayList(32);
         boolean isExempt = leaseContract.getBoolean("isexempt");
         DynamicObject org = interestDetail.getDynamicObject("org");

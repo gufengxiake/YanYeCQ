@@ -58,9 +58,9 @@ public class BankAccountTask  implements IEventServicePlugin {
                     DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer", "name,salerid",new QFilter[]{qFilter});
                     if(ObjectUtils.isNotEmpty(customer)){
                         logger.info("交易明细信息：{}", transdetail);
-                        // 查询需要发送通知的业务人员
+                        // 查询需要发送通知的负责人
                         DynamicObject salerid = customer.getDynamicObject("salerid");
-                        logger.info("业务人员信息：{}", salerid);
+                        logger.info("负责人信息：{}", salerid);
                         if(ObjectUtils.isNotEmpty(salerid)){
                             // 发送通知
                             DynamicObject user = loadSingle(salerid.getPkValue());
