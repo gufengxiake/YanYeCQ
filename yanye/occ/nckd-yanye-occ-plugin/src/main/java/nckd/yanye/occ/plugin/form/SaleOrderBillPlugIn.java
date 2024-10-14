@@ -149,7 +149,7 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
                     Object pkId=this.getModel().getValue("id");
                     String trancontractNo = this.getModel().getValue("nckd_trancontractno").toString();
                     String salecontractNo = this.getModel().getValue("nckd_salecontractno").toString();
-                    if (!trancontractNo.trim().equals("") && !salecontractNo.trim().equals("")) {
+                    if (!trancontractNo.trim().equals("") || !salecontractNo.trim().equals("")) {
                         Map<String, HashSet<Long>> targetBills = BFTrackerServiceHelper.findTargetBills(targetEntityNumber, new Long[]{(Long) pkId});
                         //发货通知单
                         if (targetBills.containsKey("sm_delivernotice")) {
