@@ -1,5 +1,6 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
+import com.google.common.collect.Lists;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
@@ -352,7 +353,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 if (thisRankIndex > thisRankMap.size()) {
                     this.getModel().setValue("dy_rank", thisMaxRankId, thisRowIndex);
                     downMsg = "；调整后超过最高档，按最高档处理";
-                    // 最低档，次年工资下调10%
+                    // 最低档，次年工资下调10%，按最低档
                 } else if (thisRankIndex < 1) {
                     downMsg = "；调整后低于最低档，工资下调: 10%";
                     // 获取当前薪等的最低档的金额
@@ -367,7 +368,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                                     "this"
                             )
                     );
-                    // 查询
+                    // 查询最低档金额
                     List<StdAmountAndSalaryCountQueryResult> stdAmountAndSalaryCountQueryResults =
                             SalaryStdQueryService.get().queryAmountAndSalaryCount(queryParams);
                     BigDecimal amount = stdAmountAndSalaryCountQueryResults.stream()
@@ -375,10 +376,12 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                             .findFirst()
                             .map(StdAmountAndSalaryCountQueryResult::getAmount)
                             .orElse(BigDecimal.ZERO);
-                    // 调整方式：比例
-                    this.getModel().setValue("dy_calctype", 1, thisRowIndex);
                     // 下调10%
                     this.getModel().setValue("dy_amount", amount.multiply(new BigDecimal("0.9")), thisRowIndex);
+//                    // 调整方式：比例
+//                    this.getModel().setValue("dy_calctype", 1, thisRowIndex);
+                    // 薪档：最低档
+                    this.getModel().setValue("dy_rank", thisMinRankId, thisRowIndex);
                 } else {
                     this.getModel().setValue("dy_rank", thisRankId, thisRowIndex);
                 }
