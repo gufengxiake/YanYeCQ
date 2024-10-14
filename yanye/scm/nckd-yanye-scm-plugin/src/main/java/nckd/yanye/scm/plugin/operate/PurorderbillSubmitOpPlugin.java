@@ -320,7 +320,9 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
                     //采购合同已下单数量=采购合同的已下单数量+采购订单的数量
                     purcontractBillEntryDy.set("nckd_qty", nckdQty.add(qty1));
                     //采购合同已下单数量比例=采购合同的已下单数量/采购合同的数量
-                    purcontractBillEntryDy.set("nckd_qtyratio", nckdQty.add(qty1).divide(qty, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    if (qty.compareTo(new BigDecimal(0)) > 0) {
+                        purcontractBillEntryDy.set("nckd_qtyratio", nckdQty.add(qty1).divide(qty, 4, RoundingMode.HALF_UP).multiply(new BigDecimal(100)));
+                    }
                     //采购合同已下单金额=采购合同的已下单金额+采购订单的价税合计
                     purcontractBillEntryDy.set("nckd_amount", nckdAmount.add(amountandtax1));
                     //采购合同已下单金额比例=采购合同的已下单金额/采购合同的价税合计
