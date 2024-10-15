@@ -6,6 +6,7 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.operate.result.OperationResult;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.FormShowParameter;
@@ -85,10 +86,11 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             DynamicObject org = BusinessDataServiceHelper.loadSingle(map.get("orgId"), "bos_org");
             DynamicObjectCollection entryentity = (DynamicObjectCollection) map.get("entryentity");
 
-            entryentity.stream().forEach(entity -> {
-                DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(entity.getDynamicObject("nckd_material").getLong("id"), "bd_material");
+            try {
+                entryentity.stream().forEach(entity -> {
+                    DynamicObject bdMaterial = BusinessDataServiceHelper.loadSingle(entity.getDynamicObject("nckd_material").getLong("id"), "bd_material");
 
-                // 判断是不是通过物料申请单生成的物料
+                    // 判断是不是通过物料申请单生成的物料
 //                QFilter filter = new QFilter("nckd_materialentries.nckd_materialnumber", QCP.equals, bdMaterial.getString("number"));
 //                DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_materialrequest", filter.toArray());
 //                if (dynamicObject != null) {
@@ -118,12 +120,36 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                     getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial, entity);
 //                }
 
-                // 核算信息设置存货类别并提交审核
-                MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(bdMaterial, org);
-            });
+                    // 核算信息设置存货类别并提交审核
+                    MaterialAttributeInformationUtils.setCheckInfoMaterialcategory(bdMaterial, org);
+                });
 
-            this.getView().showSuccessNotification("操作成功");
+                this.getView().showSuccessNotification("物料维护单生成成功！");
+            } catch (Exception e) {
+                rollback(org, entryentity);
+                throw new KDBizException(e.getLocalizedMessage());
+            }
         }
+    }
+
+    private void rollback(DynamicObject org, DynamicObjectCollection entryentity) {
+        entryentity.stream().forEach(entity -> {
+            // 获取物料维护单
+            QFilter qFilter = new QFilter("org", QCP.equals, org.getLong("id"))
+                    .and("nckd_materialnumber", QCP.equals, entity.getDynamicObject("nckd_material").getLong("id"));
+            DynamicObject[] materialmaintenan = BusinessDataServiceHelper.load("nckd_materialmaintenan", "id,billno,billstatus", qFilter.toArray());
+            Arrays.stream(materialmaintenan).forEach(n -> {
+                QFilter filter = new QFilter("masterid", QCP.equals, entity.getDynamicObject("nckd_material").getLong("id"))
+                        .and("createorg", QCP.equals, org.getLong("id"));
+                // 物料核算信息
+                DynamicObject materialcalinfo = BusinessDataServiceHelper.loadSingle("bd_materialcalinfo", filter.toArray());
+                if (materialcalinfo != null) {
+                    MaterialAttributeInformationUtils.deleteEntity(materialcalinfo, materialcalinfo.getString("status"));
+                }
+
+                MaterialAttributeInformationUtils.deleteEntity(n, n.getString("billstatus"));
+            });
+        });
     }
 
     /**
@@ -300,7 +326,12 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 if (!"3".equals(billType)) {
                     // 提交
                     OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                    if (!submitOperate.isSuccess()) {
+                        throw new KDBizException(submitOperate.getAllErrorOrValidateInfo() + submitOperate.getMessage());
+                    }
                 }
+            } else {
+                throw new KDBizException(operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
             }
         }
     }
