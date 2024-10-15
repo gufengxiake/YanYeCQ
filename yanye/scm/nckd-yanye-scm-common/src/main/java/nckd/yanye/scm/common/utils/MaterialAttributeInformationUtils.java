@@ -11,6 +11,7 @@ import kd.bos.context.RequestContext;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.utils.StringUtils;
+import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
@@ -49,7 +50,33 @@ public class MaterialAttributeInformationUtils {
     public static List<String> list = Arrays.asList("1", "2", "3", "4", "5");
 
     /**
+     * 删除单据实体
+     *
+     * @param dynamicObject 单据实体
+     * @param status        单据状态
+     */
+    public static void deleteEntity(DynamicObject dynamicObject, String status) {
+        OperateOption operateOption = OperateOption.create();
+        operateOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+        operateOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+
+        // 单据标识
+        String entityNumber = dynamicObject.getDataEntityType().getName();
+
+        if ("B".equals(status)) {
+            // 撤销
+            OperationServiceHelper.executeOperate("unsubmit", entityNumber, new DynamicObject[]{dynamicObject}, operateOption);
+        } else if ("C".equals(status)) {
+            // 反审核
+            OperationServiceHelper.executeOperate("unaudit", entityNumber, new DynamicObject[]{dynamicObject}, operateOption);
+        }
+        // 删除物料
+        OperationServiceHelper.executeOperate("delete", entityNumber, new DynamicObject[]{dynamicObject}, operateOption);
+    }
+
+    /**
      * 生成单位信息
+     *
      * @param material
      * @param dynamicObject
      */

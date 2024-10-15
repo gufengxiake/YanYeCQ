@@ -87,27 +87,7 @@ public class EpaIndicatorSiExtFormPlugin extends AbstractFormPlugin{
                 invcountscheme.set("customfiled3",dynamicObject.getString("nckd_addfraction"));//增加分数
 //                invcountscheme.set("nckd_number",dynamicObject.get("number"));//考核量化指标编码
                 invcountscheme.set("activity",activityId);//考核活动id
-                //根据考核活动id查询
-                DynamicObject epaActivityObject = BusinessDataServiceHelper.loadSingle(activityId,"epa_activity");
-                DynamicObject executeschemeObject = BusinessDataServiceHelper.loadSingle(epaActivityObject.getDynamicObject("executescheme").getPkValue(),"epa_executescheme");//考核周期执行计划
-                DynamicObject scheme = BusinessDataServiceHelper.loadSingle(epaActivityObject.getDynamicObject("scheme").getPkValue(),"epa_scheme");//考核计划
-                String period = executeschemeObject.getString("timetag.name");//考核周期：2024M3
-                Date startyear = scheme.getDate("startyear");//考核年度
-                Long cycletype = scheme.getLong("cycletype.id");//周期类型
-                Long cyclescheme = scheme.getLong("cyclescheme.id");//周期方案
-                //构造考核量化指标填报查询条件 周期类型，周期方案，考核量化指标
-                QFilter quantiFilter = new QFilter("nckd_cycletype.id", QCP.equals,cycletype).and("nckd_cycleprogramme.id",QCP.equals,cyclescheme)
-                        .and("nckd_year",QCP.equals,startyear).and("nckd_assessment",QCP.equals,period);
-                DynamicObject[] quantizationfillingObject = BusinessDataServiceHelper.load("nckd_quantizationfilling" ,"id,entryentity.nckd_completevalue,entryentity.nckd_examinetarget,entryentity.nckd_completevalue" , new QFilter[]{quantiFilter});
-                //取第一条核量化指标填报数据
-                DynamicObject quantiDynamicObject = quantizationfillingObject[0];
-                //考核量化指标填报分录
-                DynamicObjectCollection dynamicObjectCollection = quantiDynamicObject.getDynamicObjectCollection("entryentity");
-                List<DynamicObject> objects = dynamicObjectCollection.stream().filter(t-> dynamicObject.getString("id").equals(t.getString("nckd_examinetarget.id"))).collect(Collectors.toList());
-                //获取完成值
-                BigDecimal completevalue = objects.get(0).getBigDecimal("nckd_completevalue");
-//                invcountscheme.set("nckd_completevalue",completevalue);//完成值
-                invcountscheme.set("qualityres",completevalue);//完成值
+                invcountscheme.set("weight",BigDecimal.ONE);//考核活动id
                 OperationServiceHelper.executeOperate("save", "epa_genareaind_assign", new DynamicObject[]{invcountscheme}, OperateOption.create());
             }
             //刷新页面
