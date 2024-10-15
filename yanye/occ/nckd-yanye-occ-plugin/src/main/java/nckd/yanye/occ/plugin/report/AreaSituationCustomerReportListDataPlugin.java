@@ -123,6 +123,7 @@ public class AreaSituationCustomerReportListDataPlugin extends AbstractReportLis
         imSaloutbill = imSaloutbill.leftJoin(this.getChannelSumKS()).on("out_bizorg","ocdbd_org").on("out_bizdept","ocdbd_department")
                 .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"channelSumKS"}).finish();
 
+        nckdHkndjhb.close();
         return imSaloutbill;
     }
 

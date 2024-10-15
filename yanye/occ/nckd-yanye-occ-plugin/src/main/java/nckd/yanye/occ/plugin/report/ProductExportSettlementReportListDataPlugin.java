@@ -27,7 +27,8 @@ public class ProductExportSettlementReportListDataPlugin extends AbstractReportL
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
-        QFilter initFilter = new QFilter("org.number", QCP.in, new String[]{"11901", "121"});
+        QFilter initFilter = new QFilter("org.number", QCP.in, new String[]{"119.01", "121"});
+
         //限定单据为已审核
         initFilter.and("billstatus", QCP.equals, "C");
         qFilters.add(initFilter);

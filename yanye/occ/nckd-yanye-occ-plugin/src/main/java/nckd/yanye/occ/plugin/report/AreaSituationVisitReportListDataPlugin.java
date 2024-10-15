@@ -92,7 +92,6 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         DataSet finish = channelBfRecord.groupBy(new String[]{"ocdbd_org","ocdbd_orgname"})
                 .count("sumks").sum("sumbf").sum("jysumbf").sum("zysumbf").sum("xtsumbf").sum("wysumbf").finish();
 
-        //关联0客户和餐饮客户
         finish = finish.leftJoin(sumzerokh).on("ocdbd_org","ocdbd_org")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"sumzerokh"}).finish();
 
@@ -117,6 +116,15 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         //
         finish = finish.leftJoin(nckdHkndjhb).on("ocdbd_org","hk_org")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"month_hk_ydbfkh"}).finish();
+
+        sumzerokh.close();
+        sumcy.close();
+        yearBfRecord.close();
+        ocdbdChannel.close();
+        cyCustomer.close();
+        channelBfRecord.close();
+        yearSumCY.close();
+        nckdHkndjhb.close();
 
         return finish;
     }
@@ -163,7 +171,7 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         hmuaSfaBfRecord = mdsumbf.union(jxssumbf).filter(" qdzj <> 0");
 
         //关联拜访
-        hmuaSfaBfRecord = ds.copy().leftJoin(hmuaSfaBfRecord).on("ocdbd_id","qdzj")
+        hmuaSfaBfRecord = ds.leftJoin(hmuaSfaBfRecord).on("ocdbd_id","qdzj")
                 .select(new String[]{"ocdbd_org","ocdbd_orgname","sumbf","jysumbf","zysumbf","xtsumbf","wysumbf","group"}).finish();
 
         mdsumbf.close();
