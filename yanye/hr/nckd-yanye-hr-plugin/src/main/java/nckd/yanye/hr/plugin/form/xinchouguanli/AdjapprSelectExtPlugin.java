@@ -310,7 +310,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
 //        entry.set("salaryseeprate", 0);
     }
 
-    private Map<String, List<Map<String, String>>> getYearKaoheMap() {
+    static Map<String, List<Map<String, String>>> getYearKaoheMap() {
         // 绩效结果
         DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
                 "epa_performanceresult",

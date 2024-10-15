@@ -251,9 +251,11 @@ public class PurapplyBillFormPlugin extends AbstractFormPlugin {
         if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PUSHED), true)) {
             throw new KDBizException("该采购申请单已经推送至招采平台!");
         }
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS), "annualcontract")) {
+            throw new KDBizException("年度合同采购申请单不允许推送至招采平台!");
+        }
 
-        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_WHETHERPUSH), false) ||
-                Objects.equals(model.getValue(PurapplybillConst.NCKD_PROCUREMENTS), "annualcontract")) {
+        if (Objects.equals(model.getValue(PurapplybillConst.NCKD_WHETHERPUSH), false)) {
             throw new KDBizException("该采购申请单未勾选“是否推送招采平台”!");
         }
 
