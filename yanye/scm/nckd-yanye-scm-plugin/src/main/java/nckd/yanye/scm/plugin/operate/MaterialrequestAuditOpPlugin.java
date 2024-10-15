@@ -157,7 +157,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 }
             }
 
-            t.set("billstatus", 'B');// 单据状态
+            t.set("billstatus", "B");// 单据状态
             t.set("nckd_isgenerate", false);// 是否已生成物料维护单
             SaveServiceHelper.update(t);
         });
