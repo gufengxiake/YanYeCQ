@@ -74,7 +74,7 @@ public class PostitonBillChangPlugin extends HRCoreBaseBillOp {
                         QFilter qFilter5 = new QFilter("position.number", QCP.equals, positionBill.getString("number"));
                         QFilter qFilter6 = new QFilter("datastatus", QCP.equals, "1")
                                 .and("businessstatus", QCP.equals, "1");
-                        DynamicObject[] hrpiEmpposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,datastatus,person.id,position,position.number,nckd_personindex", new QFilter[]{qFilter5,qFilter6});
+                        DynamicObject[] hrpiEmpposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,datastatus,person.id,position,position.number,nckd_personindex", new QFilter[]{qFilter5,qFilter6},"bred");
                         if(ObjectUtils.isNotEmpty(hrpiEmpposorgrels)){
                             Arrays.stream(hrpiEmpposorgrels)
                                     .forEach(dynamicObject -> {

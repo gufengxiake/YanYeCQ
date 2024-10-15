@@ -1,7 +1,10 @@
 package nckd.yanye.hr.plugin.form.web.position;
 
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.form.events.BeforeCreateListDataProviderArgs;
 import kd.bos.form.events.SetFilterEvent;
 import kd.bos.list.plugin.AbstractListPlugin;
+import kd.bos.mvc.list.ListDataProvider;
 
 
 /**
@@ -27,4 +30,11 @@ public class PersonInfoListPlugin extends AbstractListPlugin {
 
     }
 
+    @Override
+    public void beforeCreateListDataProvider(BeforeCreateListDataProviderArgs args) {
+        super.beforeCreateListDataProvider(args);
+        args.setListDataProvider(new MyListDataProvider());
+
+    }
 }
+

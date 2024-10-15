@@ -1,7 +1,10 @@
 package nckd.yanye.hr.plugin.form.web.position;
 
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.form.events.BeforeCreateListDataProviderArgs;
 import kd.bos.form.events.SetFilterEvent;
 import kd.bos.list.plugin.AbstractListPlugin;
+import kd.bos.mvc.list.ListDataProvider;
 
 
 /**
@@ -23,11 +26,29 @@ public class PersonnelFileListPlugin extends AbstractListPlugin {
 //        hrpi_empposorgrel.position.nckd_sortnum asc
         String order = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.adminorg.number asc," +
                 "hrpi_empposorgrel.position.nckd_sortnum,hrpi_empposorgrel.position.number,hrpi_empposorgrel.nckd_personindex";
-//        String order = "hrpi_empposorgrel.adminorg.sortcode asc,hrpi_empposorgrel.nckd_personindex asc";
+//        String order = "hrpi_empposorgrel.adminorg.sortcode asc";
         e.setOrderBy(order);
 
     }
 
+    @Override
+    public void beforeCreateListDataProvider(BeforeCreateListDataProviderArgs args) {
+        super.beforeCreateListDataProvider(args);
+        args.setListDataProvider(new MyListDataProvider());
 
-
+    }
 }
+class MyListDataProvider extends ListDataProvider {
+
+
+    /**
+     * 加载列表数据
+     * @remark: 重写父类方法，如果不使用这个方法，设置的排序有问题
+     */
+    @Override
+    public DynamicObjectCollection getData(int arg0, int arg1) {
+        DynamicObjectCollection rows = super.getData(arg0, arg1);
+        return rows;
+    }
+}
+
