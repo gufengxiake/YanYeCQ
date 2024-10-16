@@ -3,22 +3,13 @@ package nckd.yanye.scm.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.ExtendedDataEntity;
-import kd.bos.form.FormShowParameter;
-import kd.bos.form.ShowType;
-import kd.bos.form.control.EntryGrid;
 import kd.bos.form.control.Toolbar;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
-import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.dataentity.entity.DynamicObjectCollection;
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.EventObject;
-import java.util.HashSet;
 
 /**
  * 生产交接单表单插件
@@ -78,7 +69,7 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
                         lockqtyhj=lockqty.add(lockqtyhj);
                     }
                     entryobj.set("nckd_inventoryqty",lockqtyhj);
-                    entryobj.set("nckd_jjsl",lockqtyhj);
+//                    entryobj.set("nckd_jjsl",lockqtyhj);
                 }
 
                 this.getView().updateView("entryentity");
