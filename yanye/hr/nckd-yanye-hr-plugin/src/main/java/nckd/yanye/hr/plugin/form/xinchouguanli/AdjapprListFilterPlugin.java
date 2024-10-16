@@ -1,8 +1,12 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
+import com.alibaba.fastjson.JSONArray;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.form.IFormView;
+import kd.bos.form.events.BeforeCreateListColumnsArgs;
 import kd.bos.form.events.SetFilterEvent;
+import kd.bos.list.ListColumn;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
@@ -65,7 +69,7 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         String lastThreeYearsDateString = new SimpleDateFormat("yyyy年").format(calendar.getTime());
 
         // 获取所有年度绩效Map <员工工号, List<考核年度, 考核结果>>
-        Map<String, List<Map<String, String>>> yearKaoheMap = getYearKaoheMap();
+        Map<String, List<Map<String, String>>> yearKaoheMap = AdjapprSelectExtPlugin.getYearKaoheMap();
 
         // 获取所有任职经历
         DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
@@ -152,37 +156,37 @@ public class AdjapprListFilterPlugin extends SWCDataBaseList {
         qFilters.add(new QFilter("employee.empnumber", QCP.in, persons));
     }
 
-    private Map<String, List<Map<String, String>>> getYearKaoheMap() {
-        // 绩效结果
-        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
-                "epa_performanceresult",
-                "id,name,number,person,activity,assessleveltext",
-                new QFilter[]{
-                        // 数据状态
-                        new QFilter("datastatus", QCP.equals, "1"),
-                        // 当前版本
-                        new QFilter("iscurrentversion", QCP.equals, "1"),
-                        // 非历史绩效
-                        new QFilter("number", QCP.not_like, "%HI%"),
-                }
-        );
-        Map<String, List<Map<String, String>>> yearKaoheMap = Arrays.stream(jobExpArray)
-                .collect(Collectors.groupingBy(
-                        job -> job.getString("person.number"),
-                        Collectors.mapping(
-                                job -> {
-                                    Map<String, String> yearResultMap = new HashMap<>();
-                                    yearResultMap.put(
-                                            job.getString("activity.periodname"),
-                                            job.getString("assessleveltext")
-                                    );
-                                    return yearResultMap;
-                                },
-                                Collectors.toList()
-                        )
-                ));
-        return yearKaoheMap;
+    @Override
+    public void beforeCreateListColumns(BeforeCreateListColumnsArgs args) {
+        // 判断页面是否为申请单
+        IFormView parentView = this.getView().getParentView();
+        if (!"hcdm_adjapprbill".equals(parentView.getEntityId())) {
+            return;
+        }
+        // 判断是否传了参数
+        String isYear = this.getView().getParentView().getPageCache().get("isYear");
+        if ("false".equals(isYear) || Objects.isNull(isYear)) {
+            return;
+        }
+
+        ListColumn colText1 = this.createListColumn("test", "测试文本");
+        args.addListColumn(colText1);
+        super.beforeCreateListColumns(args);
     }
 
+    /**
+     * 创建列对象返回
+     *
+     * @param key     列标识，需要显示的字段，如"textfield"、 "basedatafield.name"
+     * @param caption 列标题
+     * @return
+     */
+    private ListColumn createListColumn(String key, String caption) {
+        ListColumn col = new ListColumn();
+        col.setCaption(new LocaleString(caption));
+        col.setKey(key);
+        col.setListFieldKey(key);
+        return col;
+    }
 
 }

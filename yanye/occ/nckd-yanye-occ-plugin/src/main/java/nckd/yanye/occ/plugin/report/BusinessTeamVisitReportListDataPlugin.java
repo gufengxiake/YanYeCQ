@@ -6,6 +6,7 @@ import kd.bos.algo.DataSet;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.LocaleString;
 import kd.bos.entity.report.*;
+import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.QueryServiceHelper;
@@ -17,13 +18,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 片区情况一览表（拜访）-报表取数插件
- * 表单标识：nckd_areasituationvis_rpt
+ * 业务团队一览表（拜访客户）-报表取数插件
+ * 表单标识：nckd_businessteamvis_rpt
  * author:zhangzhilong
- * date:2024/10/12
+ * date:2024/10/14
  */
-public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
-
+public class BusinessTeamVisitReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
 
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
@@ -55,6 +55,10 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
                 //销售组织
                 "slaeorginfo.saleorginfonum as ocdbd_org," +
                         "slaeorginfo.saleorginfonum.name as ocdbd_orgname," +
+                        //部门
+                        "slaeorginfo.department as ocdbd_department," +
+                        //销售片区
+                        "nckd_regiongroup," +
                         //客户
                         "customer as ocdbd_customer," +
                         //渠道主键
@@ -69,40 +73,47 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
 //        DataSet ocdbdChannelCopy = ocdbdChannel.copy().leftJoin(hmuaSfaBfRecord).on("ocdbd_id","qdzj")
 //                .select(new String[]{"ocdbd_org","ocdbd_orgname","sumbf","jysumbf","zysumbf","xtsumbf","wysumbf","group"}).finish();
 
+
+        String[] groups = {"ocdbd_org", "ocdbd_department", "nckd_regiongroup"};
+
         //计算0客户数 即关联拜访记录为空的渠道档案
-        DataSet sumzerokh = channelBfRecord.filter("sumbf = null").groupBy(new String[]{"ocdbd_org", "ocdbd_orgname"})
+        DataSet sumzerokh = channelBfRecord.filter("sumbf = null").groupBy(groups)
                 .count("sumzerokh").finish();
 
         //计算餐饮客户数
-        DataSet sumcy = channelBfRecord.filter("group = '餐饮'").groupBy(new String[]{"ocdbd_org", "ocdbd_orgname"})
+        DataSet sumcy = channelBfRecord.filter("group = '餐饮'").groupBy(groups)
                 .sum("sumbf", "sumcy").sum("jysumbf","jysumcy").sum("zysumbf","zysumcy")
                 .sum("xtsumbf","xtsumcy").sum("wysumbf","wysumcy").finish();
 
         //计算年度拜访记录
         DataSet yearBfRecord = this.getBfRecord(ocdbdChannel,beginOfYear, endOfMonth);
 
-        DataSet yearSumCY = yearBfRecord.filter("group = '餐饮'").groupBy(new String[]{"ocdbd_org", "ocdbd_orgname"})
+        DataSet yearSumCY = yearBfRecord.filter("group = '餐饮'").groupBy(groups)
                 .sum("sumbf", "yearsumcy").sum("jysumbf","yearjysumcy").sum("zysumbf","yearzysumcy")
                 .sum("xtsumbf","yearxtsumcy").sum("wysumbf","yearwysumcy").finish();
 
-        yearBfRecord = yearBfRecord.groupBy(new String[]{"ocdbd_org", "ocdbd_orgname"}).sum("sumbf","yearsumbf").finish()
-                .leftJoin(yearSumCY).on("ocdbd_org","ocdbd_org").select("ocdbd_org", "ocdbd_orgname","yearsumbf","yearsumcy","yearjysumcy","yearzysumcy","yearxtsumcy","yearwysumcy").finish();
+        yearBfRecord = yearBfRecord.groupBy(groups).sum("sumbf","yearsumbf").finish()
+                .leftJoin(yearSumCY).on("ocdbd_org","ocdbd_org").select("ocdbd_org", "ocdbd_department", "nckd_regiongroup","yearsumbf","yearsumcy","yearjysumcy","yearzysumcy","yearxtsumcy","yearwysumcy").finish();
 
         //计算同一个组织下的渠道数
-        DataSet finish = channelBfRecord.groupBy(new String[]{"ocdbd_org","ocdbd_orgname"})
+        DataSet finish = channelBfRecord.groupBy(groups)
                 .count("sumks").sum("sumbf").sum("jysumbf").sum("zysumbf").sum("xtsumbf").sum("wysumbf").finish();
 
-        finish = finish.leftJoin(sumzerokh).on("ocdbd_org","ocdbd_org")
+        finish = finish.leftJoin(sumzerokh).on("ocdbd_org","ocdbd_org").on("ocdbd_department","ocdbd_department").on("nckd_regiongroup","nckd_regiongroup")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"sumzerokh"}).finish();
 
-        finish = finish.leftJoin(sumcy).on("ocdbd_org","ocdbd_org")
+        finish = finish.leftJoin(sumcy).on("ocdbd_org","ocdbd_org").on("ocdbd_department","ocdbd_department").on("nckd_regiongroup","nckd_regiongroup")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"jysumcy","zysumcy","xtsumcy","wysumcy","sumcy"}).finish();
 
-        finish = finish.leftJoin(yearBfRecord).on("ocdbd_org","ocdbd_org")
+        finish = finish.leftJoin(yearBfRecord).on("ocdbd_org","ocdbd_org").on("ocdbd_department","ocdbd_department").on("nckd_regiongroup","nckd_regiongroup")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"yearsumbf","yearsumcy","yearjysumcy","yearzysumcy","yearxtsumcy","yearwysumcy"}).finish();
         //获取华康年度计划表
         String hkFields = "org as hk_org," +
                 "entryentity.nckd_date as hk_date," +
+                //经营团队
+                "entryentity.nckd_jytd as nckd_jytd," +
+                //地区
+                "entryentity.nckd_dqfl as nckd_dqfl," +
                 //月度拜访客户数目标
                 "entryentity.nckd_ydbfkh as hk_ydbfkh" ;
         //计算汇总本月月度小包装盐销售目标
@@ -111,10 +122,10 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         DataSet nckdHkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
         //汇总月度目标
-        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org"})
+        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org","nckd_jytd","nckd_dqfl"})
                 .sum("hk_ydbfkh", "month_hk_ydbfkh").finish();
         //
-        finish = finish.leftJoin(nckdHkndjhb).on("ocdbd_org","hk_org")
+        finish = finish.leftJoin(nckdHkndjhb).on("ocdbd_org","hk_org").on("ocdbd_department","nckd_jytd").on("nckd_regiongroup","nckd_dqfl")
                 .select(finish.getRowMeta().getFieldNames(),new String[]{"month_hk_ydbfkh"}).finish();
 
         sumzerokh.close();
@@ -126,7 +137,7 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         yearSumCY.close();
         nckdHkndjhb.close();
 
-        return finish;
+        return finish.orderBy(groups);
     }
 
     //获取餐饮客户
@@ -172,7 +183,7 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
 
         //关联拜访
         hmuaSfaBfRecord = ds.leftJoin(hmuaSfaBfRecord).on("ocdbd_id","qdzj")
-                .select(new String[]{"ocdbd_org","ocdbd_orgname","sumbf","jysumbf","zysumbf","xtsumbf","wysumbf","group"}).finish();
+                .select(new String[]{"ocdbd_org","ocdbd_department", "nckd_regiongroup","sumbf","jysumbf","zysumbf","xtsumbf","wysumbf","group"}).finish();
 
         mdsumbf.close();
         jxssumbf.close();
@@ -181,52 +192,43 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
     }
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
-        columns.add(createReportColumn("ocdbd_orgname", ReportColumn.TYPE_TEXT,"公司简称"));
+        columns.add(createBaseDataColumn("ocdbd_org", "bos_org","公司名称"));
+        columns.add(createBaseDataColumn("ocdbd_department","bos_org","经营团队"));
+        columns.add(createBaseDataColumn("nckd_regiongroup","nckd_regiongroup","所属地区"));
         columns.add(createReportColumn("sumks",ReportColumn.TYPE_INTEGER,"登记客商数"));
         columns.add(createReportColumn("sumzerokh",ReportColumn.TYPE_INTEGER,"零拜访客户"));
         columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,"年平均次数"));
 
-        ReportColumnGroup monthbfReportColumnGroup = new ReportColumnGroup();
-        monthbfReportColumnGroup.setFieldKey("monthbf");
-        monthbfReportColumnGroup.setCaption(new LocaleString("月度拜访完成情况"));
+        ReportColumnGroup monthbfReportColumnGroup = createReportColumnGroup("monthbf","月度拜访完成情况");
+
         monthbfReportColumnGroup.getChildren().add(createReportColumn("month_hk_ydbfkh",ReportColumn.TYPE_INTEGER,"月度拜访目标"));
         monthbfReportColumnGroup.getChildren().add(createReportColumn("sumbf",ReportColumn.TYPE_INTEGER,"当月拜访"));
         monthbfReportColumnGroup.getChildren().add(createReportColumn("sumcy",ReportColumn.TYPE_INTEGER,"当月餐饮"));
-        monthbfReportColumnGroup.getChildren().add(createReportColumn("bfwcl",ReportColumn.TYPE_TEXT,"拜访完成率"));
+        monthbfReportColumnGroup.getChildren().add(createReportColumn("bfwcl",ReportColumn.TYPE_TEXT,"拜访覆盖率"));
         monthbfReportColumnGroup.getChildren().add(createReportColumn("bfwc",ReportColumn.TYPE_TEXT,"拜访完成"));
         columns.add(monthbfReportColumnGroup);
 
-        ReportColumnGroup cybfReportColumnGroup = new ReportColumnGroup();
-        cybfReportColumnGroup.setFieldKey("cybf");
-        cybfReportColumnGroup.setCaption(new LocaleString("餐饮拜访指标"));
+        ReportColumnGroup cybfReportColumnGroup = createReportColumnGroup("cybf","餐饮拜访指标");
         cybfReportColumnGroup.getChildren().add(createReportColumn("monthsumcy",ReportColumn.TYPE_TEXT,"餐饮月占比"));
         cybfReportColumnGroup.getChildren().add(createReportColumn("yearsumcy",ReportColumn.TYPE_TEXT,"餐饮年占比"));
         columns.add(cybfReportColumnGroup);
 
-        ReportColumnGroup dyglReportColumnGroup = new ReportColumnGroup();
-        dyglReportColumnGroup.setFieldKey("dygl");
-        dyglReportColumnGroup.setCaption(new LocaleString("当月各类拜访占比"));
+        ReportColumnGroup dyglReportColumnGroup = createReportColumnGroup("dygl","当月各类拜访占比");
         dyglReportColumnGroup.getChildren().add(createReportColumn("jysumbf",ReportColumn.TYPE_TEXT,"当月江盐"));
         dyglReportColumnGroup.getChildren().add(createReportColumn("zysumbf",ReportColumn.TYPE_TEXT,"当月中盐"));
         dyglReportColumnGroup.getChildren().add(createReportColumn("xtsumbf",ReportColumn.TYPE_TEXT,"当月雪天"));
         dyglReportColumnGroup.getChildren().add(createReportColumn("wysumbf",ReportColumn.TYPE_TEXT,"当月外盐"));
         columns.add(dyglReportColumnGroup);
 
-        ReportColumnGroup cylReportColumnGroup = new ReportColumnGroup();
-        cylReportColumnGroup.setFieldKey("cyl");
-        cylReportColumnGroup.setCaption(new LocaleString("餐饮类拜访占比"));
+        ReportColumnGroup cylReportColumnGroup = createReportColumnGroup("cyl","餐饮类拜访占比");
 
-        ReportColumnGroup cylydReportColumnGroup = new ReportColumnGroup();
-        cylydReportColumnGroup.setFieldKey("cylyd");
-        cylydReportColumnGroup.setCaption(new LocaleString("月度占比"));
+        ReportColumnGroup cylydReportColumnGroup = createReportColumnGroup("cylyd","月度占比");
         cylydReportColumnGroup.getChildren().add(createReportColumn("jysumcy",ReportColumn.TYPE_TEXT,"餐饮-本月江盐占比"));
         cylydReportColumnGroup.getChildren().add(createReportColumn("zysumcy",ReportColumn.TYPE_TEXT,"餐饮-本月中盐占比"));
         cylydReportColumnGroup.getChildren().add(createReportColumn("xtsumcy",ReportColumn.TYPE_TEXT,"餐饮-本月雪天占比"));
         cylydReportColumnGroup.getChildren().add(createReportColumn("wysumcy",ReportColumn.TYPE_TEXT,"餐饮-本月外盐占比"));
 
-        ReportColumnGroup cylndReportColumnGroup = new ReportColumnGroup();
-        cylndReportColumnGroup.setFieldKey("cylnd");
-        cylndReportColumnGroup.setCaption(new LocaleString("年度占比"));
+        ReportColumnGroup cylndReportColumnGroup = createReportColumnGroup("cylnd","年度占比");
         cylndReportColumnGroup.getChildren().add(createReportColumn("yearjysumcy",ReportColumn.TYPE_TEXT,"餐饮-江盐占比"));
         cylndReportColumnGroup.getChildren().add(createReportColumn("yearzysumcy",ReportColumn.TYPE_TEXT,"餐饮-中盐占比"));
         cylndReportColumnGroup.getChildren().add(createReportColumn("yearxtsumcy",ReportColumn.TYPE_TEXT,"餐饮-雪天占比"));
@@ -237,7 +239,7 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         columns.add(cylReportColumnGroup);
 
         columns.add(createReportColumn("yearsumbf",ReportColumn.TYPE_INTEGER,"年度拜访数量"));
-//        columns.add(createReportColumn("",ReportColumn.TYPE_TEXT,""));
+
         return columns;
     }
 
@@ -251,5 +253,20 @@ public class AreaSituationVisitReportListDataPlugin extends AbstractReportListDa
         }
         return column;
     }
+
+    public ReportColumnGroup createReportColumnGroup(String fileKey, String name) {
+        ReportColumnGroup group = new ReportColumnGroup();
+        group.setFieldKey(fileKey);
+        group.setCaption(new LocaleString(name));
+        return group;
+    }
+
+    public ReportColumn createBaseDataColumn(String fileKey, String entityId, String name) {
+        ReportColumn column = ReportColumn.createBaseDataColumn(fileKey, entityId);
+        column.setFieldKey(fileKey);
+        column.setCaption(new LocaleString(name));
+        return column;
+    }
+
 
 }

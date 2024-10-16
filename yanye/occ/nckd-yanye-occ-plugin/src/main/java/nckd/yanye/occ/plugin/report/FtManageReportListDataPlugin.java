@@ -27,7 +27,8 @@ public class FtManageReportListDataPlugin extends AbstractReportListDataPlugin i
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         ArrayList<QFilter> qFilters = new ArrayList<>();
         //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
-        QFilter  orgfilter= new QFilter("bizorg.number", QCP.in,new String[]{"11901","121"});
+        QFilter  orgfilter= new QFilter("bizorg.number", QCP.in,new String[]{"119.01","121"});
+
         qFilters.add(orgfilter);
         //限定单据为已审核
         QFilter filter = new QFilter("billstatus", QCP.equals, "C");

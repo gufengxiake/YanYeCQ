@@ -85,6 +85,7 @@ public class EpaIndicatorSiExtFormPlugin extends AbstractFormPlugin{
                 invcountscheme.set("customfiled1",dynamicObject.getString("nckd_calculatetype"));//计算类型
                 invcountscheme.set("customfiled2",dynamicObject.getString("nckd_addvalue"));//每增加数值
                 invcountscheme.set("customfiled3",dynamicObject.getString("nckd_addfraction"));//增加分数
+                invcountscheme.set("customfiled4",dynamicObject.getString("id"));//考核量化指标id
 //                invcountscheme.set("nckd_number",dynamicObject.get("number"));//考核量化指标编码
                 invcountscheme.set("activity",activityId);//考核活动id
                 invcountscheme.set("weight",BigDecimal.ONE);//考核活动id

@@ -12,20 +12,20 @@ public class ZhWlUtil {
     /**
      * 智慧物流获取token用户名
      */
-    public static final String USERNAME = CappConfig.getConfigValue("zhwl_UserName");
+    public static String USERNAME = CappConfig.getConfigValue("zhwl_UserName");
 
     /**
      * 智慧物流获取token密码
      */
-    public static final String PASSWORD = CappConfig.getConfigValue("zhwl_Password");
+    public static String PASSWORD = CappConfig.getConfigValue("zhwl_Password");
 
     /**
      * 智慧物流获取token参数
      */
-    public static final String GRANTTYPE = CappConfig.getConfigValue("zhwl_grant_type");
+    public static String GRANTTYPE = CappConfig.getConfigValue("zhwl_grant_type");
 
     /**
      * 智慧物流url地址
      */
-    public static final String URL = CappConfig.getConfigValue("zhwl_url");
+    public static String URL = CappConfig.getConfigValue("zhwl_url");
 }

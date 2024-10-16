@@ -106,7 +106,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
     public void beforeItemClick(BeforeItemClickEvent e) {
         String itemKey = e.getItemKey();
         // 添加所有年度绩效调薪人员
-        if ("nckd_onematch".equals(itemKey)) {
+        if ("advconbaritemap".equals(itemKey)) {
             // 组织范围：针对晶昊公司
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             if (org == null) {

@@ -48,6 +48,7 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
             date = BusinessDataServiceHelper.loadSingle(date.getPkValue(), "nckd_bd_supplier_change");
             DynamicObjectCollection entry = date.getDynamicObjectCollection("nckd_entry");
             String maintenanceType = date.getString("nckd_maintenancetype");
+            DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle("bos_org","id,number",new QFilter[]{new QFilter("number",QCP.equals,"1")});
             switch (maintenanceType) {
                 //新增
                 case "save":
@@ -57,7 +58,6 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         //获取编码规则
                         CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(bdSupplier.getDataEntityType().getName(), bdSupplier, null);
                         String number = CodeRuleServiceHelper.getNumber(codeRule, bdSupplier);
-                        DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle(100000L, "bos_org");
 
                         bdSupplier.set("number", number);//编码
                         bdSupplier.set("name", entity.get("nckd_addsupplier"));//名称
@@ -280,7 +280,6 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 SaveServiceHelper.update(bdSupplier);
                             }else {
                                 DynamicObject bd_address = BusinessDataServiceHelper.newDynamicObject("bd_address");
-                                DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle(100000L, "bos_org");
                                 bd_address.set("number", bdSupplier.get("number"));
                                 bd_address.set("name", entity.getString("nckd_spname") + "地址");
                                 bd_address.set("supplier", bdSupplier);
