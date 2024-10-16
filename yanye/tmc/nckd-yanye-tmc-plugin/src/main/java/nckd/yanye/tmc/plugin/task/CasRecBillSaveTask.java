@@ -14,6 +14,8 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -42,6 +44,12 @@ public class CasRecBillSaveTask implements IEventServicePlugin {
 
             String oppunit = intelRec.getString("oppunit");
             if (StringUtils.isBlank(oppunit)) {
+                continue;
+            }
+            //判断对方户名是否包含中文
+            Pattern p = Pattern.compile("[\u4e00-\u9fa5]");
+            Matcher m = p.matcher(oppunit);
+            if (m.find()) {
                 continue;
             }
             DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,name,nckd_entry_english,nckd_entry_english.nckd_engname",
