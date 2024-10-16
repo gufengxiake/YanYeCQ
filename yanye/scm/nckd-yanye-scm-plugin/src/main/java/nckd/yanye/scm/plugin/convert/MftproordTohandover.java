@@ -1,4 +1,4 @@
-package nckd.yanye.scm.plugin.convert;
+    package nckd.yanye.scm.plugin.convert;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -13,7 +13,9 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 
-/**
+import static kd.fi.bcm.common.util.InvestUtils.convertToBigDecimal;
+
+    /**
  * 生产领料单下推生成时，系统自动后去当前即时库存数量
  * 表单标识：nckd_im_mdc_mftproord_ext  nckd_im_mdc_handover
  * author:黄文波 2024-10-12
@@ -35,12 +37,13 @@ public class MftproordTohandover extends AbstractConvertPlugIn {
             for (DynamicObject object : dynamicObject.getDynamicObjectCollection("entryentity")) {
                 DynamicObject material = object.getDynamicObject("nckd_material");//物料
                 DynamicObject warehouse = object.getDynamicObject("nckd_warehouse");//仓库
-                DynamicObject org = object.getDynamicObject("org");//组织
+                DynamicObject org = object.getDynamicObject("nckd_orgfield");//组织
+
+                BigDecimal jesl= convertToBigDecimal(object.getDynamicObject("nckd_orgfield"));
+
                 String stocktype = "110";//库存类型
-                Long materialid = null;
 
-
-                materialid=(long) material.getPkValue();
+                Long materialid=(long) material.getPkValue();
                 Long stockid = (long) warehouse.getPkValue();//仓库内码
                 Long orgid = (long) org.getPkValue();//库存组织内码
 
@@ -53,33 +56,13 @@ public class MftproordTohandover extends AbstractConvertPlugIn {
                 }
                 BigDecimal value = BigDecimal.ZERO;
                 int chazhi = 0;
+                BigDecimal lockqty= BigDecimal.valueOf(0);
                 for (int j = 0; j < record.length; j++) {
                     DynamicObject recordobj=record[j];
-                    int lockqty = recordobj.getBigDecimal("lockqty").intValue();
+                     lockqty = BigDecimal.valueOf(recordobj.getBigDecimal("qty").intValue());
                 }
-
-                object.set("nckd_inventoryqty", 1);//库存数量
-
-//                if (group != null) {
-//                    object.set("nckd_material_group", group);
-//
-//                    DynamicObject org = dynamicObject.getDynamicObject("org");
-//                    QFilter qFilter1 = new QFilter("nckd_material_class.id", QCP.equals, group.getPkValue());
-//                    QFilter qFilter2 = new QFilter("nckd_org.id", QCP.equals, org.getPkValue());
-//                    QFilter qFilter3 = new QFilter("status", QCP.equals, "C");
-//                    DynamicObject loadSingle = BusinessDataServiceHelper.loadSingle("nckd_im_evaluate_material", "nckd_evaluate_period", new QFilter[]{qFilter1, qFilter2, qFilter3});
-//                    if (loadSingle != null) {
-//                        Integer evaluatePeriod = (Integer) loadSingle.get("nckd_evaluate_period");
-//                        if (evaluatePeriod != null) {
-//                            object.set("nckd_evaluate_period", evaluatePeriod);
-//
-//                            Date biztime = (Date) dynamicObject.get("biztime");
-//                            LocalDateTime localDateTime = biztime.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-//                            object.set("nckd_evaluate_date", Date.from(localDateTime.plusDays(evaluatePeriod).atZone(ZoneId.systemDefault()).toInstant()));
-//                            object.set("nckd_evaluate_flag", 1);
-//                        }
-//                    }
-//                }
+                object.set("nckd_inventoryqty", lockqty);//库存数量
+                object.set("nckd_jjsl", lockqty);//库存数量
             }
         }
 
