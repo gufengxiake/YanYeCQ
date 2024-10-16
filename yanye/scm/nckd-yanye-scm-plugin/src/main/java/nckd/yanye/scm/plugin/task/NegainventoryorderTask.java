@@ -28,7 +28,8 @@ public class NegainventoryorderTask extends AbstractTask {
     public void execute(RequestContext requestContext, Map<String, Object> map) throws KDException {
         //查询所有得5G工厂类型得负库存数据
         QFilter qFilter = new QFilter("nckd_datasources", QCP.equals,"2")
-                .and("billstatus",QCP.equals,"C");
+                .and("billstatus",QCP.equals,"C")
+                .and("nckd_isgenerate",QCP.equals,false);
         DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load("nckd_negainventoryorder", "id,masterid,nckd_isgenerate,billno", new QFilter[]{qFilter});
         List<DynamicObject> objects = new ArrayList<>();
         for (DynamicObject dynamicObject : Arrays.asList(dynamicObjects)){

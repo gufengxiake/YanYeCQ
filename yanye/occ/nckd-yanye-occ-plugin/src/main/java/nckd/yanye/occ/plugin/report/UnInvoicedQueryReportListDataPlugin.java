@@ -31,7 +31,7 @@ public class UnInvoicedQueryReportListDataPlugin extends AbstractReportListDataP
         //应收数量为0
         initFilter.and("billentry.joinpriceqty",QCP.equals,0);
         //限定组织为晶昊本部和江西富达盐化有限公司的销售出库单
-        initFilter.and("bizorg.number", QCP.in, new String[]{"11901", "121"});
+        initFilter.and("bizorg.number", QCP.in, new String[]{"119.01", "121"});
         qFilters.add(initFilter);
         FilterInfo filter = reportQueryParam.getFilter();
         //获取销售组织过滤

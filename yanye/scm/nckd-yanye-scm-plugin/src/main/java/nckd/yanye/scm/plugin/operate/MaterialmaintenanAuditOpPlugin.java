@@ -1,10 +1,7 @@
 package nckd.yanye.scm.plugin.operate;
 
 import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import cn.hutool.core.util.ObjectUtil;
@@ -15,11 +12,13 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
+import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.coderule.CodeRuleServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
+import kd.bos.util.CollectionUtils;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -41,6 +40,8 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
     @Override
     public void afterExecuteOperationTransaction(AfterOperationArgs e) {
         super.afterExecuteOperationTransaction(e);
+
+        List<String> errorMsg = new ArrayList<>();
 
         Arrays.stream(e.getDataEntities()).forEach(data -> {
             /**
@@ -70,49 +71,143 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
             if ("updateinfo".equals(data.getString("nckd_materialmaintunit"))) {
                 baseInfo(data);
             } else {
-                switch (documenttype) {
-                    case "1":
-                        // 生产基本信息
-                        this.productionInfo(data);
+                try {
+                    switch (documenttype) {
+                        case "1":
+                            // 生产基本信息
+                            this.productionInfo(data);
 
-                        // 组织范围内属性页签
-                        DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
-                        if (dynamicObject != null) {
-                            List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> Objects.equals(dynamic.getDynamicObject("nckd_org").getPkValue(), org.getPkValue())).collect(Collectors.toList());
-                            List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
-                            if (materialproperty.contains("2")) {
-                                // 计划基本信息
-                                this.planInfo(data);
+                            // 组织范围内属性页签
+                            DynamicObject dynamicObject = BusinessDataServiceHelper.loadSingle("nckd_orgpropertytab", new QFilter[]{new QFilter("nckd_entryentity.nckd_org", QCP.equals, org.getPkValue())});
+                            if (dynamicObject != null) {
+                                List<DynamicObject> collect = dynamicObject.getDynamicObjectCollection("nckd_entryentity").stream().filter(dynamic -> Objects.equals(dynamic.getDynamicObject("nckd_org").getPkValue(), org.getPkValue())).collect(Collectors.toList());
+                                List<String> materialproperty = Arrays.stream(collect.get(0).getString("nckd_materialproperty").split(",")).filter(s -> StringUtils.isNotEmpty(s)).collect(Collectors.toList());
+                                if (materialproperty.contains("2")) {
+                                    // 计划基本信息
+                                    this.planInfo(data);
+                                }
                             }
-                        }
 
-                        // 质检基本信息
-                        this.inspectInfo(data);
+                            // 质检基本信息
+                            this.inspectInfo(data);
 
-                        break;
-                    case "2":
-                        // 库存基本信息
-                        this.stockInfo(data);
-                        break;
-                    case "3":
-                        // 核算基本信息
-                        this.checkInfo(data);
-                        break;
-                    case "4":
-                        // 销售基本信息
-                        this.marketInfo(data);
-                        break;
-                    case "5":
-                        // 采购基本信息
-                        this.purchaseInfo(data);
-                        // 物料采购员信息
-                        this.buyerInfo(data);
-                        // 质检基本信息
+                            break;
+                        case "2":
+                            // 库存基本信息
+                            this.stockInfo(data);
+                            break;
+                        case "3":
+                            // 核算基本信息
+                            this.checkInfo(data);
+                            break;
+                        case "4":
+                            // 销售基本信息
+                            this.marketInfo(data);
+                            break;
+                        case "5":
+                            // 采购基本信息
+                            this.purchaseInfo(data);
+                            // 物料采购员信息
+                            this.buyerInfo(data);
+                            // 质检基本信息
 //                        this.inspectInfo(data);
-                        break;
+                            break;
+                    }
+                } catch (Exception exception) {
+                    rollbackAudit(data,documenttype);
+                    errorMsg.add(exception.getLocalizedMessage());
                 }
             }
         });
+
+        if (CollectionUtils.isNotEmpty(errorMsg)) {
+            throw new KDBizException(errorMsg.stream().collect(Collectors.joining(",")));
+        }
+    }
+
+    private void rollbackAudit(DynamicObject data,String documenttype){
+        data.set("billstatus", "B");
+
+        if("add".equals(data.getString("nckd_materialmaintunit"))){
+            switch (documenttype) {
+                case "1":
+                    // 生产基本信息
+                    QFilter qFilter1 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject1 = BusinessDataServiceHelper.loadSingle("bd_materialmftinfo", qFilter1.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject1)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject1, dynamicObject1.getString("status"));
+                    }
+
+                    // 计划基本信息
+                    QFilter qFilter2 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject2 = BusinessDataServiceHelper.loadSingle("mpdm_materialplan", qFilter2.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject2)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject2, dynamicObject2.getString("status"));
+                    }
+
+                    // 质检基本信息
+                    QFilter qFilter3 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject3 = BusinessDataServiceHelper.loadSingle("bd_inspect_cfg", qFilter3.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject3)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject3, dynamicObject3.getString("status"));
+                    }
+
+                    break;
+                case "2":
+                    // 库存基本信息
+                    QFilter qFilter4 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject4 = BusinessDataServiceHelper.loadSingle("bd_materialinventoryinfo", qFilter4.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject4)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject4, dynamicObject4.getString("status"));
+                    }
+
+                    break;
+                case "3":
+                    // 核算基本信息
+                    QFilter qFilter5 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject5 = BusinessDataServiceHelper.loadSingle("bd_materialcalinfo", qFilter5.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject5)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject5, dynamicObject5.getString("status"));
+                    }
+
+                    break;
+                case "4":
+                    // 销售基本信息
+                    QFilter qFilter6 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject6 = BusinessDataServiceHelper.loadSingle("bd_materialsalinfo", qFilter6.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject6)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject6, dynamicObject6.getString("status"));
+                    }
+
+                    break;
+                case "5":
+                    // 采购基本信息
+                    QFilter qFilter7 = new QFilter("createorg", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("masterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject7 = BusinessDataServiceHelper.loadSingle("bd_materialpurchaseinfo", qFilter7.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject7)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject7, dynamicObject7.getString("status"));
+                    }
+
+                    // 物料采购员信息
+                    QFilter qFilter8 = new QFilter("org", QCP.equals, data.getDynamicObject("org").getPkValue())
+                            .and("entryentity.materialmasterid", QCP.equals, data.getDynamicObject("nckd_materialnumber").getPkValue());
+                    DynamicObject dynamicObject8 = BusinessDataServiceHelper.loadSingle("msbd_puropermaterctrl", qFilter8.toArray());
+                    if(ObjectUtil.isNotEmpty(dynamicObject8)){
+                        MaterialAttributeInformationUtils.deleteEntity(dynamicObject8, dynamicObject8.getString("status"));
+                    }
+
+                    break;
+            }
+        }
+
+        SaveServiceHelper.update(data);
     }
 
     /**
@@ -362,10 +457,10 @@ public class MaterialmaintenanAuditOpPlugin extends AbstractOperationServicePlug
         // 最大库存
         newDynamicObject.set("maxinvqty", dynamicObject.get("nckd_maxinvqty"));
 //        if (dynamicObject.get("nckd_lotcoderule") != null) {
-            // 启用批号管理
-            newDynamicObject.set("enablelot", dynamicObject.get("nckd_enablelot"));
-            // 批号规则
-            newDynamicObject.set("lotcoderule", dynamicObject.get("nckd_lotcoderule"));
+        // 启用批号管理
+        newDynamicObject.set("enablelot", dynamicObject.get("nckd_enablelot"));
+        // 批号规则
+        newDynamicObject.set("lotcoderule", dynamicObject.get("nckd_lotcoderule"));
 //        }
         if (dynamicObject.getBoolean("nckd_enableshelflifemgr")) {
             // 保质期管理

@@ -287,7 +287,6 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         entry.set("nckd_tare",nckd_tare);//皮重
                         entry.set("nckd_netweight",nckd_netweight);//净重
 
-                        //SaveServiceHelper.update(eleweigh);
                         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());
                         if (!saveOperationResult.isSuccess()){
                             return CustomApiResult.fail("false","生成电子磅单失败");
@@ -333,16 +332,14 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                     DynamicObject eleweighing = BusinessDataServiceHelper.newDynamicObject("nckd_eleweighing");
                     CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(eleweighing.getDataEntityType().getName(), eleweighing, null);
                     String number = CodeRuleServiceHelper.getNumber(codeRule, eleweighing);
-                    //DynamicObject billType = BusinessDataServiceHelper.loadSingle("bos_billtype", "id", new QFilter[]{new QFilter("id", QCP.equals, "2057962852278348800")});
-                    //DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier", "id,name", new QFilter[]{new QFilter("name", QCP.equals, nckd_customer)});
                     DynamicObject vehicle = BusinessDataServiceHelper.loadSingle( "nckd_vehicle","id,name",new QFilter[]{new QFilter("name",QCP.equals,carno)});
                     DynamicObject driver = BusinessDataServiceHelper.loadSingle("nckd_driver","id,name",new QFilter[]{new QFilter("name",QCP.equals,nckd_driver)});
                     DynamicObject material = BusinessDataServiceHelper.loadSingle("bd_material", "id,name", new QFilter[]{new QFilter("name", QCP.equals, "石灰石（60一120mm）")});
                     SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
                     DynamicObject supplierControl = BusinessDataServiceHelper.loadSingle("nckd_supplier_control", "id,nckd_entryentity,nckd_entryentity.nckd_suppliername,nckd_entryentity.nckd_supplier", new QFilter[]{new QFilter("nckd_entryentity.nckd_suppliername", QCP.equals, nckd_customer)});
-                    DynamicObject org = BusinessDataServiceHelper.loadSingle(1994936229107338240L, "bos_org");
-                    DynamicObject bosBilltype = BusinessDataServiceHelper.loadSingle(2057962852278348800L, "bos_billtype");
-                    DynamicObject unit = BusinessDataServiceHelper.loadSingle(307797538013076480L, "bd_measureunits");
+                    DynamicObject org = BusinessDataServiceHelper.loadSingle("bos_org","id,name",new QFilter[]{new QFilter("name",QCP.equals,"江西晶昊盐化有限公司")});
+                    DynamicObject bosBilltype = BusinessDataServiceHelper.loadSingle("bos_billtype","id,number",new QFilter[]{new QFilter("number",QCP.equals,"nckd_eleweighing_BT5")});
+                    DynamicObject unit = BusinessDataServiceHelper.loadSingle("bd_measureunits","id,name",new QFilter[]{new QFilter("name",QCP.equals,"吨")});
 
                     eleweighing.set("billno",number);
                     eleweighing.set("billstatus","A");
@@ -409,7 +406,68 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         return CustomApiResult.fail("false","审核电子磅单失败："+stringBuilder);
                     }
                     return CustomApiResult.success("success");
-                } else {
+                    //让售
+                } else if ("4".equals(nckd_billtype)) {
+                    //销售订单
+                    DynamicObject salorder = BusinessDataServiceHelper.loadSingle(nckd_orderid, "sm_salorder");
+                    if (salorder == null) {
+                        return CustomApiResult.fail("false","传入来源单据ID数据错误,系统未查询到相关单据");
+                    }
+                    //构建下推参数，下推电子磅单
+                    PushArgs pushArgs = getPushArgs(salorder, "nckd_eleweighing");
+                    // 调用下推引擎，下推目标单并保存
+                    ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
+                    if (pushResult.isSuccess()){
+                        MainEntityType mainEntityType = EntityMetadataCache.getDataEntityType(pushArgs.getTargetEntityNumber());
+                        List<DynamicObject> targetDos = pushResult.loadTargetDataObjects(BusinessDataServiceHelper::loadRefence, mainEntityType);
+                        DynamicObject eleweigh = targetDos.get(0);
+                        DynamicObject driver = BusinessDataServiceHelper.loadSingle("nckd_driver","id,name",new QFilter[]{new QFilter("name",QCP.equals,nckd_driver)});
+                        DynamicObject vehicle = BusinessDataServiceHelper.loadSingle( "nckd_vehicle","id,name",new QFilter[]{new QFilter("name",QCP.equals,carno)});
+                        eleweigh.set("nckd_carsysno",nckd_carsysno);//派车单号
+                        eleweigh.set("nckd_driver",driver);//司机
+                        eleweigh.set("nckd_vehicle",vehicle);//车号
+                        eleweigh.set("nckd_railwaywagon",nckd_railwaywagon);//车皮号
+                        DynamicObjectCollection entryentity = eleweigh.getDynamicObjectCollection("entryentity");
+                        DynamicObject entry = entryentity.get(0);
+                        entry.set("nckd_srcbillid",nckd_srcbillid);//来源单据ID
+                        entry.set("nckd_srcbillentity",nckd_srcbillentity);//来源单据主实体
+                        entry.set("nckd_grossweight",nckd_grossweight);//毛重
+                        entry.set("nckd_tare",nckd_tare);//皮重
+                        entry.set("nckd_netweight",nckd_netweight);//净重
+                        eleweigh = setEleAmount(eleweigh, nckd_qty);
+
+                        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());
+                        if (!saveOperationResult.isSuccess()){
+                            return CustomApiResult.fail("false","生成电子磅单失败");
+                        }
+                        Object savePk = saveOperationResult.getSuccessPkIds().get(0);
+                        DynamicObject submitLoad = BusinessDataServiceHelper.loadSingle(savePk,"nckd_eleweighing");
+                        OperateOption auditOption = OperateOption.create();
+                        auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                        auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                        OperationResult submit = OperationServiceHelper.executeOperate("submit", "nckd_eleweighing", new DynamicObject[]{submitLoad}, auditOption);
+                        if (!submit.isSuccess()){
+                            StringBuilder stringBuilder = new StringBuilder();
+                            List<IOperateInfo> allErrorOrValidateInfo = submit.getAllErrorOrValidateInfo();
+                            for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                stringBuilder.append(iOperateInfo.getMessage()+",");
+                            }
+                            return CustomApiResult.fail("false","提交电子磅单失败："+stringBuilder);
+                        }
+                        OperationResult audit = OperationServiceHelper.executeOperate("audit", "nckd_eleweighing", new DynamicObject[]{submitLoad}, auditOption);
+                        if (!audit.isSuccess()){
+                            StringBuilder stringBuilder = new StringBuilder();
+                            List<IOperateInfo> allErrorOrValidateInfo = submit.getAllErrorOrValidateInfo();
+                            for (IOperateInfo iOperateInfo : allErrorOrValidateInfo) {
+                                stringBuilder.append(iOperateInfo.getMessage()+",");
+                            }
+                            return CustomApiResult.fail("false","审核电子磅单失败："+stringBuilder);
+                        }
+                    }else {
+                        return CustomApiResult.fail("false","生成电子磅单失败");
+                    }
+                    return CustomApiResult.success("success");
+                }else {
                     return CustomApiResult.fail("false","传入业务类型和来源单据实体数据错误,系统未查询到相关单据");
                 }
 
@@ -418,6 +476,22 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                 throw e;
             }
         }
+    }
+
+    private DynamicObject setEleAmount(DynamicObject eleweigh,BigDecimal nckd_qty) {
+        DynamicObjectCollection entryentity = eleweigh.getDynamicObjectCollection("entryentity");
+        DynamicObject entry = entryentity.get(0);
+        BigDecimal tax = nckd_qty.multiply(entry.getBigDecimal("nckd_priceandtax"));//价税合计
+        BigDecimal amount = nckd_qty.multiply(entry.getBigDecimal("nckd_pricefield"));//金额
+        BigDecimal curamountandtax = tax.multiply(eleweigh.getBigDecimal("nckd_exchangerate"));//价税合计(本位币)
+        BigDecimal nckd_curamount = amount.multiply(eleweigh.getBigDecimal("nckd_exchangerate"));//金额(本位币)
+        entry.set("nckd_curamountandtax",curamountandtax);//价税合计(本位币)
+        entry.set("nckd_amountandtax",tax);//价税合计
+        entry.set("nckd_amount",amount);//金额
+        entry.set("nckd_curamount",nckd_curamount);//金额(本位币)
+        entry.set("nckd_taxamount",tax.subtract(amount));//税额
+        entry.set("nckd_curtaxamount",curamountandtax.subtract(nckd_curamount));//税额(本位币)
+        return eleweigh;
     }
 
     private PushArgs getPushArgs(DynamicObject srcObj, String formbillid) {

@@ -55,6 +55,7 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
             date = BusinessDataServiceHelper.loadSingle(date.getPkValue(), "nckd_bd_customer_change");
             DynamicObjectCollection entry = date.getDynamicObjectCollection("nckd_entry");
             String maintenanceType = date.getString("nckd_maintenancetype");
+            DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle("bos_org","id,number",new QFilter[]{new QFilter("number",QCP.equals,"1")});
             switch (maintenanceType) {
                 //新增
                 case "save":
@@ -65,7 +66,6 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                         //获取编码规则
                         CodeRuleInfo codeRule = CodeRuleServiceHelper.getCodeRule(bdCustomer.getDataEntityType().getName(), bdCustomer, null);
                         String number = CodeRuleServiceHelper.getNumber(codeRule, bdCustomer);
-                        DynamicObject bosOrg = BusinessDataServiceHelper.loadSingle(100000L, "bos_org");
 
                         bdCustomer.set("number", number);//编码
                         bdCustomer.set("name", entity.get("nckd_addcustomer"));//名称
@@ -152,12 +152,12 @@ public class BdCustomerChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 }
                                 throw new KDBizException("保存信息到客户失败：" + stringBuilder);
                             }
-                            if (date.getDynamicObject("org").getLong("id") != 100000) {
+                            if (date.getDynamicObject("org").getPkValue() != bosOrg.getPkValue()) {
                                 Set<Long> dataIdsTemp = new HashSet<>();
                                 dataIdsTemp.add(bdCustomer.getLong("id"));
                                 Set<Long> orgIds = new HashSet<>();
                                 orgIds.add(date.getDynamicObject("org").getLong("id"));
-                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", 100000L, "basedata", dataIdsTemp, orgIds);
+                                BaseDataResponse assign = BaseDataServiceHelper.assign("bd_customer", bosOrg.getLong("id"), "basedata", dataIdsTemp, orgIds);
                                 if (!assign.isSuccess()) {
                                     throw new KDBizException("保存信息到客户失败：" + assign.getErrorMsg());
                                 }

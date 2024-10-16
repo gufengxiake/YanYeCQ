@@ -8,6 +8,7 @@ import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.util.CollectionUtils;
 import kd.hr.hbp.common.constants.HRBaseConstants;
 
 import java.math.BigDecimal;
@@ -55,41 +56,43 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                     DynamicObject quantiDynamicObject = quantizationfillingObject[0];
                     //考核量化指标填报分录
                     DynamicObjectCollection dynamicObjectCollection = quantiDynamicObject.getDynamicObjectCollection("entryentity");
-                    List<DynamicObject> objects = dynamicObjectCollection.stream().filter(t-> dynamicObject.getString("id").equals(t.getString("nckd_examinetarget.id"))).collect(Collectors.toList());
+                    List<DynamicObject> objects = dynamicObjectCollection.stream().filter(t-> dynamicObject.getString("customfiled4").equals(t.getString("nckd_examinetarget.id"))).collect(Collectors.toList());
                     //获取完成值
-                    BigDecimal qualityres  = objects.get(0).getBigDecimal("nckd_completevalue");//完成值
+                    if (CollectionUtils.isNotEmpty(objects)){
+                        BigDecimal qualityres  = objects.get(0).getBigDecimal("nckd_completevalue");//完成值
 //                invcountscheme.set("nckd_completevalue",completevalue);//完成值
 //                    invcountscheme.set("qualityres",completevalue);//完成值
-                    //完成值
+                        //完成值
 //                    BigDecimal qualityres = object.getBigDecimal("qualityres");
 
-                    //目标值
-                    BigDecimal qualitytarget = object.getBigDecimal("qualitytarget");
-                    BigDecimal addValue = null;
-                    if (object.getLocaleString("customfiled2").getLocaleValue_zh_CN() != null){
-                        //增加值
-                        addValue = new BigDecimal(object.getLocaleString("customfiled2").getLocaleValue_zh_CN());
-                    }
+                        //目标值
+                        BigDecimal qualitytarget = object.getBigDecimal("qualitytarget");
+                        BigDecimal addValue = null;
+                        if (object.getLocaleString("customfiled2").getLocaleValue_zh_CN() != null){
+                            //增加值
+                            addValue = new BigDecimal(object.getLocaleString("customfiled2").getLocaleValue_zh_CN());
+                        }
 
-                    //每增加分
-                    BigDecimal addGrade = null;
-                    if (object.getLocaleString("customfiled3").getLocaleValue_zh_CN() != null){
-                        //增加值
-                        addGrade = new BigDecimal(object.getLocaleString("customfiled3").getLocaleValue_zh_CN());
-                    }
-                    //权重 = 1
-                    BigDecimal weight = object.getBigDecimal("weight");
-                    //计算 可调整分值
-                    if (qualityres != null
-                            && qualitytarget != null
-                            && addValue != null
-                            && addGrade != null
-                            && qualityres.compareTo(BigDecimal.ZERO) > 0
-                            && qualitytarget.compareTo(BigDecimal.ZERO) > 0
-                            && addValue.compareTo(BigDecimal.ZERO) > 0
-                            && addGrade.compareTo(BigDecimal.ZERO) > 0){
-                        BigDecimal adjustValue = ((qualityres.subtract(qualitytarget)).divide(addValue)).multiply(addGrade).multiply(weight);
-                        dynamicObject.set("adjustval",adjustValue.setScale(2, RoundingMode.HALF_UP));
+                        //每增加分
+                        BigDecimal addGrade = null;
+                        if (object.getLocaleString("customfiled3").getLocaleValue_zh_CN() != null){
+                            //增加值
+                            addGrade = new BigDecimal(object.getLocaleString("customfiled3").getLocaleValue_zh_CN());
+                        }
+                        //权重 = 1
+                        BigDecimal weight = object.getBigDecimal("weight");
+                        //计算 可调整分值
+                        if (qualityres != null
+                                && qualitytarget != null
+                                && addValue != null
+                                && addGrade != null
+                                && qualityres.compareTo(BigDecimal.ZERO) > 0
+                                && qualitytarget.compareTo(BigDecimal.ZERO) > 0
+                                && addValue.compareTo(BigDecimal.ZERO) > 0
+                                && addGrade.compareTo(BigDecimal.ZERO) > 0){
+                            BigDecimal adjustValue = ((qualityres.subtract(qualitytarget)).divide(addValue)).multiply(addGrade).multiply(weight);
+                            dynamicObject.set("adjustval",adjustValue.setScale(2, RoundingMode.HALF_UP));
+                        }
                     }
                 }
             }
