@@ -19,6 +19,7 @@ public class MobileChannelReqBillPlugIn extends AbstractMobFormPlugin {
             this.getModel().setItemValueByID("saleorg",orgId,0);
         }
         Object[] ids=new Object[]{768696787199340544L,769522191178951680L};
+        //渠道职能
         this.getModel().setValue("channelfunctions",ids,0);
     }
 }

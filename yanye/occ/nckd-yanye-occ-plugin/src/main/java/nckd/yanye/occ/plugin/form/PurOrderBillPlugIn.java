@@ -229,7 +229,7 @@ public class PurOrderBillPlugIn extends AbstractBillPlugIn {
         Object zxssupplierId = null;
         DynamicObject zxssupplier = (DynamicObject) this.getModel().getValue("nckd_zxs", 0);
         if (zxssupplier == null) {
-            message += "装卸商为空";
+            message += "装卸商为空!";
         } else {
             zxssupplierId = zxssupplier.getPkValue();
         }

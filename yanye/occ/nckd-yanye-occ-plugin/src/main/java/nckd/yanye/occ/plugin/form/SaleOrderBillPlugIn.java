@@ -98,6 +98,8 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
                     //.and("billstatus",QCP.equals,"C")
             );
             parameter.setListFilterParameter(listFilterParameter);
+            //设置分录行支持被选择
+            parameter.setCustomParam("ismergerows", false);
             //设置回调
             parameter.setCloseCallBack(new CloseCallBack(this, "trancontract"));
             getView().showForm(parameter);
@@ -116,24 +118,30 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
             //DynamicObject billObj = BusinessDataServiceHelper.loadSingle(row.getPrimaryKeyValue(), "conm_salcontract");
             getModel().setValue("nckd_salecontractno", row.getBillNo());//销售合同编码
         } else if (StringUtils.equalsIgnoreCase("trancontract", key) && returnData != null) {
+            if(((ListSelectedRowCollection)returnData).size()>1){
+                this.getView().showErrorNotification("请勿选中多行记录！");
+                return;
+            }
             ListSelectedRow row = ((ListSelectedRowCollection) returnData).get(0);
             DynamicObject billObj = BusinessDataServiceHelper.loadSingle(row.getPrimaryKeyValue(), "conm_purcontract");
             getModel().setValue("nckd_trancontractno", row.getBillNo());//运费合同编码
             getModel().setValue("nckd_customer", billObj.get("supplier"));//承运商
             //分类明细信息
             DynamicObjectCollection entryData = billObj.getDynamicObjectCollection("billentry");
-            DynamicObject firstRowData = entryData.get(0);
-            //含税单价
-            BigDecimal taxPrice = firstRowData.getBigDecimal("priceandtax");
-            //合理途损率
-            BigDecimal damagerate = firstRowData.getBigDecimal("nckd_damagerate");
-            getModel().setValue("nckd_trancontractno", row.getBillNo());//运费合同编码
-            int entryRowCount = this.getModel().getEntryRowCount("billentry");
-            for (int i = 0; i < entryRowCount; i++) {
-                getModel().setValue("nckd_yfprice", taxPrice, i);
-                getModel().setValue("nckd_damagerate", damagerate, i);
+            for(DynamicObject rowData:entryData){
+                if(rowData.getPkValue().equals(row.getEntryPrimaryKeyValue())){
+                    //含税单价
+                    BigDecimal taxPrice = rowData.getBigDecimal("priceandtax");
+                    //合理途损率
+                    BigDecimal damagerate = rowData.getBigDecimal("nckd_damagerate");
+                    getModel().setValue("nckd_trancontractno", row.getBillNo());//运费合同编码
+                    int entryRowCount = this.getModel().getEntryRowCount("billentry");
+                    for (int i = 0; i < entryRowCount; i++) {
+                        getModel().setValue("nckd_yfprice", taxPrice, i);
+                        getModel().setValue("nckd_damagerate", damagerate, i);
+                    }
+                }
             }
-
         }
         //this.getView().invokeOperation("save");//保存单据
         super.closedCallBack(evt);
