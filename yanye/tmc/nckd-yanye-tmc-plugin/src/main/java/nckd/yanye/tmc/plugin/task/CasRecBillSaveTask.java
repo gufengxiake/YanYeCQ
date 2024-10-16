@@ -36,8 +36,7 @@ public class CasRecBillSaveTask implements IEventServicePlugin {
             logger.info("收票处理单据信息,{}", casRecbill);
 
             //查上游单据收款入账中心
-            DynamicObject intelRec = BusinessDataServiceHelper.loadSingle("bei_intelrec", "id,recedbillnumber,billno,rulename,oppunit",
-                    new QFilter[]{new QFilter("recedbillnumber", QCP.equals, casRecbill.getString("billno"))});
+            DynamicObject intelRec = BusinessDataServiceHelper.loadSingle(casRecbill.get("sourcebillid"),"bei_intelrec");
             if (intelRec == null) {
                 continue;
             }
