@@ -50,42 +50,56 @@ public class AreaSituationCustomerReportListDataPlugin extends AbstractReportLis
         String outFields = "bizorg as out_bizorg," +
                 //部门
                 "bizdept as out_bizdept," +
+                //销售片区
+                "nckd_basedatafield as out_xspq," +
                 //收货客户
                 "customer as out_customer," +
                 //业务日期
                 "biztime as nckd_date";
-        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
+        DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_saloutbill", outFields, qFilters.toArray(new QFilter[0]), null);
 
         //获取精品客户
         List<Long> outCustomer = DataSetToList.getOneToList(imSaloutbill, "out_customer");
-        QFilter cusFilter = new QFilter("nckd_boutiquecustomer", QCP.equals, "1")
-                .and("id", QCP.in, outCustomer.toArray(new Long[0]));
-        DataSet customerDS = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "bd_customer", "id,'精品' as isjp", new QFilter[]{cusFilter}, null);
+        QFilter cusFilter = new QFilter("nckd_boutiquecustomer", QCP.equals, "1").and("id", QCP.in, outCustomer.toArray(new Long[0]));
+        DataSet customerDS = QueryServiceHelper.queryDataSet(this.getClass().getName(),"bd_customer", "id,'精品' as isjp", new QFilter[]{cusFilter}, null);
 
         //关联客户档案判断是否精品
         imSaloutbill = imSaloutbill.leftJoin(customerDS).on("out_customer", "id").select(imSaloutbill.getRowMeta().getFieldNames(), new String[]{"isjp"}).finish();
 
         //计算月度和年度精品交易客户并关联
         DataSet jpMonthSum = imSaloutbill.filter("isjp = '精品'").filter("nckd_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("monthSumJPCustomer").finish();
-        DataSet jpYearSum = imSaloutbill.filter("isjp = '精品'").groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("yearSumJPCustomer").finish();
-        jpYearSum = jpYearSum.leftJoin(jpMonthSum).on("out_bizorg","out_bizorg")
-                .select(new String[]{"out_bizorg", "out_bizdept","monthSumJPCustomer","yearSumJPCustomer"}).finish();
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq"})
+                .count("monthSumJPCustomer").finish();
+        DataSet jpYearSum = imSaloutbill.filter("isjp = '精品'")
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq"})
+                .count("yearSumJPCustomer").finish();
+        jpYearSum = jpYearSum.leftJoin(jpMonthSum)
+                .on("out_bizorg","out_bizorg")
+                .on("out_bizdept","out_bizdept")
+                .on("out_xspq","out_xspq")
+                .select(new String[]{"out_bizorg", "out_bizdept","out_xspq","monthSumJPCustomer","yearSumJPCustomer"}).finish();
 
         //计算月度和年度交易客户并关联
         DataSet monthSum = imSaloutbill.filter("nckd_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("monthSumCustomer").finish();
-        DataSet yearSum = imSaloutbill.groupBy(new String[]{"out_bizorg", "out_bizdept", "out_customer"}).finish()
-                .groupBy(new String[]{"out_bizorg", "out_bizdept"}).count("yearSumCustomer").finish();
-        yearSum = yearSum.leftJoin(monthSum).on("out_bizorg","out_bizorg")
-                .select(new String[]{"out_bizorg", "out_bizdept","monthSumCustomer","yearSumCustomer"}).finish();
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq"})
+                .count("monthSumCustomer").finish();
+        DataSet yearSum = imSaloutbill
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq", "out_customer"}).finish()
+                .groupBy(new String[]{"out_bizorg", "out_bizdept","out_xspq"})
+                .count("yearSumCustomer").finish();
+        yearSum = yearSum.leftJoin(monthSum)
+                .on("out_bizorg","out_bizorg")
+                .on("out_bizdept","out_bizdept")
+                .on("out_xspq","out_xspq")
+                .select(new String[]{"out_bizorg", "out_bizdept","out_xspq","monthSumCustomer","yearSumCustomer"}).finish();
 
-        imSaloutbill = yearSum.leftJoin(jpYearSum).on("out_bizorg","out_bizorg")
+        imSaloutbill = yearSum.leftJoin(jpYearSum)
+                .on("out_bizorg","out_bizorg")
+                .on("out_bizdept","out_bizdept")
+                .on("out_xspq","out_xspq")
                 .select(yearSum.getRowMeta().getFieldNames(),new String[]{"monthSumJPCustomer","yearSumJPCustomer"}).finish();
         jpMonthSum.close();
         jpYearSum.close();
@@ -109,18 +123,30 @@ public class AreaSituationCustomerReportListDataPlugin extends AbstractReportLis
                 "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
         //汇总月度和年度目标并关联
         DataSet hkMonthSum = nckdHkndjhb.filter("hk_date >= to_date('" + beginOfMonth + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"}).sum("nckd_ydjykh", "month_nckd_ydjykh")
+                .groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"})
+                .sum("nckd_ydjykh", "month_nckd_ydjykh")
                 .sum("nckd_ydjpzdkh","month_nckd_ydjpzdkh").finish();
-        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"}).sum("nckd_ydjykh", "year_nckd_ydjykh")
+        nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org","nckd_jytd","nckd_ywtd"})
+                .sum("nckd_ydjykh", "year_nckd_ydjykh")
                 .sum("nckd_ydjpzdkh","year_nckd_ydjpzdkh").finish();
-        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum).on("hk_org","hk_org").on("nckd_jytd","nckd_jytd").on("nckd_ywtd","nckd_ywtd")
+        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum)
+                .on("hk_org","hk_org")
+                .on("nckd_jytd","nckd_jytd")
+                .on("nckd_ywtd","nckd_ywtd")
                 .select(new String[]{"hk_org","nckd_jytd","nckd_ywtd","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
 
         //交易客户关联华康年度计划表
-        imSaloutbill = imSaloutbill.leftJoin(nckdHkndjhb).on("out_bizorg","hk_org").on("out_bizdept","nckd_jytd")
-                .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"nckd_ywtd","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
+        imSaloutbill = imSaloutbill.leftJoin(nckdHkndjhb)
+                .on("out_bizorg","hk_org")
+                .on("out_bizdept","nckd_jytd")
+                .on("out_xspq","nckd_ywtd")
+                .select(imSaloutbill.getRowMeta().getFieldNames(),
+                        new String[]{"nckd_ywtd","month_nckd_ydjykh","month_nckd_ydjpzdkh","year_nckd_ydjykh","year_nckd_ydjpzdkh"}).finish();
 
-        imSaloutbill = imSaloutbill.leftJoin(this.getChannelSumKS()).on("out_bizorg","ocdbd_org").on("out_bizdept","ocdbd_department")
+        imSaloutbill = imSaloutbill.leftJoin(this.getChannelSumKS())
+                .on("out_bizorg","ocdbd_org")
+                .on("out_bizdept","ocdbd_department")
+                .on("out_xspq","ocdbd_regiongroup")
                 .select(imSaloutbill.getRowMeta().getFieldNames(),new String[]{"channelSumKS"}).finish();
 
         nckdHkndjhb.close();

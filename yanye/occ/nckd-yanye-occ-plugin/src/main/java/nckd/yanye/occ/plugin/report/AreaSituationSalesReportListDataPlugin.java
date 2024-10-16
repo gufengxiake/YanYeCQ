@@ -18,12 +18,12 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 业务团队一览表（销量）-报表取数插件
- * 表单标识：nckd_businessteamsal_rpt
- * author:zhangzhilong
- * date:2024/10/15
+ * 片区情况一览表（销售）-报表取数插件
+ * 表单标识：nckd_areasituationsal_rpt
+ * @author zhangzhilong
+ * @since 2024/10/16
  */
-public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
+public class AreaSituationSalesReportListDataPlugin extends AbstractReportListDataPlugin implements Plugin {
     @Override
     public DataSet query(ReportQueryParam reportQueryParam, Object o) throws Throwable {
         List<QFilter> qFilters = new ArrayList<>();
@@ -91,11 +91,17 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
         yearDS = groupbyDataSet.finish();
 
         //关联获取月度目标数
-        yearDS = yearDS.leftJoin(this.getHK(nckdDateQ)).on("out_org","hk_org").on("out_bizdept","nckd_jytd").on("nckd_basedatafield","nckd_dqfl")
+        yearDS = yearDS.leftJoin(this.getHK(nckdDateQ))
+                .on("out_org","hk_org")
+                .on("out_bizdept","nckd_jytd")
+                .on("nckd_basedatafield","nckd_dqfl")
                 .select(yearDS.getRowMeta().getFieldNames(),new String[]{"month_nckd_ydxbzy","year_nckd_ydxbzy"}).finish();
 
         //关联渠道客商数
-        yearDS = yearDS.leftJoin(this.getChannelSumKS()).on("out_org","ocdbd_org").on("out_bizdept","ocdbd_department").on("nckd_basedatafield","ocdbd_regiongroup")
+        yearDS = yearDS.leftJoin(this.getChannelSumKS())
+                .on("out_org","ocdbd_org")
+                .on("out_bizdept","ocdbd_department")
+                .on("nckd_basedatafield","ocdbd_regiongroup")
                 .select(yearDS.getRowMeta().getFieldNames(),new String[]{"channelSumKS"}).finish();
 
         //获取渠道信息中的渠道分类信息
@@ -108,8 +114,7 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
                         //渠道主键
                         "id as ocdbd_id", new QFilter[]{channelFilter}, null);
         //关联渠道
-        DataSet salChannel = salOutBill.leftJoin(ocdbdChannel).on("nckd_deliverchannel", "ocdbd_id")
-                .select(salOutBill.getRowMeta().getFieldNames(), new String[]{"ocdbd_channelclass"}).finish();
+        DataSet salChannel = salOutBill.leftJoin(ocdbdChannel).on("nckd_deliverchannel", "ocdbd_id").select(salOutBill.getRowMeta().getFieldNames(), new String[]{"ocdbd_channelclass"}).finish();
         //计算渠道分类不同的累计销售数量
         salChannel = salChannel.filter("out_biztime >= to_date('" + DateUtil.beginOfYear(nckdDateQ) + "','yyyy-MM-dd hh:mm:ss')").groupBy(new String[]{"out_org", "out_bizdept","nckd_basedatafield"})
                 .sum("case when ocdbd_channelclass like '%批发商%' then out_baseqty else 0 end","ljep")
@@ -119,15 +124,20 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
                 .sum("case when ocdbd_channelclass like '%电商%' then out_baseqty else 0 end","ljds")
                 .finish();
 
-        yearDS = yearDS.leftJoin(salChannel).on("out_org","out_org").on("out_bizdept","out_bizdept").on("nckd_basedatafield","nckd_basedatafield")
+        yearDS = yearDS.leftJoin(salChannel)
+                .on("out_org","out_org")
+                .on("out_bizdept","out_bizdept")
+                .on("nckd_basedatafield","nckd_basedatafield")
                 .select(yearDS.getRowMeta().getFieldNames(),new String[]{"ljep","ljzd","ljsc","ljcy","ljds"}).finish();
         salOutBill.close();
         ocdbdChannel.close();
         salChannel.close();
         return yearDS;
     }
-
-    //获取渠道客商数
+    /**
+     * 获取渠道客商数
+     * @return
+     */
     public DataSet getChannelSumKS() {
         QFilter qFilter = new QFilter("slaeorginfo.saleorginfonum.name", QCP.like, "%华康%");
         qFilter.and("status", QCP.equals, "C");
@@ -147,8 +157,12 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
         return ocdbdChannel.groupBy(new String[]{"ocdbd_org","ocdbd_department","ocdbd_regiongroup"}).count("channelSumKS").finish();
     }
 
-    //获取华康年度计划表中月度小包盐目标
-    public DataSet getHK(Date nckdDateQ){
+    /**
+     * 获取华康年度计划表中月度小包盐目标
+     * @param date
+     * @return
+     */
+    public DataSet getHK(Date date){
         //获取华康年度计划表
         String hkFields = "org as hk_org," +
                 //经营团队
@@ -158,16 +172,16 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
                 "entryentity.nckd_date as hk_date," +
                 //月度小包盐目标
                 "entryentity.nckd_ydxbzy as nckd_ydxbzy" ;
-        QFilter hkFilter = new QFilter("entryentity.nckd_date", QCP.large_equals,DateUtil.beginOfYear(nckdDateQ) )
-                .and("entryentity.nckd_date",QCP.less_equals, DateUtil.endOfMonth(nckdDateQ));
-        DataSet nckdHkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(),
-                "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
+        QFilter hkFilter = new QFilter("entryentity.nckd_date", QCP.large_equals,DateUtil.beginOfYear(date) ).and("entryentity.nckd_date",QCP.less_equals, DateUtil.endOfMonth(date));
+        DataSet nckdHkndjhb = QueryServiceHelper.queryDataSet(this.getClass().getName(), "nckd_hkndjhb", hkFields, new QFilter[]{hkFilter}, null);
         //汇总月度和年度目标并关联
-        DataSet hkMonthSum = nckdHkndjhb.filter("hk_date >= to_date('" + DateUtil.beginOfMonth(nckdDateQ) + "','yyyy-MM-dd hh:mm:ss')")
-                .groupBy(new String[]{"hk_org","nckd_jytd","nckd_dqfl"}).sum("nckd_ydxbzy","month_nckd_ydxbzy").finish();
+        DataSet hkMonthSum = nckdHkndjhb.filter("hk_date >= to_date('" + DateUtil.beginOfMonth(date) + "','yyyy-MM-dd hh:mm:ss')").groupBy(new String[]{"hk_org","nckd_jytd","nckd_dqfl"}).sum("nckd_ydxbzy","month_nckd_ydxbzy").finish();
         nckdHkndjhb = nckdHkndjhb.groupBy(new String[]{"hk_org","nckd_jytd","nckd_dqfl"}).sum("nckd_ydxbzy","year_nckd_ydxbzy").finish();
 
-        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum).on("hk_org","hk_org").on("nckd_jytd","nckd_jytd").on("nckd_dqfl","nckd_dqfl")
+        nckdHkndjhb = nckdHkndjhb.leftJoin(hkMonthSum)
+                .on("hk_org","hk_org")
+                .on("nckd_jytd","nckd_jytd")
+                .on("nckd_dqfl","nckd_dqfl")
                 .select(new String[]{"hk_org","nckd_jytd","nckd_dqfl","month_nckd_ydxbzy","year_nckd_ydxbzy"}).finish();
         hkMonthSum.close();
         return nckdHkndjhb;
@@ -176,7 +190,11 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
         columns.add(createBaseDataColumn("out_org","bos_org","公司简称"));
         columns.add(createBaseDataColumn("out_bizdept","bos_org","经营团队"));
-        columns.add(createBaseDataColumn("nckd_basedatafield","nckd_regiongroup","所属地区"));
+        columns.add(createBaseDataColumn("nckd_basedatafield","nckd_regiongroup","片区"));
+        columns.add(createReportColumn("", ReportColumn.TYPE_TEXT,"责任人"));
+        columns.add(createReportColumn("", ReportColumn.TYPE_TEXT,"属性"));
+        columns.add(createReportColumn("", ReportColumn.TYPE_TEXT,"所属地区"));
+        columns.add(createReportColumn("channelSumKS",ReportColumn.TYPE_TEXT,"登记客商数"));
 
         ReportColumnGroup month = createReportColumnGroup("month","月度情况");
         month.getChildren().add(createReportColumn("month_nckd_ydxbzy",ReportColumn.TYPE_INTEGER,"月度小包盐目标"));
@@ -283,8 +301,6 @@ public class BusinessTeamSalesReportListDataPlugin extends AbstractReportListDat
         qz.getChildren().add(createReportColumn("",ReportColumn.TYPE_TEXT,"非盐毛利"));
         ml.getChildren().add(qz);
         columns.add(ml);
-
-        columns.add(createReportColumn("channelSumKS",ReportColumn.TYPE_TEXT,"登记客商数"));
         return columns;
     }
     public ReportColumn createReportColumn(String fileKey, String fileType, String name) {
