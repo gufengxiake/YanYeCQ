@@ -13,6 +13,11 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
 
+/*
+ * 应收结算记录审核后（配合事件订阅）更新要货收款状态 ，收款金额
+ * 表单标识：nckd_ar_settlerecord_ext
+ * author:吴国强 2024-10-10
+ */
 public class ArSettleRecordAuditOperatePlugIn extends AbstractOperationServicePlugIn {
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {

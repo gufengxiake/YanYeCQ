@@ -54,6 +54,8 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
         e.getFieldKeys().add("nckd_saleorderno");//销售订单号
         e.getFieldKeys().add("nckd_qty");//派车数量
         e.getFieldKeys().add("billno");//单据编号
+        e.getFieldKeys().add("nckd_flexfield");//辅助属性
+        e.getFieldKeys().add("nckd_stockid");//发货仓库
     }
 
     @Override
@@ -182,13 +184,22 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
                                 driverId = ddataObject.get("id");
                             }
                             BigDecimal qty=dataObject.getBigDecimal("nckd_qty");
-
+                            //发货仓库
+                            Object stock=dataObject.getDynamicObject("nckd_stockid");
+                            //辅助属性
+                            Object fzsx=dataObject.getDynamicObject("nckd_flexfield");
                             mode.beginInit();
                             mode.setValue("nckd_vehicledisp",billno);
                             mode.setItemValueByID("nckd_vehicle",vehicleId);
                             mode.setItemValueByID("nckd_driver",driverId);
                             mode.endInit();
                             mode.setValue("qty",qty,0);
+                            if(stock!=null){
+                                mode.setValue("warehouse",stock,0);
+                            }
+                            if(fzsx!=null){
+                                mode.setValue("auxpty",fzsx,0);
+                            }
                             OperationResult saveOp = formView.invokeOperation("save");
                             if (saveOp.isSuccess()) {
                                 Ids.add(pkId);
