@@ -34,7 +34,7 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
     public void registerListener(EventObject e) {
         super.registerListener(e);
         // 工具栏注册监听（注意这里是把整个工具栏注册监听，工具栏项是没有运行时控件模型的）
-        Toolbar toolbar = this.getControl("tbmainentry");
+        Toolbar toolbar = this.getControl("advcontoolbarap");
         if (toolbar != null) {
             // 注意itemClick和click的区别
             toolbar.addItemClickListener(this);
@@ -52,50 +52,36 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
         if ("nckd_updatekcsl".equalsIgnoreCase(itemKey)) {
 
             DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("entryentity");
-
-
             for (DynamicObject dynamicObject : entryEntity) {
-                String kdec_textfield = dynamicObject.getString("kdec_textfield");
-                int kdec_integerfield = dynamicObject.getInt("kdec_integerfield");
-
-
-                DynamicObjectCollection entryentities =this.getModel().getDataEntity().getDynamicObjectCollection("单据体标识");//循环单据体每一行
+                DynamicObjectCollection entryentities =this.getModel().getDataEntity().getDynamicObjectCollection("entryentity");//循环单据体每一行
                 for (DynamicObject entryobj: entryentities) {
-                    //获取单据体的字段值
-//                    entryobj.getString("分录字段");
-
-
                     DynamicObject material = entryobj.getDynamicObject("nckd_material");//物料
                     DynamicObject warehouse = entryobj.getDynamicObject("nckd_warehouse");//仓库
                     DynamicObject org = entryobj.getDynamicObject("nckd_orgfield");//组织
 
                     String stocktype = "110";//库存类型
-
                     Long materialid=(long) material.getPkValue();
                     Long stockid = (long) warehouse.getPkValue();//仓库内码
                     Long orgid = (long) org.getPkValue();//库存组织内码
 
-
-
                     DynamicObject[] record= new DynamicObject[0];
-                    try {
-                        record = lotnumberQuery(materialid, stocktype,stockid,orgid);
-                    } catch (Exception ex) {
-                        throw new RuntimeException(ex);
-                    }
+                    try {  record = lotnumberQuery(materialid, stocktype,stockid,orgid);
+                    } catch (Exception ex) { throw new RuntimeException(ex);  }
                     BigDecimal value = BigDecimal.ZERO;
                     int chazhi = 0;
                     BigDecimal lockqty= BigDecimal.valueOf(0);
+                    BigDecimal lockqtyhj= BigDecimal.valueOf(0);
                     for (int j = 0; j < record.length; j++) {
                         DynamicObject recordobj=record[j];
                         lockqty = BigDecimal.valueOf(recordobj.getBigDecimal("qty").intValue());
-                    }
 
-                    entryobj.set("nckd_inventoryqty",lockqty);
-                    entryobj.set("nckd_jjsl",lockqty);
+                        lockqtyhj=lockqty.add(lockqtyhj);
+                    }
+                    entryobj.set("nckd_inventoryqty",lockqtyhj);
+                    entryobj.set("nckd_jjsl",lockqtyhj);
                 }
 
-
+                this.getView().updateView("entryentity");
 
 
 
