@@ -40,7 +40,7 @@ import java.util.Map;
                 //判断库存事务是否为JY-029（研发领用出库）
                 String invschemenum = invscheme.getString("number");
 
-                if(invschemenum=="JY-029") {
+                if ("JY-029".equals(invschemenum)) {
                     if (invscheme != null) {
                         Object billId = dataObject.getPkValue();
                         Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, new Long[]{(Long) billId});
