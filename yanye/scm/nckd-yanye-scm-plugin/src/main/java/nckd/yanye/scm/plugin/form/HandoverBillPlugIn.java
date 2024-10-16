@@ -42,7 +42,6 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
         String itemKey = e.getItemKey();
         if ("nckd_updatekcsl".equalsIgnoreCase(itemKey)) {
 
-       
             DynamicObjectCollection entryentities =this.getModel().getDataEntity().getDynamicObjectCollection("entryentity");//循环单据体每一行
             for (DynamicObject entryobj: entryentities) {
                 DynamicObject material = entryobj.getDynamicObject("nckd_material");//物料
@@ -70,9 +69,6 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
             }
 
             this.getView().updateView("entryentity");
-
-
-
 
 
         }
