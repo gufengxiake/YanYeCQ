@@ -319,7 +319,7 @@ public class PrepareAdjustApplication extends AbstractBillPlugIn implements Befo
         if(isNotEmpty(org) && isNotEmpty(staff)){
             // 填充申请单据数据
             DynamicObject staff1 = (DynamicObject) staff;
-            DynamicObject haosStaff = BusinessDataServiceHelper.loadSingle(staff1.getPkValue(), "haos_staff");
+//            DynamicObject haosStaff = BusinessDataServiceHelper.loadSingle(staff1.getPkValue(), "haos_staff");
             IFormView view = this.getView();
             AbstractFormDataModel model = (AbstractFormDataModel)this.getModel();
             List<Long> orgIds = Arrays.asList((Long) ((DynamicObject) org).getPkValue());

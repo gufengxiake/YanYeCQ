@@ -1,6 +1,6 @@
 package nckd.yanye.scm.report.inoutrecords;
 
-import java.util.*;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import kd.bos.algo.DataSet;
@@ -104,8 +104,13 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish4 = this.firstUnionSecond(finish1, imPurinbill3);
 
         // ==================三级=========================
-        DataSet finish4Copy1 = finish4.copy();
-        DataSet finish4Copy2 = finish4.copy();
+//        DataSet finish4Copy1 = finish4.copy();
+//        DataSet finish4Copy2 = finish4.copy();
+        DataSet[] dataSets1 = finish4.splitByFilter(new String[]{"srcbillentity == 'pm_purorderbill'"}, true);
+        DataSet dataSet1 = dataSets1[0];//采购订单
+        DataSet[] dataSets2 = dataSets1[1].splitByFilter(new String[]{"srcbillentity == 'im_purreceivebill'"}, true);
+        DataSet dataSet2 = dataSets2[0];//采购收货单
+        DataSet dataSet3 = dataSets2[1];//采购入库单/手动新增
 
         // 采购订单
         String pmPurorderbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -115,7 +120,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet pmPurorderbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "pm_purorderbill", pmPurorderbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = this.secondUnionThree(finish4Copy1, pmPurorderbill);
+        DataSet finish5 = this.secondUnionThree(dataSet1, pmPurorderbill);
 
         // 采购收货单
         String imPurreceivebillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -125,9 +130,9 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode, billentry.id billentry_id";
         DataSet imPurreceivebill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_purreceivebill", imPurreceivebillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish6 = this.secondUnionThree(finish4Copy2, imPurreceivebill);
+        DataSet finish6 = this.secondUnionThree(dataSet2, imPurreceivebill);
 
-        // 采购入库单
+        // 采购入库单/手动新增
         String purorderbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
                 "null nckd_shippingordernumber,null nckd_cass,null nckd_shipping_address,null nckd_order_serial_number,null nckd_loss_quantity,null nckd_damaged_quantity," +
                 "null nckd_wagon_number, null nckd_direct_mode,null nckd_carrier,null nckd_carrier_phone,null nckd_phone,null nckd_carnumber," +
@@ -135,7 +140,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,supplier.simplename nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet purinbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_purinbill", purorderbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish7 = this.secondUnionThree(finish4, purinbill);
+        DataSet finish7 = this.secondUnionThree2(dataSet3, purinbill);
 
         DataSet dataSet = finish5.union(finish6, finish7).distinct();
 
@@ -185,7 +190,10 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish4 = this.firstUnionSecond2(costrecordSubentity, finish3);
 
         // ==================三级=========================
-        DataSet finish4Copy1 = finish4.copy();
+//        DataSet finish4Copy1 = finish4.copy();
+        DataSet[] dataSets1 = finish4.splitByFilter(new String[]{"srcbillentity == 'im_saloutbill'"}, true);
+        DataSet dataSet1 = dataSets1[0];//销售出库单
+        DataSet dataSet2 = dataSets1[1];//盘点表/手动新增
 
         // 销售出库单
         String imSaloutbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -207,7 +215,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode", "billentry_id"},
                         new String[]{"nckd_wagon_number"}).finish();
 
-        DataSet finish6 = this.secondUnionThree(finish4Copy1, finish5);
+        DataSet finish6 = this.secondUnionThree(dataSet1, finish5);
 
         // 盘点表
         String imInvcountbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -217,7 +225,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imInvcountbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_invcountbill", imInvcountbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish7 = this.secondUnionThree(finish4, imInvcountbill);
+        DataSet finish7 = this.secondUnionThree2(dataSet2, imInvcountbill);
 
         DataSet dataSet = finish6.union(finish7).distinct();
 
@@ -480,8 +488,13 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish4 = this.firstUnionSecond2(costrecordUnionVoucher, finish3);
 
         // ==================三级=========================
-        DataSet finish4Copy1 = finish4.copy();
-        DataSet finish4Copy2 = finish4.copy();
+//        DataSet finish4Copy1 = finish4.copy();
+//        DataSet finish4Copy2 = finish4.copy();
+        DataSet[] dataSets1 = finish4.splitByFilter(new String[]{"srcbillentity == 'im_materialreqbill'"}, true);
+        DataSet dataSet1 = dataSets1[0];//领料申请单
+        DataSet[] dataSets2 = dataSets1[1].splitByFilter(new String[]{"srcbillentity == 'im_materialreqoutbill'"}, true);
+        DataSet dataSet2 = dataSets2[0];//领料出库单
+        DataSet dataSet3 = dataSets2[1];//发货通知单/手动新增
 
         // 领料申请单
         String imMaterialreqbillSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -491,7 +504,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMaterialreqbill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_materialreqbill", imMaterialreqbillSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = this.secondUnionThree(finish4Copy1, imMaterialreqbill);
+        DataSet finish5 = this.secondUnionThree(dataSet1, imMaterialreqbill);
 
         // 领料出库单
         String imMaterialreqouSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
@@ -501,9 +514,9 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMaterialreqou = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_materialreqoutbill", imMaterialreqouSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish6 = this.secondUnionThree(finish4Copy2, imMaterialreqou);
+        DataSet finish6 = this.secondUnionThree(dataSet2, imMaterialreqou);
 
-        // 发货通知单
+        // 发货通知单/手动新增
         String smDelivernoticeSql = "billtype.name nckd_sourcebilltypename,billno nckd_sourcebillno,null nckd_nummer_reisdocument,billentry.project nckd_project,billentry.project.number nckd_project.number,billentry.project.name nckd_project.name,billentry.project.longnumber nckd_project.longnumber,billentry.project.fullname nckd_project.fullname," +
                 "null nckd_shippingordernumber,null nckd_cass,null nckd_shipping_address,null nckd_order_serial_number,null nckd_loss_quantity,null nckd_damaged_quantity," +
                 "null nckd_wagon_number, null nckd_direct_mode,null nckd_carrier,null nckd_carrier_phone,null nckd_phone,null nckd_carnumber," +
@@ -511,7 +524,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,customer.name nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet smDelivernotice = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_delivernotice", smDelivernoticeSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish7 = this.secondUnionThree(finish4, smDelivernotice);
+        DataSet finish7 = this.secondUnionThree2(dataSet3, smDelivernotice);
 
         DataSet dataSet = finish5.union(finish6, finish7).distinct();
 
@@ -633,7 +646,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,customer.name nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet smSalorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "sm_salorder", smSalorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C")}, null);
 
-        DataSet finish5 = this.secondUnionThree(finish4, smSalorder);
+        DataSet finish5 = this.secondUnionThree2(finish4, smSalorder);
 
         DataSet dataSet = finish5.distinct();
 
@@ -773,7 +786,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "creator.name nckd_creator_name,auditor.name nckd_auditor_name,null nckd_h_source,null nckd_customermnemoniccode,null nckd_suppliermnemoniccode,billentry.id billentry_id";
         DataSet imMdcMftproorder = QueryServiceHelper.queryDataSet(this.getClass().getName(), "im_mdc_mftproorder", imMdcMftproorderSql, new QFilter[]{new QFilter("billstatus", QCP.equals, "C").and("billentity", QCP.in, new String[]{"im_mdc_mftproorder", "im_mdc_mftfeedorder"})}, null);
 
-        DataSet finish5 = this.secondUnionThree(finish4, imMdcMftproorder);
+        DataSet finish5 = this.secondUnionThree2(finish4, imMdcMftproorder);
 
         DataSet dataSet = finish5.distinct();
 
@@ -864,11 +877,12 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
     /**
      * 核算成本记录关联凭证
-     * @param finish1   核算成本记录
-     * @param sourcebilltype   主体标识
+     *
+     * @param finish1        核算成本记录
+     * @param sourcebilltype 主体标识
      * @return
      */
-    private DataSet costrecordUnionVoucher(DataSet finish1,String sourcebilltype){
+    private DataSet costrecordUnionVoucher(DataSet finish1, String sourcebilltype) {
         // 凭证
         DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, sourcebilltype)}, null);
         DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();

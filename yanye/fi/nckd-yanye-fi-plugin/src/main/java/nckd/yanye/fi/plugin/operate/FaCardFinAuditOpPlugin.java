@@ -105,13 +105,22 @@ public class FaCardFinAuditOpPlugin extends AbstractOperationServicePlugIn {
 
         ILocaleString tag = new LocaleString();
         tag.setLocaleValue("通知");
+        //消息发送人
+        DynamicObject bosUser = BusinessDataServiceHelper.loadSingle(RequestContext.get().getUserId(), "bos_user");
+        //消息发送人组织
+        DynamicObject dpt = bosUser.getDynamicObjectCollection("entryentity").get(0).getDynamicObject("dpt");
 
         //消息接收人
         ArrayList<Long> receivers = new ArrayList<>();
         DynamicObjectCollection users = messageInformers.getDynamicObjectCollection("nckd_user");
         for (DynamicObject user : users) {
             DynamicObject bos_user = user.getDynamicObject("fbasedataid");
-            receivers.add(Long.parseLong(bos_user.getPkValue().toString()));
+            bos_user = BusinessDataServiceHelper.loadSingle(bos_user.getPkValue(), "bos_user");
+            DynamicObject bos_dpt = bos_user.getDynamicObjectCollection("entryentity").get(0).getDynamicObject("dpt");
+            //增加组织过滤，只发送当前申请人组织人员
+            if (bos_dpt.getPkValue().equals(dpt.getPkValue())) {
+                receivers.add(Long.parseLong(bos_user.getPkValue().toString()));
+            }
         }
 
         message.setMessageTitle(title);

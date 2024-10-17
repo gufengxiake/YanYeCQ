@@ -55,18 +55,18 @@ public class MftproordTohandover extends AbstractConvertPlugIn {
                     throw new RuntimeException(ex);
                 }
                 BigDecimal value = BigDecimal.ZERO;
-                int chazhi = 0;
                 BigDecimal lockqty= BigDecimal.valueOf(0);
+                BigDecimal lockqtyhj= BigDecimal.valueOf(0);
                 for (int j = 0; j < record.length; j++) {
                     DynamicObject recordobj=record[j];
                      lockqty = BigDecimal.valueOf(recordobj.getBigDecimal("qty").intValue());
+
+                    lockqtyhj=lockqty.add(lockqtyhj);
                 }
-                object.set("nckd_inventoryqty", lockqty);//库存数量
-                object.set("nckd_jjsl", lockqty);//库存数量
+                object.set("nckd_inventoryqty", lockqtyhj);//库存数量
+                object.set("nckd_jjsl", lockqtyhj);//库存数量
             }
         }
-
-
 
     }
 

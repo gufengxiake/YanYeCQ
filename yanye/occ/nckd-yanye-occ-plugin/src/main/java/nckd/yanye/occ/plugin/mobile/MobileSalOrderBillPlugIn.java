@@ -101,7 +101,16 @@ public class MobileSalOrderBillPlugIn extends OcbaseFormMobPlugin implements Bef
             String phonenumber = orderchannelid.getString("nckd_phonenumber");
             //邮箱
             String mail = orderchannelid.getString("nckd_mail");
-
+            //销售片区
+            DynamicObject pq=orderchannelid.getDynamicObject("nckd_regiongroup");
+            DynamicObject psy=null;
+            if(pq!=null){
+                Object pqId=pq.getPkValue();
+                DynamicObject pqData=BusinessDataServiceHelper.loadSingle(pqId,"nckd_regiongroup");
+                //配送员
+                psy=pqData.getDynamicObject("nckd_deliveryman");
+            }
+            this.getModel().setValue("nckd_deliveryman",psy);
             this.getModel().setValue("nckd_nashuitype", nsType);
             this.getModel().setValue("nckd_nashuitax", nxrNum);
             this.getModel().setValue("nckd_name1", name);

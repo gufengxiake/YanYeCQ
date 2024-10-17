@@ -3,25 +3,30 @@ package nckd.yanye.hr.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
-import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.BizDataEventArgs;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.exception.KDBizException;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
-import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.ClosedCallBackEvent;
 import kd.bos.list.ListShowParameter;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.fi.fa.common.util.DateUtil;
 import kd.hr.hbp.common.util.DatePattern;
 import kd.hr.hbp.common.util.DateUtils;
+import nckd.yanye.hr.common.AppflgConstant;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
@@ -45,14 +50,40 @@ import java.util.stream.Collectors;
 
 public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 
+
+    private static Log logger = LogFactory.getLog(SalaryRetirCountEditPlugin.class);
+
     // hspm_ermanfile:人事业务档案
     private static final List<String> UINLIST = new ArrayList<>();
+
+
+    private static  List<String> WAGES_LIST = new ArrayList<>();
+
+    private static  List<String> STAFF_LIST = new ArrayList<>();
 
 
     @Override
     public void createNewData(BizDataEventArgs e) {
         super.createNewData(e);
         // todo 进入获取到员工离岗退养工资统计单据体中存在的人员信息的工号放到uinList中
+
+        // todo 获取定调薪档案的类型编码
+        String wagesTypeCode = AppflgConstant.HSBS_STANDARDITEM_NUM;
+        WAGES_LIST = new ArrayList<>();
+        STAFF_LIST = new ArrayList<>();
+
+        if(StringUtils.isNotEmpty(wagesTypeCode)){
+            String[] split = wagesTypeCode.split(",");
+            for(String s : split){
+                WAGES_LIST.add(s);
+            }
+        }
+        if(StringUtils.isEmpty(AppflgConstant.HR_ZHIJI_STAFF)){
+            String[] split = AppflgConstant.HR_ZHIJI_STAFF.split(",");
+            for(String s : split){
+                STAFF_LIST.add(s);
+            }
+        }
 
 
     }
@@ -122,8 +153,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 //            LocalDate taskEffectDate = convertToLocalDate(nckdTaskeffect);
 //            // 计算两个日期之间的年月差
 //            Period period = Period.between(taskEffectDate, retireDate);
-            int totalMonths = DateUtil.getDiffMonthsByLocalDate(nckdTaskeffect, retiredate, false, true);
-
+            int totalMonths = getDiffMonthsByLocalDate(nckdTaskeffect, retiredate, false, true);
 
             // 计算各个时间段的月份
             int monthsInOneYear = Math.min(totalMonths, 12); // 一年以内的月份
@@ -153,13 +183,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         }
         this.getView().updateView("entryentity");
 
-
-
-
     }
-
-
-
 
 
     // 构建人员信息列表
@@ -204,14 +228,14 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     private void showUintInfo(ClosedCallBackEvent e) {
         ListSelectedRowCollection col = (ListSelectedRowCollection)e.getReturnData();
         if (col != null && col.size() != 0) {
-            this.getModel().batchCreateNewEntryRow("entryentity", col.size());
-            int index = this.getModel().getEntryCurrentRowIndex("entryentity");
+//            this.getModel().batchCreateNewEntryRow("entryentity", col.size());
+//            int index = this.getModel().getEntryCurrentRowIndex("entryentity");
             Object[] primaryKeyValues = col.getPrimaryKeyValues();
             List<String> numbers = new ArrayList<String>();
             col.getBillListSelectedRowCollection().forEach(row -> numbers.add(row.getNumber()));
 
             QFilter qFilerman = new QFilter("id", QCP.in, primaryKeyValues);
-            DynamicObject[] hspmErmanfiles = BusinessDataServiceHelper.load("hspm_ermanfile", "id,empposrel,person.id", new QFilter[]{qFilerman});
+            DynamicObject[] hspmErmanfiles = BusinessDataServiceHelper.load("hspm_ermanfile", "id,empposrel,person.id,person.number", new QFilter[]{qFilerman});
             DynamicObject[] hspmEmpposrelscopy = hspmErmanfiles;
             // 使用流循环获取并构建 List<Object> 集合
 
@@ -257,42 +281,153 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 
             // 任职经历基础页面
             DynamicObject[] hrpiEmpposorgrels = BusinessDataServiceHelper.load("hrpi_empposorgrel", "id,startdate,nckd_zhiji", new QFilter[]{empposrelQFilter});
+            Set<Long> zhjiIds = new HashSet<>();
             Map<Long, DynamicObject> hrpiEmpposorgrelMap = Arrays.stream(hrpiEmpposorgrels)
                     .collect(Collectors.toMap(
                             detail -> (Long) detail.get("id"), // 获取 person.id 作为键
                             detail -> detail, // 整个 DynamicObject 作为值
                             (existing, replacement) -> existing // 保留第一个遇到的值
                     ));
+            hrpiEmpposorgrelMap.values().forEach(detail -> {
+                // 假设 nckd_zhiji 是一个 DynamicObject，并且它有一个 id 属性
+                DynamicObject zhiji = (DynamicObject) detail.get("nckd_zhiji");
+                if (zhiji != null) {
+                    Long zhijiId = (Long) zhiji.get("id");
+                    zhjiIds.add(zhijiId);
+                }
+            });
+            List<Long> zhjiIdList = zhjiIds.stream().collect(Collectors.toList());
+            QFilter postQFilter = new QFilter("nckd_post.id", QCP.in, zhjiIdList);
+
+            // 职级工资标准
+            DynamicObject[] nckdRanksalarystandards = BusinessDataServiceHelper.load("nckd_ranksalarystandard", "id,nckd_post,nckd_twoupdecimalprop,nckd_oneupdecimalprop,nckd_onedecimalprop,nckd_grantproportion,nckd_highfeestand,nckd_salarystandards", new QFilter[]{postQFilter});
+            Map<Long, DynamicObject> ranksalarystandardMap = Arrays.stream(nckdRanksalarystandards)
+                    .collect(Collectors.toMap(
+                            detail -> (Long) detail.get("nckd_post.id"), // 获取 person.id 作为键
+                            detail -> detail, // 整个 DynamicObject 作为值
+                            (existing, replacement) -> existing // 保留第一个遇到的值
+                    ));
+
             // 证件信息
-            DynamicObject[] hspmPercres = BusinessDataServiceHelper.load("hspm_percre", "id,number,person.number,credentialstype,", new QFilter[]{status,idQFilter});
+            DynamicObject[] hspmPercres = BusinessDataServiceHelper.load("hspm_percre", "id,number,person.number,credentialstype,", new QFilter[]{status,idQFilter,personQFilter});
             Map<Long, DynamicObject> hspmPercreMap = Arrays.stream(hspmPercres)
                     .collect(Collectors.toMap(
                             detail -> (Long) detail.get("person.id"), // 获取 person.id 作为键
                             detail -> detail, // 整个 DynamicObject 作为值
                             (existing, replacement) -> existing // 保留第一个遇到的值
                     ));
+
+            DynamicObjectCollection entryentity = this.getModel().getDataEntity(true).getDynamicObjectCollection("entryentity");
+
             for (int i = 0; i < hspmErmanfiles.length; i++) {
-                int rowIndex = index + i;
+//                int rowIndex = index + i;
+                // 单据体新增行数据
+                DynamicObject dynamicObject = new DynamicObject(entryentity.getDynamicObjectType());
                 Long personId = hspmErmanfiles[i].getLong("person.id");
                 Long empposrelId =(Long)hspmErmanfiles[i].getDynamicObject("empposrel").getPkValue();
+
                 DynamicObject person = hrpiPeopleMap.get(personId);
                 DynamicObject hspmPersoninfo = personInfoMap.get(personId);
                 DynamicObject hspmPercre = hspmPercreMap.get(personId);
                 DynamicObject hrpiEmpposorgrel = hrpiEmpposorgrelMap.get(empposrelId);
+                DynamicObject zhiji = ranksalarystandardMap.get((Long) hrpiEmpposorgrel.getDynamicObject("nckd_zhiji").getPkValue());
+                if(ObjectUtils.isNotEmpty(zhiji)){
+                    String number = hrpiEmpposorgrel.getDynamicObject("nckd_zhiji").getString("number");
+                    if(AppflgConstant.HR_ZHIJI_STAFF.contains(number)){
+                        // 如果是员工,或其他的工资标准要从 工资标准从人员信息-定调薪档案中获取，定调薪项目为绩效工资基数和岗位工资基数，金额字段相加
+                        // 定调薪档案 hcdm_adjfileinfo
+                        QFilter qFilter = new QFilter("person.id", QCP.equals, personId)
+                                .and("isprimary",QCP.equals,"1");
+                        DynamicObject adjfileinfo = BusinessDataServiceHelper.loadSingle("hcdm_adjfileinfo", "id,personfield", new QFilter[]{qFilter, status});
+                        // 定调薪信息 hcdm_salaryadjrecord
+                        QFilter qFilter1 = new QFilter("salaryadjfile.id", "=", adjfileinfo.getPkValue())
+                                .and("standarditem.number",QCP.in,WAGES_LIST);
+                        DynamicObject[] hcdmAdjfileinfos = BusinessDataServiceHelper.load("hcdm_salaryadjrecord", "id,personfield,amount,standarditem,standarditem.number", new QFilter[]{qFilter1,status});
+                        BigDecimal wages = new BigDecimal(0);
+                        if(ObjectUtils.isNotEmpty(hcdmAdjfileinfos)){
+                            for (DynamicObject hcdmAdjfileinfo : hcdmAdjfileinfos) {
+                                wages = wages.add(hcdmAdjfileinfo.getBigDecimal("amount"));
+                            }
+                            dynamicObject.set("nckd_amountstandard",wages);
+                        }
+                    }else{
+                        // 中层工资标准
+                        dynamicObject.set("nckd_amountstandard",zhiji.get("nckd_salarystandards"));
+                    }
+                    // 发放比例
+                    dynamicObject.set("nckd_grantproportion",zhiji.get("nckd_grantproportion"));
+                    zhiji.get("nckd_grantproportion");
+                    // 高温费标准
+//                    zhiji.get("nckd_highfeestand");
+                    dynamicObject.set("nckd_highfeestand",zhiji.get("nckd_highfeestand"));
+                    dynamicObject.set("nckd_twoupgrantpro",zhiji.get("nckd_twoupdecimalprop"));
+                    dynamicObject.set("nckd_oneupgrantpro",zhiji.get("nckd_oneupdecimalprop"));
+                    dynamicObject.set("nckd_onegrantpro",zhiji.get("nckd_onedecimalprop"));
+
+                }
+
 
                 Date startdate = hrpiEmpposorgrel.getDate("startdate");
-                this.getModel().setValue("nckd_name",person,rowIndex);
-                this.getModel().setValue("nckd_taskeffect",startdate,rowIndex);
-                this.getModel().setValue("nckd_sex",hspmPersoninfo.get("gender"),rowIndex);
-                this.getModel().setValue("nckd_age",hspmPersoninfo.get("age"),rowIndex);
-                this.getModel().setValue("nckd_birthday",hspmPersoninfo.get("birthday"),rowIndex);
+                // 姓名
+                dynamicObject.set("nckd_name",person);
+                // 开始日期
+                dynamicObject.set("nckd_taskeffect",startdate);
+                // 性别
+                dynamicObject.set("nckd_sex",hspmPersoninfo.get("gender"));
+                // 年龄
+                dynamicObject.set("nckd_age",hspmPersoninfo.get("age"));
+                // 出生日期
+                dynamicObject.set("nckd_birthday",hspmPersoninfo.get("birthday"));
+                // 身份证号
+                dynamicObject.set("nckd_certificatesnum",hspmPercre.get("number"));
+                // 职务
+                dynamicObject.set("nckd_post",hrpiEmpposorgrel.get("nckd_zhiji"));
 
-                this.getModel().setValue("nckd_certificatesnum",hspmPercre.get("number"),rowIndex);
-                this.getModel().setValue("nckd_post",hrpiEmpposorgrel.get("nckd_zhiji"),rowIndex);
-
+                entryentity.add(dynamicObject);
 
             }
+            this.getView().updateView("entryentity");
 
+        }
+    }
+
+
+    // 标品财务使用的计算月份数
+    public static int getDiffMonthsByLocalDate(Date beginDate, Date endDate, boolean includeBeginDate, boolean monthRoundUp) {
+        if (compareDate(beginDate, endDate) >= 0) {
+            return 0;
+        } else {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            String beginDateStr = format.format(beginDate);
+            String endDateStr = format.format(endDate);
+            LocalDate beginLocalDate = LocalDate.parse(beginDateStr);
+            LocalDate endLocalDate = LocalDate.parse(endDateStr);
+            if (includeBeginDate) {
+                endLocalDate = endLocalDate.plusDays(1L);
+            }
+
+            Period period = Period.between(beginLocalDate, endLocalDate);
+            int years = period.getYears();
+            int months = period.getMonths();
+            int days = period.getDays();
+            int diffMonth = years * 12 + months;
+            if (monthRoundUp && days > 0) {
+                ++diffMonth;
+            }
+
+            return diffMonth;
+        }
+    }
+
+    public static int compareDate(Date d1, Date d2) {
+        if (d1 != null && d2 != null) {
+            long t1 = d1.getTime();
+            long t2 = d2.getTime();
+            return Long.compare(t1, t2);
+        } else {
+            KDBizException exception = new KDBizException(ResManager.loadKDString("比较的日期为空，请联系管理员。", "DateUtil_0", "fi-fa-common", new Object[0]));
+            logger.error(String.format("日期比较错误：date1:[%s], date2:[%s]", d1, d2), exception);
+            throw exception;
         }
     }
 

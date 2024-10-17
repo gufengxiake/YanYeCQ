@@ -220,6 +220,8 @@ public class SaloutNegativeCheckOperatePlugIn extends AbstractOperationServicePl
                             if (qty.compareTo(jhQty) > 0) {
                                 this.addErrorMessage(this.getDataEntities()[0], "负库存校验失败,物料："+matName.toString()+" 的出库数量["+qty.stripTrailingZeros().toPlainString()+"]大于借货余额库存数量["+jhQty.stripTrailingZeros().toPlainString()+"]");
                             }
+                        }else{
+                            this.addErrorMessage(this.getDataEntities()[0], "负库存校验失败,物料："+matName.toString()+" 的出库数量["+qty.stripTrailingZeros().toPlainString()+"]大于借货余额库存数量[0.00]");
                         }
 
 
