@@ -1,5 +1,7 @@
 package nckd.yanye.scm.plugin.form;
 
+import kd.bos.algo.DataSet;
+import kd.bos.algo.Row;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -8,8 +10,14 @@ import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
+
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.EventObject;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * 生产交接单表单插件
@@ -73,6 +81,74 @@ public class HandoverBillPlugIn extends AbstractBillPlugIn {
 
         }
 
+
+
+
+//        if ("nckd_test".equalsIgnoreCase(itemKey)) {
+//
+//            Set orderchannelidList = new HashSet();
+//            Set customeridList = new HashSet();
+//
+////            LocalDate firstDayOfYear = LocalDate.now().withDayOfYear(1);
+////            LocalDate yesterday = LocalDate.now().minusDays(1);
+////            QFilter dateFilter = new QFilter("nckd_date", QCP.equals, yesterday);
+//
+//            QFilter Filterywzt = new QFilter("nckd_statu", QCP.equals, "A");//业务状态为未完成
+//
+//
+//            DataSet orderCollections = QueryServiceHelper.queryDataSet("CGSYSSH", "nckd_eleweighing",
+//                    "id,nckd_waterid,nckd_bucket,nckd_qygys.id nckd_qygys,nckd_date", Filterywzt.toArray(), "nckd_qygys,nckd_date");
+//            DataSet countSql = orderCollections.groupBy(new String[]{"nckd_date", "nckd_qygys"}).count("count").finish();
+//            while (countSql.hasNext()) {
+//                Row countItem = countSql.next();
+//                int count = countItem.getInteger("count");
+//                if (count >= 0) {
+//                    //业务日期只取年月，然后比较上次是否一致，一致不加到list中
+//
+//
+//
+//
+//                    Object customerid = countItem.get("nckd_qygys");
+//                    customeridList.add(customerid);
+//                }
+//            }
+//
+//            if (!customeridList.isEmpty()) {
+//                DynamicObject newDynamicObject = BusinessDataServiceHelper.newDynamicObject("bd_supplier");
+//                DynamicObject[] dynamicObjects = BusinessDataServiceHelper.load(customeridList.toArray(), newDynamicObject.getDynamicObjectType());
+//                for(DynamicObject obj:dynamicObjects){
+//
+//                    //2、循环供应商找到业务日期当月的供应商对应的采购订单。
+//
+//
+//                    QFilter qFilterbeg = new QFilter("biztime", QCP.large_equals , "2024-10-01");
+//                    QFilter qFilterend = new QFilter("biztime", QCP.less_equals , "2024-10-01");
+//
+//
+//
+//                    QFilter qFiltergys = new QFilter("supplier", QCP.less_equals , obj.getPkValue());
+//
+//
+//                    DynamicObjectCollection collections = QueryServiceHelper.query("pm_purorderbill",
+//                            "id,orderchannelid.id  orderchannelid,customerid.id customerid", qFilter.toArray(), "");
+//                    if (!collections.isEmpty()) {
+//                        for (DynamicObject saleData : collections) {
+//                            Object orderchannelid = saleData.get("orderchannelid");
+//                            orderchannelidList.add(orderchannelid);
+//                            Object customerid = saleData.get("customerid");
+//                            customeridList.add(customerid);
+//                        }
+//                    }
+//
+//
+//                    //精品
+//                    obj.set("nckd_boutiquecustomer",true);
+//                }
+//                SaveServiceHelper.update(dynamicObjects);
+//            }
+//
+//
+//        }
     }
     public DynamicObject[] lotnumberQuery(Long number,String stocktype,Long stockid,Long orgid) throws Exception {
         QFilter filter4 = new QFilter("org.id", QCP.equals, orgid);//库存组织
