@@ -247,7 +247,7 @@ public class OcbSaleOrderOperatePlugIn extends AbstractOperationServicePlugIn {
                     if(number.equalsIgnoreCase("ocbsoc_saleorder_sys001")){
                         nFilter.and("nckd_isjh",QCP.equals,"1");//借货仓
                     }else {
-                        qFilter.and("nckd_isjh",QCP.equals,"0");//借货仓
+                        nFilter.and("nckd_isjh",QCP.equals,"0");//借货仓
                     }
                     //查找部门对应仓库
                     DynamicObjectCollection query = QueryServiceHelper.query("nckd_bmcksz",

@@ -15,9 +15,11 @@ import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.botp.runtime.SourceBillReport;
 import kd.bos.entity.datamodel.IRefrencedataProvider;
 import kd.bos.entity.datamodel.ListSelectedRow;
+import kd.bos.entity.operate.OperateOptionConst;
 import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
+import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
@@ -30,6 +32,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
+import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
@@ -59,14 +62,14 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
     }
 
     @Override
-    public void endOperationTransaction(EndOperationTransactionArgs e) {
-        super.endOperationTransaction(e);
+    public void afterExecuteOperationTransaction(AfterOperationArgs e) {
+        super.afterExecuteOperationTransaction(e);
         DynamicObject[] deliverRecords = e.getDataEntities();
         if (deliverRecords != null) {
             String sourceBill = "sm_salorder";//销售订单
             String targetBill = "sm_delivernotice";//发货通知单
             for (DynamicObject dataObject : deliverRecords) {
-                String billno=dataObject.getString("billno");
+                String billno = dataObject.getString("billno");
                 //销售订单编码
                 String saleOrderNo = dataObject.getString("nckd_saleorderno");
                 //查找编码对应的Id
@@ -164,8 +167,8 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
                             mode.load(targetBillpkId);
                             //DynamicObject dataObj = mode.getDataEntity();
                             //根据车牌号获取车辆的Id
-                            Object vehicleId=null;
-                            String plateno=dataObject.getString("nckd_plateno");
+                            Object vehicleId = null;
+                            String plateno = dataObject.getString("nckd_plateno");
                             QFilter vfilter = new QFilter("name", QCP.equals, plateno).and("status", QCP.equals, "C");
                             DynamicObjectCollection vehicle = QueryServiceHelper.query("nckd_vehicle",
                                     "id", vfilter.toArray(), "");
@@ -174,8 +177,8 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
                                 vehicleId = vdataObject.get("id");
                             }
                             //根据身份证获取司机信息基础资料
-                            Object driverId=null;
-                            String idcardno=dataObject.getString("nckd_idcardno");
+                            Object driverId = null;
+                            String idcardno = dataObject.getString("nckd_idcardno");
                             QFilter dFilter = new QFilter("nckd_idcardno", QCP.equals, idcardno).and("status", QCP.equals, "C");
                             DynamicObjectCollection driver = QueryServiceHelper.query("nckd_driver",
                                     "id", dFilter.toArray(), "");
@@ -183,47 +186,63 @@ public class VehicledispAuditOperatePlugIn extends AbstractOperationServicePlugI
                                 DynamicObject ddataObject = driver.get(0);
                                 driverId = ddataObject.get("id");
                             }
-                            BigDecimal qty=dataObject.getBigDecimal("nckd_qty");
+                            BigDecimal qty = dataObject.getBigDecimal("nckd_qty");
                             //发货仓库
-                            Object stock=dataObject.getDynamicObject("nckd_stockid");
+                            Object stock = dataObject.getDynamicObject("nckd_stockid");
                             //辅助属性
-                            Object fzsx=dataObject.getDynamicObject("nckd_flexfield");
+                            Object fzsx = dataObject.getDynamicObject("nckd_flexfield");
                             mode.beginInit();
-                            mode.setValue("nckd_vehicledisp",billno);
-                            mode.setItemValueByID("nckd_vehicle",vehicleId);
-                            mode.setItemValueByID("nckd_driver",driverId);
+                            mode.setValue("nckd_vehicledisp", billno);
+                            mode.setItemValueByID("nckd_vehicle", vehicleId);
+                            mode.setItemValueByID("nckd_driver", driverId);
                             mode.endInit();
-                            mode.setValue("qty",qty,0);
-                            if(stock!=null){
-                                mode.setValue("warehouse",stock,0);
+                            mode.setValue("qty", qty, 0);
+                            if (stock != null) {
+                                mode.setValue("warehouse", stock, 0);
                             }
-                            if(fzsx!=null){
-                                mode.setValue("auxpty",fzsx,0);
+                            if (fzsx != null) {
+                                mode.setValue("auxpty", fzsx, 0);
                             }
                             OperationResult saveOp = formView.invokeOperation("save");
                             if (saveOp.isSuccess()) {
                                 Ids.add(pkId);
+                                OperateOption auditOption = OperateOption.create();
+                                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+                                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+                                auditOption.setVariableValue("WF", String.valueOf(false));//忽略工作流
+                                OperationResult submitOption = formView.invokeOperation("submit", auditOption);
+                                if (submitOption.isSuccess()) {
+                                    OperationResult audit = formView.invokeOperation("audit", auditOption);
+                                    if (audit.isSuccess()) {
+
+                                    }
+                                }
                             }
 
                         }
                         formView.close();
-//                            if (Ids.size() > 0) {
-//                                OperateOption auditOption = OperateOption.create();
-//                                auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
-//                                auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
-//                                //提交
-//                                OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
-//                                if (subResult.isSuccess()) {
-//                                    //审核
-//                                    OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
-//                                }
+//                        if (Ids.size() > 0) {
+//                            OperateOption auditOption = OperateOption.create();
+//                            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+//                            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+//                            //提交
+//                            OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, Ids.toArray(), auditOption);
+//                            if (subResult.isSuccess()) {
+//                                //审核
+//                                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, Ids.toArray(), auditOption);
 //                            }
+//                        }
 
                     }
 
                 }
             }
         }
+    }
+
+    @Override
+    public void endOperationTransaction(EndOperationTransactionArgs e) {
+        super.endOperationTransaction(e);
     }
 
     private static String getAppId(String entityNumber, MainEntityType dt) {
