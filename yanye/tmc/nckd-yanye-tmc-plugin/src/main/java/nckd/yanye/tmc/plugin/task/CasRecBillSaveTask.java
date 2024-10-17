@@ -52,16 +52,18 @@ public class CasRecBillSaveTask implements IEventServicePlugin {
                 continue;
             }
             DynamicObject customer = BusinessDataServiceHelper.loadSingle("bd_customer", "id,name,nckd_entry_english,nckd_entry_english.nckd_engname",
-                    new QFilter[]{new QFilter("nckd_entry_english.nckd_engname", QCP.equals, oppunit)});
+                    new QFilter[]{new QFilter("name", QCP.equals, oppunit)});
             if (customer == null) {
                 continue;
             }
-            casRecbill.set("payername", customer.getString("name"));
-            casRecbill.set("payer", customer.getPkValue());
-            logger.info("客户付款人名称，{}", customer.getString("name"));
-            logger.info("客户付款人，{}", customer);
-            SaveServiceHelper.update(casRecbill);
-
+            DynamicObject zCustomer = customer.getDynamicObjectCollection("nckd_entry_english").size() > 0 ? customer.getDynamicObjectCollection("nckd_entry_english").get(0).getDynamicObject("nckd_engname") : null;
+            if (zCustomer != null) {
+                casRecbill.set("payername", zCustomer.getString("name"));
+                casRecbill.set("payer", zCustomer.getPkValue());
+                logger.info("客户付款人名称，{}", zCustomer.getString("name"));
+                logger.info("客户付款人，{}", zCustomer);
+                SaveServiceHelper.update(casRecbill);
+            }
         }
 
         return IEventServicePlugin.super.handleEvent(evt);
