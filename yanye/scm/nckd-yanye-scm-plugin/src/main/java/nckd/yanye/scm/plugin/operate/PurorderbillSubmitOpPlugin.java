@@ -398,7 +398,7 @@ public class PurorderbillSubmitOpPlugin extends AbstractOperationServicePlugIn {
         Long fstableid = 719529409035381761L;
         Long fsid = Convert.toLong(sid);
         //先判断有没有这个botp关系，有就不再添加
-        String queryPurorderBillTcSql = "SELECT fid FROM t_pm_purorderbill_tc WHERE ftbillid = ? AND ftid = ? AND fsbillid = ? AND fsid = ?);";
+        String queryPurorderBillTcSql = "SELECT fid FROM t_pm_purorderbill_tc WHERE ftbillid = ? AND ftid = ? AND fsbillid = ? AND fsid = ?;";
         List<Long> query = DB.query(DBRoute.of("scm"), queryPurorderBillTcSql, new Object[]{ftbillid, ftid, fsbillid, fsid}, resultSet -> {
             List<Long> valuetemp = new ArrayList<Long>();
             while (resultSet.next()) {
