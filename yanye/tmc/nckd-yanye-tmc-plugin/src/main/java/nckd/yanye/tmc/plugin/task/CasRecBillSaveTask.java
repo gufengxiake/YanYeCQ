@@ -57,7 +57,9 @@ public class CasRecBillSaveTask implements IEventServicePlugin {
                 continue;
             }
             casRecbill.set("payername", customer.getString("name"));
+            casRecbill.set("payer", customer.getPkValue());
             logger.info("客户付款人名称，{}", customer.getString("name"));
+            logger.info("客户付款人，{}", customer);
             SaveServiceHelper.update(casRecbill);
 
         }
