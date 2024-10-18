@@ -43,7 +43,7 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
     @Override
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
-        this.getModel().setValue("affaction",null);
+//        this.getModel().setValue("affaction",null);
         // 1)设置必填标识
         // 是否有实习期
         FieldEdit isshixiqi = (FieldEdit) this.getControl("nckd_isshixiqi");
