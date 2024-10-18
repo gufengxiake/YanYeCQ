@@ -1,6 +1,7 @@
 package nckd.yanye.hr.plugin.form.zhaoping;
 
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kd.bamp.mbis.common.mega.utils.OrgViewUtils;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.consts.OrgViewTypeConst;
@@ -130,25 +131,51 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     public void beforeImportEntry(BeforeImportEntryEventArgs e) {
         // 临时招聘 导入数据
 //        super.beforeImportEntry(e);
+        logger.info("临时招聘导入数据--------");
         QFilter qFilter = new QFilter("status", QCP.equals, "c")
                 .and("enable", QCP.equals, "1")
                 .and("iscurrentversion", QCP.equals, "1");
 
         Map<String, List<Object>> entryDataMap = e.getEntryDataMap();
-        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
-        List<Object> orgIds = new ArrayList<>();
-        if(ObjectUtils.isNotEmpty(objects)){
-            for (int i = 0; i < objects.size(); i++) {
-                String s = String.valueOf(objects.get(i));
-                logger.info("nckd_recruitorg.number"+i+":{}",s);
-                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
-                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
-                orgIds.add(haosAdminorgf7.getPkValue());
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // 转换为 JSON 字符串
+            String jsonString = objectMapper.writeValueAsString(entryDataMap);
+            logger.info("jsonString:{}",jsonString);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        Map source = (Map) e.getSource();
+        Object entryentity = source.get("entryentity");
+        if(ObjectUtils.isNotEmpty(entryentity)){
+            // 存在导入数据
+            // 转换为 JSON 字符串
+            try {
+                String sourceJsonString = objectMapper.writeValueAsString(source);
+                logger.info("sourceJsonString:{}",sourceJsonString);
+            } catch (JsonProcessingException ex) {
+
+                throw new RuntimeException(ex);
             }
-            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
-            e.getEntryDataMap().remove("nckd_recruitorg.number");
 
         }
+
+
+//        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
+//        List<Object> orgIds = new ArrayList<>();
+//        if(ObjectUtils.isNotEmpty(objects)){
+//            for (int i = 0; i < objects.size(); i++) {
+//                String s = String.valueOf(objects.get(i));
+//                logger.info("nckd_recruitorg.number"+i+":{}",s);
+//                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
+//                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
+//                orgIds.add(haosAdminorgf7.getPkValue());
+//            }
+//            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
+//            e.getEntryDataMap().remove("nckd_recruitorg.number");
+//
+//        }
 
     }
 

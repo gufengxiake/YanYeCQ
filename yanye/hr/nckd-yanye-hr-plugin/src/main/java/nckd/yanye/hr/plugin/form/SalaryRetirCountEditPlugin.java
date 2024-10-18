@@ -139,6 +139,26 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         }
 
     }
+    private void amountstandardChange(Object newValue,int iRow) {
+        // 工资标准修改
+        BigDecimal amountstandard = (BigDecimal) newValue;
+
+        BigDecimal twoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth"));
+        BigDecimal twoupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupgrantpro"));
+        BigDecimal multiply = twoupmonth.multiply(twoupgrantpro);
+
+        BigDecimal oneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth"));
+        BigDecimal oneupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupgrantpro"));
+        BigDecimal multiply1 = oneupmonth.multiply(oneupgrantpro);
+
+
+
+        BigDecimal onemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth"));
+        BigDecimal onegrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onegrantpro"));
+        BigDecimal multiply2 = onemonth.multiply(onegrantpro);
+
+
+    }
 
     private void retiredateChange(Object newValue,int iRow) {
         // todo 退休日期修改后，需要重新计算工资和高温费
