@@ -6,6 +6,7 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.db.DBRoute;
+import kd.bos.entity.datamodel.events.BeforeImportEntryEventArgs;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.LoadDataEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
@@ -20,6 +21,8 @@ import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.form.operate.FormOperate;
 import kd.bos.list.ListShowParameter;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -44,6 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
+
+    private static Log logger = LogFactory.getLog(YearcrapplyFormPlugin.class);
 
     // 公司类型
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"1020_S","1050_S","1060_S","1070_S"});
@@ -95,6 +100,32 @@ public class YearcrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF
         */
 
         this.getModel().setValue("nckd_relnum",getStaffCount(org.getPkValue()));
+
+    }
+
+    @Override
+    public void beforeImportEntry(BeforeImportEntryEventArgs e) {
+        // 临时招聘 导入数据
+//        super.beforeImportEntry(e);
+        QFilter qFilter = new QFilter("status", QCP.equals, "c")
+                .and("enable", QCP.equals, "1")
+                .and("iscurrentversion", QCP.equals, "1");
+
+        Map<String, List<Object>> entryDataMap = e.getEntryDataMap();
+        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
+        List<Object> orgIds = new ArrayList<>();
+        if(ObjectUtils.isNotEmpty(objects)){
+            for (int i = 0; i < objects.size(); i++) {
+                String s = String.valueOf(objects.get(i));
+                logger.info("nckd_recruitorg.number"+i+":{}",s);
+                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
+                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
+                orgIds.add(haosAdminorgf7.getPkValue());
+            }
+            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
+            e.getEntryDataMap().remove("nckd_recruitorg.number");
+
+        }
 
     }
 

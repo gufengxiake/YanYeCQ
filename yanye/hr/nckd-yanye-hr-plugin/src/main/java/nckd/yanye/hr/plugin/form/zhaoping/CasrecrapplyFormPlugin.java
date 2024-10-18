@@ -6,10 +6,7 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.consts.OrgViewTypeConst;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.datamodel.events.BeforeImportEntryEventArgs;
-import kd.bos.entity.datamodel.events.ChangeData;
-import kd.bos.entity.datamodel.events.LoadDataEventArgs;
-import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.datamodel.events.*;
 import kd.bos.form.ConfirmCallBackListener;
 import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.MessageBoxResult;
@@ -132,18 +129,24 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
     @Override
     public void beforeImportEntry(BeforeImportEntryEventArgs e) {
         // 临时招聘 导入数据
-        super.beforeImportEntry(e);
-        Map source = (Map) e.getSource();
-        logger.info("source:{}",source);
-        logger.info("beforeImportEntry:{}",e.getEntryDataMap());
-        List<ImportEntryData> list = (List)source.getOrDefault("entryentity", Collections.emptyList());
+//        super.beforeImportEntry(e);
+        QFilter qFilter = new QFilter("status", QCP.equals, "c")
+                .and("enable", QCP.equals, "1")
+                .and("iscurrentversion", QCP.equals, "1");
 
-        logger.info("entryentity:{}",list);
-        HashMap itemEntry = (HashMap) e.getSource();
-        if(source.get("entryentity") != null ){
-            // 获取导入数据
-            Object entryentity = source.get("entryentity");
-            logger.info("entryentity:{}",entryentity);
+        Map<String, List<Object>> entryDataMap = e.getEntryDataMap();
+        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
+        List<Object> orgIds = new ArrayList<>();
+        if(ObjectUtils.isNotEmpty(objects)){
+            for (int i = 0; i < objects.size(); i++) {
+                String s = String.valueOf(objects.get(i));
+                logger.info("nckd_recruitorg.number"+i+":{}",s);
+                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
+                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
+                orgIds.add(haosAdminorgf7.getPkValue());
+            }
+            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
+            e.getEntryDataMap().remove("nckd_recruitorg.number");
 
         }
 
@@ -236,13 +239,13 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 longs.add(pkValue);
                 List<Long> allSubordinateOrgIds = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
                 // 使用流处理过滤掉指定的值
-                List<Long> filteredOrgIds = allSubordinateOrgIds.stream()
-                        .filter(orgId -> !orgId.equals(pkValue)) // 过滤掉值
-                        .collect(Collectors.toList());
+//                List<Long> filteredOrgIds = allSubordinateOrgIds.stream()
+//                        .filter(orgId -> !orgId.equals(pkValue)) // 过滤掉值
+//                        .collect(Collectors.toList());
 
                 // 获取组织编码
 //                QFilter belongcompanyFilter = new QFilter("belongcompany", "in", allSubordinateOrgIds);
-                QFilter qFilter2 = new QFilter("belongcompany", QCP.in,filteredOrgIds);
+                QFilter qFilter2 = new QFilter("belongcompany", QCP.in,allSubordinateOrgIds);
                 showParameter2.getListFilterParameter().setFilter(qFilter2);
 
                 break;
