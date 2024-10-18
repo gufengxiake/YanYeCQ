@@ -179,10 +179,12 @@ public class AbstractDesensitizeFieldCollectPluginEx extends AbstractDesensitize
         );
         // 招聘来源 field2049288120897125376
         Long recruitTypeId = fieldForIdMap.get("nckd_recruittype");
-        String recruitType = "field" + recruitTypeId;
+        if (Objects.nonNull(recruitTypeId)) {
+            String recruitType = "field" + recruitTypeId;
 
-        // 赋值招聘来源
-        Optional.ofNullable(obj).ifPresent(o -> model.setValue(recruitType, o.get("recruittype")));
+            // 赋值招聘来源
+            Optional.ofNullable(obj).ifPresent(o -> model.setValue(recruitType, o.get("recruittype")));
+        }
     }
 
     // 把单据每个字段的标识和页面显示id值列举出来;
