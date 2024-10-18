@@ -1,11 +1,14 @@
 package nckd.yanye.occ.plugin.form;
 
 import com.alibaba.druid.util.StringUtils;
+import com.ccb.core.date.DateUtil;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
+import kd.bos.entity.datamodel.events.ChangeData;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.CloseCallBack;
 import kd.bos.form.ShowFormHelper;
 import kd.bos.form.control.Control;
@@ -17,11 +20,13 @@ import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 //import kd.mmc.pdm.common.constants.BomBatchSearchConst;
 
 import java.math.BigDecimal;
+import java.util.Date;
 import java.util.EventObject;
 import java.util.HashSet;
 import java.util.Map;
@@ -65,12 +70,20 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
                 this.getView().showErrorNotification("请先选择订货客户");
                 return;
             }
+            Date bizdate = (Date) this.getModel().getValue("bizdate");
+            if(bizdate == null){
+                this.getView().showErrorNotification("请先填写订单日期");
+                return;
+            }
             //打开销售合同列表
             ListShowParameter parameter = ShowFormHelper.createShowListForm("conm_salcontract", false);
             //过滤列表
             ListFilterParameter listFilterParameter = new ListFilterParameter();
             listFilterParameter.setFilter(new QFilter("org.id", QCP.equals, org.getPkValue())
                             .and("customer.id", QCP.equals, customer.getPkValue())
+                            .and("closestatus",QCP.equals,"A")//关闭状态
+                            .and("biztimeend",QCP.large_equals, DateUtil.beginOfDay(bizdate))//截止日期
+                            .and("biztimebegin",QCP.less_equals,DateUtil.endOfDay(bizdate))//起始日期
                     //.and("billstatus",QCP.equals,"C")
             );
             parameter.setListFilterParameter(listFilterParameter);
@@ -81,6 +94,11 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
             DynamicObject org = (DynamicObject) this.getModel().getValue("org");
             if (org == null) {
                 this.getView().showErrorNotification("请先选择销售组织");
+                return;
+            }
+            Date bizdate = (Date) this.getModel().getValue("bizdate");
+            if(bizdate == null){
+                this.getView().showErrorNotification("请先填写订单日期");
                 return;
             }
 //            DynamicObject customer = (DynamicObject) this.getModel().getValue("nckd_customer");
@@ -94,6 +112,9 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
             ListFilterParameter listFilterParameter = new ListFilterParameter();
             listFilterParameter.setFilter(new QFilter("org.id", QCP.equals, org.getPkValue())
                             .and("type.name",QCP.equals,"采购运费合同")
+                            .and("closestatus",QCP.equals,"A")//关闭状态
+                            .and("biztimeend",QCP.large_equals, DateUtil.beginOfDay(bizdate))//截止日期
+                            .and("biztimebegin",QCP.less_equals,DateUtil.endOfDay(bizdate))//起始日期
                     //.and("supplier.id", QCP.equals, customer.getPkValue())
                     //.and("billstatus",QCP.equals,"C")
             );
@@ -106,6 +127,64 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
 
         }
         super.click(evt);
+    }
+
+    @Override
+    public void propertyChanged(PropertyChangedArgs e) {
+        super.propertyChanged(e);
+        String fieldKey = e.getProperty().getName();
+        if("nckd_freighttype".equals(fieldKey)){
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+            if (org == null) {
+                this.getView().showErrorNotification("请先选择销售组织");
+                return;
+            }
+            Date bizdate = (Date) this.getModel().getValue("bizdate");
+            if(bizdate == null){
+                this.getView().showErrorNotification("请先填写订单日期");
+                return;
+            }
+            ChangeData[] changeSet = e.getChangeSet();
+            String newValue = (String) changeSet[0].getNewValue();
+            DynamicObject fSupplier = QueryServiceHelper.queryOne("nckd_freight_supplier", "nckd_supplier", new QFilter[]{new QFilter("number",QCP.equals,newValue)});
+            if (fSupplier == null || fSupplier.get("nckd_supplier") == null){
+                return;
+            }
+            long supplierId = fSupplier.getLong("nckd_supplier");
+            QFilter purFilter = new QFilter("org.id", QCP.equals, org.getPkValue())
+                    .and("type.name",QCP.equals,"采购运费合同")
+                    .and("closestatus",QCP.equals,"A")//关闭状态
+                    .and("biztimeend",QCP.large_equals, DateUtil.beginOfDay(bizdate))//截止日期
+                    .and("biztimebegin",QCP.less_equals,DateUtil.endOfDay(bizdate))//起始日期
+                    .and("supplier",QCP.equals,supplierId);
+            DynamicObject purContract = BusinessDataServiceHelper.loadSingle("conm_purcontract", new QFilter[]{purFilter});
+            if (purContract != null){
+                this.getModel().setValue("nckd_trancontractno",purContract.get("billno"));
+                this.getModel().setValue("nckd_customer", supplierId);//承运商
+                //分类明细信息
+                DynamicObjectCollection entryData = purContract.getDynamicObjectCollection("billentry");
+                entryData.forEach((row)->{
+                        //含税单价
+                        BigDecimal taxPrice = row.getBigDecimal("priceandtax");
+                        //合理途损率
+                        BigDecimal damagerate = row.getBigDecimal("nckd_damagerate");
+                        int entryRowCount = this.getModel().getEntryRowCount("billentry");
+                        for (int i = 0; i < entryRowCount; i++) {
+                            this.getModel().setValue("nckd_yfprice", taxPrice, i);
+                            this.getModel().setValue("nckd_damagerate", damagerate, i);
+                        }
+                });
+            }else{
+                this.getModel().setValue("nckd_trancontractno",null);
+                this.getModel().setValue("nckd_customer",null);
+                int entryRowCount = this.getModel().getEntryRowCount("billentry");
+                for (int i = 0; i < entryRowCount; i++) {
+                    this.getModel().setValue("nckd_yfprice", 0, i);
+                    this.getModel().setValue("nckd_damagerate", 0, i);
+                }
+            }
+
+        }
     }
 
     @Override

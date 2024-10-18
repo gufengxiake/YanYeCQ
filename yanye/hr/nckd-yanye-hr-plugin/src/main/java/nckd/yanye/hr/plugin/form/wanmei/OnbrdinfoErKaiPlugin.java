@@ -21,6 +21,7 @@ import kd.bos.logging.LogFactory;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.hr.hbp.common.util.HRStringUtils;
 import kd.hr.hom.common.constant.OnbrdPersonFieldConstants;
+import org.apache.commons.lang3.ObjectUtils;
 
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
@@ -42,6 +43,7 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
     @Override
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
+//        this.getModel().setValue("affaction",null);
         // 1)设置必填标识
         // 是否有实习期
         FieldEdit isshixiqi = (FieldEdit) this.getControl("nckd_isshixiqi");
@@ -503,6 +505,21 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
 
             }
 
+        }
+        // 6) 用工关系状态 laborreltype 为正式时 是否有实习期  ，锁定，否则解锁n
+        if(StringUtils.equals("laborrelstatus", fieldKey)){
+            DynamicObject laborrelstatus =(DynamicObject) model.getValue("laborrelstatus");
+            if(ObjectUtils.isNotEmpty(laborrelstatus) && "1020_S".equals(laborrelstatus.getString("number"))){
+                this.getView().setEnable(false, "nckd_isshixiqi");
+                this.getModel().setValue("nckd_isshixiqi", false);
+            }else{
+                this.getView().setEnable(true, "nckd_isshixiqi");
+            }
+
+        }
+
+        if(StringUtils.equals("affaction", fieldKey)){
+            System.out.println("affactiom");
         }
 
     }

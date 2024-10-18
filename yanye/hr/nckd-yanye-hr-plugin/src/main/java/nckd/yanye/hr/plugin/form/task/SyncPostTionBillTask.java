@@ -61,11 +61,10 @@ public class SyncPostTionBillTask extends AbstractTask {
 
         QFilter qFilter = new QFilter("datastatus", QCP.equals, "1")
                 .and("iscurrentversion", QCP.equals, "1")
-                .and("bsed", QCP.large_than, previousDate)
+                .and("modifytime", QCP.large_than, previousDate)
                 .and("bsed", QCP.less_than, nextDate);
 
-        DynamicObject[] homsPositionbills = BusinessDataServiceHelper.load("homs_positionbill", "id,number,bsed,nckd_sortnum,nckd_lastsortnum", new QFilter[]{qFilter});
-
+        DynamicObject[] homsPositionbills = BusinessDataServiceHelper.load("homs_positionbill", "id,number,bsed,nckd_sortnum,nckd_lastsortnum,modifytime", new QFilter[]{qFilter},"modifytime asc");
 
 
         // 使用流过滤出 nckd_sortnum 和 nckd_lastsortnum 不相等的数据

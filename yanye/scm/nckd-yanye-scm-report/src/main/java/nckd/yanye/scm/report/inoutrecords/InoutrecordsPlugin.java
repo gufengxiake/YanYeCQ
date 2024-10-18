@@ -97,8 +97,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet imPurinbill2 = finish3.join(apBusbill).on("id", "sourcebillid").select(finish3.getRowMeta().getFieldNames(), new String[]{"busbillId"}).finish();
 
         // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "ap_busbill")}, null);
-        DataSet imPurinbill3 = imPurinbill2.leftJoin(glVoucher).on("busbillId", "sourcebill").select(imPurinbill2.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "id nckd_voucherId,vouchertype.name vouchertypeName,billno,sourcebill", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "ap_busbill")}, null);
+        DataSet imPurinbill3 = imPurinbill2.leftJoin(glVoucher).on("busbillId", "sourcebill").select(imPurinbill2.getRowMeta().getFieldNames(), new String[]{"nckd_voucherId", "(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // 核算成本和采购入库关联
         DataSet finish4 = this.firstUnionSecond(finish1, imPurinbill3);
@@ -168,8 +168,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
 
         // 获取凭证号
         // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
-        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "id nckd_voucherId,vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
+        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"nckd_voucherId", "(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // =====================二级=========================
         // 其他入库单
@@ -281,7 +281,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                 "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
                 "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
                 "nckd_comment", "nckd_qty", "nckd_payablepriceqty", "nckd_entrycomment",
-                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode", "nckd_voucher");
+                "nckd_creator_name", "nckd_auditor_name", "nckd_h_source", "nckd_customermnemoniccode", "nckd_suppliermnemoniccode", "nckd_voucher", "nckd_voucherId");
 
         DataSet dataSet = finish4.distinct();
 
@@ -555,8 +555,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
         DataSet finish1 = this.getCalCcostrecord(filter, "im_otheroutbill", "B");
 
         // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
-        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "id nckd_voucherId,vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, "cal_costrecord_subentity")}, null);
+        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"nckd_voucherId", "(vouchertypeName + billno) nckd_voucher"}).finish();
 
         // =====================二级=========================
         // 其他出库单
@@ -884,8 +884,8 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
      */
     private DataSet costrecordUnionVoucher(DataSet finish1, String sourcebilltype) {
         // 凭证
-        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, sourcebilltype)}, null);
-        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"(vouchertypeName + billno) nckd_voucher"}).finish();
+        DataSet glVoucher = QueryServiceHelper.queryDataSet(this.getClass().getName(), "gl_voucher", "id nckd_voucherId,vouchertype.name vouchertypeName,billno,id", new QFilter[]{new QFilter("sourcebilltype", QCP.equals, sourcebilltype)}, null);
+        DataSet costrecordSubentity = finish1.leftJoin(glVoucher).on("fivoucherid", "id").select(finish1.getRowMeta().getFieldNames(), new String[]{"nckd_voucherId", "(vouchertypeName + billno) nckd_voucher"}).finish();
 
         return costrecordSubentity;
     }
@@ -905,7 +905,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_seq", "nckd_modelnum", "nckd_model",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcode", "nckd_configuredcode.number", "nckd_configuredcode.desc", "nckd_tracknumber", "nckd_tracknumber.number", "nckd_tracknumber.description",
                                 "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity", "nckd_voucher"},
+                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity", "nckd_voucher", "nckd_voucherId"},
                         new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_project", "nckd_project.number", "nckd_project.name", "nckd_project.longnumber", "nckd_project.fullname",
                                 "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
                                 "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
@@ -929,7 +929,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_seq", "nckd_modelnum", "nckd_model",
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcode", "nckd_configuredcode.number", "nckd_configuredcode.desc", "nckd_tracknumber", "nckd_tracknumber.number", "nckd_tracknumber.description",
                                 "nckd_ispresent", "nckd_rework", "nckd_unit",
-                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity", "nckd_voucher"},
+                                "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "nckd_group", "srcbillentity", "nckd_voucher", "nckd_voucherId"},
                         new String[]{"nckd_sourcebilltypename", "nckd_sourcebillno", "nckd_nummer_reisdocument", "nckd_project", "nckd_project.number", "nckd_project.name", "nckd_project.longnumber", "nckd_project.fullname",
                                 "nckd_shippingordernumber", "nckd_cass", "nckd_shipping_address", "nckd_order_serial_number", "nckd_loss_quantity", "nckd_damaged_quantity",
                                 "nckd_wagon_number", "nckd_direct_mode", "nckd_carrier", "nckd_carrier_phone", "nckd_phone", "nckd_carnumber",
@@ -954,7 +954,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
                                 "nckd_auxpty", "nckd_lotnumber", "nckd_configuredcode", "nckd_configuredcode.number", "nckd_configuredcode.desc", "nckd_tracknumber", "nckd_tracknumber.number", "nckd_tracknumber.description",
                                 "nckd_ispresent", "nckd_rework", "nckd_unit",
                                 "nckd_baseqty", "nckd_unit2nd", "nckd_qtyunit2nd", "nckd_unit3nd", "nckd_qtyunit3nd", "nckd_price", "srcbillentity", "srcbillentryid", "srcbillnumber",
-                                "nckd_group", "nckd_voucher"}).finish();
+                                "nckd_group", "nckd_voucher", "nckd_voucherId"}).finish();
         return finish;
     }
 
@@ -967,7 +967,7 @@ public class InoutrecordsPlugin extends AbstractReportListDataPlugin {
      */
     private DataSet firstUnionSecond2(DataSet firstDataSet, DataSet secondDataSet) {
         DataSet finish = firstDataSet.join(secondDataSet).on("billnumber", "nckd_billno").on("nckd_masterid", "materialmasterid").on("bizbillentryid", "billentry_id")
-                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount", "nckd_voucher"},
+                .select(new String[]{"nckd_org", "nckd_costaccount", "nckd_masterid", "nckd_in_amount", "nckd_out_amount", "nckd_voucher", "nckd_voucherId"},
                         new String[]{"nckd_biztime", "nckd_bookdate", "nckd_auditdate", "nckd_billtype_name", "nckd_billno", "nckd_invscheme",
                                 "nckd_warehouse", "nckd_operatorname", "nckd_deptname", "nckd_salesman", "nckd_bp_number", "nckd_bp_name", "nckd_supplier_name", "nckd_supplier_number",
                                 "nckd_seq", "nckd_modelnum", "nckd_model",

@@ -120,25 +120,43 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 break;
             case "nckd_amountstandard":
                 // 工资标准修改
+
                 break;
             case "nckd_highfee":
                 // 高温费修改
-                break;
             case "nckd_welfareamount":
                 // 福利金额修改
-                break;
             case "nckd_welfareamount1":
-                // 福利金额修改
-                break;
+                // 福利金额1修改
             case "nckd_welfareamount2":
-                // 福利金额修改
-                break;
+                // 福利金额2修改
             case "nckd_welfareamount3":
-                // 福利金额修改
+                // 福利金额3修改
+                countAmount(iRow);
                 break;
             default:
                 break;
         }
+
+    }
+    private void amountstandardChange(Object newValue,int iRow) {
+        // 工资标准修改
+        BigDecimal amountstandard = (BigDecimal) newValue;
+
+        BigDecimal twoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth"));
+        BigDecimal twoupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupgrantpro"));
+        BigDecimal multiply = twoupmonth.multiply(twoupgrantpro);
+
+        BigDecimal oneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth"));
+        BigDecimal oneupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupgrantpro"));
+        BigDecimal multiply1 = oneupmonth.multiply(oneupgrantpro);
+
+
+
+        BigDecimal onemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth"));
+        BigDecimal onegrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onegrantpro"));
+        BigDecimal multiply2 = onemonth.multiply(onegrantpro);
+
 
     }
 
@@ -149,20 +167,77 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             // 计算月份间隔
             Date nckdTaskeffect = (Date) this.getModel().getValue("nckd_taskeffect");
             // 转换为 LocalDate
-//            LocalDate retireDate = convertToLocalDate(retiredate);
-//            LocalDate taskEffectDate = convertToLocalDate(nckdTaskeffect);
-//            // 计算两个日期之间的年月差
-//            Period period = Period.between(taskEffectDate, retireDate);
+
             int totalMonths = getDiffMonthsByLocalDate(nckdTaskeffect, retiredate, false, true);
 
             // 计算各个时间段的月份
             int monthsInOneYear = Math.min(totalMonths, 12); // 一年以内的月份
             int monthsInTwoYears = (totalMonths >= 12) ? Math.min(totalMonths - 12, 12) : 0; // 一年到两年的月份
-            int monthsInTwoToThreeYears = (totalMonths >= 24) ? Math.min(totalMonths - 24, 12) : 0; // 两年到三年的月份
+            int monthsInTwoToThreeYears = (totalMonths >= 24) ? totalMonths - 24 : 0; // 两年到三年的月份
 
             this.getModel().setValue("nckd_twoupmonth",monthsInTwoToThreeYears,iRow);
             this.getModel().setValue("nckd_oneupmonth",monthsInTwoYears,iRow);
             this.getModel().setValue("nckd_onemonth",monthsInOneYear,iRow);
+
+            // 统计各个时间段内的 6、7、8、9 月的个数
+            int countOneYear = 0;
+            int countTwoYears = 0;
+            int countTwoToThreeYears = 0;
+
+            // 计算开始日期和结束日期的 LocalDate
+            LocalDate startDate = nckdTaskeffect.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+            LocalDate endDate = retiredate.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+            // 按照月份统计
+            for (int i = 0; i < totalMonths; i++) {
+                LocalDate currentMonth = startDate.plusMonths(i);
+
+                // 判断当前月份是否在 6、7、8、9 之间
+                if (currentMonth.getMonthValue() >= 6 && currentMonth.getMonthValue() <= 9) {
+                    countOneYear++;
+                }
+            }
+            // 高温费标准
+            BigDecimal nckdHighfee = BigDecimal.valueOf(countOneYear).multiply((BigDecimal) this.getModel().getValue("nckd_highfeestand"));
+            this.getModel().setValue("nckd_highfee",nckdHighfee,iRow);
+
+            // 发放比例
+            BigDecimal nckdGrantproportion = (BigDecimal) this.getModel().getValue("nckd_grantproportion");
+
+            // 工资标准
+            BigDecimal nckdAmountstandard = (BigDecimal) this.getModel().getValue("nckd_amountstandard");
+
+            // 工资标准  =  工资标准*发放比例*比例 ：月份为0则为0
+            // 离法定退休年龄一年内
+            // 比例
+            BigDecimal oneyeardrop = (BigDecimal) this.getModel().getValue("nckd_onegrantpro");
+            BigDecimal wages = BigDecimal.ZERO;
+            if(monthsInOneYear == 0){
+                wages = BigDecimal.ZERO;
+            }else{
+                wages = nckdAmountstandard.multiply(nckdGrantproportion).multiply(oneyeardrop);
+            }
+            this.getModel().setValue("nckd_onesum",wages,iRow);
+
+            // 离法定退休年龄两年内，一年以上
+            // 比例
+            BigDecimal nckdOneupgrantpro = (BigDecimal) this.getModel().getValue("nckd_oneupgrantpro");
+            if(monthsInTwoYears == 0){
+                wages = BigDecimal.ZERO;
+            }else{
+                wages = nckdAmountstandard.multiply(nckdGrantproportion).multiply(nckdOneupgrantpro);
+            }
+            this.getModel().setValue("nckd_oneupsum",wages,iRow);
+
+            // 离法定退休年龄三年内，两年以上
+            // 比例
+            BigDecimal nckdTwoupgrantpro = (BigDecimal) this.getModel().getValue("nckd_twoupgrantpro");
+            if(monthsInTwoToThreeYears == 0){
+                wages = BigDecimal.ZERO;
+            }else{
+                wages = nckdAmountstandard.multiply(nckdGrantproportion).multiply(nckdTwoupgrantpro);
+            }
+            this.getModel().setValue("nckd_twoupsum",wages,iRow);
 
         }else{
             // 为null 工资和高温费重置为0
@@ -176,14 +251,44 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             this.getModel().setValue("nckd_onemonth",0,iRow);
             this.getModel().setValue("nckd_onesum",0,iRow);
 
-            this.getModel().setValue("nckd_highfee",0,iRow);
 
             this.getModel().endInit();
 
         }
+        countAmount(iRow);
         this.getView().updateView("entryentity");
 
     }
+
+    private void countAmount(int iRow) {
+
+        BigDecimal nckdTwoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth"));
+        BigDecimal nckdTwoupsum = (BigDecimal) this.getModel().getValue("nckd_twoupsum");
+        BigDecimal multiplytwoup = nckdTwoupmonth.multiply(nckdTwoupsum);
+
+        BigDecimal nckdOneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth"));
+        BigDecimal nckdOneupsum = (BigDecimal) this.getModel().getValue("nckd_oneupsum");
+        BigDecimal multiplyoneup = nckdOneupmonth.multiply(nckdOneupsum);
+
+        BigDecimal nckdOnemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth"));
+        BigDecimal nckdOnesum = (BigDecimal) this.getModel().getValue("nckd_onesum");
+        BigDecimal multiplyone = nckdOnemonth.multiply(nckdOnesum);
+
+        BigDecimal nckdHighfee = (BigDecimal) this.getModel().getValue("nckd_highfee");
+        BigDecimal nckdWelfareamount = (BigDecimal) this.getModel().getValue("nckd_welfareamount");
+        BigDecimal nckdWelfareamount1 = (BigDecimal) this.getModel().getValue("nckd_welfareamount1");
+        BigDecimal nckdWelfareamount2 = (BigDecimal) this.getModel().getValue("nckd_welfareamount2");
+        BigDecimal nckdWelfareamount3 = (BigDecimal) this.getModel().getValue("nckd_welfareamount3");
+        BigDecimal count = multiplytwoup.add(multiplyoneup)
+                .add(multiplyone)
+                .add(nckdHighfee)
+                .add(nckdWelfareamount)
+                .add(nckdWelfareamount1)
+                .add(nckdWelfareamount2)
+                .add(nckdWelfareamount3);
+        this.getModel().setValue("nckd_subtotals",count,iRow);
+    }
+
 
 
     // 构建人员信息列表
@@ -340,16 +445,20 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                                 .and("isprimary",QCP.equals,"1");
                         DynamicObject adjfileinfo = BusinessDataServiceHelper.loadSingle("hcdm_adjfileinfo", "id,personfield", new QFilter[]{qFilter, status});
                         // 定调薪信息 hcdm_salaryadjrecord
-                        QFilter qFilter1 = new QFilter("salaryadjfile.id", "=", adjfileinfo.getPkValue())
-                                .and("standarditem.number",QCP.in,WAGES_LIST);
-                        DynamicObject[] hcdmAdjfileinfos = BusinessDataServiceHelper.load("hcdm_salaryadjrecord", "id,personfield,amount,standarditem,standarditem.number", new QFilter[]{qFilter1,status});
-                        BigDecimal wages = new BigDecimal(0);
-                        if(ObjectUtils.isNotEmpty(hcdmAdjfileinfos)){
-                            for (DynamicObject hcdmAdjfileinfo : hcdmAdjfileinfos) {
-                                wages = wages.add(hcdmAdjfileinfo.getBigDecimal("amount"));
+                        if(ObjectUtils.isNotEmpty(adjfileinfo)){
+                            QFilter qFilter1 = new QFilter("salaryadjfile.id", "=", adjfileinfo.getPkValue())
+                                    .and("standarditem.number",QCP.in,WAGES_LIST);
+                            DynamicObject[] hcdmAdjfileinfos = BusinessDataServiceHelper.load("hcdm_salaryadjrecord", "id,personfield,amount,standarditem,standarditem.number", new QFilter[]{qFilter1,status});
+                            BigDecimal wages = new BigDecimal(0);
+                            if(ObjectUtils.isNotEmpty(hcdmAdjfileinfos)){
+                                for (DynamicObject hcdmAdjfileinfo : hcdmAdjfileinfos) {
+                                    wages = wages.add(hcdmAdjfileinfo.getBigDecimal("amount"));
+                                }
+                                dynamicObject.set("nckd_amountstandard",wages);
                             }
-                            dynamicObject.set("nckd_amountstandard",wages);
+
                         }
+
                     }else{
                         // 中层工资标准
                         dynamicObject.set("nckd_amountstandard",zhiji.get("nckd_salarystandards"));

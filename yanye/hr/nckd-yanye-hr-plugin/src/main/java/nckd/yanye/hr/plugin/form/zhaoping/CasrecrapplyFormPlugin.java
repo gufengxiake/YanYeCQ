@@ -1,12 +1,13 @@
 package nckd.yanye.hr.plugin.form.zhaoping;
 
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kd.bamp.mbis.common.mega.utils.OrgViewUtils;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.consts.OrgViewTypeConst;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
-import kd.bos.entity.datamodel.events.ChangeData;
-import kd.bos.entity.datamodel.events.LoadDataEventArgs;
-import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.datamodel.events.*;
 import kd.bos.form.ConfirmCallBackListener;
 import kd.bos.form.MessageBoxOptions;
 import kd.bos.form.MessageBoxResult;
@@ -18,14 +19,19 @@ import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.form.operate.FormOperate;
+import kd.bos.form.plugin.importentry.resolving.ImportEntryData;
 import kd.bos.list.ListShowParameter;
+import kd.bos.logging.Log;
+import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Module           :人才供应云-招聘直通车-首页-临时招聘申请
@@ -39,6 +45,8 @@ import java.util.*;
 
 
 public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
+
+    private static Log logger = LogFactory.getLog(CasrecrapplyFormPlugin.class);
 
     // 公司类型
     private final List<String> COMPANY_LIST = Arrays.asList(new String[]{"1020_S","1050_S","1060_S","1070_S"});
@@ -67,22 +75,7 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         //  组织id
         /*
         Long pkValue = (Long) org.getPkValue();
-        List<Long> longs = new ArrayList<Long>();
-        longs.add(pkValue);
-        QFilter qFilter = new QFilter("boid", QCP.equals, pkValue);
-        // 获取组织历史查询
-        DynamicObjectCollection query = QueryServiceHelper.query("haos_adminorgdetail", "id,boid,hisversion", new QFilter[]{qFilter}, "hisversion desc");
-        if(ObjectUtils.isNotEmpty(query)){
-            long boid = query.get(0).getLong("id");
-            QFilter qFilter1 = new QFilter("dutyorg.id", QCP.equals, boid);
-            DynamicObject haosDutyorgdetail = BusinessDataServiceHelper.loadSingle( "haos_dutyorgdetail","id,dutyorg,staffcount",new QFilter[]{qFilter1});
-            if(ObjectUtils.isEmpty(haosDutyorgdetail)){
-                this.getModel().setValue("nckd_sftaffcount",0);
-            }else{
-                this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
-            }
-//            this.getModel().setValue("nckd_sftaffcount",haosDutyorgdetail.get("staffcount"));
-        }
+
         */
         updateStaffCount();
         // 实际人数
@@ -131,6 +124,58 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
 //            this.getModel().setValue("nckd_sftaffcount",staffcount);
 
         }
+
+    }
+
+    @Override
+    public void beforeImportEntry(BeforeImportEntryEventArgs e) {
+        // 临时招聘 导入数据
+//        super.beforeImportEntry(e);
+        logger.info("临时招聘导入数据--------");
+        QFilter qFilter = new QFilter("status", QCP.equals, "c")
+                .and("enable", QCP.equals, "1")
+                .and("iscurrentversion", QCP.equals, "1");
+
+        Map<String, List<Object>> entryDataMap = e.getEntryDataMap();
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            // 转换为 JSON 字符串
+            String jsonString = objectMapper.writeValueAsString(entryDataMap);
+            logger.info("jsonString:{}",jsonString);
+        } catch (JsonProcessingException ex) {
+            throw new RuntimeException(ex);
+        }
+
+        Map source = (Map) e.getSource();
+        Object entryentity = source.get("entryentity");
+        if(ObjectUtils.isNotEmpty(entryentity)){
+            // 存在导入数据
+            // 转换为 JSON 字符串
+            try {
+                String sourceJsonString = objectMapper.writeValueAsString(source);
+                logger.info("sourceJsonString:{}",sourceJsonString);
+            } catch (JsonProcessingException ex) {
+
+                throw new RuntimeException(ex);
+            }
+
+        }
+
+
+//        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
+//        List<Object> orgIds = new ArrayList<>();
+//        if(ObjectUtils.isNotEmpty(objects)){
+//            for (int i = 0; i < objects.size(); i++) {
+//                String s = String.valueOf(objects.get(i));
+//                logger.info("nckd_recruitorg.number"+i+":{}",s);
+//                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
+//                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
+//                orgIds.add(haosAdminorgf7.getPkValue());
+//            }
+//            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
+//            e.getEntryDataMap().remove("nckd_recruitorg.number");
+//
+//        }
 
     }
 
@@ -215,8 +260,21 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 ListShowParameter showParameter2 = (ListShowParameter)e.getFormShowParameter();
                 // 展示部门，如果选择了企业，展示企业下的部门，添加企业筛选条件
                 DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("org");
-                QFilter qFilter2 = new QFilter("adminorgtype.number", QCP.in, "1040_S").and("belongcompany.number", QCP.like, nckdRecruitcompany.getString("number")+"%");
+
+                List<Long> longs = new ArrayList<Long>();
+                Long pkValue = (Long) nckdRecruitcompany.getPkValue();
+                longs.add(pkValue);
+                List<Long> allSubordinateOrgIds = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
+                // 使用流处理过滤掉指定的值
+//                List<Long> filteredOrgIds = allSubordinateOrgIds.stream()
+//                        .filter(orgId -> !orgId.equals(pkValue)) // 过滤掉值
+//                        .collect(Collectors.toList());
+
+                // 获取组织编码
+//                QFilter belongcompanyFilter = new QFilter("belongcompany", "in", allSubordinateOrgIds);
+                QFilter qFilter2 = new QFilter("belongcompany", QCP.in,allSubordinateOrgIds);
                 showParameter2.getListFilterParameter().setFilter(qFilter2);
+
                 break;
             case "nckd_recruitpost":
                 // 岗位名称
@@ -226,7 +284,10 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 int[] rows2 = treeEntryEntity2.getSelectRows();
                 DynamicObject nckdRecruitcompany2 = (DynamicObject)this.getModel().getValue("org");
                 DynamicObject nckdRecruitorg = (DynamicObject)this.getModel().getValue("nckd_recruitorg", rows2[0]);
-                QFilter qFilter1 = new QFilter("adminorg.number", QCP.like, nckdRecruitcompany2.getString("number") + "%");
+                List<Long> longs2 = new ArrayList<Long>();
+                longs2.add((Long)nckdRecruitcompany2.getPkValue());
+                List<Long> allSubordinateOrgIds2 = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs2, true);
+                QFilter qFilter1 = new QFilter("adminor", QCP.in, allSubordinateOrgIds2);
                 if(ObjectUtils.isNotEmpty(nckdRecruitorg)){
                     qFilter1.and("adminorg.id", QCP.equals, nckdRecruitorg.getPkValue());
                 }
@@ -313,6 +374,18 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
                 break;
         }
     }
+
+    public List<Long> selectLevelDept(Long ids){
+        //包含本级和下级所有部门的id集合
+        List<Long> allIds = new ArrayList<>();
+        allIds.add(ids);
+        //获取所有下属组织
+        List<Long> allSubordinateOrgs =  OrgViewUtils.getSubOrgId(OrgViewTypeConst.Admin, allIds, false, false, (QFilter) null);
+        allIds.addAll(allSubordinateOrgs);
+        return allIds;
+    }
+
+
 
     @Override
     public void afterDoOperation(AfterDoOperationEventArgs afterDoOperationEventArgs) {

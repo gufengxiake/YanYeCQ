@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import kd.bos.bill.BillShowParameter;
+import kd.bos.bill.OperationStatus;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
@@ -24,13 +26,17 @@ import kd.bos.entity.property.ParentBasedataProp;
 import kd.bos.entity.property.UnitProp;
 import kd.bos.entity.report.ReportQueryParam;
 import kd.bos.form.IFormView;
+import kd.bos.form.ShowType;
 import kd.bos.form.control.FilterGrid;
+import kd.bos.form.events.HyperLinkClickEvent;
+import kd.bos.form.events.HyperLinkClickListener;
 import kd.bos.form.field.BasedataEdit;
 import kd.bos.form.field.events.BeforeF7SelectEvent;
 import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.report.ReportList;
 import kd.bos.report.plugin.AbstractReportFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.DispatchServiceHelper;
@@ -51,7 +57,7 @@ import org.apache.commons.lang3.StringUtils;
  * @date 2024-09-03 14:54
  * @description 出入库流水账（nckd_inoutrecords）报表界面插件
  */
-public class InoutrecordsRptForm extends AbstractReportFormPlugin implements BeforeF7SelectListener {
+public class InoutrecordsRptForm extends AbstractReportFormPlugin implements BeforeF7SelectListener, HyperLinkClickListener {
     private ReportConf confCache;
 
     @Override
@@ -59,6 +65,9 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
         super.registerListener(e);
 
         this.addF7Listener(this, "nckd_mulcalorg", "nckd_mulcostaccount", "nckd_mulmaterialgroup", "nckd_mulmaterial", "nckd_materialto", "nckd_mulbilltype");
+
+        ReportList reportList = this.getControl("reportlistap");
+        reportList.addHyperClickListener(this::hyperLinkClick);
     }
 
     private void addF7Listener(BeforeF7SelectListener form, String... f7Names) {
@@ -115,8 +124,8 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
         IDataEntityProperty pro = null;
         Iterator var9 = allFields.entrySet().iterator();
 
-        while(var9.hasNext()) {
-            Map.Entry<String, IDataEntityProperty> field = (Map.Entry)var9.next();
+        while (var9.hasNext()) {
+            Map.Entry<String, IDataEntityProperty> field = (Map.Entry) var9.next();
             pro = field.getValue();
             if (pro instanceof UnitProp) {
                 unitCols.add(field.getKey());
@@ -127,7 +136,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
         this.setCols4FilterGrid(conf.getRepoEntity(), "nckd_commonfs", new Predicate<Map<String, Object>>() {
             public boolean test(Map<String, Object> info) {
                 boolean result = false;
-                String fieldName = (String)info.get("fieldName");
+                String fieldName = (String) info.get("fieldName");
                 if (fieldName != null) {
                     String[] splitName = fieldName.split("\\.");
                     if (fsCol.contains(splitName[0])) {
@@ -138,7 +147,7 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
 
                     String rename = renames.get(splitName[0]);
                     if (result && rename != null) {
-                        String fieldCaption = (String)info.get("fieldCaption");
+                        String fieldCaption = (String) info.get("fieldCaption");
                         if (fieldCaption != null) {
                             String[] splitCaption = fieldCaption.split("\\.");
                             splitCaption[0] = rename;
@@ -552,6 +561,22 @@ public class InoutrecordsRptForm extends AbstractReportFormPlugin implements Bef
         if (list != null) {
             QFilter q = new QFilter("id", "in", list);
             ((ListShowParameter) e.getFormShowParameter()).getListFilterParameter().setFilter(q);
+        }
+    }
+
+    @Override
+    public void hyperLinkClick(HyperLinkClickEvent hyperLinkClickEvent) {
+        if ("nckd_voucher".equals(hyperLinkClickEvent.getFieldName())) {
+            //获取凭证id
+            Long voucherId = hyperLinkClickEvent.getRowData().getLong("nckd_voucherId");
+
+            //跳转到指定凭证
+            BillShowParameter showParameter = new BillShowParameter();
+            showParameter.setFormId("gl_voucher");
+            showParameter.setPkId(voucherId);
+            showParameter.getOpenStyle().setShowType(ShowType.MainNewTabPage);
+            showParameter.setStatus(OperationStatus.VIEW);
+            this.getView().showForm(showParameter);
         }
     }
 }

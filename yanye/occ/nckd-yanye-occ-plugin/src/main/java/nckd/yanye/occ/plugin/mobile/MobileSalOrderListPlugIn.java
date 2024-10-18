@@ -3,6 +3,7 @@ package nckd.yanye.occ.plugin.mobile;
 import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
 import kd.bos.entity.botp.runtime.PushArgs;
 import kd.bos.entity.datamodel.ListSelectedRow;
@@ -26,6 +27,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.occ.ocbase.common.util.CommonUtils;
 import kd.occ.ocbase.common.util.DateUtil;
 import kd.occ.ocbase.common.util.MobileControlUtils;
@@ -123,7 +125,7 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
             //获取下游单据
             Map<String, HashSet<Long>> targetBillIds = BFTrackerServiceHelper.findTargetBills("ocbsoc_saleorder", new Long[]{(Long) id});
             // 从所有下游单中寻找需要的
-            HashSet<Long> botpbill1_Ids = new HashSet<>();
+            HashSet<Long> botpbill1_Ids=new HashSet<>();
             String botpbill1_EntityNumber = "im_saloutbill";//销售出库单
             if (targetBillIds.containsKey(botpbill1_EntityNumber)) {
                 botpbill1_Ids = targetBillIds.get(botpbill1_EntityNumber);
@@ -225,6 +227,40 @@ public class MobileSalOrderListPlugIn extends OcdmaFormMobPlugin implements TabS
                 this.getView().showForm(mobileFormShowParameter);
             }
         }
+        //订单关闭
+        else if(e.getOperateKey().equalsIgnoreCase("close")){
+            BillList billList = this.getControl("billlistap");
+            Object id = billList.getCurrentSelectedRowInfo().getPrimaryKeyValue();
+            DynamicObject orderDataObject=BusinessDataServiceHelper.loadSingle(id,"ocbsoc_saleorder");
+            //整单关闭
+            orderDataObject.set("closestatus","B");
+            SaveServiceHelper.update(orderDataObject);
+            //获取下游单据
+            Map<String, HashSet<Long>> targetBillIds = BFTrackerServiceHelper.findTargetBills("ocbsoc_saleorder", new Long[]{(Long) id});
+            // 从所有下游单中寻找需要的
+            HashSet<Long> botpbill1_Ids=new HashSet<>();
+            String botpbill1_EntityNumber = "ocococ_deliveryorder";//发货单
+            if (targetBillIds.containsKey(botpbill1_EntityNumber)) {
+                botpbill1_Ids = targetBillIds.get(botpbill1_EntityNumber);
+            }
+            for(Long deliverOrderId:botpbill1_Ids){
+                DynamicObject deliverOrderData=BusinessDataServiceHelper.loadSingle(deliverOrderId,botpbill1_EntityNumber);
+                if(deliverOrderData!=null){
+                    DynamicObjectCollection entry=deliverOrderData.getDynamicObjectCollection("entryentity");
+                    for(DynamicObject entryRow:entry){
+                        //关闭状态
+                        entryRow.set("closestatus","2");
+                        //关闭日期
+                        entryRow.set("closetime",new Date());
+                    }
+                }
+                SaveServiceHelper.update(deliverOrderData);
+            }
+            //刷新列表
+            billList.refresh();
+            this.getView().showSuccessNotification("订单关闭成功！");
+        }
+
 
     }
 
