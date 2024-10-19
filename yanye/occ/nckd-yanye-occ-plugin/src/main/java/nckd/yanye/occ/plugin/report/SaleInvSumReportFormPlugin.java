@@ -50,6 +50,20 @@ public class SaleInvSumReportFormPlugin extends AbstractReportFormPlugin impleme
             }else{
                 rowDatum.set("ispresent","否");
             }
+            BigDecimal signbaseqty = rowDatum.getBigDecimal("nckd_signbaseqty");
+            BigDecimal subtract = baseqty.subtract(signbaseqty);
+            //亏斤短包 签收数量为0取0,不为0则基本数量-签收数量大于0取差,小于0取0
+            if(BigDecimal.ZERO.compareTo(signbaseqty) == 0){
+                rowDatum.set("kjdb",BigDecimal.ZERO);
+            }else if(subtract.compareTo(BigDecimal.ZERO) > 0){
+                rowDatum.set("kjdb",subtract);
+            }else{
+                rowDatum.set("kjdb",BigDecimal.ZERO);
+            }
+            //签收数量为空则取基本数量
+            if (BigDecimal.ZERO.compareTo(signbaseqty) == 0){
+                rowDatum.set("nckd_signbaseqty",baseqty);
+            }
         }
     }
     @Override

@@ -92,8 +92,10 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
                 "billentry.material.masterid.modelnum as materialmodel," +
                 //赠品
                 "billentry.ispresent as ispresent," +
-                //数量
+                //基本数量
                 "billentry.baseqty as baseqty," +
+                //签收基本数量
+                "billentry.nckd_signbaseqty as nckd_signbaseqty," +
                 //含税单价
                 "billentry.priceandtax as priceandtax," +
                 //金额（本位币）
@@ -111,16 +113,27 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
                 //原币价税合计
                 "billentry.amountandtax as amountandtax," +
                 //成本单价
-                "billentry.nckd_cbdj as nckd_cbdj";
+                "billentry.nckd_cbdj as nckd_cbdj," +
+                "billentry.id as out_entryid";
 
         DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
+        //根据销售出库表体id获取财务应付单信息
+        List<Long> outEntryid = DataSetToList.getOneToList(imSaloutbill, "out_entryid");
+        DataSet finArBill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "ar_finarbill",
+                //金额，单据日期，源单分录id
+                "nckd_area,entry.e_srcentryid as fin_srcentryid",
+                new QFilter[]{new QFilter("entry.e_srcentryid", QCP.in, outEntryid.toArray(new Long[0]))}, null);
+        //关联财务应收单
+        imSaloutbill = imSaloutbill.leftJoin(finArBill).on("out_entryid", "fin_srcentryid").select(imSaloutbill.getRowMeta().getFieldNames(), new String[]{"nckd_area"}).finish();
+        //根据财务应收单的日期进行过滤
         return imSaloutbill.orderBy(new String[]{"bizorg","material"});
     }
 
     @Override
     public List<AbstractReportColumn> getColumns(List<AbstractReportColumn> columns) throws Throwable {
         columns.add(createReportColumn("bizorg",ReportColumn.TYPE_TEXT,"公司"));
+        columns.add(createReportColumn("nckd_area",ReportColumn.TYPE_TEXT,"所属地区"));
         columns.add(createReportColumn("bizdept",ReportColumn.TYPE_TEXT,"销售部门"));
         columns.add(createReportColumn("bizoperator",ReportColumn.TYPE_TEXT,"业务员"));
         columns.add(createReportColumn("customer",ReportColumn.TYPE_TEXT,"客户编码"));
@@ -132,7 +145,9 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
         columns.add(createReportColumn("materialname",ReportColumn.TYPE_TEXT,"物料名称"));
         columns.add(createReportColumn("materialmodel",ReportColumn.TYPE_TEXT,"存货规格"));
         columns.add(createReportColumn("ispresent",ReportColumn.TYPE_TEXT,"赠品"));
-        columns.add(createReportColumn("baseqty",ReportColumn.TYPE_DECIMAL,"数量"));
+        columns.add(createReportColumn("baseqty",ReportColumn.TYPE_DECIMAL,"实发数量"));
+        columns.add(createReportColumn("kjdb",ReportColumn.TYPE_DECIMAL,"亏斤短包"));
+        columns.add(createReportColumn("nckd_signbaseqty",ReportColumn.TYPE_DECIMAL,"结算数量"));
         columns.add(createReportColumn("priceandtax",ReportColumn.TYPE_DECIMAL,"含税单价"));
         columns.add(createReportColumn("curamount",ReportColumn.TYPE_DECIMAL,"金额（本位币）"));
         columns.add(createReportColumn("curtaxamount",ReportColumn.TYPE_DECIMAL,"税额（本位币）"));

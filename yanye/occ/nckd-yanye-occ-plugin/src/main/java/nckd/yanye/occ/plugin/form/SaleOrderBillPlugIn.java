@@ -3,17 +3,20 @@ package nckd.yanye.occ.plugin.form;
 import com.alibaba.druid.util.StringUtils;
 import com.ccb.core.date.DateUtil;
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.form.CloseCallBack;
-import kd.bos.form.ShowFormHelper;
+import   kd.bos.form.operate.FormOperate;
+import kd.bos.form.*;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.AfterDoOperationEventArgs;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.events.MessageBoxClosedEvent;
 import kd.bos.form.field.TextEdit;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
@@ -23,13 +26,10 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
-//import kd.mmc.pdm.common.constants.BomBatchSearchConst;
+import   kd.bos.dataentity.RefObject;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.EventObject;
-import java.util.HashSet;
-import java.util.Map;
+import java.util.*;
 
 /*
  *销售订单表单插件，获取销售合同和运输合同
@@ -224,6 +224,64 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
         }
         //this.getView().invokeOperation("save");//保存单据
         super.closedCallBack(evt);
+    }
+
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        FormOperate operate = (FormOperate)args.getSource();
+        if("submit".equals(operate.getOperateKey())){
+            Map<Long,BigDecimal> checkMaps = this.getSalContract();
+            if(checkMaps.isEmpty()){
+                return;
+            }
+            int entryRowCount = this.getModel().getEntryRowCount("billentry");
+            for (int i = 0; i < entryRowCount; i++) {
+                long material = (long) ((DynamicObject)this.getModel().getValue("material", i)).getPkValue();
+                BigDecimal priceandtax = (BigDecimal) this.getModel().getValue("priceandtax", i);
+                RefObject<String> afterConfirm = new RefObject<>();
+                if (checkMaps.containsKey(material) && priceandtax.compareTo(checkMaps.get(material)) != 0 && !operate.getOption().tryGetVariableValue("isSubmit", afterConfirm)){
+                    // 显示确认消息
+                    ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener("submit", this);
+                    String confirmTip = "物料行含税单价与销售合同不一致,是否提交?";
+                    this.getView().showConfirm(confirmTip, MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+
+                    // 在没有确认之前，先取消本次操作
+                    args.setCancel(true);
+                }
+            }
+        }
+
+    }
+
+    public Map<Long,BigDecimal> getSalContract(){
+        Map<Long,BigDecimal> checkMaps = new HashMap<>();
+        String nckdSalecontractno = (String) this.getModel().getValue("nckd_salecontractno");
+        if(nckdSalecontractno.isEmpty()){
+            return checkMaps;
+        }
+        QFilter qFilter = new QFilter("billno",QCP.equals,nckdSalecontractno);
+        DynamicObjectCollection conmSalcontract = QueryServiceHelper.query("conm_salcontract", "billno,billentry.material as material,billentry.priceandtax as priceandtax", new QFilter[]{qFilter});
+        if (conmSalcontract == null){
+            return checkMaps;
+        }
+        conmSalcontract.forEach((e)->{
+            checkMaps.put(e.getLong("material"),e.getBigDecimal("priceandtax"));
+        });
+        return checkMaps;
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        super.confirmCallBack(messageBoxClosedEvent);
+        if (StringUtils.equals(messageBoxClosedEvent.getCallBackId(),"submit" ) && messageBoxClosedEvent.getResult() == MessageBoxResult.Yes) {
+            OperateOption operateOption = OperateOption.create();
+            operateOption.setVariableValue("isSubmit", "true");
+            //
+            this.getView().invokeOperation("submit",operateOption);
+        }
+
+
     }
 
     @Override
