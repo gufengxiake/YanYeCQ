@@ -10,6 +10,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.CollectionUtils;
 import kd.hr.hbp.common.constants.HRBaseConstants;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -68,19 +69,22 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                         //目标值
                         BigDecimal qualitytarget = object.getBigDecimal("qualitytarget");
                         BigDecimal addValue = null;
-                        if (object.getLocaleString("customfiled2").getLocaleValue_zh_CN() != null){
+                        if (StringUtils.isNotEmpty(object.getLocaleString("customfiled2").getLocaleValue_zh_CN())){
                             //增加值
                             addValue = new BigDecimal(object.getLocaleString("customfiled2").getLocaleValue_zh_CN());
                         }
 
                         //每增加分
                         BigDecimal addGrade = null;
-                        if (object.getLocaleString("customfiled3").getLocaleValue_zh_CN() != null){
+                        if (StringUtils.isNotEmpty(object.getLocaleString("customfiled3").getLocaleValue_zh_CN())){
                             //增加值
                             addGrade = new BigDecimal(object.getLocaleString("customfiled3").getLocaleValue_zh_CN());
                         }
                         //权重 = 1
-                        BigDecimal weight = object.getBigDecimal("weight");
+                        BigDecimal weight = BigDecimal.ONE;
+                        if (StringUtils.isNotEmpty(object.getLocaleString("customfiled5").getLocaleValue_zh_CN())){
+                            weight = new BigDecimal(object.getLocaleString("customfiled5").getLocaleValue_zh_CN());
+                        }
                         //计算 可调整分值
                         if (qualityres != null
                                 && qualitytarget != null
@@ -92,6 +96,7 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                                 && addGrade.compareTo(BigDecimal.ZERO) > 0){
                             BigDecimal adjustValue = ((qualityres.subtract(qualitytarget)).divide(addValue)).multiply(addGrade).multiply(weight);
                             dynamicObject.set("adjustval",adjustValue.setScale(2, RoundingMode.HALF_UP));
+                            dynamicObject.set("qualityres",qualityres.setScale(2, RoundingMode.HALF_UP));
                         }
                     }
                 }
