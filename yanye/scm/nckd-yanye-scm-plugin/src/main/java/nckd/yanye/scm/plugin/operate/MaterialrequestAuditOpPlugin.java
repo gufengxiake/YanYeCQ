@@ -258,7 +258,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             materialmaintenanObject.set("billstatus", "A");//单据状态
             materialmaintenanObject.set("org", object.getDynamicObject("org"));//申请组织
             materialmaintenanObject.set("nckd_createorganiza", object.getDynamicObject("nckd_createorg"));//创建组织
-            materialmaintenanObject.set("nckd_initiatingdepart", RequestContext.get().getOrgId());//发起部门
+            materialmaintenanObject.set("nckd_initiatingdepart", object.getDynamicObject("nckd_administrativeorg"));//发起部门
             materialmaintenanObject.set("nckd_applicant", RequestContext.get().getCurrUserId());//申请人
             materialmaintenanObject.set("nckd_materialmaintunit", "add");//单据维护类型：新增物料属性
             materialmaintenanObject.set("nckd_documenttype", billType);//单据类型：
@@ -361,6 +361,8 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         materialObject.set("ctrlstrategy", "5");//控制策略 5:全局共享
         materialObject.set("status", "A");//状态 1:暂存
         materialObject.set("enable", "1");//使用状态 1:可用
+        materialObject.set("auxptyunit", dynamicObject.get("nckd_auxptyunit"));//辅助单位
+        materialObject.set("unitconvertdir", "A");//换算方向
 
         materialObject.set("group", dynamicObject.get("nckd_materialclassify"));//物料分组
         materialObject.set("useorg", mainDynamicObject.get("org"));//业务组织
