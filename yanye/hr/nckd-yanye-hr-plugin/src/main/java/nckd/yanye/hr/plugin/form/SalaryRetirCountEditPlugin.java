@@ -20,6 +20,7 @@ import kd.bos.logging.LogFactory;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import kd.hr.hbp.common.util.DatePattern;
 import kd.hr.hbp.common.util.DateUtils;
 import nckd.yanye.hr.common.AppflgConstant;
@@ -120,7 +121,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 break;
             case "nckd_amountstandard":
                 // 工资标准修改
-
+                amountstandardChange(newValue,iRow);
                 break;
             case "nckd_highfee":
                 // 高温费修改
@@ -142,20 +143,53 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     private void amountstandardChange(Object newValue,int iRow) {
         // 工资标准修改
         BigDecimal amountstandard = (BigDecimal) newValue;
+        // 发放比例
+        BigDecimal grantproportion = (BigDecimal) this.getModel().getValue("nckd_grantproportion",iRow);
 
-        BigDecimal twoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth"));
-        BigDecimal twoupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupgrantpro"));
-        BigDecimal multiply = twoupmonth.multiply(twoupgrantpro);
+        // 两年以上
+        BigDecimal twoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth",iRow));
+        BigDecimal istwoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
+        BigDecimal twoupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupgrantpro",iRow));
+        // 工资标准
+        BigDecimal multiply3 = amountstandard.multiply(grantproportion).multiply(twoupgrantpro).multiply(istwoupmonth);
+        this.getModel().setValue("nckd_twoupsum",multiply3,iRow);
+        // 工资合计
+        BigDecimal multiply = multiply3.multiply(twoupmonth);
 
-        BigDecimal oneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth"));
-        BigDecimal oneupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupgrantpro"));
-        BigDecimal multiply1 = oneupmonth.multiply(oneupgrantpro);
+        // 一年以上
+        BigDecimal oneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth",iRow));
+        BigDecimal isoneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
+        BigDecimal oneupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupgrantpro",iRow));
+
+        BigDecimal multiply5 = amountstandard.multiply(grantproportion).multiply(oneupgrantpro).multiply(isoneupmonth);
+        this.getModel().setValue("nckd_oneupsum",multiply5,iRow);
+        BigDecimal multiply1 = multiply5.multiply(oneupmonth);
+
+        // 一年之内
+        BigDecimal onemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth",iRow));
+        BigDecimal isonemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
+        BigDecimal onegrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onegrantpro",iRow));
+
+        BigDecimal multiply4 = amountstandard.multiply(grantproportion).multiply(onegrantpro).multiply(isonemonth);
+        this.getModel().setValue("nckd_onesum",multiply4,iRow);
+        BigDecimal multiply2 = onemonth.multiply(multiply4);
+
+        // 总计
+        BigDecimal nckdHighfee = (BigDecimal) this.getModel().getValue("nckd_highfee",iRow);
+        BigDecimal nckdWelfareamount = (BigDecimal) this.getModel().getValue("nckd_welfareamount",iRow);
+        BigDecimal nckdWelfareamount1 = (BigDecimal) this.getModel().getValue("nckd_welfareamount1",iRow);
+        BigDecimal nckdWelfareamount2 = (BigDecimal) this.getModel().getValue("nckd_welfareamount2",iRow);
+        BigDecimal nckdWelfareamount3 = (BigDecimal) this.getModel().getValue("nckd_welfareamount3",iRow);
 
 
-
-        BigDecimal onemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth"));
-        BigDecimal onegrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onegrantpro"));
-        BigDecimal multiply2 = onemonth.multiply(onegrantpro);
+        BigDecimal sum = multiply.add(multiply1)
+                .add(multiply2)
+                .add(nckdHighfee)
+                .add(nckdWelfareamount)
+                .add(nckdWelfareamount1)
+                .add(nckdWelfareamount2)
+                .add(nckdWelfareamount3);
+        this.getModel().setValue("nckd_subtotals",sum,iRow);
 
 
     }
@@ -262,23 +296,23 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 
     private void countAmount(int iRow) {
 
-        BigDecimal nckdTwoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth"));
-        BigDecimal nckdTwoupsum = (BigDecimal) this.getModel().getValue("nckd_twoupsum");
+        BigDecimal nckdTwoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth",iRow));
+        BigDecimal nckdTwoupsum = (BigDecimal) this.getModel().getValue("nckd_twoupsum",iRow);
         BigDecimal multiplytwoup = nckdTwoupmonth.multiply(nckdTwoupsum);
 
-        BigDecimal nckdOneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth"));
-        BigDecimal nckdOneupsum = (BigDecimal) this.getModel().getValue("nckd_oneupsum");
+        BigDecimal nckdOneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth",iRow));
+        BigDecimal nckdOneupsum = (BigDecimal) this.getModel().getValue("nckd_oneupsum",iRow);
         BigDecimal multiplyoneup = nckdOneupmonth.multiply(nckdOneupsum);
 
-        BigDecimal nckdOnemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth"));
-        BigDecimal nckdOnesum = (BigDecimal) this.getModel().getValue("nckd_onesum");
+        BigDecimal nckdOnemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth",iRow));
+        BigDecimal nckdOnesum = (BigDecimal) this.getModel().getValue("nckd_onesum",iRow);
         BigDecimal multiplyone = nckdOnemonth.multiply(nckdOnesum);
 
-        BigDecimal nckdHighfee = (BigDecimal) this.getModel().getValue("nckd_highfee");
-        BigDecimal nckdWelfareamount = (BigDecimal) this.getModel().getValue("nckd_welfareamount");
-        BigDecimal nckdWelfareamount1 = (BigDecimal) this.getModel().getValue("nckd_welfareamount1");
-        BigDecimal nckdWelfareamount2 = (BigDecimal) this.getModel().getValue("nckd_welfareamount2");
-        BigDecimal nckdWelfareamount3 = (BigDecimal) this.getModel().getValue("nckd_welfareamount3");
+        BigDecimal nckdHighfee = (BigDecimal) this.getModel().getValue("nckd_highfee",iRow);
+        BigDecimal nckdWelfareamount = (BigDecimal) this.getModel().getValue("nckd_welfareamount",iRow);
+        BigDecimal nckdWelfareamount1 = (BigDecimal) this.getModel().getValue("nckd_welfareamount1",iRow);
+        BigDecimal nckdWelfareamount2 = (BigDecimal) this.getModel().getValue("nckd_welfareamount2",iRow);
+        BigDecimal nckdWelfareamount3 = (BigDecimal) this.getModel().getValue("nckd_welfareamount3",iRow);
         BigDecimal count = multiplytwoup.add(multiplyoneup)
                 .add(multiplyone)
                 .add(nckdHighfee)
@@ -295,15 +329,24 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     private void showUnitList() {
         ListShowParameter lsp = ShowFormHelper.createShowListForm("hspm_ermanfile", true, 2);
 
-        Date date = new Date();
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        String dateStr = sdf.format(date);
-        Date date2 = DateUtils.stringToDate(dateStr, DatePattern.YYYY_MM_DD_HH_MM_SS);
+//        Date date = new Date();
+//        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+//        String dateStr = sdf.format(date);
+//        Date date2 = DateUtils.stringToDate(dateStr, DatePattern.YYYY_MM_DD_HH_MM_SS);
+
+        // 过滤出属于自己组织的
+        DynamicObject nckdRecruitcompany = (DynamicObject)this.getModel().getValue("org");
+        List<Long> longs = new ArrayList<Long>();
+        Long pkValue = (Long) nckdRecruitcompany.getPkValue();
+        longs.add(pkValue);
+        List<Long> allSubordinateOrgIds = OrgUnitServiceHelper.getAllSubordinateOrgs("29", longs, true);
+        QFilter qFilter1 = new QFilter("org.id", QCP.in, allSubordinateOrgIds);
 
 
         lsp.setFormId("hspm_ermanfiletreelistf7");
         lsp.setCloseCallBack(new CloseCallBack(this, "selectMUs"));
         QFilter qFilter = new QFilter("empposrel.isprimary", QCP.equals, "1")
+                .and(qFilter1)
                 .and("empentrel.laborrelstatus.number", QCP.equals, "1190_S") // 1190_S 用工关系状态：离岗退养
                 .and("iscurrentversion", QCP.equals, "1")// 是否主任职
                 .and("number", QCP.not_in, UINLIST); // 已经维护离岗退养统计的不再重复使用
@@ -438,7 +481,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 DynamicObject zhiji = ranksalarystandardMap.get((Long) hrpiEmpposorgrel.getDynamicObject("nckd_zhiji").getPkValue());
                 if(ObjectUtils.isNotEmpty(zhiji)){
                     String number = hrpiEmpposorgrel.getDynamicObject("nckd_zhiji").getString("number");
-                    if(AppflgConstant.HR_ZHIJI_STAFF.contains(number)){
+                    if(STAFF_LIST.contains(number)){
                         // 如果是员工,或其他的工资标准要从 工资标准从人员信息-定调薪档案中获取，定调薪项目为绩效工资基数和岗位工资基数，金额字段相加
                         // 定调薪档案 hcdm_adjfileinfo
                         QFilter qFilter = new QFilter("person.id", QCP.equals, personId)
