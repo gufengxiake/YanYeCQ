@@ -58,10 +58,12 @@ public class SyncPostTionBillTask extends AbstractTask {
         calendar.add(Calendar.DATE, 1); // 加一天
         Date nextDate = calendar.getTime();
 
+        Date chargeDate = previousDate;
 
-        QFilter qFilter = new QFilter("datastatus", QCP.equals, "1")
-                .and("iscurrentversion", QCP.equals, "1")
-                .and("modifytime", QCP.large_than, previousDate)
+        QFilter qFilter = new QFilter("status", QCP.equals, "C")
+                .and("enable",QCP.equals,"1")
+                .and("billstatus",QCP.equals,"C")
+                .and("modifytime", QCP.large_than, chargeDate)
                 .and("bsed", QCP.less_than, nextDate);
 
         DynamicObject[] homsPositionbills = BusinessDataServiceHelper.load("homs_positionbill", "id,number,bsed,nckd_sortnum,nckd_lastsortnum,modifytime", new QFilter[]{qFilter},"modifytime asc");
