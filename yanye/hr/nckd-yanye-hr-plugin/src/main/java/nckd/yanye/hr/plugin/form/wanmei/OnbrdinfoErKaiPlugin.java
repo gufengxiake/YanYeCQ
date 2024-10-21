@@ -1,6 +1,8 @@
 package nckd.yanye.hr.plugin.form.wanmei;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.bill.BillShowParameter;
+import kd.bos.bill.OperationStatus;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.OrmLocaleValue;
 import kd.bos.dataentity.utils.StringUtils;
@@ -339,6 +341,16 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
         }
     }
 
+
+    @Override
+    public void afterBindData(EventObject e) {
+        // 如果是新增页面。去掉 入职操作
+        BillShowParameter bsp = (BillShowParameter) this.getView().getFormShowParameter();
+        if (bsp.getStatus() == OperationStatus.ADDNEW) {
+            this.getModel().setValue("affaction", null);
+        }
+    }
+
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         // 必录提示
@@ -507,18 +519,18 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
 
         }
         // 6) 用工关系状态 laborreltype 为正式时 是否有实习期  ，锁定，否则解锁n
-        if(StringUtils.equals("laborrelstatus", fieldKey)){
-            DynamicObject laborrelstatus =(DynamicObject) model.getValue("laborrelstatus");
-            if(ObjectUtils.isNotEmpty(laborrelstatus) && "1020_S".equals(laborrelstatus.getString("number"))){
+        if (StringUtils.equals("laborrelstatus", fieldKey)) {
+            DynamicObject laborrelstatus = (DynamicObject) model.getValue("laborrelstatus");
+            if (ObjectUtils.isNotEmpty(laborrelstatus) && "1020_S".equals(laborrelstatus.getString("number"))) {
                 this.getView().setEnable(false, "nckd_isshixiqi");
                 this.getModel().setValue("nckd_isshixiqi", false);
-            }else{
+            } else {
                 this.getView().setEnable(true, "nckd_isshixiqi");
             }
 
         }
 
-        if(StringUtils.equals("affaction", fieldKey)){
+        if (StringUtils.equals("affaction", fieldKey)) {
             System.out.println("affactiom");
         }
 
