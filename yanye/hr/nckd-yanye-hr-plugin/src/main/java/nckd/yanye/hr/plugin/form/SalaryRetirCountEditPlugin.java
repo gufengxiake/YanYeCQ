@@ -10,10 +10,12 @@ import kd.bos.entity.datamodel.events.BizDataEventArgs;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
-import kd.bos.form.CloseCallBack;
-import kd.bos.form.ShowFormHelper;
+import kd.bos.form.*;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.events.MessageBoxClosedEvent;
+import kd.bos.form.operate.FormOperate;
 import kd.bos.list.ListShowParameter;
 import kd.bos.logging.Log;
 import kd.bos.logging.LogFactory;
@@ -21,8 +23,6 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.org.OrgUnitServiceHelper;
-import kd.hr.hbp.common.util.DatePattern;
-import kd.hr.hbp.common.util.DateUtils;
 import nckd.yanye.hr.common.AppflgConstant;
 import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -55,7 +55,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     private static Log logger = LogFactory.getLog(SalaryRetirCountEditPlugin.class);
 
     // hspm_ermanfile:人事业务档案
-    private static final List<String> UINLIST = new ArrayList<>();
+//    private static List<String> UINLIST = new ArrayList<>();
 
 
     private static  List<String> WAGES_LIST = new ArrayList<>();
@@ -66,9 +66,13 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     @Override
     public void createNewData(BizDataEventArgs e) {
         super.createNewData(e);
-        // todo 进入获取到员工离岗退养工资统计单据体中存在的人员信息的工号放到uinList中
+    }
 
-        // todo 获取定调薪档案的类型编码
+    @Override
+    public void beforeBindData(EventObject e) {
+        super.beforeBindData(e);
+
+        //  获取定调薪档案的类型编码
         String wagesTypeCode = AppflgConstant.HSBS_STANDARDITEM_NUM;
         WAGES_LIST = new ArrayList<>();
         STAFF_LIST = new ArrayList<>();
@@ -85,8 +89,25 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 STAFF_LIST.add(s);
             }
         }
+    }
 
-
+    public List<String> getUINLIST() {
+        //  进入获取到员工离岗退养工资统计单据体中存在的人员信息的工号放到uinList中
+        QFilter qFilter = new QFilter("status", QCP.equals, "C");
+        List<String> UINLIST = new ArrayList<>();
+        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,status,entryentity,entryentity.nckd_name,entryentity.nckd_name.number", new QFilter[]{qFilter});
+        if (ObjectUtils.isNotEmpty(nckdStaffretiresalacounts)) {
+            for (DynamicObject nckdStaffretiresalacount : nckdStaffretiresalacounts) {
+                DynamicObjectCollection entryentity = nckdStaffretiresalacount.getDynamicObjectCollection("entryentity");
+                if (ObjectUtils.isNotEmpty(entryentity)) {
+                    for (DynamicObject dynamicObject : entryentity) {
+                        String string = dynamicObject.getDynamicObject("nckd_name").getString("number");
+                        UINLIST.add(string);
+                    }
+                }
+            }
+        }
+        return UINLIST;
     }
 
     @Override
@@ -103,6 +124,65 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         if (itemKey.equals("nckd_retirperson")) {
             showUnitList();
 
+        }
+    }
+
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+        FormOperate formOperate = (FormOperate)args.getSource();
+        String operateKey = formOperate.getOperateKey();
+        switch (operateKey){
+            case "save":
+                saveValicationValidator(args);
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void saveValicationValidator(BeforeDoOperationEventArgs args) {
+        String isDealed = this.getView().getPageCache().get("isDealed");
+
+        List<String> uinlist = getUINLIST();
+        DynamicObject dataEntity = this.getModel().getDataEntity();
+        DynamicObjectCollection entryentity = dataEntity.getDynamicObjectCollection("entryentity");
+        String errMessage = "";
+        if(ObjectUtils.isNotEmpty(entryentity)){
+            for(DynamicObject dynamicObject : entryentity){
+                String string = dynamicObject.getString("nckd_name.number");
+                if(uinlist.contains(string)){
+                    errMessage.concat(dynamicObject.getString("nckd_name.name")+",");
+                }
+            }
+            if(StringUtils.isNotEmpty(errMessage)){
+                errMessage.concat("已存在于其他离岗退养工资统计单据中，是否继续保存?");
+            }
+        }
+        if (!"true".equals(isDealed) && StringUtils.isNotEmpty(errMessage)) {
+            // 判断是否已经点击过
+            // 取消原来的操作
+            args.setCancel(true);
+            // 在用户点击确认框上的按钮后，系统会调用confirmCallBack方法
+            ConfirmCallBackListener confirmCallBackListener = new ConfirmCallBackListener("isExceed", this);
+            // 设置页面确认框，参数为：标题，选项框类型，回调监听
+            this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, confirmCallBackListener);
+            // 只执行一次
+            this.getView().getPageCache().put("isDealed", "true");
+        }
+
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        //判断回调参数id
+        if ("isExceed".equals(messageBoxClosedEvent.getCallBackId())) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                this.getView().invokeOperation("save");
+            } else if (MessageBoxResult.No.equals(messageBoxClosedEvent.getResult())) {
+                // 点击否也清除
+                this.getView().getPageCache().remove("isDealed");
+            }
         }
     }
 
@@ -348,8 +428,8 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         QFilter qFilter = new QFilter("empposrel.isprimary", QCP.equals, "1")
                 .and(qFilter1)
                 .and("empentrel.laborrelstatus.number", QCP.equals, "1190_S") // 1190_S 用工关系状态：离岗退养
-                .and("iscurrentversion", QCP.equals, "1")// 是否主任职
-                .and("number", QCP.not_in, UINLIST); // 已经维护离岗退养统计的不再重复使用
+                .and("iscurrentversion", QCP.equals, "1");// 是否主任职
+//                .and("number", QCP.not_in, UINLIST); // 已经维护离岗退养统计的不再重复使用
         lsp.setCloseCallBack(new CloseCallBack(this, "selectMUs"));
         lsp.getListFilterParameter().getQFilters().add(qFilter);
         this.getView().showForm(lsp);

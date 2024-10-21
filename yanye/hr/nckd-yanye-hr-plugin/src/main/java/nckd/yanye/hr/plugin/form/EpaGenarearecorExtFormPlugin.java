@@ -97,6 +97,8 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                             BigDecimal adjustValue = ((qualityres.subtract(qualitytarget)).divide(addValue)).multiply(addGrade).multiply(weight);
                             dynamicObject.set("adjustval",adjustValue.setScale(2, RoundingMode.HALF_UP));
                             dynamicObject.set("qualityres",qualityres.setScale(2, RoundingMode.HALF_UP));
+                            this.getView().updateView("entryentity");
+                            //重新计算完成值
                         }
                     }
                 }

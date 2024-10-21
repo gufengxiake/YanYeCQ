@@ -1,7 +1,7 @@
 package nckd.yanye.hr.plugin.form.zhaoping;
 
+import com.alibaba.fastjson.JSONObject;
 import kd.fi.dcm.common.util.CollectionUtils;
-import org.json.JSONArray;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kd.bamp.mbis.common.mega.utils.OrgViewUtils;
@@ -31,10 +31,9 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
-
-import javax.json.JsonObject;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 /**
@@ -136,10 +135,9 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         // 临时招聘 导入数据
 //        super.beforeImportEntry(e);
         logger.info("临时招聘导入数据--------");
-        QFilter qFilter = new QFilter("status", QCP.equals, "c")
+        QFilter qFilter = new QFilter("status", QCP.equals, "C")
                 .and("enable", QCP.equals, "1")
                 .and("iscurrentversion", QCP.equals, "1");
-
         Map<String, List<Object>> entryDataMap = e.getEntryDataMap();
         ObjectMapper objectMapper = new ObjectMapper();
         try {
@@ -157,30 +155,80 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
         while (var4.hasNext()){
             Map.Entry<String, List<ImportEntryData>> entry = (Map.Entry)var4.next();
             String key = entry.getKey();
-            logger.info("key:{}",key);
-            List<ImportEntryData> entryValue = (List) entry.getValue();
-            if(!CollectionUtils.isEmpty(entryValue)){
-                for (ImportEntryData importEntryData : entryValue) {
-                    logger.info("importEntryData:{},jsondata:{}",importEntryData.getEntryName(),importEntryData.getData().toString());
+            if("entryentity".equals(key)){
+                List<ImportEntryData> entryValue = (List) entry.getValue();
+                List<ImportEntryData> entryValue2 = entryValue;
+                if(!CollectionUtils.isEmpty(entryValue)){
+                    List<Object> listQuerOrg = new ArrayList<>();
+                    List<Object> listQuerPost = new ArrayList<>();
+                    String orgQuery = null;
+                    String postQuery = null;
+                    for (int i = 0; i < entryValue2.size(); i++) {
+                        // 部门
+                        JSONObject nckdRecruitorg = entryValue2.get(i).getData().getJSONObject("nckd_recruitorg");
+                        // 岗位
+                        JSONObject nckdRecruitpost = entryValue2.get(i).getData().getJSONObject("nckd_recruitpost");
+
+                        if(i == 0){
+                            orgQuery = nckdRecruitorg.getString("importprop");
+                            postQuery = nckdRecruitpost.getString("importprop");
+                        }
+                        listQuerOrg.add(nckdRecruitorg.get(orgQuery));
+                        listQuerPost.add(nckdRecruitpost.get(postQuery));
+                    }
+                    QFilter qFilterorg = new QFilter(orgQuery, QCP.in, listQuerOrg);
+                    QFilter qFilterpost = new QFilter(postQuery, QCP.in, listQuerPost);
+                    DynamicObject[] haosAdminorgf7s = BusinessDataServiceHelper.load("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilterorg});
+                    String finalOrgQuery = orgQuery;
+                    Map<String, Object> map1 =
+                            Arrays.stream(haosAdminorgf7s)
+                                    .collect(Collectors.toMap(
+                                            detail -> detail.get(finalOrgQuery).toString(),
+                                            detail -> detail.get("id"),
+                                            (existing, replacement) -> existing // 保留前面的值
+                                    ));
+
+                    DynamicObject[] hbpmPositionhrs = BusinessDataServiceHelper.load("hbpm_positionhr", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilterpost});
+                    String finalOrgQuery2 = postQuery;
+                    Map<String, Object> map2 =
+                            Arrays.stream(hbpmPositionhrs)
+                                    .collect(Collectors.toMap(
+                                            detail -> detail.get(finalOrgQuery2).toString(),
+                                            detail -> detail.get("id"),
+                                            (existing, replacement) -> existing // 保留前面的值
+                                    ));
+
+                    entryValue.stream().forEach(importEntryData -> {
+                        logger.info("修改前importEntryData:{},jsondata:{}",importEntryData.getEntryName(),importEntryData.getData().toString());
+                        // 部门
+                        JSONObject nckdRecruitorg = importEntryData.getData().getJSONObject("nckd_recruitorg");
+                        String imoportprop = nckdRecruitorg.getString("importprop");
+                        Object o = nckdRecruitorg.get(imoportprop);
+                        if(ObjectUtils.isNotEmpty(o)){
+                            Object o1 = map1.get(o);
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("importprop","id");
+                            jsonObject.put("id",o1);
+                            importEntryData.getData().remove("nckd_recruitorg");
+                            importEntryData.getData().put("nckd_recruitorg",jsonObject);
+                        }
+                        // 岗位
+                        JSONObject nckdRecruitpost = importEntryData.getData().getJSONObject("nckd_recruitpost");
+                        String imoportprop2 = nckdRecruitpost.getString("importprop");
+                        Object o2 = nckdRecruitpost.get(imoportprop2);
+                        if(ObjectUtils.isNotEmpty(o)){
+                            Object o1 = map2.get(o2);
+                            JSONObject jsonObject = new JSONObject();
+                            jsonObject.put("importprop","id");
+                            jsonObject.put("id",o1);
+                            importEntryData.getData().remove("nckd_recruitpost");
+                            importEntryData.getData().put("nckd_recruitpost",jsonObject);
+                        }
+                    });
                 }
             }
+
         }
-
-
-//        List<Object> objects = entryDataMap.get("nckd_recruitorg.number");
-//        List<Object> orgIds = new ArrayList<>();
-//        if(ObjectUtils.isNotEmpty(objects)){
-//            for (int i = 0; i < objects.size(); i++) {
-//                String s = String.valueOf(objects.get(i));
-//                logger.info("nckd_recruitorg.number"+i+":{}",s);
-//                QFilter qFilter1 = new QFilter("number", QCP.equals, s);
-//                DynamicObject haosAdminorgf7 = BusinessDataServiceHelper.loadSingle("haos_adminorgf7", "id,name,number,status,enable,iscurrentversion", new QFilter[]{qFilter, qFilter1});
-//                orgIds.add(haosAdminorgf7.getPkValue());
-//            }
-//            e.getEntryDataMap().put("nckd_recruitorg.id",orgIds);
-//            e.getEntryDataMap().remove("nckd_recruitorg.number");
-//
-//        }
 
     }
 
