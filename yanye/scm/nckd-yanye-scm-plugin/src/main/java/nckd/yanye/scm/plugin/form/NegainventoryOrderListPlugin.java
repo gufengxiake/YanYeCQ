@@ -128,6 +128,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 .stream().filter(t-> "C".equals(t.getString("producttype"))).collect(Collectors.toList());;
         negainventoryOrderEntry.set("manuentryid", CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("id") : 0);//生产工单行ID
         negainventoryOrderEntry.set("producedept",CollectionUtils.isNotEmpty(collections) ? collections.get(0).getLong("producedept.masterid") : 0);//来源单据编号
+        if (inventoryDynamicObject.getDynamicObject("nckd_org") == null){
+            return;
+        }
         negainventoryOrderEntry.set("shift",queryMpdmWorkshifts(inventoryDynamicObject.getDynamicObject("nckd_org").getPkValue()
                 ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
@@ -213,7 +216,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
                 collections.get(0).set("warehouse",nckdWarehouseDy);//仓库
                 collections.get(0).set("qty",dynamicObject.getBigDecimal("nckd_number"));//数量
                 collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//数量
-
+                if (inventoryDynamicObject.getDynamicObject("nckd_org") == null){
+                    return;
+                }
                 collections.get(0).set("shift",queryMpdmWorkshifts(inventoryDynamicObject.getDynamicObject("nckd_org").getPkValue()
                         ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
             }
@@ -274,6 +279,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         negainventoryOrderEntry.set("ownertype","bos_org");//入库货主类型
         negainventoryOrderEntry.set("owner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//入库货主
         getDynamicObject(negainventoryOrderEntry,dynamicObject);
+        if (inventoryDynamicObject.getDynamicObject("nckd_org") == null){
+            return;
+        }
         negainventoryOrderEntry.set("nckd_teamsgroups",queryMpdmWorkshifts(inventoryDynamicObject.getDynamicObject("nckd_org").getPkValue()
                 ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "im_productinbill", new DynamicObject[]{invcountscheme}, OperateOption.create());
@@ -349,6 +357,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
         negainventoryOrderEntry.set("outowner",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库货主
         negainventoryOrderEntry.set("outkeepertype","bos_org");//出库保管者类型
         negainventoryOrderEntry.set("outkeeper",dynamicObject.getDynamicObject("nckd_inventoryorg"));//出库保管者
+        if (inventoryDynamicObject.getDynamicObject("nckd_org") == null){
+            return;
+        }
         negainventoryOrderEntry.set("nckd_teamsgroups",queryMpdmWorkshifts(inventoryDynamicObject.getDynamicObject("nckd_org").getPkValue()
                 ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
         BussprocessorderTask task = new BussprocessorderTask();
@@ -476,6 +487,9 @@ public class NegainventoryOrderListPlugin extends AbstractListPlugin {
             if (CollectionUtils.isNotEmpty(collections)){
                 collections.get(0).set("baseqty",dynamicObject.getInt("nckd_basicunitnumber"));//基本数量
                 collections.get(0).set("baseunit",dynamicObject.getDynamicObject("nckd_basicunit"));//基本单位
+                if (inventoryDynamicObject.getDynamicObject("nckd_org") == null){
+                    return;
+                }
                 collections.get(0).set("nckd_teamsgroups",queryMpdmWorkshifts(inventoryDynamicObject.getDynamicObject("nckd_org").getPkValue()
                         ,getMap().get(dynamicObject.getDynamicObject("nckd_teamsgroups"))));//班次
             }

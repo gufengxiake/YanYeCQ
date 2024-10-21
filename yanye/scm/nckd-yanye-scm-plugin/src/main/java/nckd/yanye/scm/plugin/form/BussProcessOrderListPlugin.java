@@ -258,7 +258,7 @@ public class BussProcessOrderListPlugin extends AbstractListPlugin {
             negainventoryOrder.set("nckd_invcountschemeno", schemenumber);
             negainventoryOrder.set("billstatus", "A");
             negainventoryOrder.set("nckd_datasources", bussProcessOrder.getString("nckd_datasources"));
-            negainventoryOrder.set("nckd_org", bussProcessOrder.getString("org"));//适用组织
+            negainventoryOrder.set("nckd_org", bussProcessOrder.get("org"));//适用组织
             long currUserId = RequestContext.get().getCurrUserId();
             negainventoryOrder.set("creator", currUserId);
             negainventoryOrder.set("createtime", date);
