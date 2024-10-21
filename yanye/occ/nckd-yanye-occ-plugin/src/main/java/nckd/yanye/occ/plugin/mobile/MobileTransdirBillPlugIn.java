@@ -18,6 +18,9 @@ import kd.bos.form.*;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.MobileListShowParameter;
@@ -44,7 +47,8 @@ import java.util.List;
 author:wgl
 date:2024/08/21
  */
-public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
+public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin implements BeforeF7SelectListener {
+
 
     private static final String targetBill = "im_transdirbill";
 
@@ -52,13 +56,13 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
         //默认单据类型为借货归还单
-        this.getModel().setItemValueByID("billtype","1980435141796826112");
+        this.getModel().setItemValueByID("billtype", "1980435141796826112");
 
         //设置业务员
         Long orgId = RequestContext.get().getOrgId();
-        DynamicObject org= (DynamicObject) this.getModel().getValue("org");
-        if(org!=null){
-            orgId= (Long) org.getPkValue();
+        DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+        if (org != null) {
+            orgId = (Long) org.getPkValue();
         }
         if (orgId != 0) {
             // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组
@@ -74,6 +78,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                 DynamicObject user = UserServiceHelper.getCurrentUser("id,number,name");
                 if (user != null && operatorGroupId != 0) {
                     String number = user.getString("number");
+                    Long userId = user.getLong("id");
                     // 构造QFilter  operatornumber业务员   operatorgrpid 业务组id
                     QFilter Filter = new QFilter("operatornumber", QCP.equals, number)
                             .and("operatorgrpid", QCP.equals, operatorGroupId);
@@ -84,6 +89,19 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                         DynamicObject operatorItem = opreatorColl.get(0);
                         String operatorId = operatorItem.getString("id");
                         this.getModel().setItemValueByID("nckd_ywy", operatorId);
+                    }
+                    //查找业务员对应的销售片区
+                    // 构造QFilter  createorg  创建组织   operatorgrouptype 业务组类型=销售组 entryentity.operator 业务员
+                    QFilter gFilter = new QFilter("createorg.id", QCP.equals, orgId)
+                            .and("operatorgrouptype", QCP.equals, "XSZ")
+                            .and("entryentity.operator.id", QCP.equals, userId);
+                    //查找销售片区
+                    DynamicObjectCollection gcollections = QueryServiceHelper.query("bd_operatorgroup",
+                            "entryentity.nckd_regiongroup regiongroup", gFilter.toArray(), "");
+                    if (!gcollections.isEmpty()) {
+                        DynamicObject regionGroupItem = gcollections.get(0);
+                        long regionGroupId = (long) regionGroupItem.get("regiongroup");
+                        this.getModel().setItemValueByID("nckd_regiongroup", regionGroupId);
                     }
                 }
             }
@@ -97,17 +115,30 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
         if ("material".equals(propName)) {
             DynamicObject material = (DynamicObject) e.getChangeSet()[0].getNewValue();
             String name = material.getDynamicObject("masterid").getString("name");
-            DynamicObject unit=material.getDynamicObject("inventoryunit");
+            DynamicObject unit = material.getDynamicObject("inventoryunit");
             //获取当前行
             int index = e.getChangeSet()[0].getRowIndex();
-            this.getModel().setValue("materialname",name,index);
-            this.getModel().setValue("unit",unit,index);
+            this.getModel().setValue("materialname", name, index);
+            this.getModel().setValue("unit", unit, index);
         }
     }
+
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners("nckd_return");
+        BasedataEdit unitEdit = this.getView().getControl("unit");
+        if (unitEdit != null) {
+            unitEdit.addBeforeF7SelectListener(this);
+        }
+    }
+
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent evt) {
+        String name = evt.getProperty().getName();
+        if(name.equalsIgnoreCase("unit")){
+
+        }
     }
 
 
@@ -129,14 +160,14 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                         OperationResult result = OperationServiceHelper.executeOperate("submit", targetBill, new Long[]{pkId}, submitOption);
                         if (!result.isSuccess()) {
                             List<IOperateInfo> errInfo = result.getAllErrorOrValidateInfo();
-                            StringBuilder errMessage=new StringBuilder();
-                            for (IOperateInfo err:errInfo){
+                            StringBuilder errMessage = new StringBuilder();
+                            for (IOperateInfo err : errInfo) {
                                 errMessage.append(err.getMessage());
                             }
                             this.getView().showErrorNotification(errMessage.toString());
                             return;
                         }
-                        this.getModel().setValue("billstatus","B");
+                        this.getModel().setValue("billstatus", "B");
                         //this.getView().setEnable(false,"nckd_save");//锁定按钮
                         //this.getView().setEnable(false,"nckd_submit");//锁定按钮
                     } else {
@@ -223,21 +254,10 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                 Object deptId = dept.getPkValue();
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
                 Object orgId = org.getPkValue();
+                DynamicObject ph = (DynamicObject) this.getModel().getValue("nckd_regiongroup", 0);
                 //从部门 仓库设置基础资料中获取对应仓库
-                // 构造QFilter
-                QFilter sFilter = new QFilter("createorg", QCP.equals, orgId)
-                        .and("status", QCP.equals, "C")
-                        .and("nckd_bm", QCP.equals, deptId);
-                //查找部门对应仓库
-                DynamicObjectCollection depcollections = QueryServiceHelper.query("nckd_bmcksz",
-                        "id,nckd_ck.id stockId", sFilter.toArray(), "modifytime");
-                Object stockId=null;
-                if (!depcollections.isEmpty()) {
-                    DynamicObject stockItem = depcollections.get(0);
-                     stockId = stockItem.get("stockId");
-                    //depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
-                }
-
+                //部门对应仓库
+                DynamicObject depStock = this.getStock(orgId, deptId, ph, "0");
                 int row = 0;
                 for (DynamicObject object : collections) {
                     Object matId = object.get("number");//物料编码
@@ -251,7 +271,7 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
                     this.getModel().setItemValueByID("unit", unitId, row);
                     this.getModel().setValue("qty", qty, row);
                     this.getModel().setItemValueByID("outwarehouse", stock, row);//调出仓库
-                    this.getModel().setItemValueByID("warehouse", stockId, row);//调入仓库
+                    this.getModel().setValue("warehouse", depStock, row);//调入仓库
                     this.getModel().setValue("inlotnumber", lotNum, row);
                     //this.getModel().setItemValueByNumber("lot", lotNum, row);
                     row++;
@@ -357,10 +377,10 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
     更新调拨申请单
      */
     private void update(Long pkId) {
-        DynamicObject dataObj=BusinessDataServiceHelper.loadSingle(pkId,targetBill);
+        DynamicObject dataObj = BusinessDataServiceHelper.loadSingle(pkId, targetBill);
         //业务员
         DynamicObject ywy = (DynamicObject) this.getModel().getValue("nckd_ywy");
-        dataObj.set("nckd_ywy",ywy);
+        dataObj.set("nckd_ywy", ywy);
         SaveServiceHelper.update(dataObj);
     }
 
@@ -392,6 +412,51 @@ public class MobileTransdirBillPlugIn extends AbstractMobFormPlugin {
             pkId = (Long) collections.get("id");
         }
         return pkId;
+    }
+
+    //获取部门对应仓库
+    private DynamicObject getStock(Object orgId, Object deptId, DynamicObject pq, String jh) {
+        DynamicObject depStock = null;
+        //从部门 仓库设置基础资料中获取对应仓库
+        // 构造QFilter
+        QFilter depqFilter = new QFilter("createorg", QCP.equals, orgId)
+                .and("status", QCP.equals, "C")
+                .and("nckd_bm", QCP.equals, deptId)
+                .and("nckd_isjh", QCP.equals, jh);//借货仓
+        boolean pqSelect = false;
+        if (pq != null) {
+            Object pqPkId = pq.getPkValue();
+            depqFilter.and("nckd_regiongroup", QCP.equals, pqPkId);
+            pqSelect = true;
+        } else {
+            depqFilter.and("nckd_regiongroup", QCP.equals, 0L);
+        }
+        //查找部门对应仓库
+        DynamicObjectCollection depcollections = QueryServiceHelper.query("nckd_bmcksz",
+                "id,nckd_ck.id stockId", depqFilter.toArray(), "modifytime");
+        if (!depcollections.isEmpty()) {
+            DynamicObject stockItem = depcollections.get(0);
+            String stockId = stockItem.getString("stockId");
+            depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+        } else if (pqSelect) {
+            // 构造QFilter
+            QFilter nFilter = new QFilter("createorg", QCP.equals, orgId)
+                    .and("status", QCP.equals, "C")
+                    .and("nckd_bm", QCP.equals, deptId)
+                    .and("nckd_isjh", QCP.equals, jh)//借货仓
+                    .and("nckd_regiongroup", QCP.equals, 0L);
+            //查找部门对应仓库
+            DynamicObjectCollection query = QueryServiceHelper.query("nckd_bmcksz",
+                    "id,nckd_ck.id stockId", nFilter.toArray(), "modifytime");
+            if (!query.isEmpty()) {
+                DynamicObject stockItem = query.get(0);
+                String stockId = stockItem.getString("stockId");
+                depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+            }
+
+        }
+
+        return depStock;
     }
 
 }

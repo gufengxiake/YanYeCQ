@@ -27,6 +27,7 @@ public class TransdirOperatePlugIn extends AbstractOperationServicePlugIn {
         e.getFieldKeys().add("outdept");//调出部门
         e.getFieldKeys().add("warehouse");//调入仓库
         e.getFieldKeys().add("outwarehouse");//调出仓库
+        e.getFieldKeys().add("nckd_regiongroup");//片区
     }
 
     @Override

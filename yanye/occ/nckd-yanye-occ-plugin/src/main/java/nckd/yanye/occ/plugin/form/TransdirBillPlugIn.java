@@ -18,6 +18,7 @@ import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
@@ -293,19 +294,10 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                 DynamicObject org = (DynamicObject) this.getModel().getValue("org", 0);
                 Object orgId = org.getPkValue();
                 //从部门 仓库设置基础资料中获取对应仓库
-                // 构造QFilter
-                QFilter sFilter = new QFilter("createorg", QCP.equals, orgId)
-                        .and("status", QCP.equals, "C")
-                        .and("nckd_bm", QCP.equals, deptId);
-
-                //查找部门对应仓库
-                DynamicObjectCollection stockDycll = QueryServiceHelper.query("nckd_bmcksz",
-                        "id,nckd_ck.number number", sFilter.toArray(), "modifytime");
-                String number = "";
-                if (!stockDycll.isEmpty()) {
-                    DynamicObject stockItem = stockDycll.get(0);
-                    number = stockItem.getString("number");
-                }
+                DynamicObject ph=(DynamicObject)this.getModel().getValue("nckd_regiongroup",0);
+                //从部门 仓库设置基础资料中获取对应仓库
+                //部门对应仓库
+                DynamicObject depStock = this.getStock(orgId,deptId,ph,"0");
                 int row = 0;
                 for (DynamicObject object : collections) {
                     Object matId = object.get("number");//物料编码
@@ -315,7 +307,7 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
                     this.getModel().setItemValueByNumber("material", matId.toString(), row);
                     this.getModel().setValue("qty", qty, row);
                     this.getModel().setItemValueByNumber("outwarehouse", stockNumber, row);//调出仓库
-                    this.getModel().setItemValueByNumber("warehouse", number, row);//调入仓库
+                    this.getModel().setValue("warehouse", depStock, row);//调入仓库
                     this.getModel().setValue("lotnumber", lotNum, row);//调出批号
                     this.getModel().setValue("inlotnumber", lotNum, row);//调入批号
                     this.getModel().setItemValueByNumber("lot", lotNum, row);//调出批号主档
@@ -325,5 +317,50 @@ public class TransdirBillPlugIn extends AbstractBillPlugIn implements BeforeF7Se
             }
 
         }
+    }
+
+    //获取部门对应仓库
+    private DynamicObject getStock(Object orgId, Object deptId, DynamicObject pq,String jh) {
+        DynamicObject depStock = null;
+        //从部门 仓库设置基础资料中获取对应仓库
+        // 构造QFilter
+        QFilter depqFilter = new QFilter("createorg", QCP.equals, orgId)
+                .and("status", QCP.equals, "C")
+                .and("nckd_bm", QCP.equals, deptId)
+                .and("nckd_isjh", QCP.equals, jh);//借货仓
+        boolean pqSelect = false;
+        if (pq != null) {
+            Object pqPkId = pq.getPkValue();
+            depqFilter.and("nckd_regiongroup", QCP.equals, pqPkId);
+            pqSelect = true;
+        }else {
+            depqFilter.and("nckd_regiongroup", QCP.equals, 0L);
+        }
+        //查找部门对应仓库
+        DynamicObjectCollection depcollections = QueryServiceHelper.query("nckd_bmcksz",
+                "id,nckd_ck.id stockId", depqFilter.toArray(), "modifytime");
+        if (!depcollections.isEmpty()) {
+            DynamicObject stockItem = depcollections.get(0);
+            String stockId = stockItem.getString("stockId");
+            depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+        }else if(pqSelect){
+            // 构造QFilter
+            QFilter nFilter = new QFilter("createorg", QCP.equals, orgId)
+                    .and("status", QCP.equals, "C")
+                    .and("nckd_bm", QCP.equals, deptId)
+                    .and("nckd_isjh", QCP.equals, jh)//借货仓
+                    .and("nckd_regiongroup", QCP.equals, 0L);
+            //查找部门对应仓库
+            DynamicObjectCollection query = QueryServiceHelper.query("nckd_bmcksz",
+                    "id,nckd_ck.id stockId", nFilter.toArray(), "modifytime");
+            if (!query.isEmpty()) {
+                DynamicObject stockItem = query.get(0);
+                String stockId = stockItem.getString("stockId");
+                depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
+            }
+
+        }
+
+        return depStock;
     }
 }
