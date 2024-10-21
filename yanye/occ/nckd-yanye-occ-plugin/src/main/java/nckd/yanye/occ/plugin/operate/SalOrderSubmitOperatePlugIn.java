@@ -2,12 +2,16 @@ package nckd.yanye.occ.plugin.operate;
 
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.entity.ExtendedDataEntity;
+import kd.bos.entity.formula.RowDataModel;
 import kd.bos.entity.operate.result.OperateErrorInfo;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
+import kd.bos.entity.plugin.AddValidatorsEventArgs;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
 import kd.bos.entity.plugin.args.BeginOperationTransactionArgs;
 import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
+import kd.bos.entity.validate.AbstractValidator;
 import kd.bos.entity.validate.ErrorLevel;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
@@ -38,19 +42,6 @@ public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn 
     }
 
     @Override
-    public void beforeExecuteOperationTransaction(BeforeOperationArgs e) {
-        super.beforeExecuteOperationTransaction(e);
-        DynamicObject[] salOrders = e.getDataEntities();
-        this.checkSalOrderAuxPty(salOrders);
-//        this.checkSalOrderPriceAndTax(salOrders);
-    }
-
-    @Override
-    public void beginOperationTransaction(BeginOperationTransactionArgs e) {
-        super.beginOperationTransaction(e);
-    }
-
-    @Override
     public void endOperationTransaction(EndOperationTransactionArgs e) {
         super.endOperationTransaction(e);
         DynamicObject[] deliverRecords = e.getDataEntities();
@@ -70,65 +61,6 @@ public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn 
         }
     }
 
-    /**
-     * 校验销售订单物料辅助属性是否需要填写
-     * @param salOrders
-     */
-    public void checkSalOrderAuxPty(DynamicObject[] salOrders){
-        Map<Long, Boolean> materialAuxPty = this.getMaterialAuxPty(salOrders);
-        if (materialAuxPty.isEmpty()){
-            return;
-        }
-        List<Object> seq = new ArrayList<>();
-        for (DynamicObject dataObject : salOrders) {
-            DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
-            for (DynamicObject row : billentry) {
-                if(row.getDynamicObject("material") == null) {
-                    continue;
-                }
-                long key = (long) row.getDynamicObject("material").getDynamicObject("masterid").getPkValue();
-                if (materialAuxPty.containsKey(key) && materialAuxPty.get(key) && row.get("auxpty") == null){
-                    seq.add(row.get("Seq"));
-                }
-            }
-        }
-        if (!seq.isEmpty()){
-            throw new KDBizException("第"+ seq +"行物料启用辅助属性[等级]但是未录入,请填写!");
-        }
-    }
-    /**
-     * 获取物料是否启用辅助属性
-     * @param salOrders
-     * @return
-     */
-    public Map<Long,Boolean> getMaterialAuxPty(DynamicObject[] salOrders){
-        Map<Long,Boolean> isAuxPty = new HashMap<>();
-        List<Long> materialIds = new ArrayList<>();
-        for (DynamicObject dataObject : salOrders) {
-            DynamicObjectCollection billentry = dataObject.getDynamicObjectCollection("billentry");
-            billentry.forEach((row) ->{
-                if(row.getDynamicObject("material") != null){
-                    materialIds.add((Long) row.getDynamicObject("material").getDynamicObject("masterid").getPkValue());
-                }
-            });
-        }
-        if(materialIds.isEmpty()){
-            return isAuxPty;
-        }
-        QFilter mFilter = new QFilter("id", QCP.in,materialIds.toArray(new Long[0]));
-        DynamicObjectCollection bdMaterial = QueryServiceHelper.query("bd_material", "id,isuseauxpty", new QFilter[]{mFilter});
-        if (bdMaterial != null) {
-            bdMaterial.forEach((e)->{
-                long key = e.getLong("id");
-                if (e.getBoolean("isuseauxpty")){
-                    isAuxPty.put(key,true);
-                }else{
-                    isAuxPty.put(key,false);
-                }
-            });
-        }
-        return isAuxPty;
-    }
 
     public void checkSalOrderPriceAndTax(DynamicObject[] salOrders){
         Map<String,Map<Long,BigDecimal>> checkMaps = this.getSalContract(salOrders);
@@ -178,5 +110,105 @@ public class SalOrderSubmitOperatePlugIn extends AbstractOperationServicePlugIn 
         return checkMaps;
     }
 
+    @Override
+    public void onAddValidators(AddValidatorsEventArgs e) {
+        super.onAddValidators(e);
+        e.addValidator(new MaterialAuxPtyCheckValidator());
+    }
+    /**
+     * 自定义操作校验器
+     *
+     * @author
+     */
+    static class MaterialAuxPtyCheckValidator extends AbstractValidator {
 
+        /**
+         * 返回校验器的主实体：系统将自动对此实体数据，逐行进行校验
+         */
+        @Override
+        public String getEntityKey() {
+            return this.entityKey;
+        }
+
+        /**
+         * 给校验器传入上下文环境及单据数据包之后，调用此方法；
+         *
+         * @remark 自定义校验器，可以在此事件进行本地变量初始化：如确认需要校验的主实体
+         */
+        @Override
+        public void initializeConfiguration() {
+            super.initializeConfiguration();
+            this.entityKey = "billentry";
+        }
+
+        /**
+         * 校验器初始化完毕，从单据数据包中，提取出了主实体数据行，开始校验前，调用此方法；
+         *
+         * @remark 此方法，比initializeConfiguration更晚调用；
+         * 在此方法调用this.getDataEntities()，可以获取到需校验的主实体数据行
+         * 不能在本方法中，确认需要校验的主实体
+         */
+        @Override
+        public void initialize() {
+            super.initialize();
+        }
+
+
+        /**
+         * 执行自定义校验
+         */
+        @Override
+        public void validate() {
+            Map<Long, Boolean> materialAuxPty = this.getMaterialAuxPty();
+            if (materialAuxPty.isEmpty()){
+                return;
+            }
+            RowDataModel rowDataModel = new RowDataModel(this.entityKey, this.getValidateContext().getSubEntityType());
+            for (ExtendedDataEntity rowDataEntity : this.getDataEntities()) {
+                rowDataModel.setRowContext(rowDataEntity.getDataEntity());
+                if(rowDataModel.getValue("material") == null) {
+                    continue;
+                }
+                DynamicObject material = ((DynamicObject) rowDataModel.getValue("material")).getDynamicObject("masterid");
+                long key = (long) material.getPkValue();
+                if (materialAuxPty.containsKey(key) && materialAuxPty.get(key) && rowDataModel.getValue("auxpty") == null){
+                    this.addErrorMessage(rowDataEntity, "物料["+material.getString("number")+"]启用辅助属性[等级]但是未录入,请填写!");
+                }
+            }
+
+        }
+        /**
+         * 获取物料是否启用辅助属性
+         * @return
+         */
+        public Map<Long,Boolean> getMaterialAuxPty(){
+            Map<Long,Boolean> isAuxPty = new HashMap<>();
+            RowDataModel rowDataModel = new RowDataModel(this.entityKey, this.getValidateContext().getSubEntityType());
+            List<Long> materialIds = new ArrayList<>();
+            for (ExtendedDataEntity dataEntity : this.getDataEntities()) {
+                rowDataModel.setRowContext(dataEntity.getDataEntity());
+                if(rowDataModel.getValue("material") != null){
+                    DynamicObject material = ((DynamicObject) rowDataModel.getValue("material")).getDynamicObject("masterid");
+                    materialIds.add((Long) material.getPkValue());
+                }
+            }
+
+            if(materialIds.isEmpty()){
+                return isAuxPty;
+            }
+            QFilter mFilter = new QFilter("id", QCP.in,materialIds.toArray(new Long[0]));
+            DynamicObjectCollection bdMaterial = QueryServiceHelper.query("bd_material", "id,isuseauxpty", new QFilter[]{mFilter});
+            if (bdMaterial != null) {
+                bdMaterial.forEach((e)->{
+                    long key = e.getLong("id");
+                    if (e.getBoolean("isuseauxpty")){
+                        isAuxPty.put(key,true);
+                    }else{
+                        isAuxPty.put(key,false);
+                    }
+                });
+            }
+            return isAuxPty;
+        }
+    }
 }
