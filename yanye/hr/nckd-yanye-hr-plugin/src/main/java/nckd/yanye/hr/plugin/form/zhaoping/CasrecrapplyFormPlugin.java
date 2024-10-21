@@ -1,5 +1,7 @@
 package nckd.yanye.hr.plugin.form.zhaoping;
 
+import kd.fi.dcm.common.util.CollectionUtils;
+import org.json.JSONArray;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kd.bamp.mbis.common.mega.utils.OrgViewUtils;
@@ -29,6 +31,8 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.org.OrgUnitServiceHelper;
 import org.apache.commons.lang3.ObjectUtils;
+
+import javax.json.JsonObject;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -146,19 +150,20 @@ public class CasrecrapplyFormPlugin extends AbstractBillPlugIn implements Before
             throw new RuntimeException(ex);
         }
 
-        Map source = (Map) e.getSource();
-        Object entryentity = source.get("entryentity");
-        if(ObjectUtils.isNotEmpty(entryentity)){
-            // 存在导入数据
-            // 转换为 JSON 字符串
-            try {
-                String sourceJsonString = objectMapper.writeValueAsString(source);
-                logger.info("sourceJsonString:{}",sourceJsonString);
-            } catch (JsonProcessingException ex) {
 
-                throw new RuntimeException(ex);
+        Map<String, List<ImportEntryData>> source = (Map)e.getSource();
+        Set<Map.Entry<String, List<ImportEntryData>>> entries = source.entrySet();
+        Iterator var4 = entries.iterator();
+        while (var4.hasNext()){
+            Map.Entry<String, List<ImportEntryData>> entry = (Map.Entry)var4.next();
+            String key = entry.getKey();
+            logger.info("key:{}",key);
+            List<ImportEntryData> entryValue = (List) entry.getValue();
+            if(!CollectionUtils.isEmpty(entryValue)){
+                for (ImportEntryData importEntryData : entryValue) {
+                    logger.info("importEntryData:{},jsondata:{}",importEntryData.getEntryName(),importEntryData.getData().toString());
+                }
             }
-
         }
 
 
