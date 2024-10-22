@@ -83,7 +83,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 WAGES_LIST.add(s);
             }
         }
-        if(StringUtils.isEmpty(AppflgConstant.HR_ZHIJI_STAFF)){
+        if(StringUtils.isNotEmpty(AppflgConstant.HR_ZHIJI_STAFF)){
             String[] split = AppflgConstant.HR_ZHIJI_STAFF.split(",");
             for(String s : split){
                 STAFF_LIST.add(s);

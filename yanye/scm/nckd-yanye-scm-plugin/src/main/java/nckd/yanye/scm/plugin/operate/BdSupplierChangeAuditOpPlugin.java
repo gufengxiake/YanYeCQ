@@ -123,6 +123,12 @@ public class BdSupplierChangeAuditOpPlugin extends AbstractOperationServicePlugI
                                 }
                                 throw new KDBizException("保存信息到供应商失败：" + stringBuilder);
                             }
+                            //获取编码规则(再取一遍编码规则)
+                            CodeRuleInfo newCodeRule = CodeRuleServiceHelper.getCodeRule(bdSupplier.getDataEntityType().getName(), bdSupplier, null);
+                            String newNumber = CodeRuleServiceHelper.getNumber(newCodeRule, bdSupplier);
+                            bdSupplier.set("number",newNumber);
+                            SaveServiceHelper.update(bdSupplier);
+
                             DynamicObject bd_address = BusinessDataServiceHelper.newDynamicObject("bd_address");
                             bd_address.set("number", number);
                             bd_address.set("name", entity.getString("nckd_addsupplier") + "地址");

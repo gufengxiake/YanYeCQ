@@ -9,20 +9,31 @@ import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.FormShowParameter;
 import kd.bos.form.control.Control;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
+import kd.bos.list.ListShowParameter;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.org.OrgUnitServiceHelper;
+import kd.bos.servicehelper.user.UserServiceHelper;
 
 /**
  * @author husheng
  * @date 2024-09-25 14:33
- * @description
+ * @description 选择组织（nckd_selectorg）
  */
-public class SelectorgFormPlugin extends AbstractBillPlugIn {
+public class SelectorgFormPlugin extends AbstractBillPlugIn implements BeforeF7SelectListener {
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
+
+        BasedataEdit orgEdit = this.getControl("nckd_org");
+        orgEdit.addBeforeF7SelectListener(this);
+        BasedataEdit departmentEdit = this.getControl("nckd_department");
+        departmentEdit.addBeforeF7SelectListener(this);
 
         this.addClickListeners("btnok");
     }
@@ -31,6 +42,12 @@ public class SelectorgFormPlugin extends AbstractBillPlugIn {
     public void afterCreateNewData(EventObject e) {
         super.afterCreateNewData(e);
 
+        // 当前用户所属部门
+        long userMainOrgId = UserServiceHelper.getUserMainOrgId(UserServiceHelper.getCurrentUserId());
+        // 申请部门
+        this.getModel().setValue("nckd_department", userMainOrgId);
+
+        // 物料分录
         FormShowParameter showParameter = this.getView().getFormShowParameter();
         Map<String, Object> customParams = showParameter.getCustomParams();
         List<String> materialnumberList = (List<String>) customParams.get("materialnumberList");
@@ -56,8 +73,9 @@ public class SelectorgFormPlugin extends AbstractBillPlugIn {
         if (key.equals("btnok")) {
             Map<String, Object> map = new HashMap<>();
             DynamicObject org = (DynamicObject) this.getModel().getValue("nckd_org");
+            DynamicObject department = (DynamicObject) this.getModel().getValue("nckd_department");
             DynamicObjectCollection entryentity = this.getModel().getEntryEntity("nckd_entryentity");
-            if (org != null && entryentity.size() > 0) {
+            if (org != null && department != null && entryentity.size() > 0) {
 //                FormShowParameter showParameter = this.getView().getFormShowParameter();
 //                Map<String, Object> customParams = showParameter.getCustomParams();
 //                List<Long> orgIds = (List<Long>) customParams.get("orgIds");
@@ -101,16 +119,39 @@ public class SelectorgFormPlugin extends AbstractBillPlugIn {
                 QFilter qFilter8 = new QFilter("masterid", QCP.in, materialIdList).and("createorg", QCP.equals, org.getLong("id"));
                 boolean exists8 = QueryServiceHelper.exists("bd_inspect_cfg", qFilter8.toArray());
 
-                if(exists1 || exists2 || exists3 || exists4 || exists5 || exists6 || exists7 || exists8){
+                if (exists1 || exists2 || exists3 || exists4 || exists5 || exists6 || exists7 || exists8) {
                     throw new KDBizException("属性申请组织对应的物料存在属性信息!");
                 }
 
                 map.put("orgId", org.getLong("id"));
+                map.put("department", department);
                 map.put("entryentity", entryentity);
                 //返回数据
                 this.getView().returnDataToParent(map);
                 this.getView().close();
             }
+        }
+    }
+
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent beforeF7SelectEvent) {
+        String name = beforeF7SelectEvent.getProperty().getName();
+        ListShowParameter showParameter = (ListShowParameter) beforeF7SelectEvent.getFormShowParameter();
+        if (name.equals("nckd_org")) {
+//            QFilter filter = new QFilter("orgpattern.number", QCP.in, new String[]{"Orgform01", "Orgform01-100", "Orgform02", "Orgform03"});
+//            showParameter.getListFilterParameter().setFilter(filter);
+        } else if (name.equals("nckd_department")) {
+            DynamicObject org = (DynamicObject) this.getModel().getValue("nckd_org");
+            if (org == null) {
+                throw new KDBizException("请先选择属性申请组织");
+            }
+
+            List<Long> longs = new ArrayList<>();
+            longs.add(org.getLong("id"));
+            List<Long> allSubordinateOrgIds = OrgUnitServiceHelper.getAllSubordinateOrgs("01", longs, true);
+
+            QFilter qFilter = new QFilter("belongcompany", QCP.in, allSubordinateOrgIds);
+            showParameter.getListFilterParameter().setFilter(qFilter);
         }
     }
 }

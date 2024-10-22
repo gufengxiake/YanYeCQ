@@ -39,7 +39,6 @@ public class BdSupplierChangeSubmitOpPlugin extends AbstractOperationServicePlug
         fieldKeys.add("nckd_societycreditcode");
         fieldKeys.add("nckd_artificialperson");
         fieldKeys.add("nckd_regcapital");
-        fieldKeys.add("nckd_basedatafield");
         fieldKeys.add("nckd_linkman");
         fieldKeys.add("nckd_phone");
         fieldKeys.add("nckd_address");
@@ -99,10 +98,6 @@ public class BdSupplierChangeSubmitOpPlugin extends AbstractOperationServicePlug
                                 String regcapital = entity.getString("nckd_regcapital");
                                 if (StringUtils.isEmpty(regcapital)){
                                     this.addErrorMessage(dataEntity, String.format("单据(%s)的修改明细信息：注册资本为空，请先填写供应商分组",data.getString("billno")));
-                                }
-                                DynamicObject basedatafield = entity.getDynamicObject("nckd_basedatafield");
-                                if (basedatafield == null){
-                                    this.addErrorMessage(dataEntity, String.format("单据(%s)的修改明细信息：归属集团供应商名称（实际控制人）为空，请先填写供应商分组",data.getString("billno")));
                                 }
                                 String linkman = entity.getString("nckd_linkman");
                                 if (StringUtils.isEmpty(linkman)){
