@@ -196,8 +196,6 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
             TextProp artificialpersonProp = (TextProp) artificialpersonEdit.getProperty();
             TextEdit regcapitalEdit = this.getControl("nckd_regcapital");//注册资本
             TextProp regcapitalProp = (TextProp) regcapitalEdit.getProperty();
-            BasedataEdit basedatafieldEdit = this.getControl("nckd_basedatafield");//归属集团供应商名称（实际控制人）
-            BasedataProp basedatafieldProp = (BasedataProp) basedatafieldEdit.getProperty();
             TextEdit linkmanEdit = this.getControl("nckd_linkman");//联系人
             TextProp linkmanProp = (TextProp) linkmanEdit.getProperty();
             TextEdit phoneEdit = this.getControl("nckd_phone");//联系电话
@@ -240,8 +238,6 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 artificialpersonProp.setMustInput(true);
                 regcapitalEdit.setMustInput(true);
                 regcapitalProp.setMustInput(true);
-                basedatafieldEdit.setMustInput(true);
-                basedatafieldProp.setMustInput(true);
                 linkmanEdit.setMustInput(true);
                 linkmanProp.setMustInput(true);
                 phoneEdit.setMustInput(true);
@@ -293,8 +289,6 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
                 artificialpersonProp.setMustInput(false);
                 regcapitalEdit.setMustInput(true);
                 regcapitalProp.setMustInput(false);
-                basedatafieldEdit.setMustInput(true);
-                basedatafieldProp.setMustInput(false);
                 linkmanEdit.setMustInput(true);
                 linkmanProp.setMustInput(false);
                 phoneEdit.setMustInput(true);
@@ -667,25 +661,28 @@ public class BdSupplierChangeFromplugin extends AbstractBillPlugIn {
         if ("audit".equals(key)){
             OperationResult operationResult = e.getOperationResult();
             if (operationResult.isSuccess()){
-                if (entity.size() > 0){
-                    for (DynamicObject entry : entity) {
-                        String changeAfter = entry.getString("nckd_changeafter");
-                        if (StringUtils.isEmpty(changeAfter)){
-                            String addSupplier = entry.getString("nckd_addsupplier");
-                            DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name",QCP.equals,addSupplier)});
-                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
-                            if (!pushzhwl.isSuccess()){
-                                this.getView().showMessage(pushzhwl.getMessage());
+                String nckdMerchanttype = this.getModel().getValue("nckd_merchanttype").toString();
+                if ("carrier".equals(nckdMerchanttype)){
+                    if (entity.size() > 0){
+                        for (DynamicObject entry : entity) {
+                            String changeAfter = entry.getString("nckd_changeafter");
+                            if (StringUtils.isEmpty(changeAfter)){
+                                String addSupplier = entry.getString("nckd_addsupplier");
+                                DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name",QCP.equals,addSupplier)});
+                                OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                                if (!pushzhwl.isSuccess()){
+                                    this.getView().showMessage(pushzhwl.getMessage());
+                                }
+                                continue;
                             }
-                            continue;
-                        }
-                        if ("2".equals(changeAfter)){
-                            DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
-                            supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
-                            OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
-                            if (!pushzhwl.isSuccess()){
-                                this.getView().showMessage(pushzhwl.getMessage());
-                                return;
+                            if ("2".equals(changeAfter)){
+                                DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
+                                supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
+                                OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                                if (!pushzhwl.isSuccess()){
+                                    this.getView().showMessage(pushzhwl.getMessage());
+                                    return;
+                                }
                             }
                         }
                     }
