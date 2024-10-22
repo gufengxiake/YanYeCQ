@@ -203,7 +203,7 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin implements
         // 查询定调薪信息
         DynamicObject[] records = BusinessDataServiceHelper.load(
                 "hcdm_salaryadjrecord",
-                "amount,bsed,bsled",
+                "amount,bsed,bsled,salaryadjfile,standarditem,datastatus,iscurrentversion",
                 new QFilter[]{
                         // 数据状态
                         new QFilter("datastatus", QCP.equals, "1"),
@@ -215,10 +215,10 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin implements
                         new QFilter("salaryadjfile.adminorg.number", QCP.equals, orgNumber),
                         // 定调薪项目：绩效工资基数
                         new QFilter("standarditem.name", QCP.equals, "绩效工资基数"),
-                        // 业务归属日期大于当前日期
-                        new QFilter("bsed", QCP.less_than, bizDate),
-                        // 业务归属日期小于当前日期
-                        new QFilter("bsled", QCP.large_than, bizDate),
+                        // 生效日期小于业务归属日期
+                        new QFilter("bsed", QCP.less_equals, bizDate),
+                        // 失效日期大于业务归属日期
+                        new QFilter("bsled", QCP.large_equals, bizDate),
                 }
         );
 

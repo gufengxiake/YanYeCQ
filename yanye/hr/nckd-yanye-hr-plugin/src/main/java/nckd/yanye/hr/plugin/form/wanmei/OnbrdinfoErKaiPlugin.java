@@ -341,16 +341,6 @@ public class OnbrdinfoErKaiPlugin extends AbstractBillPlugIn {
         }
     }
 
-
-    @Override
-    public void afterBindData(EventObject e) {
-        // 如果是新增页面。去掉 入职操作
-        BillShowParameter bsp = (BillShowParameter) this.getView().getFormShowParameter();
-        if (bsp.getStatus() == OperationStatus.ADDNEW) {
-            this.getModel().setValue("affaction", null);
-        }
-    }
-
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         // 必录提示
