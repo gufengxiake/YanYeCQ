@@ -49,9 +49,11 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                     Date startyear = scheme.getDate("startyear");//考核年度
                     Long cycletype = scheme.getLong("cycletype.id");//周期类型
                     Long cyclescheme = scheme.getLong("cyclescheme.id");//周期方案
+                    Long khlhzbId = dynamicObject.getLong("customfiled4");
                     //构造考核量化指标填报查询条件 周期类型，周期方案，考核量化指标
                     QFilter quantiFilter = new QFilter("nckd_cycletype.id", QCP.equals,cycletype).and("nckd_cycleprogramme.id",QCP.equals,cyclescheme)
-                            .and("nckd_year",QCP.equals,startyear).and("nckd_assessment",QCP.equals,period);
+                            .and("nckd_year",QCP.equals,startyear).and("nckd_assessment",QCP.equals,period)
+                            .and("entryentity.nckd_examinetarget.id",QCP.equals,khlhzbId);
                     DynamicObject[] quantizationfillingObject = BusinessDataServiceHelper.load("nckd_quantizationfilling" ,"id,entryentity.nckd_completevalue,entryentity.nckd_examinetarget,entryentity.nckd_completevalue" , new QFilter[]{quantiFilter});
                     //取第一条核量化指标填报数据
                     DynamicObject quantiDynamicObject = quantizationfillingObject[0];
