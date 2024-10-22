@@ -90,14 +90,10 @@ public class EpaGenarearecorExtFormPlugin extends AbstractFormPlugin {
                                 && qualitytarget != null
                                 && addValue != null
                                 && addGrade != null
-                                && qualityres.compareTo(BigDecimal.ZERO) > 0
-                                && qualitytarget.compareTo(BigDecimal.ZERO) > 0
-                                && addValue.compareTo(BigDecimal.ZERO) > 0
-                                && addGrade.compareTo(BigDecimal.ZERO) > 0){
+                                && addValue.compareTo(BigDecimal.ZERO) != 0){
                             BigDecimal adjustValue = ((qualityres.subtract(qualitytarget)).divide(addValue)).multiply(addGrade).multiply(weight);
                             dynamicObject.set("adjustval",adjustValue.setScale(2, RoundingMode.HALF_UP));
                             dynamicObject.set("qualityres",qualityres.setScale(2, RoundingMode.HALF_UP));
-                            dynamicObject.set("customfiled5",weight.toString());
                             dynamicObject.set("soe",adjustValue.add(dynamicObject.getBigDecimal("beforeadjust")));
                             this.getView().updateView("entryentity");
                             //重新计算完成值
