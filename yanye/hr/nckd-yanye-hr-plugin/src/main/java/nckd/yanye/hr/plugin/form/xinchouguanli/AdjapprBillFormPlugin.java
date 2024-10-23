@@ -600,7 +600,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 // 查询
                 List<SalaryCountAmountMatchResult> salaryCountAmountMatchResults =
                         getSalaryCountAmountMatchResults(
-                                salaryStdId, itemId, preGradeId, finalAmount, rankList, "down", "3", "1"
+                                salaryStdId, itemId, gradeId, finalAmount, rankList, "down", "3", "1"
                         );
 
                 finalRankId = salaryCountAmountMatchResults.stream()
@@ -608,9 +608,10 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                         .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
 
                 if (finalRankId == null) {
-                    Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream().filter(r -> "down".equals(r.getUnionId()))
+                    Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream()
+                            .filter(r -> "down".equals(r.getUnionId()))
                             .findFirst().map(SalaryCountAmountMatchResult::getPositionInfo).orElse(null);
-                    Pair<Long, Long> longLongPair = positionInfo.get(preGradeId).get(0);
+                    Pair<Long, Long> longLongPair = positionInfo.get(gradeId).get(0);
                     finalRankId = positionInfoCheck(longLongPair);
                 }
             }
