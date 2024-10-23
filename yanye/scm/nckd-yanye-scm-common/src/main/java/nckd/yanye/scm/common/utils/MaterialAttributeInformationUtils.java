@@ -419,6 +419,9 @@ public class MaterialAttributeInformationUtils {
         // 保存
         OperationResult saveOperate = SaveServiceHelper.saveOperate(entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
         if (saveOperate.isSuccess()) {
+            // 设置id
+            List<Object> successPkIds = saveOperate.getSuccessPkIds();
+            dynamicObject.set("id", successPkIds.get(0));
             // 提交
             OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
             if (submitOperate.isSuccess()) {

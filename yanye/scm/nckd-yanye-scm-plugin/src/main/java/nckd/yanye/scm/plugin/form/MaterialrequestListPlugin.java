@@ -336,6 +336,9 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             OperationResult operationResult = OperationServiceHelper.executeOperate("save", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
             if (operationResult.isSuccess()) {
                 if (!"3".equals(billType)) {
+                    // 设置id
+                    List<Object> successPkIds = operationResult.getSuccessPkIds();
+                    materialmaintenanObject.set("id", successPkIds.get(0));
                     // 提交
                     OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
                 }
