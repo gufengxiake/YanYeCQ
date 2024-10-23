@@ -1,11 +1,23 @@
 package nckd.yanye.tmc.plugin.form;
 
 import kd.bos.bill.AbstractBillPlugIn;
+import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.entity.MainEntityType;
 import kd.bos.entity.datamodel.events.ChangeData;
+import kd.bos.entity.datamodel.events.GetEntityTypeEventArgs;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.property.MulBasedataProp;
+import kd.bos.form.field.BasedataEdit;
+import nckd.yanye.tmc.common.AppflgConstant;
+import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EventObject;
+import java.util.List;
 
 /**
  * Module           :财务云-出纳-付款处理-付款金额(大写)字段回写
@@ -19,6 +31,39 @@ import java.math.RoundingMode;
 
 public class CasPayBillEditPlugin extends AbstractBillPlugIn {
 
+
+    private static List<String> SETTLETYPE = Arrays.asList(new String[]{"JSFS06", "JSFS07"});
+
+
+    @Override
+    public void beforeBindData(EventObject e) {
+        super.beforeBindData(e);
+    }
+
+
+    @Override
+    public void afterBindData(EventObject e) {
+        super.afterBindData(e);
+        DynamicObject settletype = (DynamicObject) this.getModel().getValue("settletype");
+        // 判断结算方式是否是银行承兑或商业承兑
+        BasedataEdit draftbill = this.getControl("draftbill");
+        //后端加校验
+        MulBasedataProp  draftbill2 = (MulBasedataProp ) this.getModel().getDataEntityType().getProperty("draftbill");
+
+        if(ObjectUtils.isNotEmpty(settletype) && SETTLETYPE.contains(settletype.getString("number"))){
+            this.getView().setVisible(true,"draftbill");
+            // 判断结算方式是否是银行承兑或商业承兑
+            draftbill.setMustInput(true);
+            //后端加校验
+            draftbill2.setMustInput(true);
+        }else {
+            // 判断结算方式是否是银行承兑或商业承兑
+            draftbill.setMustInput(false);
+            //后端加校验
+            draftbill2.setMustInput(false);
+        }
+    }
+
     @Override
     public void propertyChanged(PropertyChangedArgs e) {
         super.propertyChanged(e);
@@ -30,8 +75,49 @@ public class CasPayBillEditPlugin extends AbstractBillPlugIn {
             if(newValue != null){
                 this.payeeAmountChanged(newValue.toString());
             }
+        }else if("settletype".equals(key)){
+
+            // 判断结算方式是否是银行承兑或商业承兑
+            BasedataEdit draftbill = this.getControl("draftbill");
+            //后端加校验
+            MulBasedataProp draftbill2 = (MulBasedataProp) this.getModel().getDataEntityType().getProperty("draftbill");
+            if(isNotEmpty(newValue) && SETTLETYPE.contains(((DynamicObject) newValue).getString("number"))){
+                // 判断结算方式是否是银行承兑或商业承兑
+                draftbill.setMustInput(true);
+                //后端加校验
+                draftbill2.setMustInput(true);
+            }else{
+                // 判断结算方式是否是银行承兑或商业承兑
+                draftbill.setMustInput(false);
+                //后端加校验
+                draftbill2.setMustInput(false);
+            }
         }
 
+    }
+
+    @Override
+    public void getEntityType(GetEntityTypeEventArgs e) {
+        super.getEntityType(e);
+
+        MainEntityType originalEntityType = e.getOriginalEntityType();
+        try {
+            e.setNewEntityType((MainEntityType)originalEntityType.clone());
+        } catch (CloneNotSupportedException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+
+
+
+
+    public static boolean isNotEmpty(Object  key) {
+        // 基础资料判空
+        if(ObjectUtils.isEmpty(key) || ObjectUtils.isEmpty(((DynamicObject)key).getDataStorage())){
+            return false;
+        }
+        return true;
     }
 
     /**

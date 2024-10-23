@@ -3,6 +3,8 @@ package nckd.yanye.scm.plugin.operate;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.alibaba.druid.support.logging.Log;
+import com.alibaba.druid.support.logging.LogFactory;
 import kd.bd.master.util.GroupStandardUtils;
 import kd.bd.master.util.MasterDataUtil;
 import kd.bd.master.vo.GroupStandMap;
@@ -19,13 +21,11 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.AfterOperationArgs;
-import kd.bos.entity.plugin.args.RollbackOperationArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.ORM;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.DeleteServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
@@ -39,6 +39,7 @@ import org.apache.commons.lang.StringUtils;
  * @description 物料申请单审核后创建物料维护单  nckd_materialrequest
  */
 public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn {
+    private static Log logger = LogFactory.getLog(MaterialrequestAuditOpPlugin.class);
 
     @Override
     public void onPreparePropertys(PreparePropertysEventArgs e) {
@@ -60,9 +61,11 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 t.set("nckd_isgenerate", true);
                 //物料分录
                 DynamicObjectCollection dynamicObjectCollection = t.getDynamicObjectCollection("nckd_materialentries");
+                logger.info("物料明细数量：" + dynamicObjectCollection.size());
                 List<String> errorMsg = new ArrayList<>();
                 for (DynamicObject dynamicObject : dynamicObjectCollection) {
                     DynamicObject materialObject = setMaterialInfo(dynamicObject, t, errorMsg);
+                    logger.info("生成物料");
                     dynamicObject.set("nckd_materialnumber", materialObject.getString("number"));
                     /**
                      * 物料类型nckd_materialtype(1:物资、7:费用、8:资产)
@@ -127,6 +130,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 SaveServiceHelper.update(t);
             });
         } catch (Exception exception) {
+            logger.info("报错详情：" + exception.getLocalizedMessage());
             rollbackAudit(e);
             throw new KDBizException(exception.getLocalizedMessage());
         }
@@ -328,6 +332,9 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败：" + operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
             } else {
                 if (!"3".equals(billType)) {
+                    // 设置id
+                    List<Object> successPkIds = operationResult.getSuccessPkIds();
+                    materialmaintenanObject.set("id", successPkIds.get(0));
                     // 提交
                     OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
                     if (!submitOperate.isSuccess()) {
@@ -476,6 +483,10 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         } else {
             OperateOption operateOption = OperateOption.create();
             operateOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+
+            // 设置id
+            List<Object> successPkIds = saveOperationResult.getSuccessPkIds();
+            materialObject.set("id", successPkIds.get(0));
             //提交审批
             OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new DynamicObject[]{materialObject}, operateOption);
             if (!submit.isSuccess()) {

@@ -1,8 +1,11 @@
 package nckd.yanye.scm.plugin.form;
 
+import kd.bd.master.helper.MaterialServiceHelper;
+import kd.bd.master.util.GroupStandardUtils;
 import kd.bos.context.RequestContext;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.resource.ResManager;
 import kd.bos.entity.datamodel.ListSelectedRow;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.datamodel.events.ChangeData;
@@ -46,6 +49,8 @@ public class MaterialrequestFormPlugin extends AbstractFormPlugin implements Bef
 
         BasedataEdit administrativeorgEdit = this.getControl("nckd_administrativeorg");
         administrativeorgEdit.addBeforeF7SelectListener(this);
+        BasedataEdit auxptyunitEdit = this.getControl("nckd_auxptyunit");
+        auxptyunitEdit.addBeforeF7SelectListener(this);
 
         this.addItemClickListeners("nckd_advcontoolbarap");
     }
@@ -369,24 +374,39 @@ public class MaterialrequestFormPlugin extends AbstractFormPlugin implements Bef
         } else if (StringUtils.equals("nckd_baseunit", name)) {// 基本单位
             ChangeData changeData = e.getChangeSet()[0];
             DynamicObject baseunit = (DynamicObject) changeData.getNewValue();
+            DynamicObject oldbaseunit = (DynamicObject) changeData.getOldValue();
             DynamicObject rowEntity = this.getModel().getEntryRowEntity("nckd_materialentries", changeData.getRowIndex());
+
+            if (rowEntity.getDynamicObject("nckd_auxptyunit") != null && oldbaseunit != null) {
+                // 子单据体
+                DynamicObjectCollection nckdUnitentryentity = rowEntity.getDynamicObjectCollection("nckd_unitentryentity");
+                for (int i = 0; i < nckdUnitentryentity.size(); i++) {
+                    if (nckdUnitentryentity.get(i).getDynamicObject("nckd_desmuid").getLong("id") == oldbaseunit.getLong("id")
+                            && nckdUnitentryentity.get(i).getDynamicObject("nckd_measureunitid").getLong("id") == rowEntity.getDynamicObject("nckd_auxptyunit").getLong("id")) {
+                        this.getModel().deleteEntryRow("nckd_unitentryentity", i);
+                    }
+                }
+            }
+            // 辅助单位设置为空
+            rowEntity.set("nckd_auxptyunit", null);
+
             if (baseunit != null) {
                 this.setUnitentryentity(baseunit, rowEntity);
             }
 
             // 辅助单位
-            DynamicObject auxptyunit = rowEntity.getDynamicObject("nckd_auxptyunit");
-            if (baseunit != null && auxptyunit != null) {
-                // 子单据体
-                DynamicObjectCollection nckdUnitentryentity = rowEntity.getDynamicObjectCollection("nckd_unitentryentity");
-                long count = nckdUnitentryentity.stream()
-                        .filter(t -> t.getDynamicObject("nckd_measureunitid").getLong("id") == auxptyunit.getLong("id") && t.getDynamicObject("nckd_desmuid").getLong("id") == baseunit.getLong("id"))
-                        .count();
-                if (count == 0) {
-                    this.insertUnitentryentity(baseunit, auxptyunit);
-                }
-            }
-            this.getView().updateView("nckd_unitentryentity");
+//            DynamicObject auxptyunit = rowEntity.getDynamicObject("nckd_auxptyunit");
+//            if (baseunit != null && auxptyunit != null) {
+//                // 子单据体
+//                DynamicObjectCollection nckdUnitentryentity = rowEntity.getDynamicObjectCollection("nckd_unitentryentity");
+//                long count = nckdUnitentryentity.stream()
+//                        .filter(t -> t.getDynamicObject("nckd_measureunitid").getLong("id") == auxptyunit.getLong("id") && t.getDynamicObject("nckd_desmuid").getLong("id") == baseunit.getLong("id"))
+//                        .count();
+//                if (count == 0) {
+//                    this.insertUnitentryentity(baseunit, auxptyunit);
+//                }
+//            }
+            this.getView().updateView();
         } else if (StringUtils.equals("nckd_auxptyunit", name)) {// 辅助单位
             ChangeData changeData = e.getChangeSet()[0];
             DynamicObject auxptyunit = (DynamicObject) changeData.getNewValue();
@@ -394,10 +414,9 @@ public class MaterialrequestFormPlugin extends AbstractFormPlugin implements Bef
             DynamicObject rowEntity = this.getModel().getEntryRowEntity("nckd_materialentries", changeData.getRowIndex());
             // 基本单位
             DynamicObject baseunit = rowEntity.getDynamicObject("nckd_baseunit");
-
-            if (baseunit != null && auxptyunit != null) {
-                // 变更前辅助单位
-                DynamicObject oldAuxptyunit = (DynamicObject) changeData.getOldValue();
+            // 变更前辅助单位
+            DynamicObject oldAuxptyunit = (DynamicObject) changeData.getOldValue();
+            if (auxptyunit != null) {
                 if (oldAuxptyunit != null) {
                     // 子单据体
                     DynamicObjectCollection nckdUnitentryentity = rowEntity.getDynamicObjectCollection("nckd_unitentryentity");
@@ -418,6 +437,14 @@ public class MaterialrequestFormPlugin extends AbstractFormPlugin implements Bef
                     }
                 } else {
                     this.insertUnitentryentity(baseunit, auxptyunit);
+                }
+            } else {
+                // 子单据体
+                DynamicObjectCollection nckdUnitentryentity = rowEntity.getDynamicObjectCollection("nckd_unitentryentity");
+                for (int i = 0; i < nckdUnitentryentity.size(); i++) {
+                    if (nckdUnitentryentity.get(i).getDynamicObject("nckd_measureunitid").getLong("id") == oldAuxptyunit.getLong("id")) {
+                        this.getModel().deleteEntryRow("nckd_unitentryentity", i);
+                    }
                 }
             }
             this.getView().updateView("nckd_unitentryentity");
@@ -486,6 +513,98 @@ public class MaterialrequestFormPlugin extends AbstractFormPlugin implements Bef
 
             QFilter qFilter = new QFilter("belongcompany", QCP.in, allSubordinateOrgIds);
             showParameter.getListFilterParameter().setFilter(qFilter);
+        } else if (name.equals("nckd_auxptyunit")) {
+            DynamicObject baseUnit = (DynamicObject) this.getModel().getValue("nckd_baseunit");
+            if (baseUnit == null) {
+                this.getView().showTipNotification(ResManager.loadKDString("请先设置基本单位。", "MaterialDataFormPlugin_0", "bd-master-formplugin", new Object[0]));
+                beforeF7SelectEvent.setCancel(true);
+                return;
+            }
+
+            // 获取当前选中的物料分录
+            int index = this.getModel().getEntryCurrentRowIndex("nckd_materialentries");
+            DynamicObject materialentries = this.getModel().getEntryRowEntity("nckd_materialentries", index);
+
+            // 设置过滤
+            Long baseUnitId = GroupStandardUtils.getDataByType(baseUnit);
+            Set<Long> desmulist = this.getFixedonversionList(baseUnit, materialentries);
+            desmulist.add(baseUnitId);
+            QFilter floatconFilter = new QFilter("id", "not in", desmulist);
+            showParameter.getListFilterParameter().getQFilters().add(floatconFilter);
         }
+    }
+
+    public Set<Long> getFixedonversionList(DynamicObject baseUnit, DynamicObject materialentries) {
+        String convertType = "1";
+        Long baseUnitId = this.getDataByType(baseUnit);
+        QFilter qFilter = null;
+        qFilter = new QFilter("converttype", "=", convertType);
+        Map<Object, DynamicObject> loadFromCache = BusinessDataServiceHelper.loadFromCache("bd_measureunitconv", "desmuid,srcmuid", new QFilter[]{qFilter});
+        Set<String> measureunitconvs = new HashSet(loadFromCache.size());
+        Iterator var7 = loadFromCache.values().iterator();
+
+        while (var7.hasNext()) {
+            DynamicObject measureunitconv = (DynamicObject) var7.next();
+            StringBuilder conv = new StringBuilder();
+            measureunitconvs.add(conv.append(this.getDataByType(measureunitconv.get("desmuid"))).append('-').append(this.getDataByType(measureunitconv.get("srcmuid"))).toString());
+            StringBuilder conv2 = new StringBuilder();
+            measureunitconvs.add(conv2.append(this.getDataByType(measureunitconv.get("srcmuid"))).append('-').append(this.getDataByType(measureunitconv.get("desmuid"))).toString());
+        }
+
+        DynamicObjectCollection entrys = materialentries.getDynamicObjectCollection("nckd_unitentryentity");
+        Iterator var14 = entrys.iterator();
+
+        while (true) {
+            DynamicObject entry;
+            String converttypeRow;
+            do {
+                if (!var14.hasNext()) {
+                    Set<Long> desmulist = new HashSet();
+                    desmulist = this.getUnitForWardRec(baseUnitId, measureunitconvs, desmulist);
+                    return desmulist;
+                }
+
+                entry = (DynamicObject) var14.next();
+                converttypeRow = entry.getString("nckd_converttype");
+            } while (convertType != null && !convertType.equals(converttypeRow));
+
+            StringBuilder conv = new StringBuilder();
+            measureunitconvs.add(conv.append(baseUnitId).append('-').append(this.getDataByType(entry.get("nckd_measureunitid"))).toString());
+            StringBuilder conv2 = new StringBuilder();
+            measureunitconvs.add(conv2.append(this.getDataByType(entry.get("nckd_measureunitid"))).append('-').append(baseUnitId).toString());
+        }
+    }
+
+    private Set<Long> getUnitForWardRec(Long srcmuId, Set<String> measureunitconvs, Set<Long> desmulist) {
+        String leftSrcmuId = srcmuId.toString() + "-";
+        Iterator iter = measureunitconvs.iterator();
+
+        while (iter.hasNext()) {
+            String measureunitconv = (String) iter.next();
+            if (measureunitconv.startsWith(leftSrcmuId)) {
+                String[] split = measureunitconv.split("-");
+                if (split.length == 2) {
+                    Long unitId = Long.valueOf(split[1]);
+                    if (!desmulist.contains(unitId)) {
+                        desmulist.add(unitId);
+                        this.getUnitForWardRec(unitId, measureunitconvs, desmulist);
+                    }
+                }
+            }
+        }
+
+        return desmulist;
+    }
+
+    public Long getDataByType(Object object) {
+        Long dataId = 0L;
+        if (object instanceof DynamicObject) {
+            DynamicObject createorg = (DynamicObject) object;
+            dataId = (Long) createorg.getPkValue();
+        } else if (object instanceof Long) {
+            dataId = (Long) object;
+        }
+
+        return dataId;
     }
 }

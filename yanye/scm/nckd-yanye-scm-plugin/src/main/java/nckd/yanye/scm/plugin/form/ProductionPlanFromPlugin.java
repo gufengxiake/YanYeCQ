@@ -242,11 +242,13 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     pdm = BusinessDataServiceHelper.loadSingle(pdm.getPkValue(), "pdm_mftbom");
                     DynamicObjectCollection entry = pdm.getDynamicObjectCollection("entry");//bom组件
                     if (entry.size() > 0) {
-                        DynamicObject entrymaterial = entry.get(0).getDynamicObject("entrymaterial");//组件物料
-                        //通过物料查bom
-                        pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
-                        if (pdm != null) {
-                            count = count + 1;
+                        for (DynamicObject eny : entry) {
+                            DynamicObject entrymaterial = eny.getDynamicObject("entrymaterial");//组件物料
+                            //通过物料查bom
+                            pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
+                            if (pdm != null) {
+                                count = count + 1;
+                            }
                         }
                     }
                 }
@@ -693,7 +695,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                         newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                         newOne.set("inwardept", dataEntity.getDynamicObject("org"));
-                        newOne.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                        newOne.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                         newOne.set("baseqty", pomPlanningEntry.get("nckd_yield"));
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark") : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
                         pomMftorder.set("entrybaseqty", pomPlanningEntry.getBigDecimal("nckd_yield"));
@@ -718,7 +720,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                         newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                         newOne.set("inwardept", dataEntity.getDynamicObject("org"));
-                        newOne.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                        newOne.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                         newOne.set("baseqty", pomPlanningEntry.get("nckd_yield"));
 
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark")
@@ -729,6 +731,10 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 if (!result.isSuccess()) {
                     this.getView().showMessage(result.getMessage());
                     return;
+                }
+                OperationResult subResult = OperationServiceHelper.executeOperate("submit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
+                if (subResult.isSuccess()) {
+                    OperationServiceHelper.executeOperate("audit", "pom_mftorder", new DynamicObject[]{pomMftorder}, OperateOption.create());
                 }
                 this.getModel().setValue("nckd_pom", number, 0);
             }
@@ -757,7 +763,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             newOne.set("planstatus", "B");
                             newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                             newOne.set("inwardept", dataEntity.getDynamicObject("org"));
-                            newOne.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                            newOne.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                             newOne.set("baseqty", pomPlanningEntry.get("nckd_yield"));
                             newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                             pomMftorder.set("remark", pomMftorder.get("remark") == null ?
@@ -782,7 +788,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                             newTwo.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                             newTwo.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                             newTwo.set("inwardept", dataEntity.getDynamicObject("org"));
-                            newTwo.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                            newTwo.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                             newTwo.set("baseqty", pomPlanningEntry.get("nckd_yield"));
                             pomMftorder.set("remark", pomMftorder.get("remark") == null ? pomPlanningEntry.getString("nckd_remark") :
                                     pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
@@ -838,7 +844,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                 newOne.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                 newOne.set("baseunit", pomPlanningEntry.getDynamicObject("nckd_unit"));
                 newOne.set("inwardept", dataEntity.getDynamicObject("org"));
-                newOne.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                newOne.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                 newOne.set("baseqty", pomPlanningEntry.get("nckd_yield"));
                 pomMftorder.set("remark", pomMftorder.get("remark") == null ?
                         pomPlanningEntry.getString("nckd_remark") : pomPlanningEntry.getString("nckd_remark") + pomMftorder.getString("remark"));
@@ -862,7 +868,7 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                         newTwo.set("expendbomtime", pomPlanningEntry.get("nckd_planendtime"));
                         newTwo.set("baseunit", d.getDynamicObject("nckd_unit"));
                         newTwo.set("inwardept", dataEntity.getDynamicObject("org"));
-                        newTwo.set("planpreparetime", dataEntity.get("nckd_planstarttime"));
+                        newTwo.set("planpreparetime", pomPlanningEntry.get("nckd_planstarttime"));
                         newTwo.set("baseqty", d.get("nckd_yield"));
                         pomMftorder.set("remark", pomMftorder.get("remark") == null ? d.getString("nckd_remark") :
                                 d.getString("nckd_remark") + pomMftorder.getString("remark"));

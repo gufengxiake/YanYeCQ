@@ -17,6 +17,7 @@ import kd.bos.list.plugin.AbstractListPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.*;
@@ -34,6 +35,8 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
     private static String KEY_BATCHENDORSE = "batchendorse";
     private static String OPPARAM_AFTERCONFIRM = "afterconfirm";
     private static Map<String, String> unittypeMap;
+
+    private static List<String> SETTLETYPE = Arrays.asList(new String[]{"JSFS06", "JSFS07"});
 
     static {
         unittypeMap = new HashMap<>();
@@ -55,6 +58,20 @@ public class CasPaybillListPlugin extends AbstractListPlugin {
             Object[] primaryKeyValues = selectedRows.getPrimaryKeyValues();
             //获取完整数据
             DynamicObject[] casPaybillArr = BusinessDataServiceHelper.load(primaryKeyValues, entityType);
+            StringBuilder errorMsg = new StringBuilder();
+            for (DynamicObject casPaybill : casPaybillArr) {
+                if(ObjectUtils.isNotEmpty(casPaybill.getDynamicObject("settletype")) && SETTLETYPE.contains(casPaybill.getDynamicObject("settletype").getString("number"))){
+                    if(StringUtils.isEmpty(casPaybill.getString("settletnumber"))){
+                        errorMsg.append(casPaybill.getString("billno")+",");
+                    }
+                }
+            }
+            if(ObjectUtils.isNotEmpty(errorMsg)){
+                errorMsg.append("结算号不存在，请先录入结算号！");
+                args.setCancel(true);
+                this.getView().showErrorNotification(errorMsg.toString());
+                return;
+            }
             ////获取收款人类型 和 供应商
             List<DynamicObject> casPaybillList = Arrays.stream(casPaybillArr).filter(e -> "bd_supplier".equals(e.getString("payeetype"))).collect(Collectors.toList());
             if (casPaybillList.size() == 1) {
