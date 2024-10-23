@@ -32,16 +32,12 @@ import java.util.List;
 public class CasPayBillEditPlugin extends AbstractBillPlugIn {
 
 
-    private static List<String> SETTLETYPE = new ArrayList<String>();
+    private static List<String> SETTLETYPE = Arrays.asList(new String[]{"JSFS06", "JSFS07"});
 
 
     @Override
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
-        if(StringUtils.isNotEmpty(AppflgConstant.TMC_SETTLETYPE)){
-            String[] split = AppflgConstant.TMC_SETTLETYPE.split(",");
-            SETTLETYPE = Arrays.asList(split);
-        }
     }
 
 
