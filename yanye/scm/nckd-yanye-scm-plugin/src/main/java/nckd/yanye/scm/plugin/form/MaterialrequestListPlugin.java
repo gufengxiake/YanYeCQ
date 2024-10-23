@@ -19,6 +19,7 @@ import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
 
@@ -333,16 +334,19 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
                 materialmaintenanObject.set("nckd_purchaseunit", dynamicObject.getDynamicObject("nckd_baseunit"));//采购单位
             }
 
-            OperationResult operationResult = OperationServiceHelper.executeOperate("save", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
-            if (operationResult.isSuccess()) {
+//            OperationResult operationResult = SaveServiceHelper.saveOperate("nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+////            OperationResult operationResult = OperationServiceHelper.executeOperate("save", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+//            if (operationResult.isSuccess()) {
                 if (!"3".equals(billType)) {
-                    List<Object> successPkIds = operationResult.getSuccessPkIds();
-                    DynamicObject single = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
+//                    List<Object> successPkIds = operationResult.getSuccessPkIds();
+//                    DynamicObject single = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
 
                     // 提交
-                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{single}, OperateOption.create());
+                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                }else {
+                    OperationResult operationResult = SaveServiceHelper.saveOperate("nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
                 }
-            }
+//            }
         }
     }
 

@@ -417,16 +417,16 @@ public class MaterialAttributeInformationUtils {
         String entityNumber = dynamicObject.getDataEntityType().getName();
 
         // 保存
-        OperationResult saveOperate = SaveServiceHelper.saveOperate(entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
-        if (saveOperate.isSuccess()) {
-            List<Object> successPkIds = saveOperate.getSuccessPkIds();
-            DynamicObject single = BusinessDataServiceHelper.loadSingle(entityNumber, new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
+//        OperationResult saveOperate = SaveServiceHelper.saveOperate(entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+//        if (saveOperate.isSuccess()) {
+//            List<Object> successPkIds = saveOperate.getSuccessPkIds();
+//            DynamicObject single = BusinessDataServiceHelper.loadSingle(entityNumber, new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
 
             // 提交
-            OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{single}, OperateOption.create());
+            OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
             if (submitOperate.isSuccess()) {
                 // 审核
-                OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{single}, OperateOption.create());
+                OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
                 if (!auditOperate.isSuccess()) {
                     logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                     throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
@@ -435,10 +435,10 @@ public class MaterialAttributeInformationUtils {
                 logger.error(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
                 throw new KDBizException(submitOperate.getMessage() + submitOperate.getAllErrorOrValidateInfo());
             }
-        } else {
-            logger.error(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-            throw new KDBizException(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
-        }
+//        } else {
+//            logger.error(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+//            throw new KDBizException(saveOperate.getMessage() + saveOperate.getAllErrorOrValidateInfo());
+//        }
     }
 
     /**
