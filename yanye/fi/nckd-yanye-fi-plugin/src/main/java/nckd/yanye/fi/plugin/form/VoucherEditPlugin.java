@@ -3,9 +3,20 @@ package nckd.yanye.fi.plugin.form;
 import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.bill.BillShowParameter;
 import kd.bos.bill.OperationStatus;
+import kd.bos.dataentity.entity.DynamicObject;
+import kd.bos.dataentity.entity.DynamicObjectCollection;
+import kd.bos.dataentity.resource.ResManager;
+import kd.bos.entity.datamodel.IDataModel;
+import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.entity.operate.Donothing;
 import kd.bos.filter.FilterContainer;
+import kd.bos.form.IPageCache;
 import kd.bos.form.events.BeforeDoOperationEventArgs;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
+import kd.fi.gl.common.VoucherSourceType;
+import kd.fi.gl.formplugin.voucher.VoucherEditValueGetter;
+import kd.fi.gl.formplugin.voucher.VoucherEditView;
+import kd.fi.gl.util.GLUtil;
 import kd.hr.hbp.common.util.DatePattern;
 import kd.hr.hbp.common.util.DateUtils;
 import nckd.base.common.utils.capp.CacheBusinessData;
@@ -28,6 +39,8 @@ import java.util.*;
 public class VoucherEditPlugin  extends AbstractBillPlugIn {
 
     public static final Map<String,String> KEY_MAP = new HashMap<>(6);
+
+    private VoucherEditView voucherEditView;
 
 
     // "本期，今天，本周，本月"
@@ -78,20 +91,101 @@ public class VoucherEditPlugin  extends AbstractBillPlugIn {
                 // 使用今天
                 this.getModel().setValue("bizdate",date2);
                 this.getModel().setValue("bookeddate",date2);
+                dealPeriod(date2);
             }else if(DATE_KEYS2.contains(bookeddate)){
                 // 上月月末最后一天
                 this.getModel().setValue("bizdate",lastDayOfLastMonth);
                 this.getModel().setValue("bookeddate",lastDayOfLastMonth);
-
+                dealPeriod(lastDayOfLastMonth);
             }else if(DATE_KEYS3.contains(bookeddate)){
                 // 下月月末最后一天
                 this.getModel().setValue("bizdate",lastDayOfNextMonth);
                 this.getModel().setValue("bookeddate",lastDayOfNextMonth);
+                dealPeriod(lastDayOfNextMonth);
             }
 
 
         }
 
+    }
+
+    VoucherEditValueGetter getValueGetter() {
+        return this.getVoucherEditView().getValueGetter();
+    }
+
+    private VoucherEditView getVoucherEditView() {
+        if (null == this.voucherEditView) {
+            this.voucherEditView = new VoucherEditView(this.getView(), this.getModel(), this.getPageCache());
+        }
+
+        return this.voucherEditView;
+    }
+    private void dealPeriod(Date newDate) {
+        DynamicObject book = this.getValueGetter().getBook();
+        if(book != null){
+            IDataModel model = this.getModel();
+            String sourceType = this.getValueGetter().getSourceType();
+            String selectField = "id,periodtype.id,periodyear,periodnumber,begindate,enddate,isadjustperiod,number,name";
+            DynamicObjectCollection periodsByBookedDate = GLUtil.getPeriodByDate(newDate, selectField, book.getLong("periodtype.id"));
+            if (periodsByBookedDate == null || periodsByBookedDate.isEmpty()) {
+                this.getView().showErrorNotification(String.format(ResManager.loadKDString("期间类型[%s] 不存在记账日期所对应的会计期间，请先维护期间基础资料", "VoucherEdit_44", "fi-gl-formplugin", new Object[0]), book.getDynamicObject("periodtype").getString("name")));
+                return;
+            }
+            IPageCache pageCache = (IPageCache)this.getView().getService(IPageCache.class);
+            if ("1".equals(sourceType) || "4".equals(sourceType)) {
+                return;
+            }
+
+            DynamicObject curPeriod = BusinessDataServiceHelper.loadSingle(pageCache.get("book_curperiod"), "bd_period", "id,number,name,isadjustperiod");
+            boolean isLegalPeriod = false;
+            if (curPeriod != null) {
+                List<Long> openedPeriodIdList = GLUtil.getOpenPeriod(this.getValueGetter().getOrgId(), this.getValueGetter().getBookTypeId());
+                long curPeriodId = curPeriod.getLong("id");
+                long periodId = ((DynamicObject)periodsByBookedDate.get(periodsByBookedDate.size() - 1)).getLong("id");
+
+                for(int i = periodsByBookedDate.size() - 1; i >= 0; --i) {
+                    DynamicObject periodDyn = (DynamicObject)periodsByBookedDate.get(i);
+                    long periodIdByDate = periodDyn.getLong("id");
+                    if (openedPeriodIdList.contains(periodIdByDate) || periodIdByDate >= curPeriodId) {
+                        isLegalPeriod = true;
+                        break;
+                    }
+                }
+
+                if (!isLegalPeriod) {
+                    this.getView().showErrorNotification(ResManager.loadKDString("不能新增已结账期间凭证。", "VoucherEdit_46", "fi-gl-formplugin", new Object[0]));
+                }
+
+                this.cachePeriodId(periodsByBookedDate, curPeriodId == periodId && curPeriod.getBoolean("isadjustperiod"), periodId);
+                model.setValue("period", periodId);
+            }
+
+        } else {
+            this.getView().showErrorNotification(ResManager.loadKDString("该核算主体默认主账簿为空", "VoucherEdit_47", "fi-gl-formplugin", new Object[0]));
+        }
+
+
+
+    }
+
+    private void cachePeriodId(DynamicObjectCollection curPeriod, boolean curIsAdjust, long periodIdOnEdit) {
+        String sourceType = this.getValueGetter().getSourceType();
+        boolean enable = curPeriod.size() > 1 && !curIsAdjust && !"1".equals(sourceType) && !"4".equals(sourceType);
+        this.getView().setEnable(enable, new String[]{"period"});
+        StringBuilder sb = new StringBuilder();
+        if (enable) {
+            Iterator var8 = curPeriod.iterator();
+
+            while(var8.hasNext()) {
+                DynamicObject dyn = (DynamicObject)var8.next();
+                sb.append(dyn.getString("id"));
+                sb.append(",");
+            }
+        } else {
+            sb.append(periodIdOnEdit);
+        }
+
+        this.getPageCache().put("ids", sb.toString());
     }
 
 }
