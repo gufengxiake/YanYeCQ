@@ -425,8 +425,11 @@ public class MaterialAttributeInformationUtils {
             // 提交
             OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
             if (submitOperate.isSuccess()) {
+                List<Object> successPkIds = submitOperate.getSuccessPkIds();
+                DynamicObject single = BusinessDataServiceHelper.loadSingle(successPkIds.get(0),entityNumber);
+
                 // 审核
-                OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{dynamicObject}, OperateOption.create());
+                OperationResult auditOperate = OperationServiceHelper.executeOperate("audit", entityNumber, new DynamicObject[]{single}, OperateOption.create());
                 if (!auditOperate.isSuccess()) {
                     logger.error(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());
                     throw new KDBizException(auditOperate.getMessage() + auditOperate.getAllErrorOrValidateInfo());

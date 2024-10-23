@@ -500,11 +500,14 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
                 errorMsg.add(materialObject.getString("name") + "对应的物料提交失败：" + submit.getAllErrorOrValidateInfo() + submit.getMessage());
             } else {
-                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new DynamicObject[]{materialObject}, operateOption);
+                List<Object> successPkIds = submit.getSuccessPkIds();
+                DynamicObject single = BusinessDataServiceHelper.loadSingle(successPkIds.get(0),"bd_material");
+
+                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new DynamicObject[]{single}, operateOption);
                 if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
-                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
-                    OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{single}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{single}, OperateOption.create());
                     errorMsg.add(materialObject.getString("name") + "对应的物料发起审核失败：" + audit.getAllErrorOrValidateInfo() + audit.getMessage());
                 } else {
                     return materialObject;
