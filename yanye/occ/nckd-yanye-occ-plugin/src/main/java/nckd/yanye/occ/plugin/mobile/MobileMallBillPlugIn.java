@@ -10,6 +10,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.UnitConvertHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 import kd.occ.ocbase.common.util.DynamicObjectUtils;
 
@@ -22,9 +23,9 @@ import java.util.*;
  * author:吴国强 2024-10-21
  */
 public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
-    private final static String IM_INV_REALBALAN= "im_inv_realbalance";//即时库存余额表
+    private final static String IM_INV_REALBALAN = "im_inv_realbalance";//即时库存余额表
     private final static String TQSD_IM_INV_REALBALAN_EXT_SEQ = "org,warehouse,location,ownertype,owner,invstatus,invtype,material,auxpty,lotnum,project,baseunit,unit,unit2nd,baseqty,"
-            + "qty,qty2nd";
+            + "qty,qty2nd,avbbaseqty";
 
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
@@ -41,31 +42,37 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
             if (!ispartjob) {
                 //部门
                 DynamicObject dept = entryRow.getDynamicObject("dpt");
-                deptId=dept.getPkValue();
+                deptId = dept.getPkValue();
             }
         }
         //获取部门仓库
-        DynamicObject depStock = this.getStock(orgId,deptId,null,"0");
-        if(depStock!=null){
-            Long depStockId= (Long) depStock.getPkValue();
+        DynamicObject depStock = this.getStock(orgId, deptId, null, "0");
+        if (depStock != null) {
+            Long depStockId = (Long) depStock.getPkValue();
             DynamicObjectCollection itemListCollection = this.getModel().getEntryEntity("itemlist");
             Iterator var25 = itemListCollection.iterator();
-            Set matList=new HashSet();
+            Set matList = new HashSet();
             while (var25.hasNext()) {
                 DynamicObject itemEntry = (DynamicObject) var25.next();
                 DynamicObject material = DynamicObjectUtils.getDynamicObject(itemEntry, "material");
-                Long matId= (Long) material.getPkValue();
+                Long matId = (Long) material.getPkValue();
                 matList.add(matId);
             }
-            if(matList.size()>0){
+            if (matList.size() > 0) {
                 //获取物料的即时库存
-                Map<Object,BigDecimal> matQtyMap=this.lotnumberQuery(matList,depStockId,orgId);
-                for(DynamicObject itemEntry:itemListCollection){
+                Map<Object, BigDecimal> matQtyMap = this.lotnumberQuery(matList, depStockId, orgId);
+                for (DynamicObject itemEntry : itemListCollection) {
                     DynamicObject material = DynamicObjectUtils.getDynamicObject(itemEntry, "material");
-                    Long matId= (Long) material.getPkValue();
-                    itemEntry.set("nckd_stock",depStock);
-                    BigDecimal qty=matQtyMap.get(matId);
-                    itemEntry.set("nckd_qty",qty);
+                    DynamicObject baseUnit = material.getDynamicObject("baseunit");
+                    DynamicObject unit = DynamicObjectUtils.getDynamicObject(itemEntry, "unit");
+                    Long matId = (Long) material.getPkValue();
+                    Long unitId = (Long) unit.getPkValue();
+                    Long baseUnitId = (Long) baseUnit.getPkValue();
+                    itemEntry.set("nckd_stock", depStock);
+                    BigDecimal qty = matQtyMap.get(matId);
+                    //根据单位换算数量
+                    BigDecimal unitQty = UnitConvertHelper.calculateNewQty(qty, unitId, baseUnitId, matId, (StringBuilder) null);
+                    itemEntry.set("nckd_qty", unitQty);
                 }
             }
 
@@ -74,11 +81,10 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
         }
 
 
-
     }
 
     //获取部门对应仓库
-    private DynamicObject getStock(Object orgId, Object deptId, DynamicObject pq,String jh) {
+    private DynamicObject getStock(Object orgId, Object deptId, DynamicObject pq, String jh) {
         DynamicObject depStock = null;
         //从部门 仓库设置基础资料中获取对应仓库
         // 构造QFilter
@@ -91,7 +97,7 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
             Object pqPkId = pq.getPkValue();
             depqFilter.and("nckd_regiongroup", QCP.equals, pqPkId);
             pqSelect = true;
-        }else {
+        } else {
             depqFilter.and("nckd_regiongroup", QCP.equals, 0L);
         }
         //查找部门对应仓库
@@ -101,7 +107,7 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
             DynamicObject stockItem = depcollections.get(0);
             String stockId = stockItem.getString("stockId");
             depStock = BusinessDataServiceHelper.loadSingle(stockId, "bd_warehouse");
-        }else if(pqSelect){
+        } else if (pqSelect) {
             // 构造QFilter
             QFilter nFilter = new QFilter("createorg", QCP.equals, orgId)
                     .and("status", QCP.equals, "C")
@@ -123,8 +129,8 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
     }
 
     //获取物料的即时库存
-    public Map<Object,BigDecimal> lotnumberQuery(Set<Long> matId,Long stockid,Long orgid) {
-        Map<Object,BigDecimal> matQtyMap=new HashMap<>();
+    public Map<Object, BigDecimal> lotnumberQuery(Set<Long> matId, Long stockid, Long orgid) {
+        Map<Object, BigDecimal> matQtyMap = new HashMap<>();
         QFilter filter4 = new QFilter("org.id", QCP.equals, orgid);//库存组织
         QFilter filter5 = new QFilter("warehouse.id", QCP.equals, stockid);//仓库
         QFilter filter = new QFilter("material.id", QCP.in, matId);// 物料
@@ -134,13 +140,13 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
         filter.and(filter1).and(filter3).and(filter2).and(filter4).and(filter5);
         DataSet orderCollections = QueryServiceHelper.queryDataSet("DATE", IM_INV_REALBALAN,
                 TQSD_IM_INV_REALBALAN_EXT_SEQ, filter.toArray(), null);
-        //根据物料合计数量
-        DataSet sumSql = orderCollections.groupBy(new String[]{"material"}).sum("qty").finish();
+        //根据物料合计基本单位可用量
+        DataSet sumSql = orderCollections.groupBy(new String[]{"material"}).sum("baseqty").finish();
         while (sumSql.hasNext()) {
             Row sumItem = sumSql.next();
-            Object material=sumItem.get("material");
-            BigDecimal qty=sumItem.getBigDecimal("qty");
-            matQtyMap.put(material,qty);
+            Object material = sumItem.get("material");
+            BigDecimal qty = sumItem.getBigDecimal("baseqty");
+            matQtyMap.put(material, qty);
         }
         return matQtyMap;
 

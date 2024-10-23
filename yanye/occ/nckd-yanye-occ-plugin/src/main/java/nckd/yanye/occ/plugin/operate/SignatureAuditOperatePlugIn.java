@@ -1,5 +1,7 @@
 package nckd.yanye.occ.plugin.operate;
 
+import cn.hutool.core.date.DateUtil;
+import com.grapecity.documents.excel.Q;
 import kd.bos.data.BusinessDataReader;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -26,8 +28,7 @@ import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 /**
  * 签收单审核审核服务插件
@@ -56,6 +57,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
         super.beforeExecuteOperationTransaction(e);
 
         DynamicObject[] entities = e.getDataEntities();
+        Map<Long, Boolean> materialIsMoreSalt = this.getMaterialIsMoreSalt(entities);
         // 逐单处理
         for (DynamicObject dataEntity : entities) {
             DynamicObjectCollection entryentity = dataEntity.getDynamicObjectCollection("entryentity");
@@ -64,6 +66,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                 List<ListSelectedRow> selectedRows = new ArrayList<>();
                 List<ListSelectedRow> bhlselectedRows = new ArrayList<>();
                 //Map<Object, BigDecimal> entryQtyMap = new HashMap<>();
+                boolean isMoreSalt = false;
                 for (DynamicObject entryRowData : entryentity) {
                     String srcbillentity = entryRowData.getString("nckd_srcbillentity");//源单实体
                     if (!"im_saloutbill".equals(srcbillentity)) {
@@ -98,10 +101,18 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                         bhlselectedRows.add(row);
                         //entryQtyMap.put(sourceentryId,signQty.subtract(outQty));
                     }
+                    DynamicObject nckdMateriel = entryRowData.getDynamicObject("nckd_materiel");
+                    if (nckdMateriel != null && !materialIsMoreSalt.isEmpty()
+                            && materialIsMoreSalt.containsKey((Long)nckdMateriel.getPkValue())
+                            && materialIsMoreSalt.get((Long)nckdMateriel.getPkValue())){
+                        isMoreSalt = true;
+                    }
                 }
                 StringBuilder errMessage = new StringBuilder();
-                //下推其他入库单
-                if (!selectedRows.isEmpty()) {
+                //物料勾选长吨盐走推完工入库逻辑
+                if(!selectedRows.isEmpty() && isMoreSalt){
+                    this.pushProductIn(dataEntity,errMessage);
+                } else if (!selectedRows.isEmpty() ) { //下推其他入库单
                     String sourceBill = "im_saloutbill";//销售出库单
                     String targetBill = "im_otherinbill";//其他入库单
                     String ruleId = "2008890965632225280";//单据转换Id
@@ -380,4 +391,173 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
             }
         }
     }
+
+
+    /**
+     * 推完工入库单
+     * @param dataEntity
+     * @param errMessage
+     */
+    public void pushProductIn(DynamicObject dataEntity,StringBuilder errMessage){
+        DynamicObject mftOrder = this.getMFTOrder(dataEntity);
+        if (mftOrder == null) {
+            errMessage.append("未找到对应生产工单!");
+            return;
+        }
+        List<ListSelectedRow> selectedRows = new ArrayList<>();
+        Object sourcebillId = mftOrder.get("id");
+        Object sourceentryId = mftOrder.get("treeentryentity.id");
+        ListSelectedRow row = new ListSelectedRow();
+        //必填，设置源单单据id
+        row.setPrimaryKeyValue(sourcebillId);
+        //可选，设置源单分录标识
+        row.setEntryEntityKey("treeentryentity");
+        //可选，设置源单分录id
+        row.setEntryPrimaryKeyValue(sourceentryId);
+        selectedRows.add(row);
+        String sourceBill = "pom_mftorder";//生产工单
+        String targetBill = "im_mdc_mftmanuinbill";//完工入库
+        String ruleId = "2027130505631116288";//单据转换Id
+        // 创建下推参数
+        PushArgs pushArgs = new PushArgs();
+        // 必填，源单标识
+        pushArgs.setSourceEntityNumber(sourceBill);
+        // 必填，目标单标识
+        pushArgs.setTargetEntityNumber(targetBill);
+        // 可选，传入true，不检查目标单新增权
+        pushArgs.setHasRight(true);
+        // 可选，传入目标单验权使用的应用编码
+        //pushArgs.setAppId("");
+        // 可选，传入目标单主组织默认值
+        //pushArgs.setDefOrgId(orgId);
+        //可选，转换规则id
+        pushArgs.setRuleId(ruleId);
+        //自动保存
+        //pushArgs.setAutoSave(true);
+        // 可选，是否输出详细错误报告
+        pushArgs.setBuildConvReport(true);
+        // 必选，设置需要下推的源单及分录内码
+        pushArgs.setSelectedRows(selectedRows);
+        // 调用下推引擎，下推目标单
+        ConvertOperationResult pushResult = ConvertServiceHelper.push(pushArgs);
+        // 判断下推是否成功，如果失败，提取失败消息
+        if (!pushResult.isSuccess()) {
+            errMessage.append("下推完工入库失败:" + pushResult.getMessage());    // 错误信息
+        }
+        // 获取生成的目标单数据包
+        MainEntityType targetMainType = EntityMetadataCache.getDataEntityType(targetBill);
+        List<DynamicObject> targetBillObjs = pushResult.loadTargetDataObjects(new IRefrencedataProvider() {
+            @Override
+            public void fillReferenceData(Object[] objs, IDataEntityType dType) {
+                BusinessDataReader.loadRefence(objs, dType);
+            }
+        }, targetMainType);
+        DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
+        DynamicObject dynamicObject = dataEntity.getDynamicObjectCollection("entryentity").get(0);
+        long nckdSourceentryid = dynamicObject.getLong("nckd_sourcebillid");
+        //根据签收单来源单据id找销售出库单
+        DynamicObject imSaloutbill = BusinessDataServiceHelper.loadSingle(nckdSourceentryid,"im_saloutbill");
+        //获取班次信息
+        DynamicObject workshifts = BusinessDataServiceHelper.loadSingle("2066082303343345664","mpdm_workshifts");
+        if (imSaloutbill != null) {
+            DynamicObject salEntry = imSaloutbill.getDynamicObjectCollection("billentry").get(0);
+            for (DynamicObject save : saveDynamicObject) {
+                DynamicObjectCollection billentry = save.getDynamicObjectCollection("billentry");
+                for (DynamicObject object : billentry) {
+                    object.set("qty",salEntry.getBigDecimal("nckd_signqty").subtract(salEntry.getBigDecimal("qty")));
+                    object.set("baseqty",salEntry.getBigDecimal("nckd_signbaseqty").subtract(salEntry.getBigDecimal("baseqty")));
+                    object.set("receivalqty",salEntry.getBigDecimal("nckd_signbaseqty").subtract(salEntry.getBigDecimal("baseqty")));
+                    object.set("lot",salEntry.get("lot"));
+                    object.set("warehouse",salEntry.get("warehouse"));
+                    object.set("location",salEntry.get("location"));
+                    object.set("lotnumber",salEntry.getString("lotnumber"));
+                    object.set("auxpty",salEntry.get("auxpty"));
+                    object.set("shift",workshifts);
+                }
+                save.set("comment","长吨入库");
+            }
+        }
+        //保存
+        OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
+        if (operationResult1.isSuccess()) {
+            OperateOption auditOption = OperateOption.create();
+            auditOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
+            auditOption.setVariableValue(OperateOptionConst.IGNOREWARN, String.valueOf(true)); // 不执行警告级别校验器
+            //提交
+            OperationResult subResult = OperationServiceHelper.executeOperate("submit", targetBill, saveDynamicObject, auditOption);
+            if (subResult.isSuccess()) {
+                //审核
+                OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
+                for (DynamicObject object : saveDynamicObject) {
+                    this.operationResult.setMessage("已生成单据号为: "+object.get("billno")+" 完工入库单");
+                }
+
+            }
+
+        }
+
+    }
+
+
+    /**
+     * 获取生产订单
+     * @param dataEntity
+     * @return
+     */
+    public DynamicObject getMFTOrder(DynamicObject dataEntity){
+        DynamicObjectCollection entryentity = dataEntity.getDynamicObjectCollection("entryentity");
+        DynamicObject dynamicObject = entryentity.get(0);
+        DynamicObject nckdMateriel = dynamicObject.getDynamicObject("nckd_materiel");
+        DynamicObject org = dataEntity.getDynamicObject("org");
+        Date nckdSigndate = dataEntity.getDate("nckd_signdate");
+        QFilter qFilter = new QFilter("treeentryentity.material.masterid",QCP.equals,nckdMateriel.getPkValue())
+                .and("org",QCP.equals,org.getPkValue())
+                .and("billdate",QCP.large_equals, DateUtil.beginOfMonth(nckdSigndate))
+                .and("billdate",QCP.less_equals,DateUtil.endOfMonth(nckdSigndate))
+                .and("billstatus",QCP.equals,"C");
+        DynamicObject pomMftorder = QueryServiceHelper.queryOne("pom_mftorder", "id,treeentryentity.id", new QFilter[]{qFilter});
+        if(pomMftorder == null){
+            QFilter qFilter2 = new QFilter("treeentryentity.material.masterid",QCP.equals,nckdMateriel.getPkValue())
+                    .and("org",QCP.equals,org.getPkValue())
+//                    .and("billdate",QCP.not_equals2, null)
+//                    .and("billdate",QCP.less_equals,DateUtil.endOfMonth(nckdSigndate))
+                    .and("billstatus",QCP.equals,"C");
+            DynamicObjectCollection query = QueryServiceHelper.query("pom_mftorder", "id,treeentryentity.id", new QFilter[]{qFilter2}, "billdate desc", 1);
+            return query.isEmpty() ? null : (DynamicObject)query.get(0);
+        }
+        return pomMftorder;
+    }
+
+    /**
+     * 获取物料是否为长吨盐
+     * @param entities
+     * @return
+     */
+    public Map<Long,Boolean> getMaterialIsMoreSalt(DynamicObject[] entities){
+        Set<Long> materialIds = new HashSet<>();
+        Map<Long,Boolean> isMoreSalt = new HashMap<>();
+        for (DynamicObject entity : entities) {
+            DynamicObjectCollection entryentity = entity.getDynamicObjectCollection("entryentity");
+            if(entryentity.isEmpty()){
+                continue;
+            }
+            entryentity.forEach((row)->{
+                if (row.getDynamicObject("nckd_materiel") != null){
+                    materialIds.add((Long) row.getDynamicObject("nckd_materiel").getPkValue());
+                }
+            });
+        }
+        if (materialIds.isEmpty()){
+            return isMoreSalt;
+        }
+        QFilter qFilter = new QFilter("id",QCP.in,materialIds.toArray(new Long[0]));
+        DynamicObjectCollection bdMaterial = QueryServiceHelper.query("bd_material", "id,nckd_ismoresalt", new QFilter[]{qFilter});
+        bdMaterial.forEach((m)->{
+            if(m.get("nckd_ismoresalt") != null){
+                isMoreSalt.put(m.getLong("id"),m.getBoolean("nckd_ismoresalt"));
+            }
+        });
+        return isMoreSalt;
+    }
+
 }

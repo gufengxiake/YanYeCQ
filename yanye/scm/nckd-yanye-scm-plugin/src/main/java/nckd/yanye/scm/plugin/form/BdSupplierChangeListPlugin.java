@@ -34,25 +34,28 @@ public class BdSupplierChangeListPlugin extends AbstractListPlugin {
                 for (ListSelectedRow row : selectedRows) {
                     DynamicObject customerChange = BusinessDataServiceHelper.loadSingle(row.getPrimaryKeyValue(), "nckd_bd_supplier_change");
                     DynamicObjectCollection entity = customerChange.getDynamicObjectCollection("nckd_entry");
-                    if (entity.size() > 0){
-                        for (DynamicObject entry : entity) {
-                            String changeAfter = entry.getString("nckd_changeafter");
-                            if (StringUtils.isEmpty(changeAfter)){
-                                String addSupplier = entry.getString("nckd_addsupplier");
-                                DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name", QCP.equals,addSupplier)});
-                                OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
-                                if (!pushzhwl.isSuccess()){
-                                    this.getView().showMessage("供应商：" +supplier.getString("name") + pushzhwl.getMessage());
+                    String merchanttype = customerChange.getString("nckd_merchanttype");
+                    if ("carrier".equals(merchanttype)){
+                        if (entity.size() > 0){
+                            for (DynamicObject entry : entity) {
+                                String changeAfter = entry.getString("nckd_changeafter");
+                                if (StringUtils.isEmpty(changeAfter)){
+                                    String addSupplier = entry.getString("nckd_addsupplier");
+                                    DynamicObject supplier = BusinessDataServiceHelper.loadSingle("bd_supplier","id",new QFilter[]{new QFilter("name", QCP.equals,addSupplier)});
+                                    OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                                    if (!pushzhwl.isSuccess()){
+                                        this.getView().showMessage("供应商：" +supplier.getString("name") + pushzhwl.getMessage());
+                                    }
+                                    continue;
                                 }
-                                continue;
-                            }
-                            if ("2".equals(changeAfter)){
-                                DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
-                                supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
-                                OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
-                                if (!pushzhwl.isSuccess()){
-                                    this.getView().showMessage("供应商：" +supplier.getString("name") + pushzhwl.getMessage());
-                                    return;
+                                if ("2".equals(changeAfter)){
+                                    DynamicObject supplier = entry.getDynamicObject("nckd_suppliermodify");
+                                    supplier = BusinessDataServiceHelper.loadSingle(supplier.getPkValue(),"bd_supplier");
+                                    OperationResult pushzhwl = OperationServiceHelper.executeOperate("pushzhwl", "bd_supplier", new DynamicObject[]{supplier}, OperateOption.create());
+                                    if (!pushzhwl.isSuccess()){
+                                        this.getView().showMessage("供应商：" +supplier.getString("name") + pushzhwl.getMessage());
+                                        return;
+                                    }
                                 }
                             }
                         }

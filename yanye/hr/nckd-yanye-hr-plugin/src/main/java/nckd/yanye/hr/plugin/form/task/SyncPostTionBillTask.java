@@ -72,19 +72,23 @@ public class SyncPostTionBillTask extends AbstractTask {
         // 使用流过滤出 nckd_sortnum 和 nckd_lastsortnum 不相等的数据
         List<DynamicObject> filteredList = Arrays.stream(homsPositionbills)
                 .filter(dynamicObject -> {
-                    Integer nckdSortNum = dynamicObject.getInt("nckd_sortnum");
-                    Integer nckdLastSortNum = dynamicObject.getInt("nckd_lastsortnum");
+                    Object nckdSortNum = dynamicObject.get("nckd_sortnum");
+                    Object nckdLastSortNum = dynamicObject.get("nckd_lastsortnum");
 
                     // 如果两个都是 null，返回 false
-                    if (nckdSortNum == null && nckdLastSortNum == null) {
+                    if (ObjectUtils.isEmpty(nckdSortNum) &&  ObjectUtils.isEmpty(nckdLastSortNum)) {
                         return false;
                     }
                     // 如果一个为 null，直接返回另外一个的比较结果
-                    if (nckdSortNum == null || nckdLastSortNum == null) {
+                    if (ObjectUtils.isEmpty(nckdSortNum) || ObjectUtils.isEmpty(nckdLastSortNum)) {
                         return true; // 如果其中一个为 null，视为不相等
                     }
+
+                    Integer nckdSortNum1 = (Integer) nckdSortNum;
+                    Integer nckdLastSortNum1 = (Integer) nckdLastSortNum;
+
                     // 两者都不为 null，进行正常的比较
-                    return !nckdSortNum.equals(nckdLastSortNum);
+                    return !nckdLastSortNum1.equals(nckdSortNum1);
                 })
                 .collect(Collectors.toList());
         if(ObjectUtils.isNotEmpty(filteredList)){

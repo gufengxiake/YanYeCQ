@@ -83,7 +83,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 WAGES_LIST.add(s);
             }
         }
-        if(StringUtils.isEmpty(AppflgConstant.HR_ZHIJI_STAFF)){
+        if(StringUtils.isNotEmpty(AppflgConstant.HR_ZHIJI_STAFF)){
             String[] split = AppflgConstant.HR_ZHIJI_STAFF.split(",");
             for(String s : split){
                 STAFF_LIST.add(s);
@@ -93,9 +93,9 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 
     public List<String> getUINLIST() {
         //  进入获取到员工离岗退养工资统计单据体中存在的人员信息的工号放到uinList中
-        QFilter qFilter = new QFilter("status", QCP.equals, "C");
+//        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
         List<String> UINLIST = new ArrayList<>();
-        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,status,entryentity,entryentity.nckd_name,entryentity.nckd_name.number", new QFilter[]{qFilter});
+        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,billstatus,entryentity,entryentity.nckd_name,entryentity.nckd_name.number", new QFilter[]{});
         if (ObjectUtils.isNotEmpty(nckdStaffretiresalacounts)) {
             for (DynamicObject nckdStaffretiresalacount : nckdStaffretiresalacounts) {
                 DynamicObjectCollection entryentity = nckdStaffretiresalacount.getDynamicObjectCollection("entryentity");
@@ -152,11 +152,11 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             for(DynamicObject dynamicObject : entryentity){
                 String string = dynamicObject.getString("nckd_name.number");
                 if(uinlist.contains(string)){
-                    errMessage.concat(dynamicObject.getString("nckd_name.name")+",");
+                    errMessage= errMessage.concat(dynamicObject.getString("nckd_name.name")+",");
                 }
             }
             if(StringUtils.isNotEmpty(errMessage)){
-                errMessage.concat("已存在于其他离岗退养工资统计单据中，是否继续保存?");
+                errMessage = errMessage.concat("已存在于离岗退养工资统计单据中，是否继续保存?");
             }
         }
         if (!"true".equals(isDealed) && StringUtils.isNotEmpty(errMessage)) {
@@ -166,7 +166,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             // 在用户点击确认框上的按钮后，系统会调用confirmCallBack方法
             ConfirmCallBackListener confirmCallBackListener = new ConfirmCallBackListener("isExceed", this);
             // 设置页面确认框，参数为：标题，选项框类型，回调监听
-            this.getView().showConfirm("请注意，申请人数超编，是否继续提报？", MessageBoxOptions.YesNo, confirmCallBackListener);
+            this.getView().showConfirm(errMessage, MessageBoxOptions.YesNo, confirmCallBackListener);
             // 只执行一次
             this.getView().getPageCache().put("isDealed", "true");
         }
@@ -229,7 +229,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         // 两年以上
         BigDecimal twoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth",iRow));
         BigDecimal istwoupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupmonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
-        BigDecimal twoupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_twoupgrantpro",iRow));
+        BigDecimal twoupgrantpro = (BigDecimal)this.getModel().getValue("nckd_twoupgrantpro",iRow);
         // 工资标准
         BigDecimal multiply3 = amountstandard.multiply(grantproportion).multiply(twoupgrantpro).multiply(istwoupmonth);
         this.getModel().setValue("nckd_twoupsum",multiply3,iRow);
@@ -239,7 +239,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         // 一年以上
         BigDecimal oneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth",iRow));
         BigDecimal isoneupmonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupmonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
-        BigDecimal oneupgrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_oneupgrantpro",iRow));
+        BigDecimal oneupgrantpro = (BigDecimal)this.getModel().getValue("nckd_oneupgrantpro",iRow);
 
         BigDecimal multiply5 = amountstandard.multiply(grantproportion).multiply(oneupgrantpro).multiply(isoneupmonth);
         this.getModel().setValue("nckd_oneupsum",multiply5,iRow);
@@ -248,7 +248,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         // 一年之内
         BigDecimal onemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth",iRow));
         BigDecimal isonemonth = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onemonth", iRow)).compareTo(BigDecimal.ZERO) > 0 ? BigDecimal.ONE : BigDecimal.ZERO;
-        BigDecimal onegrantpro = BigDecimal.valueOf((int) this.getModel().getValue("nckd_onegrantpro",iRow));
+        BigDecimal onegrantpro = (BigDecimal)this.getModel().getValue("nckd_onegrantpro",iRow);
 
         BigDecimal multiply4 = amountstandard.multiply(grantproportion).multiply(onegrantpro).multiply(isonemonth);
         this.getModel().setValue("nckd_onesum",multiply4,iRow);

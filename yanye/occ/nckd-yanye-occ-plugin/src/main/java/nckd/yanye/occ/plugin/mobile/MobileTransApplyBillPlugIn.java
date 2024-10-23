@@ -19,6 +19,9 @@ import kd.bos.form.*;
 import kd.bos.form.control.Control;
 import kd.bos.form.events.AfterDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.field.BasedataEdit;
+import kd.bos.form.field.events.BeforeF7SelectEvent;
+import kd.bos.form.field.events.BeforeF7SelectListener;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
 import kd.bos.list.ListFilterParameter;
 import kd.bos.list.ListShowParameter;
@@ -36,9 +39,7 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.servicehelper.user.UserServiceHelper;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.EventObject;
-import java.util.List;
+import java.util.*;
 
 /*
 调拨申请单移动表单插件
@@ -46,7 +47,7 @@ import java.util.List;
 author:wgl
 date:2024/08/20
  */
-public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
+public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin implements BeforeF7SelectListener {
 
     private static final String targetBill = "im_transapply";
 
@@ -92,11 +93,56 @@ public class MobileTransApplyBillPlugIn extends AbstractMobFormPlugin {
 
         }
     }
+    @Override
+    public void beforeF7Select(BeforeF7SelectEvent evt) {
+        String name = evt.getProperty().getName();
+        if (name.equalsIgnoreCase("unit")) {
+            int row=evt.getRow();
+            DynamicObject wl= (DynamicObject) this.getModel().getValue("material",row);
+            if(wl!=null){
+                Object untigroupId=null;
+                DynamicObject masterid=wl.getDynamicObject("masterid");
+                if(masterid!=null){
+                    DynamicObject baseUnit=masterid.getDynamicObject("baseunit");
+                    if(baseUnit!=null){
+                        Object baseUnitId=baseUnit.getPkValue();
+                        DynamicObject baseUnitData=BusinessDataServiceHelper.loadSingle(baseUnitId,"bd_measureunits");
+                        untigroupId=baseUnitData.getDynamicObject("group").getPkValue();
+                    }
 
+                }
+                Set unitList=new HashSet<Long>();
+                Object masterid_Id=masterid.getPkValue();
+                if (null != masterid_Id && !"0".equals(masterid_Id)) {
+                    QFilter[] filters = new QFilter[]{new QFilter("materialid", "=", masterid_Id)};
+                    Map<Object, DynamicObject> multimeasureunits = BusinessDataServiceHelper.loadFromCache("bd_multimeasureunit", "id,measureunitid.id", filters);
+                    if (multimeasureunits != null && multimeasureunits.size() > 0) {
+                        int index = 0;
+                        for(Iterator var6 = multimeasureunits.values().iterator(); var6.hasNext(); ++index) {
+                            DynamicObject object = (DynamicObject)var6.next();
+                            Long unit= (Long) object.get("measureunitid.id");
+                            unitList.add(unit);
+                        }
+                    }
+                }
+                if(untigroupId!=null){
+                    ListShowParameter formShowParameter = (ListShowParameter) evt.getFormShowParameter();
+                    List<QFilter> qFilters = new ArrayList<>();
+                    qFilters.add(new QFilter("group.id", QCP.equals, untigroupId).or("id",QCP.in,unitList));
+                    formShowParameter.getListFilterParameter().setQFilters(qFilters);
+                }
+
+            }
+        }
+    }
     @Override
     public void registerListener(EventObject e) {
         super.registerListener(e);
         this.addClickListeners("nckd_return");
+        BasedataEdit unitEdit = this.getView().getControl("unit");
+        if (unitEdit != null) {
+            unitEdit.addBeforeF7SelectListener(this);
+        }
     }
 
     @Override

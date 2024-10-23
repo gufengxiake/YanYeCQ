@@ -10,6 +10,7 @@ import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.ShowType;
 import kd.bos.form.control.EntryGrid;
+import kd.bos.form.control.events.ItemClickEvent;
 import kd.bos.form.events.HyperLinkClickEvent;
 import kd.bos.form.events.HyperLinkClickListener;
 import kd.bos.form.field.BasedataEdit;
@@ -39,6 +40,11 @@ import kd.fi.fa.utils.FaShowFormUtils;
 import org.apache.commons.lang3.ObjectUtils;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.Period;
+import java.time.ZoneId;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.EventObject;
 import java.util.Iterator;
@@ -67,6 +73,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
 
     public void registerListener(EventObject e) {
         super.registerListener(e);
+        this.addItemClickListeners("advcontoolbarap");
         BasedataEdit assetUnit = (BasedataEdit)this.getView().getControl("assetunit");
         assetUnit.addBeforeF7SelectListener((evt) -> {
             FaFormPermissionUtil.beforeAssetUnitSelectV2(this.getView().getPageId(), evt, "nckd_fa_salary_retir");
@@ -86,6 +93,144 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         EntryGrid leaseChangeEntry = (EntryGrid)this.getControl("leasechangeentry");
         leaseChangeEntry.addHyperClickListener(this);
     }
+
+    @Override
+    public void itemClick(ItemClickEvent evt) {
+        super.itemClick(evt);
+        String itemKey = evt.getItemKey();
+        // 刷新付款规则
+        if (itemKey.equals("nckd_advconbaritemap")) {
+            setAdvconbaritemap();
+        }
+    }
+
+    // 刷新付款规则
+    private void setAdvconbaritemap(){
+        // todo 获取人员，去查询 hr nckd_staffretiresalacount 筛选出
+
+        // 退养人员
+        DynamicObject leaser = (DynamicObject) this.getModel().getValue("leaser");
+        if(ObjectUtils.isEmpty(leaser)){
+            this.getView().showErrorNotification("请选择退养人员");
+            return;
+        }
+        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C")
+                .and("entryentity.nckd_name.number",QCP.equals,leaser.getString("number"));
+
+        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,entryentity,entryentity.nckd_name,entryentity.nckd_name.number" +
+                "entryentity.nckd_twoupmonth,entryentity.nckd_twoupsum,entryentity.nckd_oneupmonth,entryentity.nckd_oneupsum,entryentity.nckd_onemonth,entryentity.nckd_onesum," +
+                "entryentity.nckd_highfee,entryentity.nckd_welfareamount,entryentity.nckd_welfareamount1,entryentity.nckd_welfareamount2,entryentity.nckd_welfareamount3" +
+                "entryentity.nckd_retiredate,entryentity.nckd_taskeffect", new QFilter[]{qFilter});
+        if(ObjectUtils.isEmpty(nckdStaffretiresalacounts)){
+            return;
+        }else{
+            for (DynamicObject nckdStaffretiresalacount : nckdStaffretiresalacounts) {
+                DynamicObjectCollection entryentity = nckdStaffretiresalacount.getDynamicObjectCollection("entryentity");
+                this.getModel().getDataEntity(true).getDynamicObjectCollection("entryentity");
+                if(ObjectUtils.isNotEmpty(entryentity)){
+                    for (DynamicObject dynamicObject : entryentity) {
+                        String string = dynamicObject.getString("nckd_name.number");
+                        if(StringUtils.equals(string,leaser.getString("number"))){
+                            Date nckdRetiredate = dynamicObject.getDate("nckd_retiredate");
+                            Date nckdTaskeffect = dynamicObject.getDate("nckd_taskeffect");
+
+                            int totalMonths = getDiffMonthsByLocalDate(nckdTaskeffect, nckdRetiredate, false, true);
+
+                            // 获取对应用户的高温费
+                            BigDecimal nckdHighfee = dynamicObject.getBigDecimal("nckd_highfee");
+                            // 计算开始日期和结束日期的 LocalDate
+                            LocalDate startDate = nckdTaskeffect.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+
+                            if(!nckdHighfee.equals(BigDecimal.ZERO)){
+                                // 统计高温费的月份数
+                                // 统计各个时间段内的 6、7、8、9 月的个数
+                                int countOneYear = 0;
+                                int countTwoYears = 0;
+                                int countTwoToThreeYears = 0;
+                                // 按照月份统计
+                                for (int i = 0; i < totalMonths; i++) {
+                                    LocalDate currentMonth = startDate.plusMonths(i);
+
+                                    // 判断当前月份是否在 6、7、8、9 之间
+                                    if (currentMonth.getMonthValue() >= 6 && currentMonth.getMonthValue() <= 9) {
+                                        if(i<12){
+                                            countOneYear++;
+                                        }else if(i<24){
+                                            countTwoYears++;
+                                        }else{
+                                            countTwoToThreeYears++;
+                                        }
+                                    }
+                                }
+                                if(countOneYear>0){
+                                    // 判断nckdTaskeffect是否处于高温费期间
+                                    if(startDate.getMonthValue() >= 6 && startDate.getMonthValue() <= 9){
+                                        // 开始日期使用 nckdTaskeffect，
+                                        DynamicObject dynamicObject1 = entryentity.addNew();
+
+//                                        dynamicObject1.set();
+                                    }
+                                }
+
+                            }
+
+
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    // 标品财务使用的计算月份数
+    public static int getDiffMonthsByLocalDate(Date beginDate, Date endDate, boolean includeBeginDate, boolean monthRoundUp) {
+        if (compareDate(beginDate, endDate) >= 0) {
+            return 0;
+        } else {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+            String beginDateStr = format.format(beginDate);
+            String endDateStr = format.format(endDate);
+            LocalDate beginLocalDate = LocalDate.parse(beginDateStr);
+            LocalDate endLocalDate = LocalDate.parse(endDateStr);
+            if (includeBeginDate) {
+                endLocalDate = endLocalDate.plusDays(1L);
+            }
+
+            Period period = Period.between(beginLocalDate, endLocalDate);
+            int years = period.getYears();
+            int months = period.getMonths();
+            int days = period.getDays();
+            int diffMonth = years * 12 + months;
+            if (monthRoundUp && days > 0) {
+                ++diffMonth;
+            }
+
+            return diffMonth;
+        }
+    }
+
+    public static int compareDate(Date d1, Date d2) {
+        if (d1 != null && d2 != null) {
+            long t1 = d1.getTime();
+            long t2 = d2.getTime();
+            return Long.compare(t1, t2);
+        } else {
+            KDBizException exception = new KDBizException(ResManager.loadKDString("比较的日期为空，请联系管理员。", "DateUtil_0", "fi-fa-common", new Object[0]));
+            logger.error(String.format("日期比较错误：date1:[%s], date2:[%s]", d1, d2), exception);
+            throw exception;
+        }
+    }
+
+    private static int getHighFeeCountForMonths(int year, int... months) {
+        int count = 0;
+        // 遍历月份，检查是否存在高温费
+        for (int month : months) {
+            // 这里可以根据具体业务逻辑判断该月份的高温费是否存在
+            // count += checkHighFeeForMonth(year, month);
+        }
+        return count;
+    }
+
 
     public void afterCreateNewData(EventObject e) {
         this.setCurrencyAndSysSwitchDate();

@@ -6,13 +6,13 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.entity.datamodel.ListSelectedRowCollection;
 import kd.bos.entity.operate.result.OperationResult;
-import kd.bos.entity.plugin.args.AfterOperationArgs;
 import kd.bos.exception.KDBizException;
-import kd.bos.form.CloseCallBack;
-import kd.bos.form.FormShowParameter;
-import kd.bos.form.ShowType;
+import kd.bos.form.*;
 import kd.bos.form.control.events.ItemClickEvent;
+import kd.bos.form.events.BeforeDoOperationEventArgs;
 import kd.bos.form.events.ClosedCallBackEvent;
+import kd.bos.form.events.MessageBoxClosedEvent;
+import kd.bos.form.operate.FormOperate;
 import kd.bos.list.plugin.AbstractListPlugin;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
@@ -37,6 +37,105 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         super.registerListener(e);
 
         this.addItemClickListeners("nckd_materialcontinue");
+    }
+
+    @Override
+    public void beforeDoOperation(BeforeDoOperationEventArgs args) {
+        super.beforeDoOperation(args);
+
+        FormOperate formOperate = (FormOperate) args.getSource();
+        String operateKey = formOperate.getOperateKey();
+        if ("submit".equals(operateKey)) {
+            boolean flag = this.saveOrSubmitVerify();
+            if (flag) {
+                this.showMessage(args, operateKey);
+            }
+        }
+    }
+
+    private Boolean saveOrSubmitVerify() {
+        ListSelectedRowCollection selectedRows = this.getSelectedRows();
+        DynamicObjectCollection materialrequest = QueryServiceHelper.query("nckd_materialrequest", "id,nckd_materialentries.nckd_materialname,nckd_materialentries.nckd_specifications,nckd_materialentries.nckd_model", new QFilter[]{new QFilter("nckd_materialentries.id", QCP.in, selectedRows.getEntryPrimaryKeyValues())});
+
+        final Boolean[] flag = {false};
+        materialrequest.stream().forEach(m -> {
+            // 校验物料名称、规格、型号，组合唯一性
+            // 物料
+            QFilter qFilter1 = new QFilter("name", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"))
+                    .and("modelnum", QCP.equals, m.getString("nckd_materialentries.nckd_specifications"))
+                    .and("nckd_model", QCP.equals, m.getString("nckd_materialentries.nckd_model"));
+            boolean exists1 = QueryServiceHelper.exists("bd_material", qFilter1.toArray());
+
+            // 物料申请单
+            QFilter qFilter2 = new QFilter("nckd_materialentries.nckd_materialname", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"))
+                    .and("nckd_materialentries.nckd_specifications", QCP.equals, m.getString("nckd_materialentries.nckd_specifications"))
+                    .and("nckd_materialentries.nckd_model", QCP.equals, m.getString("nckd_materialentries.nckd_model"));
+            int size1 = QueryServiceHelper.query("nckd_materialrequest", "id", qFilter2.toArray()).size();
+
+            // 物料维护单
+            QFilter qFilter3 = new QFilter("nckd_altermaterialname", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"))
+                    .and("nckd_alterspecificat", QCP.equals, m.getString("nckd_materialentries.nckd_specifications"))
+                    .and("nckd_altermodel", QCP.equals, m.getString("nckd_materialentries.nckd_model"))
+                    .and("nckd_materialmaintunit", QCP.equals, "updateinfo");
+            boolean exists2 = QueryServiceHelper.exists("nckd_materialmaintenan", qFilter3.toArray());
+
+            // 物料名称、规格、型号，需要组合校验唯一性
+            if (exists1 || size1 > 1 || exists2) {
+                throw new KDBizException("物料名称、规格、型号，组合需唯一!");
+            }
+
+            // 校验物料名称唯一性
+            // 物料
+            QFilter qFilter4 = new QFilter("name", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"));
+            boolean exists3 = QueryServiceHelper.exists("bd_material", qFilter4.toArray());
+
+            // 物料申请单
+            QFilter qFilter5 = new QFilter("nckd_materialentries.nckd_materialname", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"));
+            int size2 = QueryServiceHelper.query("nckd_materialrequest", "id", qFilter5.toArray()).size();
+
+            // 物料维护单
+            QFilter qFilter6 = new QFilter("nckd_altermaterialname", QCP.equals, m.getString("nckd_materialentries.nckd_materialname"))
+                    .and("nckd_materialmaintunit", QCP.equals, "updateinfo");
+            boolean exists4 = QueryServiceHelper.exists("nckd_materialmaintenan", qFilter6.toArray());
+
+            // 物料名称、规格、型号，需要组合校验唯一性
+            if (exists3 || size2 > 1 || exists4) {
+                flag[0] = true;
+            }
+        });
+
+        return flag[0];
+    }
+
+    private void showMessage(BeforeDoOperationEventArgs args, String operateKey) {
+        // 判断是否处理过
+        String isDealed = this.getView().getPageCache().get("isDealed");
+        if (!"true".equals(isDealed)) {
+            // 取消原来的操作
+            args.setCancel(true);
+            // 在用户点击确认框上的按钮后，系统会调用confirmCallBack方法
+            ConfirmCallBackListener confirmCallBackListener = new ConfirmCallBackListener(operateKey, this);
+            // 设置页面确认框，参数为：标题，选项框类型，回调监听
+            this.getView().showConfirm("物料名称重复！", MessageBoxOptions.YesNo, confirmCallBackListener);
+            // 只执行一次
+            this.getView().getPageCache().put("isDealed", "true");
+        }
+    }
+
+    @Override
+    public void confirmCallBack(MessageBoxClosedEvent messageBoxClosedEvent) {
+        super.confirmCallBack(messageBoxClosedEvent);
+
+        String callBackId = messageBoxClosedEvent.getCallBackId();
+        //判断回调参数id
+        if ("submit".equals(callBackId)) {
+            if (MessageBoxResult.Yes.equals(messageBoxClosedEvent.getResult())) {
+                this.getView().invokeOperation(callBackId);
+            } else if (MessageBoxResult.No.equals(messageBoxClosedEvent.getResult())) {
+                // 点击否也清除
+                this.getView().getPageCache().remove("isDealed");
+            }
+        }
     }
 
     @Override
@@ -84,6 +183,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         Map<String, Object> map = (Map<String, Object>) closedCallBackEvent.getReturnData();
         if (map != null) {
             DynamicObject org = BusinessDataServiceHelper.loadSingle(map.get("orgId"), "bos_org");
+            DynamicObject department = (DynamicObject) map.get("department");
             DynamicObjectCollection entryentity = (DynamicObjectCollection) map.get("entryentity");
 
             try {
@@ -117,7 +217,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
 //                    }
 //                } else {
                     // 手动新增的物料
-                    getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial, entity);
+                    getDynamicObjectForBdMaterial(MaterialAttributeInformationUtils.list, org, bdMaterial, department, entity);
 //                }
 
                     // 核算信息设置存货类别并提交审核
@@ -243,7 +343,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
         }
     }
 
-    private void getDynamicObjectForBdMaterial(List<String> list, DynamicObject org, DynamicObject materialdynamicObject, DynamicObject entity) {
+    private void getDynamicObjectForBdMaterial(List<String> list, DynamicObject org, DynamicObject materialdynamicObject, DynamicObject department, DynamicObject entity) {
         // 江盐集团
         QFilter qFilter = new QFilter("number", QCP.equals, "1");
         DynamicObject bosAdminorg = BusinessDataServiceHelper.loadSingle("bos_adminorg", new QFilter[]{qFilter});
@@ -262,7 +362,7 @@ public class MaterialrequestListPlugin extends AbstractListPlugin {
             materialmaintenanObject.set("billstatus", "A");//单据状态
             materialmaintenanObject.set("org", org);//申请组织
             materialmaintenanObject.set("nckd_createorganiza", bosAdminorg.getPkValue());//创建组织
-            materialmaintenanObject.set("nckd_initiatingdepart", RequestContext.get().getOrgId());//发起部门
+            materialmaintenanObject.set("nckd_initiatingdepart", department);//发起部门
             materialmaintenanObject.set("nckd_applicant", RequestContext.get().getCurrUserId());//申请人
             materialmaintenanObject.set("nckd_materialmaintunit", "add");//单据维护类型：新增物料属性
             materialmaintenanObject.set("nckd_documenttype", billType);//单据类型：

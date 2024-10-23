@@ -4,7 +4,6 @@ import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.form.plugin.AbstractMobFormPlugin;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
-import kd.imsc.dmw.utils.StringUtil;
 import kd.imsc.imbd.common.consts.PC;
 import kd.occ.ocbase.common.pagemodel.OcdbdChannelAuthorize;
 
@@ -22,7 +21,7 @@ public class MobCartEditExtBillPlugIn extends AbstractMobFormPlugin {
         super.afterCreateNewData(e);
         DynamicObjectCollection entryList = this.getModel().getEntryEntity("itemlist");
         String supplierId = this.getView().getParentView().getFormShowParameter().getCustomParam("supplierid");
-        if (StringUtil.isNotNull(supplierId)) {
+        if (supplierId != null && supplierId.trim().length() > 0) {
             DynamicObject supplier = BusinessDataServiceHelper.loadSingle(Long.parseLong(supplierId), OcdbdChannelAuthorize.P_name, OcdbdChannelAuthorize.F_orderchannel);
             if (supplier != null) {
                 long orderchannelId = supplier.getLong(OcdbdChannelAuthorize.F_orderchannel + "_" + PC.F_ID);
