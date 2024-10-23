@@ -236,19 +236,26 @@ public class SaleOrderBillPlugIn extends AbstractBillPlugIn {
                 return;
             }
             int entryRowCount = this.getModel().getEntryRowCount("billentry");
+//            List<String> confirmTips = new ArrayList<>();
+            StringBuilder confirmTips = new StringBuilder();
             for (int i = 0; i < entryRowCount; i++) {
-                long material = (long) ((DynamicObject)this.getModel().getValue("material", i)).getPkValue();
+                DynamicObject material = (DynamicObject) this.getModel().getValue("material", i);
+                long materialPkValue = (long) material.getPkValue();
                 BigDecimal priceandtax = (BigDecimal) this.getModel().getValue("priceandtax", i);
-                RefObject<String> afterConfirm = new RefObject<>();
-                if (checkMaps.containsKey(material) && priceandtax.compareTo(checkMaps.get(material)) != 0 && !operate.getOption().tryGetVariableValue("isSubmit", afterConfirm)){
-                    // 显示确认消息
-                    ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener("submit", this);
-                    String confirmTip = "物料行含税单价与销售合同不一致,是否提交?";
-                    this.getView().showConfirm(confirmTip, MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
-
-                    // 在没有确认之前，先取消本次操作
-                    args.setCancel(true);
+                if (checkMaps.containsKey(materialPkValue) && priceandtax.compareTo(checkMaps.get(materialPkValue)) != 0){
+                    String tip = "第"+ (i+1) + "行,物料编码为 ["+material.getDynamicObject("masterid").getString("name") + "] 含税单价与销售合同不一致";
+                    confirmTips.append(tip).append("\r\n");
                 }
+            }
+            RefObject<String> afterConfirm = new RefObject<>();
+            if(confirmTips.length() > 0 && !operate.getOption().tryGetVariableValue("isSubmit", afterConfirm)){
+                // 显示确认消息
+                ConfirmCallBackListener confirmCallBacks = new ConfirmCallBackListener("submit", this);
+                confirmTips.append("是否提交?");
+                this.getView().showConfirm(confirmTips.toString(), MessageBoxOptions.YesNo, ConfirmTypes.Default, confirmCallBacks);
+
+                // 在没有确认之前，先取消本次操作
+                args.setCancel(true);
             }
         }
 

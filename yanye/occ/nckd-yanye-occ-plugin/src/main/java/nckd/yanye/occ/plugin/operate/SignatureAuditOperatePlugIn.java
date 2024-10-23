@@ -1,7 +1,6 @@
 package nckd.yanye.occ.plugin.operate;
 
 import cn.hutool.core.date.DateUtil;
-import com.grapecity.documents.excel.Q;
 import kd.bos.data.BusinessDataReader;
 import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
@@ -46,6 +45,9 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
         e.getFieldKeys().add("nckd_srcbillentity");//来源单据实体
         e.getFieldKeys().add("nckd_sourcebillid");//来源单据id
         e.getFieldKeys().add("nckd_sourceentryid");//来源单据分录Id
+        e.getFieldKeys().add("nckd_materiel");
+        e.getFieldKeys().add("nckd_signdate");
+        e.getFieldKeys().add("org");
     }
 
     /**
@@ -174,6 +176,10 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                     }
 
                 }
+                //入库出问题则不允许生成出库单
+                if (errMessage.length() > 0) {
+                    throw new KDBizException(errMessage.toString());
+                }
                 //下推销售出库单
                 if (!selectedRows.isEmpty()) {
                     String sourceBill = "im_saloutbill";//销售出库
@@ -295,6 +301,9 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                             OperationResult auditResult = OperationServiceHelper.executeOperate("audit", targetBill, saveDynamicObject, auditOption);
                         }
                     }
+                }
+                if (errMessage.length() > 0) {
+                    throw new KDBizException(errMessage.toString());
                 }
                 //销售出库单（承运商）
                 if (!bhlselectedRows.isEmpty()) {
