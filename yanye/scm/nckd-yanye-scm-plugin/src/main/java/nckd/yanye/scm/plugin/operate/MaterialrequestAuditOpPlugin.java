@@ -332,11 +332,11 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败：" + operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
             } else {
                 if (!"3".equals(billType)) {
-                    // 设置id
                     List<Object> successPkIds = operationResult.getSuccessPkIds();
-                    materialmaintenanObject.set("id", successPkIds.get(0));
+                    DynamicObject single = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
+
                     // 提交
-                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{single}, OperateOption.create());
                     if (!submitOperate.isSuccess()) {
                         errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "提交物料维护单失败：" + submitOperate.getAllErrorOrValidateInfo() + submitOperate.getMessage());
                     }
@@ -484,20 +484,20 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
             OperateOption operateOption = OperateOption.create();
             operateOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
 
-            // 设置id
             List<Object> successPkIds = saveOperationResult.getSuccessPkIds();
-            materialObject.set("id", successPkIds.get(0));
+            DynamicObject single = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
+
             //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new DynamicObject[]{materialObject}, operateOption);
+            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new DynamicObject[]{single}, operateOption);
             if (!submit.isSuccess()) {
-                OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
+                OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{single}, OperateOption.create());
                 errorMsg.add(materialObject.getString("name") + "对应的物料提交失败：" + submit.getAllErrorOrValidateInfo() + submit.getMessage());
             } else {
-                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new DynamicObject[]{materialObject}, operateOption);
+                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new DynamicObject[]{single}, operateOption);
                 if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
-                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
-                    OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{single}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{single}, OperateOption.create());
                     errorMsg.add(materialObject.getString("name") + "对应的物料发起审核失败：" + audit.getAllErrorOrValidateInfo() + audit.getMessage());
                 } else {
                     return materialObject;
