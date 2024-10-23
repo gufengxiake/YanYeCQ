@@ -242,11 +242,13 @@ public class ProductionPlanFromPlugin extends AbstractBillPlugIn implements RowC
                     pdm = BusinessDataServiceHelper.loadSingle(pdm.getPkValue(), "pdm_mftbom");
                     DynamicObjectCollection entry = pdm.getDynamicObjectCollection("entry");//bom组件
                     if (entry.size() > 0) {
-                        DynamicObject entrymaterial = entry.get(0).getDynamicObject("entrymaterial");//组件物料
-                        //通过物料查bom
-                        pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
-                        if (pdm != null) {
-                            count = count + 1;
+                        for (DynamicObject eny : entry) {
+                            DynamicObject entrymaterial = eny.getDynamicObject("entrymaterial");//组件物料
+                            //通过物料查bom
+                            pdm = BusinessDataServiceHelper.loadSingle("pdm_mftbom", "id,material", new QFilter[]{new QFilter("material", QCP.equals, entrymaterial.getPkValue())});
+                            if (pdm != null) {
+                                count = count + 1;
+                            }
                         }
                     }
                 }
