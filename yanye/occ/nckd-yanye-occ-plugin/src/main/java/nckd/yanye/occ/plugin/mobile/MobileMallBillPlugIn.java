@@ -25,7 +25,7 @@ import java.util.*;
 public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
     private final static String IM_INV_REALBALAN = "im_inv_realbalance";//即时库存余额表
     private final static String TQSD_IM_INV_REALBALAN_EXT_SEQ = "org,warehouse,location,ownertype,owner,invstatus,invtype,material,auxpty,lotnum,project,baseunit,unit,unit2nd,baseqty,"
-            + "qty,qty2nd,avbbaseqty";
+            + "qty,qty2nd,lockbaseqty";
 
     public void beforeBindData(EventObject e) {
         super.beforeBindData(e);
@@ -141,11 +141,12 @@ public class MobileMallBillPlugIn extends AbstractMobFormPlugin {
         DataSet orderCollections = QueryServiceHelper.queryDataSet("DATE", IM_INV_REALBALAN,
                 TQSD_IM_INV_REALBALAN_EXT_SEQ, filter.toArray(), null);
         //根据物料合计基本单位可用量
-        DataSet sumSql = orderCollections.groupBy(new String[]{"material"}).sum("baseqty").finish();
+        DataSet sumSql = orderCollections.groupBy(new String[]{"material"}).sum("baseqty-lockbaseqty","qty").finish();
         while (sumSql.hasNext()) {
             Row sumItem = sumSql.next();
             Object material = sumItem.get("material");
-            BigDecimal qty = sumItem.getBigDecimal("baseqty");
+            BigDecimal qty = sumItem.getBigDecimal("qty");
+
             matQtyMap.put(material, qty);
         }
         return matQtyMap;

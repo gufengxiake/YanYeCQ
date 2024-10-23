@@ -20,7 +20,9 @@ import kd.occ.ocsaa.formplugin.OcsaaFormMobPlugin;
 import java.time.LocalDateTime;
 import java.time.temporal.TemporalAdjusters;
 import java.util.EventObject;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /*
  * 销售助手首页插件
@@ -207,15 +209,28 @@ public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
 
 
         //查询拜访记录--开始
+        //根据当前用户获取对应渠道档案信息  ocdbd_channel
+        int all = 0;
+//        QFilter cfilter=new QFilter("slaeorginfo.saler.id",QCP.equals,currentUserId);
+//        DynamicObjectCollection channel=QueryServiceHelper.query("ocdbd_channel","id",cfilter.toArray());
+//        if(!channel.isEmpty()){
+//            Set channelList=new HashSet();
+//            for(DynamicObject channelItem:channel){
+//                Object id=channelItem.get("id");
+//                channelList.add(id);
+//            }
+
         String selectFields = "id";
         QFilter filter = new QFilter("hmua_principal.id", QCP.equals, currentUserId)
                 .and("billstatus", "=", "B");
         this.setBfDateFilter(filter, "hmua_bf_date");
         DynamicObjectCollection orderInfoList = QueryServiceHelper.query("hmua_sfa_bf_record", selectFields, filter.toArray());
-        int all = 0;
         if (orderInfoList != null && !orderInfoList.isEmpty()) {
             all = orderInfoList.size();
         }
+        //}
+
+
         //设置标签名称 显示对应数量
         Label channelorder = (Label) this.getControl("nckd_jh");
         channelorder.setText(String.valueOf(all));
@@ -223,7 +238,7 @@ public class MobileHomeBillPlugIn extends OcsaaFormMobPlugin {
         //查询拜访记录--结束
 
         //完成率
-        if(tragetCount!=0){
+        if (tragetCount != 0) {
             double result = (double) all / tragetCount * 100;
             String formattedResult = String.format("%.2f%%", result);
             //设置标签名称 显示对应数量
