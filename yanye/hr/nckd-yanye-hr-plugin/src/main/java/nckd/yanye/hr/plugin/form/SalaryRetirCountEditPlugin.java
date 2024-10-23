@@ -93,9 +93,9 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
 
     public List<String> getUINLIST() {
         //  进入获取到员工离岗退养工资统计单据体中存在的人员信息的工号放到uinList中
-//        QFilter qFilter = new QFilter("billstatus", QCP.equals, "C");
+        QFilter qFilter = new QFilter("billno", QCP.not_equals, this.getModel().getValue("billno"));
         List<String> UINLIST = new ArrayList<>();
-        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,billstatus,entryentity,entryentity.nckd_name,entryentity.nckd_name.number", new QFilter[]{});
+        DynamicObject[] nckdStaffretiresalacounts = BusinessDataServiceHelper.load("nckd_staffretiresalacount", "id,billno,billstatus,entryentity,entryentity.nckd_name,entryentity.nckd_name.number", new QFilter[]{qFilter});
         if (ObjectUtils.isNotEmpty(nckdStaffretiresalacounts)) {
             for (DynamicObject nckdStaffretiresalacount : nckdStaffretiresalacounts) {
                 DynamicObjectCollection entryentity = nckdStaffretiresalacount.getDynamicObjectCollection("entryentity");
@@ -275,7 +275,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
     }
 
     private void retiredateChange(Object newValue,int iRow) {
-        // todo 退休日期修改后，需要重新计算工资和高温费
+        //  退休日期修改后，需要重新计算工资和高温费
         if(ObjectUtils.isNotEmpty(newValue)){
             Date retiredate = (Date)newValue;
             // 计算月份间隔
@@ -420,7 +420,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
         Long pkValue = (Long) nckdRecruitcompany.getPkValue();
         longs.add(pkValue);
         List<Long> allSubordinateOrgIds = OrgUnitServiceHelper.getAllSubordinateOrgs("29", longs, true);
-        QFilter qFilter1 = new QFilter("org.id", QCP.in, allSubordinateOrgIds);
+        QFilter qFilter1 = new QFilter("org.id", QCP.equals, pkValue);
 
 
         lsp.setFormId("hspm_ermanfiletreelistf7");
@@ -461,6 +461,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             Object[] primaryKeyValues = col.getPrimaryKeyValues();
             List<String> numbers = new ArrayList<String>();
             col.getBillListSelectedRowCollection().forEach(row -> numbers.add(row.getNumber()));
+            DynamicObject org =(DynamicObject) this.getModel().getValue("org");
 
             QFilter qFilerman = new QFilter("id", QCP.in, primaryKeyValues);
             DynamicObject[] hspmErmanfiles = BusinessDataServiceHelper.load("hspm_ermanfile", "id,empposrel,person.id,person.number", new QFilter[]{qFilerman});
@@ -525,7 +526,8 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 }
             });
             List<Long> zhjiIdList = zhjiIds.stream().collect(Collectors.toList());
-            QFilter postQFilter = new QFilter("nckd_post.id", QCP.in, zhjiIdList);
+            QFilter postQFilter = new QFilter("nckd_post.id", QCP.in, zhjiIdList)
+                    .and("nckd_org.id",QCP.equals,org.getPkValue());
 
             // 职级工资标准
             DynamicObject[] nckdRanksalarystandards = BusinessDataServiceHelper.load("nckd_ranksalarystandard", "id,nckd_post,nckd_twoupdecimalprop,nckd_oneupdecimalprop,nckd_onedecimalprop,nckd_grantproportion,nckd_highfeestand,nckd_salarystandards", new QFilter[]{postQFilter});
