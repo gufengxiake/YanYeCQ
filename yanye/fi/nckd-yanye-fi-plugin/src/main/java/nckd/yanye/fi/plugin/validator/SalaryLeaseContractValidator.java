@@ -144,7 +144,7 @@ public class SalaryLeaseContractValidator {
         checkLeaseInitPeriod2BookPeriod(errorInfo, orgIds);
         if (!errInitNumber.isEmpty()) {
             String errInitNumbers = String.join(", ", errInitNumber);
-            errorInfo.add(String.format(ResManager.loadKDString("合同号：%s 为初始化合同，请通过初始化合同下推。", "LeaseContractValidator_1", "fi-fa-business", new Object[0]), errInitNumbers));
+            errorInfo.add(String.format(ResManager.loadKDString("单据号：%s 为初始化单据，请通过初始化单据下推。", "LeaseContractValidator_1", "fi-fa-business", new Object[0]), errInitNumbers));
         }
 
         DynamicObjectCollection realCards = QueryServiceHelper.query("fa_card_real", "srcbillid", new QFilter[]{new QFilter("srcbillid", "in", id2Number.keySet())});
@@ -184,7 +184,7 @@ public class SalaryLeaseContractValidator {
         }
 
         if (sb.length() > 0) {
-            errorInfo.add(String.format(ResManager.loadKDString("下推失败，以下核算组织账簿当前期间早于租赁初始化的启用期间：%s", "LeaseContractValidator_3", "fi-fa-business", new Object[0]), sb));
+            errorInfo.add(String.format(ResManager.loadKDString("下推失败，以下核算组织账簿当前期间早于会计账簿的启用期间：%s", "LeaseContractValidator_3", "fi-fa-business", new Object[0]), sb));
         }
 
     }
@@ -205,7 +205,7 @@ public class SalaryLeaseContractValidator {
 
         if (!errNumber.isEmpty()) {
             String errNumbers = String.join(", ", errNumber);
-            errorInfo.add(String.format(ResManager.loadKDString("合同号：%s 存在后续实物卡片，下推失败。", "LeaseContractValidator_2", "fi-fa-business", new Object[0]), errNumbers));
+            errorInfo.add(String.format(ResManager.loadKDString("单据号：%s 存在后续实物卡片，下推失败。", "LeaseContractValidator_2", "fi-fa-business", new Object[0]), errNumbers));
         }
 
         return errorInfo;
@@ -249,7 +249,7 @@ public class SalaryLeaseContractValidator {
 
         if (!errNumber.isEmpty()) {
             String errNumbers = String.join(", ", errNumber);
-            errorInfo.add(String.format(ResManager.loadKDString("合同号：%s 没有关联数据。", "LeaseContractValidator_4", "fi-fa-business", new Object[0]), errNumbers));
+            errorInfo.add(String.format(ResManager.loadKDString("单据号：%s 没有关联数据。", "LeaseContractValidator_4", "fi-fa-business", new Object[0]), errNumbers));
         }
 
         return errorInfo;
@@ -261,7 +261,7 @@ public class SalaryLeaseContractValidator {
         String leaseLiabStr = leaseLiab.toPlainString();
         int leaseLiabValidNum = leaseLiabStr.replace(".", StringUtils.getEmpty()).length();
         if (leaseLiabValidNum > 19) {
-            errorInfoList.add(ResManager.loadKDString("“租赁负债现值”超过最大值。", "LeaseContractValidator_5", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("“退养负债现值”超过最大值。", "LeaseContractValidator_5", "fi-fa-business", new Object[0]));
         }
 
         BigDecimal leaseAssets = leaseContract.getBigDecimal("leaseassets");
@@ -278,7 +278,7 @@ public class SalaryLeaseContractValidator {
         List<String> errorInfoList = new ArrayList(17);
         String number = leaseContract.getString("number");
         if (StringUtils.isEmpty(number)) {
-            errorInfoList.add(ResManager.loadKDString("“合同号”不能为空。", "LeaseContractValidator_7", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("“单据号”不能为空。", "LeaseContractValidator_7", "fi-fa-business", new Object[0]));
         }
 
         return !errorInfoList.isEmpty() ? errorInfoList : new ArrayList(0);
@@ -298,12 +298,12 @@ public class SalaryLeaseContractValidator {
 
         String number = leaseContract.getString("number");
         if (StringUtils.isEmpty(number)) {
-            errorInfoList.add(ResManager.loadKDString("“合同号”不能为空。", "LeaseContractValidator_7", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("“单据编号”不能为空。", "LeaseContractValidator_7", "fi-fa-business", new Object[0]));
         }
 
 //        String name = leaseContract.getString("name");
 //        if (StringUtils.isEmpty(name)) {
-//            errorInfoList.add(ResManager.loadKDString("“合同名称”不能为空。", "LeaseContractValidator_10", "fi-fa-business", new Object[0]));
+//            errorInfoList.add(ResManager.loadKDString("“单据名称”不能为空。", "LeaseContractValidator_10", "fi-fa-business", new Object[0]));
 //        }
 
         DynamicObject leaser = leaseContract.getDynamicObject("leaser");
@@ -363,7 +363,7 @@ public class SalaryLeaseContractValidator {
 
         DynamicObject currency = leaseContract.getDynamicObject("currency");
         if (currency == null) {
-            errorInfo.add(ResManager.loadKDString("获取核算组织本位币失败，请检查核算组织是否为空，或设置“租赁初始化”。", "LeaseContractValidator_19", "fi-fa-business", new Object[0]));
+            errorInfo.add(ResManager.loadKDString("获取核算组织本位币失败，请检查核算组织是否为空，或设置“会计账簿”。", "LeaseContractValidator_19", "fi-fa-business", new Object[0]));
         }
 
         DynamicObjectCollection ruleEntry = leaseContract.getDynamicObjectCollection("payruleentryentity");
@@ -382,12 +382,12 @@ public class SalaryLeaseContractValidator {
 
             Date startDate = row.getDate("rule_startdate");
             if (startDate == null) {
-                errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_起”不能为空。", "LeaseContractValidator_22", "fi-fa-business", new Object[0]), i + 1));
+                errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_起”不能为空。", "LeaseContractValidator_22", "fi-fa-business", new Object[0]), i + 1));
             }
 
             Date endDate = row.getDate("rule_enddate");
             if (endDate == null) {
-                errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_止”不能为空。", "LeaseContractValidator_23", "fi-fa-business", new Object[0]), i + 1));
+                errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_止”不能为空。", "LeaseContractValidator_23", "fi-fa-business", new Object[0]), i + 1));
             }
 
             String payPoint = row.getString("paypoint");
@@ -436,7 +436,7 @@ public class SalaryLeaseContractValidator {
         }
 
         if (freeLeaseStartDate != null && freeLeaseStartDate.compareTo(leaseStartDate) >= 0) {
-            errorInfoList.add(ResManager.loadKDString("“免租期开始日”必须早于“起租日”。", "LeaseContractValidator_29", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("“免租期开始日”必须早于“退养起始日”。", "LeaseContractValidator_29", "fi-fa-business", new Object[0]));
         }
 
         if (!isExempt && discountRate.compareTo(BigDecimal.ZERO) <= 0) {
@@ -444,15 +444,15 @@ public class SalaryLeaseContractValidator {
         }
 
         if (isStock && StringUtils.isEmpty(transitionPlan)) {
-            errorInfoList.add(ResManager.loadKDString("存量合同的“过渡方案”不能为空。", "LeaseContractValidator_31", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("存量单据的“过渡方案”不能为空。", "LeaseContractValidator_31", "fi-fa-business", new Object[0]));
         }
 
         if (!isStock && StringUtils.isNotEmpty(transitionPlan)) {
-            errorInfoList.add(ResManager.loadKDString("非存量合同不能录入“过渡方案”。", "LeaseContractValidator_32", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("非存量单据不能录入“过渡方案”。", "LeaseContractValidator_32", "fi-fa-business", new Object[0]));
         }
 
         if (ruleEntry.isEmpty()) {
-            errorInfoList.add(ResManager.loadKDString("请录入至少一行“使用权类”或“租赁负债类”付款规则。", "LeaseContractValidator_33", "fi-fa-business", new Object[0]));
+            errorInfoList.add(ResManager.loadKDString("请录入至少一行付款规则。", "LeaseContractValidator_33", "fi-fa-business", new Object[0]));
         } else {
             boolean hasItem = false;
             Iterator var13 = ruleEntry.iterator();
@@ -477,7 +477,7 @@ public class SalaryLeaseContractValidator {
             }
 
             if (!hasItem) {
-                errorInfoList.add(ResManager.loadKDString("请录入至少一行“使用权类”或“租赁负债类”付款规则。", "LeaseContractValidator_33", "fi-fa-business", new Object[0]));
+                errorInfoList.add(ResManager.loadKDString("请录入至少一行付款规则。", "LeaseContractValidator_33", "fi-fa-business", new Object[0]));
             }
         }
 
@@ -488,19 +488,19 @@ public class SalaryLeaseContractValidator {
         List<String> errorInfo = new ArrayList(13);
         DynamicObject leaseInit = getLeaseInitFromCache(leaseContract);
         if (leaseInit == null) {
-            errorInfo.add(ResManager.loadKDString("请先创建核算组织的租赁初始化。", "LeaseContractValidator_34", "fi-fa-business", new Object[0]));
+            errorInfo.add(ResManager.loadKDString("请先创建核算组织的会计账簿。", "LeaseContractValidator_34", "fi-fa-business", new Object[0]));
             return errorInfo;
         } else {
             String status = leaseInit.getString("status");
             if (BillStatus.C.name().equals(status)) {
-                errorInfo.add(ResManager.loadKDString("对应组织租赁初始化已结束初始化，不可以新增初始化合同。", "LeaseContractValidator_35", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("对应组织会计账簿已结束初始化，不可以新增初始化退养人员。", "LeaseContractValidator_35", "fi-fa-business", new Object[0]));
             }
 
 //            Date sysSwitchDate = leaseContract.getDate("sysswitchdate");
 //            if (sysSwitchDate == null) {
 //                errorInfo.add(ResManager.loadKDString("系统切换日不能为空，请先创建核算组织的资产主账簿。", "LeaseContractValidator_36", "fi-fa-business", new Object[0]));
 //            } else if (sysSwitchDate.compareTo(leaseInit.getDate("systemswitchday")) != 0) {
-//                errorInfo.add(ResManager.loadKDString("初始化租赁合同系统切换日与租赁初始化系统切换日不一致。", "LeaseContractValidator_37", "fi-fa-business", new Object[0]));
+//                errorInfo.add(ResManager.loadKDString("初始化退养合同系统切换日与会计账簿系统切换日不一致。", "LeaseContractValidator_37", "fi-fa-business", new Object[0]));
 //            }
 //
 //            Date initConfirmDate = leaseContract.getDate("initconfirmdate");
@@ -511,7 +511,7 @@ public class SalaryLeaseContractValidator {
             boolean isExempt = leaseContract.getBoolean("isexempt");
             int depreMonths = getDepreMonths(leaseContract);
             if (isExempt && depreMonths > 12) {
-                errorInfo.add(ResManager.loadKDString("“适用租赁期（月）”大于12个月，不能设为豁免合同。", "LeaseContractValidator_39", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("“适用退养期（月）”大于12个月，不能设为豁免合同。", "LeaseContractValidator_39", "fi-fa-business", new Object[0]));
             }
 
             errorInfo.addAll(validateInitContractFinInfo(leaseContract, leaseInit));
@@ -557,11 +557,11 @@ public class SalaryLeaseContractValidator {
             BigDecimal leaseLiabOri = leaseContract.getBigDecimal("leaseliabori");
             BigDecimal leaseLiab = leaseContract.getBigDecimal("leaseliab");
             if (BigDecimal.ZERO.compareTo(leaseLiab) > 0) {
-                errorInfo.add(ResManager.loadKDString("“租赁负债现值”不能为负数。", "LeaseContractValidator_40", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("“退养负债现值”不能为负数。", "LeaseContractValidator_40", "fi-fa-business", new Object[0]));
             }
 
             if (BigDecimal.ZERO.compareTo(leaseLiabOri) < 0 ^ BigDecimal.ZERO.compareTo(leaseLiab) < 0) {
-                errorInfo.add(ResManager.loadKDString("“租赁负债现值”与“租赁负债原值”必须同时大于0或同时等于0。", "LeaseContractValidator_41", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("“退养负债现值”与“退养负债原值”必须同时大于0或同时等于0。", "LeaseContractValidator_41", "fi-fa-business", new Object[0]));
             }
 
             BigDecimal leaseAssets = leaseContract.getBigDecimal("leaseassets");
@@ -594,7 +594,7 @@ public class SalaryLeaseContractValidator {
             }
 
             if (hasDepreMonths > depreMonths) {
-                errorInfo.add(ResManager.loadKDString("“已折旧期间（月）”不能大于“适用租赁期（月）”。", "LeaseContractValidator_48", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("“已折旧期间（月）”不能大于“适用退养期（月）”。", "LeaseContractValidator_48", "fi-fa-business", new Object[0]));
             }
 
             if (BigDecimal.ZERO.compareTo(assetsAccumDepre) < 0 ^ hasDepreMonths > 0) {
@@ -607,7 +607,7 @@ public class SalaryLeaseContractValidator {
             }
 
             if (BigDecimal.ZERO.compareTo(accumRent) < 0 && leaseAssets.compareTo(leaseLiab) < 0) {
-                errorInfo.add(ResManager.loadKDString("累计租金大于0，“使用权资产原值”不能小于“租赁负债现值”。", "LeaseContractValidator_51", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("累计租金大于0，“使用权资产原值”不能小于“退养负债现值”。", "LeaseContractValidator_51", "fi-fa-business", new Object[0]));
             }
 
             BigDecimal addUpYearRent = leaseContract.getBigDecimal("addupyearrent");
@@ -633,18 +633,18 @@ public class SalaryLeaseContractValidator {
                 errorInfo.add(ResManager.loadKDString("“本年累计利息”不能大于“累计利息”。", "LeaseContractValidator_56", "fi-fa-business", new Object[0]));
             }
 
-            int periodNumber = leaseInit.getInt("curperiod.periodnumber");
-            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(assetsYearDepre) < 0) {
-                errorInfo.add(ResManager.loadKDString("租赁初始化当前在1期，不允许录入“使用权资产本年累计折旧”。", "LeaseContractValidator_57", "fi-fa-business", new Object[0]));
-            }
-
-            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(addUpYearRent) < 0) {
-                errorInfo.add(ResManager.loadKDString("租赁初始化当前在1期，不允许录入“本年累计租金”。", "LeaseContractValidator_58", "fi-fa-business", new Object[0]));
-            }
-
-            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(addUpYearInterest) < 0) {
-                errorInfo.add(ResManager.loadKDString("租赁初始化当前在1期，不允许录入“本年累计利息”。", "LeaseContractValidator_59", "fi-fa-business", new Object[0]));
-            }
+//            int periodNumber = leaseInit.getInt("curperiod.periodnumber");
+//            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(assetsYearDepre) < 0) {
+//                errorInfo.add(ResManager.loadKDString("会计账簿当前在1期，不允许录入“使用权资产本年累计折旧”。", "LeaseContractValidator_57", "fi-fa-business", new Object[0]));
+//            }
+//
+//            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(addUpYearRent) < 0) {
+//                errorInfo.add(ResManager.loadKDString("会计账簿当前在1期，不允许录入“本年累计租金”。", "LeaseContractValidator_58", "fi-fa-business", new Object[0]));
+//            }
+//
+//            if (periodNumber == 1 && BigDecimal.ZERO.compareTo(addUpYearInterest) < 0) {
+//                errorInfo.add(ResManager.loadKDString("会计账簿当前在1期，不允许录入“本年累计利息”。", "LeaseContractValidator_59", "fi-fa-business", new Object[0]));
+//            }
 
             return errorInfo;
         }
@@ -668,12 +668,12 @@ public class SalaryLeaseContractValidator {
 
             BigDecimal leaseLiabOri = leaseContract.getBigDecimal("leaseliabori");
             if (BigDecimal.ZERO.compareTo(leaseLiabOri) != 0) {
-                errorInfo.add(ResManager.loadKDString("豁免合同不允许录入“租赁负债原值”。", "LeaseContractValidator_62", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("豁免合同不允许录入“退养负债原值”。", "LeaseContractValidator_62", "fi-fa-business", new Object[0]));
             }
 
             BigDecimal leaseLiab = leaseContract.getBigDecimal("leaseliab");
             if (BigDecimal.ZERO.compareTo(leaseLiab) != 0) {
-                errorInfo.add(ResManager.loadKDString("豁免合同不允许录入“租赁负债现值”。", "LeaseContractValidator_63", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("豁免合同不允许录入“退养负债现值”。", "LeaseContractValidator_63", "fi-fa-business", new Object[0]));
             }
 
             BigDecimal leaseAssets = leaseContract.getBigDecimal("leaseassets");
@@ -772,12 +772,12 @@ public class SalaryLeaseContractValidator {
                 Date startDate = row.getDate("rule_startdate");
                 if ("A".equals(acctClass)) {
                     if (DateUtil.compareDate(leaseStartDate, startDate) > 0) {
-                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_起”必须大于等于“起租日”。", "LeaseContractValidator_78", "fi-fa-business", new Object[0]), i + 1));
+                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_起”必须大于等于“退养起始日”。", "LeaseContractValidator_78", "fi-fa-business", new Object[0]), i + 1));
                     }
                 } else {
                     Set<String> exceptTransitionPlan = new HashSet(Arrays.asList(TransitionPlan.A.name(), TransitionPlan.C.name()));
                     if (DateUtil.compareDate(initConfirmDate, startDate) > 0 && !exceptTransitionPlan.contains(transitionPlan)) {
-                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_起”必须大于等于“初始确认日”。", "LeaseContractValidator_79", "fi-fa-business", new Object[0]), i + 1));
+                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_起”必须大于等于“初始确认日”。", "LeaseContractValidator_79", "fi-fa-business", new Object[0]), i + 1));
                     }
                 }
 
@@ -787,17 +787,21 @@ public class SalaryLeaseContractValidator {
                     endDate = LeaseUtil.getFirstExecDateFromSysParam(orgId);
                     if (isStock && DateUtil.compareDate(startDate, endDate) < 0 && TransitionPlan.B.name().equals(transitionPlan)) {
                         payItemNumber = DateUtil.getShortDate().format(endDate);
-                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%1$s行：当前组织采用“简化追溯法2”作为存量合同过渡方案，付款规则的“受益期_起”须大于等于首次执行日[%2$s]。", "LeaseContractValidator_80", "fi-fa-business", new Object[0]), i + 1, payItemNumber));
+                        errorInfo.add(String.format(ResManager.loadKDString("付款规则第%1$s行：当前组织采用“简化追溯法2”作为存量合同过渡方案，付款规则的“发放期_起”须大于等于首次执行日[%2$s]。", "LeaseContractValidator_80", "fi-fa-business", new Object[0]), i + 1, payItemNumber));
                     }
                 }
 
                 endDate = row.getDate("rule_enddate");
                 if (DateUtil.compareDate(leaseEndDate, endDate) < 0) {
-                    errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_止”必须小于等于“租赁结束日”。", "LeaseContractValidator_81", "fi-fa-business", new Object[0]), i + 1));
+                    errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_止”必须小于等于“退养终止日”。", "LeaseContractValidator_81", "fi-fa-business", new Object[0]), i + 1));
                 }
 
+//                if (DateUtil.compareDate(leaseStartDate, endDate) > 0) {
+//                    errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_起”必须大于等于“退养开始日”。", "LeaseContractValidator_81", "fi-fa-business", new Object[0]), i + 1));
+//                }
+
                 if (DateUtil.compareDate(startDate, endDate) >= 0) {
-                    errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“受益期_起”必须小于“受益期_止”。", "LeaseContractValidator_82", "fi-fa-business", new Object[0]), i + 1));
+                    errorInfo.add(String.format(ResManager.loadKDString("付款规则第%s行：“发放期_起”必须小于“发放期_止”。", "LeaseContractValidator_82", "fi-fa-business", new Object[0]), i + 1));
                 } else {
                     payItemNumber = payItem.getString("number");
                     if (!payItemDateRange.containsKey(payItemNumber)) {
@@ -866,12 +870,12 @@ public class SalaryLeaseContractValidator {
 
             BigDecimal leaseLiabOri = leaseContract.getBigDecimal("leaseliabori");
             if (leaseLiabOri.compareTo(totalUnpaidRent) != 0) {
-                errorInfo.add(String.format(ResManager.loadKDString("“租赁负债原值”与付款计划中系统切换日之后的未付租金总额[%s]不一致，请调整“租赁负债原值”或者“付款规则”。", "LeaseContractValidator_85", "fi-fa-business", new Object[0]), totalUnpaidRent.stripTrailingZeros().toPlainString()));
+                errorInfo.add(String.format(ResManager.loadKDString("“退养负债原值”与付款计划中系统切换日之后的未付租金总额[%s]不一致，请调整“退养负债原值”或者“付款规则”。", "LeaseContractValidator_85", "fi-fa-business", new Object[0]), totalUnpaidRent.stripTrailingZeros().toPlainString()));
             }
 
             BigDecimal leaseLiab = leaseContract.getBigDecimal("leaseliab");
             if (leaseLiab.compareTo(leaseLiabOri) != 0 && !existPayPlanAfterSysSwitchDate) {
-                errorInfo.add(ResManager.loadKDString("“租赁负债原值”与“租赁负债现值”不相等时，至少要有一笔租赁负债类付款计划的“计划付款日”晚于“系统切换日”。", "LeaseContractValidator_86", "fi-fa-business", new Object[0]));
+                errorInfo.add(ResManager.loadKDString("“退养负债原值”与“退养负债现值”不相等时，至少要有一笔退养负债类付款计划的“计划付款日”晚于“系统切换日”。", "LeaseContractValidator_86", "fi-fa-business", new Object[0]));
             }
 
             return errorInfo;
@@ -887,7 +891,7 @@ public class SalaryLeaseContractValidator {
         } else if (BigDecimal.ZERO.compareTo(leaseLiab) == 0 && BigDecimal.ZERO.compareTo(leaseLiabOri) == 0) {
             return errorInfo;
         } else if (leaseLiab.compareTo(leaseLiabOri) > 0) {
-            errorInfo.add(ResManager.loadKDString("“租赁负债现值”不能大于“租赁负债原值”，请检查数据是否有误。", "LeaseContractValidator_87", "fi-fa-business", new Object[0]));
+            errorInfo.add(ResManager.loadKDString("“退养负债现值”不能大于“退养负债原值”，请检查数据是否有误。", "LeaseContractValidator_87", "fi-fa-business", new Object[0]));
             return errorInfo;
         } else {
             Date sysSwitchDate = leaseContract.getDate("sysswitchdate");
@@ -907,10 +911,10 @@ public class SalaryLeaseContractValidator {
                         if (PayPoint.A.name().equals(payPoint)) {
                             Date firstDayOfPayMonth = DateUtil.getMinDateOfMonth(planPayDate);
                             if (DateUtil.compareDate(sysSwitchDate, firstDayOfPayMonth) < 0) {
-                                errorInfo.add(String.format(ResManager.loadKDString("付款计划[%s]期初付款，且“计划付款日”在“系统切换日”所在月份之后，“租赁负债现值”不能等于“租赁负债原值”。", "LeaseContractValidator_88", "fi-fa-business", new Object[0]), row.getString("plannumber")));
+                                errorInfo.add(String.format(ResManager.loadKDString("付款计划[%s]期初付款，且“计划付款日”在“系统切换日”所在月份之后，“退养负债现值”不能等于“退养负债原值”。", "LeaseContractValidator_88", "fi-fa-business", new Object[0]), row.getString("plannumber")));
                             }
                         } else {
-                            errorInfo.add(String.format(ResManager.loadKDString("付款计划[%s]期末付款，且“计划付款日”不等于“系统切换日”，“租赁负债现值”不能等于“租赁负债原值”。", "LeaseContractValidator_89", "fi-fa-business", new Object[0]), row.getString("plannumber")));
+                            errorInfo.add(String.format(ResManager.loadKDString("付款计划[%s]期末付款，且“计划付款日”不等于“系统切换日”，“退养负债现值”不能等于“退养负债原值”。", "LeaseContractValidator_89", "fi-fa-business", new Object[0]), row.getString("plannumber")));
                         }
                     }
                 }

@@ -234,7 +234,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
 
                             // 计算高温费
                             if(!nckdHighfee.equals(new BigDecimal("0E-10"))) {
-                                // todo 存在高温费
+                                //  存在高温费
                                 int nckdHighfeemonth = dynamicObject.getInt("nckd_highfeemonth");
                                 // 高温费项目
                                 DynamicObject dynamicObject2 = FAPAYMENTITEMSMAP.get("03");
@@ -277,7 +277,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         }
     }
 
-    private static List<Date[]> getConsolidatedTimeRanges(Date startDate, Date endDate) {
+    public static List<Date[]> getConsolidatedTimeRanges(Date startDate, Date endDate) {
         List<Date[]> ranges = new ArrayList<>();
         Calendar startCal = Calendar.getInstance();
         Calendar endCal = Calendar.getInstance();
@@ -311,9 +311,9 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
             // 设置时间段的开始日期
             Date rangeStart = startCal.getTime();
 
-            // 设置结束日期为9月10日
+            // 设置结束日期为9月的最后一天
             startCal.set(Calendar.MONTH, Calendar.SEPTEMBER);
-            startCal.set(Calendar.DAY_OF_MONTH, 10);
+            startCal.set(Calendar.DAY_OF_MONTH, 30);
             Date rangeEnd = startCal.getTime();
 
             // 确保结束日期不超过总结束日期
@@ -336,7 +336,7 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
     }
 
     // 检查日期范围是否在6到9月之间
-    private static boolean isInJuneToSeptember(Date start, Date end) {
+    public static boolean isInJuneToSeptember(Date start, Date end) {
         Calendar cal = Calendar.getInstance();
         cal.setTime(start);
         int startMonth = cal.get(Calendar.MONTH); // 0为1月
@@ -346,6 +346,8 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         // 检查是否在6到9月之间
         return (startMonth <= Calendar.SEPTEMBER && endMonth >= Calendar.JUNE);
     }
+
+
     private void insertNewEntry(DynamicObjectCollection entryentity,BigDecimal amount){
         if(amount.compareTo(BigDecimal.ZERO) != 0){
             DynamicObject dynamicObject = entryentity.addNew();

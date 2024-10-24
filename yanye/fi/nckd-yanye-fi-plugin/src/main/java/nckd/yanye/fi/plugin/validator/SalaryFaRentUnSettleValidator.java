@@ -50,12 +50,12 @@ public class SalaryFaRentUnSettleValidator extends AbstractValidator {
             }).collect(Collectors.toList());
             boolean isGenSettleData = status.equals(BillStatus.C.name()) && LeaseContractRentSettleStatus.C.name().equals(rentStatus);
             if (!isGenSettleData) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("合同未审核或未计息。", "FaRentUnSettleValidator_0", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("单据未审核或未计息。", "FaRentUnSettleValidator_0", "fi-fa-opplugin", new Object[0]));
             }
 
             String bizStatus = leaseContract.getString("bizstatus");
             if (LeaseContractBizStatus.B.name().equals(bizStatus)) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("已终止的合同不允许反计息。", "FaRentUnSettleValidator_1", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("已终止的单据不允许反计息。", "FaRentUnSettleValidator_1", "fi-fa-opplugin", new Object[0]));
             }
 
             List<QFilter> voucherfilterList = new ArrayList();
@@ -65,12 +65,12 @@ public class SalaryFaRentUnSettleValidator extends AbstractValidator {
             voucherfilterList.add(billTypeFilter);
             boolean isGenVoucher = QueryServiceHelper.exists("ai_daptracker", (QFilter[])voucherfilterList.toArray(new QFilter[0]));
             if (isGenVoucher) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("合同对应的摊销与计息记录已生成凭证，不能反计息。", "FaRentUnSettleValidator_2", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("单据对应的摊销与计息记录已生成凭证，不能反计息。", "FaRentUnSettleValidator_2", "fi-fa-opplugin", new Object[0]));
             }
 
             boolean existFutureLeaseChangeBill = LeaseFutureBizChecker.existFutureLeaseChangeBill((Object)null, contractId, (Date)null);
             if (existFutureLeaseChangeBill) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("存在后续租赁变更单，不允许反计息。", "FaRentUnSettleValidator_3", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("存在后续变更单，不允许反计息。", "FaRentUnSettleValidator_3", "fi-fa-opplugin", new Object[0]));
             }
         }
 

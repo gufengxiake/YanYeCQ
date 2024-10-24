@@ -48,27 +48,27 @@ public class SalaryRetirSettleValidator extends AbstractValidator {
             DynamicObject leaseContract = dataEntity.getDataEntity();
             long id = leaseContract.getLong("id");
             if (ids.contains(id)) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("当前合同正在计息，请稍后再试。", "FaRentSettleValidator_0", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("当前单据正在计息，请稍后再试。", "FaRentSettleValidator_0", "fi-fa-opplugin", new Object[0]));
             }
 
             String status = leaseContract.getString("status");
             if (!status.equals(BillStatus.C.name())) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("合同审核状态为未审核，操作失败。", "FaRentSettleValidator_1", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("单据审核状态为未审核，操作失败。", "FaRentSettleValidator_1", "fi-fa-opplugin", new Object[0]));
                 releaseIds.add(id);
             }
 
             String bizStatus = leaseContract.getString("bizstatus");
             if (LeaseContractBizStatus.B.name().equals(bizStatus)) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("已终止的合同不能计息。", "FaRentSettleValidator_2", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("已终止的单据不能计息。", "FaRentSettleValidator_2", "fi-fa-opplugin", new Object[0]));
                 releaseIds.add(id);
             }
 
             String rentStatus = leaseContract.getString("rentsettlestatus");
             if (LeaseContractRentSettleStatus.B.name().equals(rentStatus)) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("合同无需计息。", "FaRentSettleValidator_3", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("单据无需计息。", "FaRentSettleValidator_3", "fi-fa-opplugin", new Object[0]));
                 releaseIds.add(id);
             } else if (LeaseContractRentSettleStatus.C.name().equals(rentStatus)) {
-                this.addErrorMessage(dataEntity, ResManager.loadKDString("合同已生成摊销与计息数据，不能重复生成。", "FaRentSettleValidator_4", "fi-fa-opplugin", new Object[0]));
+                this.addErrorMessage(dataEntity, ResManager.loadKDString("单据已生成摊销与计息数据，不能重复生成。", "FaRentSettleValidator_4", "fi-fa-opplugin", new Object[0]));
                 releaseIds.add(id);
             }
 
