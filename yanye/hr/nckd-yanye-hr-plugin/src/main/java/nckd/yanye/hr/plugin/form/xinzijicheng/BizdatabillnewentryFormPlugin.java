@@ -14,6 +14,7 @@ import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.util.StringUtils;
+import nckd.yanye.hr.plugin.form.xinchouguanli.AdjapprSelectExtPlugin;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -111,29 +112,7 @@ public class BizdatabillnewentryFormPlugin extends AbstractFormPlugin implements
             return null;
         }
         // 获取所有任职经历Map <员工工号, 职级名称>
-        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
-                "hrpi_empposorgrel",
-                "person,nckd_zhiji",
-                new QFilter[]{
-                        // 是否主任职：是
-                        new QFilter("isprimary", QCP.equals, "1"),
-                        // 开始日期小于今天
-                        new QFilter("startdate", QCP.less_than, new Date()),
-                        // 结束日期大于今天
-                        new QFilter("enddate", QCP.large_than, new Date()),
-                        // 业务状态：生效中
-                        new QFilter("businessstatus", QCP.equals, "1"),
-                        // 数据状态
-                        new QFilter("datastatus", QCP.equals, "1"),
-                        // 当前版本
-                        new QFilter("iscurrentversion", QCP.equals, "1"),
-                }
-        );
-        Map<String, String> jobExpMap = Arrays.stream(jobExpArray)
-                .collect(Collectors.toMap(
-                        obj -> obj.getString("person.number"),
-                        obj -> obj.getString("nckd_zhiji.name") == null ? "" : obj.getString("nckd_zhiji.name")
-                ));
+        Map<String, String> jobExpMap = AdjapprSelectExtPlugin.getJobExpMap();
         // 工号
         DynamicObject empposorgrel = entry.getDynamicObject("empposorgrel");
         String userNumber = empposorgrel.getString("person.number");

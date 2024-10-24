@@ -13,6 +13,7 @@ import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
 import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
 import nckd.base.common.utils.capp.CappConfig;
+import org.jetbrains.annotations.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -67,30 +68,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
     private void addAllYearPerson(DynamicObject adjObj, Date effectivedate) {
         Map<String, List<Map<String, String>>> yearKaoheMap = getYearKaoheMap();
 
-        // 获取所有任职经历Map <员工id, 职级名称>
-        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
-                "hrpi_empposorgrel",
-                "person,nckd_zhiji",
-                new QFilter[]{
-                        // 是否主任职：是
-                        new QFilter("isprimary", QCP.equals, "1"),
-                        // 开始日期小于今天
-                        new QFilter("startdate", QCP.less_than, new Date()),
-                        // 结束日期大于今天
-                        new QFilter("enddate", QCP.large_than, new Date()),
-                        // 业务状态：生效中
-                        new QFilter("businessstatus", QCP.equals, "1"),
-                        // 数据状态
-                        new QFilter("datastatus", QCP.equals, "1"),
-                        // 当前版本
-                        new QFilter("iscurrentversion", QCP.equals, "1"),
-                }
-        );
-        Map<String, String> jobExpMap = Arrays.stream(jobExpArray)
-                .collect(Collectors.toMap(
-                        obj -> obj.getString("person.number"),
-                        obj -> obj.getString("nckd_zhiji.name") == null ? "" : obj.getString("nckd_zhiji.name")
-                ));
+        Map<String, String> jobExpMap = getJobExpMap();
 
         DynamicObjectCollection entryEntity = adjObj.getDynamicObjectCollection("entryentity");
         //  根据调薪单默认生效日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
@@ -271,6 +249,35 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
         }
     }
 
+    @NotNull
+    public static Map<String, String> getJobExpMap() {
+        // 获取所有任职经历Map <员工id, 职级名称>
+        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
+                "hrpi_empposorgrel",
+                "person,nckd_zhiji",
+                new QFilter[]{
+                        // 是否主任职：是
+                        new QFilter("isprimary", QCP.equals, "1"),
+                        // 开始日期小于今天
+                        new QFilter("startdate", QCP.less_than, new Date()),
+                        // 结束日期大于今天
+                        new QFilter("enddate", QCP.large_than, new Date()),
+                        // 业务状态：生效中
+                        new QFilter("businessstatus", QCP.equals, "1"),
+                        // 数据状态
+                        new QFilter("datastatus", QCP.equals, "1"),
+                        // 当前版本
+                        new QFilter("iscurrentversion", QCP.equals, "1"),
+                }
+        );
+        Map<String, String> jobExpMap = Arrays.stream(jobExpArray)
+                .collect(Collectors.toMap(
+                        obj -> obj.getString("person.number"),
+                        obj -> obj.getString("nckd_zhiji.name") == null ? "" : obj.getString("nckd_zhiji.name")
+                ));
+        return jobExpMap;
+    }
+
     private void test(DynamicObject entry) {
         // 根据薪等薪档获取金额
         List<StdAmountQueryParam> queryParams = new ArrayList<>();
@@ -314,7 +321,7 @@ public class AdjapprSelectExtPlugin implements IDecAdjApprExtPlugin {
         // 绩效结果
         DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
                 "epa_performanceresult",
-                "id,name,number,person,activity,assessleveltext",
+                "id,person,activity,assessleveltext",
                 new QFilter[]{
                         // 数据状态
                         new QFilter("datastatus", QCP.equals, "1"),

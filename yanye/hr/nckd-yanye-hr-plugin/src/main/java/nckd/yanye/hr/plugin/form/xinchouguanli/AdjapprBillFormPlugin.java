@@ -1,15 +1,11 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
-import com.alibaba.fastjson.JSON;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
-import kd.bos.entity.ValueMapItem;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
-import kd.bos.entity.property.BasedataProp;
-import kd.bos.entity.property.ComboProp;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.events.BeforeItemClickEvent;
@@ -240,29 +236,8 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
     private void addAllYearPerson() {
         Map<String, List<Map<String, String>>> yearKaoheMap = getYearKaoheMap();
         // 获取所有任职经历Map <员工id, 职级名称>
-        DynamicObject[] jobExpArray = BusinessDataServiceHelper.load(
-                "hrpi_empposorgrel",
-                "person,nckd_zhiji",
-                new QFilter[]{
-                        // 是否主任职：是
-                        new QFilter("isprimary", QCP.equals, "1"),
-                        // 开始日期小于今天
-                        new QFilter("startdate", QCP.less_than, new Date()),
-                        // 结束日期大于今天
-                        new QFilter("enddate", QCP.large_than, new Date()),
-                        // 业务状态：生效中
-                        new QFilter("businessstatus", QCP.equals, "1"),
-                        // 数据状态
-                        new QFilter("datastatus", QCP.equals, "1"),
-                        // 当前版本
-                        new QFilter("iscurrentversion", QCP.equals, "1"),
-                }
-        );
-        Map<String, String> jobExpMap = Arrays.stream(jobExpArray)
-                .collect(Collectors.toMap(
-                        obj -> obj.getString("person.number"),
-                        obj -> obj.getString("nckd_zhiji.name") == null ? "" : obj.getString("nckd_zhiji.name")
-                ));
+        Map<String, String> jobExpMap = AdjapprSelectExtPlugin.getJobExpMap();
+
 
         DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("adjapprdetailentry");
         //  根据调薪单默认生效日期，判定年份。取此年份上一年的年度绩效考核成绩为考核成绩
