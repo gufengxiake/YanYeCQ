@@ -62,7 +62,7 @@ public class TransFerAppBillFromPlugin extends AbstractBillPlugIn {
                 paymentchannelProp.setMustInput(false);
 
                 //收款人带出申请人组织，付款组织默认集团本部，结算方式默认“电汇”；
-                DynamicObject org = BusinessDataServiceHelper.loadSingle("1956460831289919488", "bos_org");
+                DynamicObject org = BusinessDataServiceHelper.loadSingle("bos_org","id,number",new QFilter[]{new QFilter("number", QCP.equals,"101")});
                 DynamicObject applyorg = (DynamicObject) this.getModel().getValue("applyorg");
                 if (applyorg.getPkValue().equals(org.getPkValue())) {
                     this.getModel().setValue("e_payorg", null);
