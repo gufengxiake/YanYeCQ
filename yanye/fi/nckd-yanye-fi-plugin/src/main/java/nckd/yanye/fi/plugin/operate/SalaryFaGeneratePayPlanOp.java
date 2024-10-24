@@ -10,6 +10,7 @@ import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.fi.fa.business.enums.lease.LeaseContractSourceType;
 import kd.fi.fa.business.lease.utils.LeaseUtil;
 import kd.fi.fa.opplugin.lease.FaGeneratePayPlanValidator;
+import nckd.yanye.fi.plugin.validator.SalaryFaGeneratePayPlanValidator;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,7 +33,7 @@ public class SalaryFaGeneratePayPlanOp extends AbstractOperationServicePlugIn {
     }
 
     public void onAddValidators(AddValidatorsEventArgs e) {
-        e.addValidator(new FaGeneratePayPlanValidator());
+        e.addValidator(new SalaryFaGeneratePayPlanValidator());
     }
 
     public void endOperationTransaction(EndOperationTransactionArgs e) {
