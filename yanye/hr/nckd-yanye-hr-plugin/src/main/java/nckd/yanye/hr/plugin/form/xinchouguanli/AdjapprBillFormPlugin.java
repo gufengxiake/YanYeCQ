@@ -163,8 +163,9 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     this.getView().showLoading(new LocaleString("请稍后"), 1);
                     throw ex;
                 }
+                this.getView().showLoading(new LocaleString("请稍后"), 1);
+                this.getView().showSuccessNotification("匹配完成");
             }
-            this.getView().showLoading(new LocaleString("请稍后"), 1);
         }
 
         // 一键匹配调动调薪薪档
@@ -187,8 +188,9 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     this.getView().showLoading(new LocaleString("请稍后"), 1);
                     throw ex;
                 }
+                this.getView().showLoading(new LocaleString("请稍后"), 1);
+                this.getView().showSuccessNotification("匹配完成");
             }
-            this.getView().showLoading(new LocaleString("请稍后"), 1);
         }
 
     }
@@ -203,14 +205,13 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         IDataModel billModel = billView.getModel();
         Map<Long, Map<Long, Boolean>> itemUseRankFlag = DecAdjApprFormUtils.getItemUseRankFlag(rowIndexes, billModel);
         Map<Integer, Boolean> itemUseRankMap = DecAdjApprFormUtils.checkItemUseRank(rowIndexes, billModel, itemUseRankFlag);
-        List<String> personRangeList = new ArrayList(1);
-        int[] var6 = rowIndexes;
+        ArrayList<String> personRangeList = new ArrayList<>(1);
         int var7 = rowIndexes.length;
 
         int var8;
         int rowIndex;
         for (var8 = 0; var8 < var7; ++var8) {
-            rowIndex = var6[var8];
+            rowIndex = rowIndexes[var8];
             DynamicObject billEntryRow = billModel.getEntryRowEntity("adjapprdetailentry", rowIndex);
             String personRange = (String) DynamicObjectValueHelper.dyObjGetValueIfExist(billEntryRow, "dy_salargrel", (String) null);
             if (org.apache.commons.lang.StringUtils.isNotEmpty(personRange)) {
@@ -220,11 +221,10 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
         if (CollectionUtils.isNotEmpty(personRangeList)) {
             GradeAndRankNameEntity gradeAndRankNameEntity = GradeAndRankNameHelper.getGradeAndRankNameFromMatchGradeRankRel(personRangeList);
-            int[] var17 = rowIndexes;
             var8 = rowIndexes.length;
 
             for (rowIndex = 0; rowIndex < var8; ++rowIndex) {
-                int rowIndex2 = var17[rowIndex];
+                int rowIndex2 = rowIndexes[rowIndex];
                 DynamicObject billEntryRow = billModel.getEntryRowEntity("adjapprdetailentry", rowIndex2);
                 String personRange = (String) DynamicObjectValueHelper.dyObjGetValueIfExist(billEntryRow, "dy_salargrel", (String) null);
                 Boolean isUseRank = (Boolean) itemUseRankMap.get(rowIndex2);
@@ -467,7 +467,6 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                     thisRowIndex
             );
         }
-        this.getView().showSuccessNotification("匹配完成");
     }
 
     private Map<String, List<Map<String, String>>> getYearKaoheMap() {
