@@ -1,11 +1,15 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
+import com.alibaba.fastjson.JSON;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
+import kd.bos.entity.ValueMapItem;
 import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
+import kd.bos.entity.property.BasedataProp;
+import kd.bos.entity.property.ComboProp;
 import kd.bos.exception.KDBizException;
 import kd.bos.form.IFormView;
 import kd.bos.form.control.events.BeforeItemClickEvent;
@@ -20,14 +24,20 @@ import kd.sdk.swc.hcdm.common.stdtab.SalaryCountAmountMatchResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountAndSalaryCountQueryResult;
 import kd.sdk.swc.hcdm.common.stdtab.StdAmountQueryParam;
 import kd.sdk.swc.hcdm.service.spi.SalaryStdQueryService;
+import kd.swc.hcdm.business.adjapprbill.GradeAndRankNameHelper;
+import kd.swc.hcdm.business.helper.DynamicObjectValueHelper;
+import kd.swc.hcdm.common.entity.adjapprbill.AmountStdRangeEntity;
+import kd.swc.hcdm.common.entity.adjapprbill.GradeAndRankNameEntity;
 import kd.swc.hcdm.formplugin.adjapprbill.DecAdjApprFormUtils;
 import nckd.base.common.utils.capp.CappConfig;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * 员工定调薪申请单-表单插件
@@ -155,6 +165,74 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
                 }
             }
             this.getView().showLoading(new LocaleString("请稍后"), 1);
+        }
+
+        // 一键匹配调动调薪薪档
+        if ("nckd_onematch2".equals(itemKey)) {
+            this.getView().showLoading(new LocaleString("请稍后"));
+            // 组织范围：针对晶昊公司
+            DynamicObject org = (DynamicObject) this.getModel().getValue("org");
+            String orgNumber = org.getString("number");
+            String orgNumberString = CappConfig.getConfigValue("jinghao_orgnumber", "119.01");
+            String[] checkOrgNumbers = orgNumberString.split(",");
+            DynamicObject salaryadjrsn = (DynamicObject) this.getModel().getValue("salaryadjrsn");
+            String salaryadjrsnName = salaryadjrsn.getString("name");
+
+            if ("调动调薪".equals(salaryadjrsnName) &&
+                    Arrays.asList(checkOrgNumbers).contains(orgNumber)) {
+                // 赋值
+                try {
+                    addAllReloadPerson();
+                } catch (Exception ex) {
+                    this.getView().showLoading(new LocaleString("请稍后"), 1);
+                    throw ex;
+                }
+            }
+            this.getView().showLoading(new LocaleString("请稍后"), 1);
+        }
+
+    }
+
+    private void addAllReloadPerson() {
+        DynamicObjectCollection entryEntity = this.getModel().getEntryEntity("adjapprdetailentry");
+        int[] rowIndexes = IntStream.range(0, entryEntity.size()).toArray();
+        setAmountStdRangeIfCalTypeIsGradeRank(rowIndexes, this.getView());
+    }
+
+    public static void setAmountStdRangeIfCalTypeIsGradeRank(int[] rowIndexes, IFormView billView) {
+        IDataModel billModel = billView.getModel();
+        Map<Long, Map<Long, Boolean>> itemUseRankFlag = DecAdjApprFormUtils.getItemUseRankFlag(rowIndexes, billModel);
+        Map<Integer, Boolean> itemUseRankMap = DecAdjApprFormUtils.checkItemUseRank(rowIndexes, billModel, itemUseRankFlag);
+        List<String> personRangeList = new ArrayList(1);
+        int[] var6 = rowIndexes;
+        int var7 = rowIndexes.length;
+
+        int var8;
+        int rowIndex;
+        for (var8 = 0; var8 < var7; ++var8) {
+            rowIndex = var6[var8];
+            DynamicObject billEntryRow = billModel.getEntryRowEntity("adjapprdetailentry", rowIndex);
+            String personRange = (String) DynamicObjectValueHelper.dyObjGetValueIfExist(billEntryRow, "dy_salargrel", (String) null);
+            if (org.apache.commons.lang.StringUtils.isNotEmpty(personRange)) {
+                personRangeList.add(personRange);
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(personRangeList)) {
+            GradeAndRankNameEntity gradeAndRankNameEntity = GradeAndRankNameHelper.getGradeAndRankNameFromMatchGradeRankRel(personRangeList);
+            int[] var17 = rowIndexes;
+            var8 = rowIndexes.length;
+
+            for (rowIndex = 0; rowIndex < var8; ++rowIndex) {
+                int rowIndex2 = var17[rowIndex];
+                DynamicObject billEntryRow = billModel.getEntryRowEntity("adjapprdetailentry", rowIndex2);
+                String personRange = (String) DynamicObjectValueHelper.dyObjGetValueIfExist(billEntryRow, "dy_salargrel", (String) null);
+                Boolean isUseRank = (Boolean) itemUseRankMap.get(rowIndex2);
+                AmountStdRangeEntity amountStdRangeEntity = GradeAndRankNameHelper.convertMatchGradeRankRelToAmountStdRange(personRange, isUseRank, gradeAndRankNameEntity);
+                amountStdRangeEntity.getPositionInfo().keySet().stream().findFirst().ifPresent(
+                        gradeId -> billModel.setValue("dy_grade", gradeId, rowIndex2)
+                );
+            }
         }
 
     }
@@ -630,6 +708,19 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
         return preGradeId;
     }
 
+    /**
+     * 通过薪点或者金额查询所在标准表的薪等薪档位置
+     *
+     * @param salaryStdId      标准表id
+     * @param itemId           定调薪项目id
+     * @param gradeId          查询的范围：薪等id
+     * @param finalAmount      查询的金额：标准金额
+     * @param rankList         给定薪等薪档范围
+     * @param unionId          本次查询标识
+     * @param matchStrategy    匹配策略
+     * @param isMatchGradeRank 是否显示薪等薪档
+     * @return 查询结果
+     */
     private List<SalaryCountAmountMatchResult> getSalaryCountAmountMatchResults(long salaryStdId, long itemId, long gradeId, BigDecimal finalAmount, List<Long> rankList, String unionId, String matchStrategy, String isMatchGradeRank) {
         // 查询
         SalaryCountAmountMatchParam salaryCountAmountMatchParam = new SalaryCountAmountMatchParam();
