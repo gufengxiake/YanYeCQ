@@ -360,6 +360,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             this.getModel().setValue("nckd_twoupmonth",0,iRow);
             this.getModel().setValue("nckd_twoupsum",0,iRow);
             this.getModel().setValue("nckd_highfeemonth",0,iRow);
+            this.getModel().setValue("nckd_highfee",0,iRow);
             this.getModel().setValue("nckd_oneupmonth",0,iRow);
             this.getModel().setValue("nckd_oneupsum",0,iRow);
 
@@ -431,6 +432,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
                 .and("empentrel.laborrelstatus.number", QCP.equals, "1190_S") // 1190_S 用工关系状态：离岗退养
                 .and("iscurrentversion", QCP.equals, "1");// 是否主任职
 //                .and("number", QCP.not_in, UINLIST); // 已经维护离岗退养统计的不再重复使用
+//        lsp.setCustomParam();
         lsp.setCloseCallBack(new CloseCallBack(this, "selectMUs"));
         lsp.getListFilterParameter().getQFilters().add(qFilter);
         this.getView().showForm(lsp);
