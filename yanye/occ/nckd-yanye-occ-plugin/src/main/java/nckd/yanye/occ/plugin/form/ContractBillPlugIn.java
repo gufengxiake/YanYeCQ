@@ -4,11 +4,14 @@ import kd.bos.bill.AbstractBillPlugIn;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.utils.StringUtils;
+import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.form.field.TextEdit;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
+import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.operation.SaveServiceHelper;
 
 import java.util.EventObject;
 
@@ -72,7 +75,34 @@ public class ContractBillPlugIn extends AbstractBillPlugIn {
                 this.getModel().setValue("party1st",org.getString("name"));
                 this.getModel().setValue("party2nd",customer.getString("name"));
             }
+        }else if(StringUtils.equals("billno", fieldKey)){
+            ChangeData changeData = e.getChangeSet()[0];
+            //销售合同
+            if(StringUtils.equals("conm_salcontract",e.getProperty().getParent().getName())){
+                this.updateSalOrderContractNo("nckd_salecontractno",changeData);
+            }else if(StringUtils.equals("conm_purcontract",e.getProperty().getParent().getName())){//采购合同
+                this.updateSalOrderContractNo("nckd_trancontractno",changeData);
+            }
+
         }
 
+    }
+
+    /**
+     * 更新销售订单上的销售/运输合同号
+     * @param property
+     * @param changeData
+     */
+    public void updateSalOrderContractNo(String property , ChangeData changeData ){
+        Object oldValue = changeData.getOldValue();
+        QFilter tFilter = new QFilter(property, QCP.equals,oldValue);
+        DynamicObject[] salOrder = BusinessDataServiceHelper.load("sm_salorder", property, new QFilter[]{tFilter});
+        if (salOrder == null || salOrder.length == 0) {
+            return;
+        }
+        for (DynamicObject dynamicObject : salOrder) {
+            dynamicObject.set(property, changeData.getNewValue());
+        }
+        SaveServiceHelper.update(salOrder);
     }
 }

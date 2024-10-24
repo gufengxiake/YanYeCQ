@@ -434,6 +434,7 @@ public class ZhwlCallBackApiPlugin implements Serializable {
                         entry.set("nckd_grossweight",nckd_grossweight);//毛重
                         entry.set("nckd_tare",nckd_tare);//皮重
                         entry.set("nckd_netweight",nckd_netweight);//净重
+                        entry.set("nckd_qty",nckd_qty);//数量
                         eleweigh = setEleAmount(eleweigh, nckd_qty);
 
                         OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "nckd_eleweighing", new DynamicObject[]{eleweigh}, OperateOption.create());

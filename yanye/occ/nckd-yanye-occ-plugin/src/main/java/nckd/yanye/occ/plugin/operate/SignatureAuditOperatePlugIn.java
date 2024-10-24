@@ -6,6 +6,7 @@ import kd.bos.dataentity.OperateOption;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.metadata.IDataEntityType;
+import kd.bos.dataentity.metadata.dynamicobject.DynamicObjectType;
 import kd.bos.entity.EntityMetadataCache;
 import kd.bos.entity.MainEntityType;
 import kd.bos.entity.botp.runtime.ConvertOperationResult;
@@ -17,11 +18,13 @@ import kd.bos.entity.operate.result.OperationResult;
 import kd.bos.entity.plugin.AbstractOperationServicePlugIn;
 import kd.bos.entity.plugin.PreparePropertysEventArgs;
 import kd.bos.entity.plugin.args.BeforeOperationArgs;
+import kd.bos.entity.plugin.args.EndOperationTransactionArgs;
 import kd.bos.exception.KDBizException;
 import kd.bos.orm.query.QCP;
 import kd.bos.orm.query.QFilter;
 import kd.bos.servicehelper.BusinessDataServiceHelper;
 import kd.bos.servicehelper.QueryServiceHelper;
+import kd.bos.servicehelper.botp.BFTrackerServiceHelper;
 import kd.bos.servicehelper.botp.ConvertServiceHelper;
 import kd.bos.servicehelper.operation.OperationServiceHelper;
 import kd.bos.servicehelper.operation.SaveServiceHelper;
@@ -48,6 +51,7 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
         e.getFieldKeys().add("nckd_materiel");
         e.getFieldKeys().add("nckd_signdate");
         e.getFieldKeys().add("org");
+        e.getFieldKeys().add("nckd_customsno");//报关单号
     }
 
     /**
@@ -227,6 +231,10 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
                         }
                     }, targetMainType);
                     DynamicObject[] saveDynamicObject = targetBillObjs.toArray(new DynamicObject[targetBillObjs.size()]);
+                    //签收单推出来的销售出库单打上长吨出库标签
+                    for (DynamicObject dynamicObject : saveDynamicObject) {
+                        dynamicObject.set("nckd_ismore","1");
+                    }
                     //保存
                     OperationResult operationResult1 = SaveServiceHelper.saveOperate(targetBill, saveDynamicObject, OperateOption.create());
                     if (operationResult1.isSuccess()) {
@@ -401,6 +409,44 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
         }
     }
 
+    @Override
+    public void endOperationTransaction(EndOperationTransactionArgs e) {
+        super.endOperationTransaction(e);
+        DynamicObject[] signRecords = e.getDataEntities();
+        if (signRecords == null) {
+            return;
+        }
+        String targetEntityNumber = this.billEntityType.getName();
+        Set<Object> billIds = new HashSet<>();
+        Map<Object,String> sourceIds = new HashMap<>();
+        for (DynamicObject signRecord : signRecords) {
+            billIds.add(signRecord.getPkValue());
+            DynamicObjectCollection entryentity = signRecord.getDynamicObjectCollection("entryentity");
+            if (signRecord.get("nckd_customsno") == null || entryentity == null){
+                continue;
+            }
+            entryentity.forEach((row)->{
+                sourceIds.put(row.get("nckd_sourcebillid"),signRecord.getString("nckd_customsno"));
+            });
+        }
+        //获取源单
+        Map<String, HashSet<Long>> sourceBillIds = BFTrackerServiceHelper.findSourceBills(targetEntityNumber, billIds.toArray(new Long[0]));
+        if (!sourceBillIds.containsKey("im_saloutbill")) {
+            return;
+        }
+        QFilter [] qFilters = {new QFilter("id",QCP.in,sourceBillIds.get("im_saloutbill").toArray(new Long[0]))};
+        DynamicObject[] load = BusinessDataServiceHelper.load("im_saloutbill","nckd_textfieldbg",qFilters);
+        if (load == null || load.length == 0){
+            return;
+        }
+        for (DynamicObject dynamicObject : load) {
+            Object pkValue = dynamicObject.getPkValue();
+            if(sourceIds.containsKey(pkValue)){
+                dynamicObject.set("nckd_textfieldbg",sourceIds.get(pkValue));
+            }
+        }
+        SaveServiceHelper.update(load);
+    }
 
     /**
      * 推完工入库单
@@ -467,7 +513,11 @@ public class SignatureAuditOperatePlugIn extends AbstractOperationServicePlugIn 
         //根据签收单来源单据id找销售出库单
         DynamicObject imSaloutbill = BusinessDataServiceHelper.loadSingle(nckdSourceentryid,"im_saloutbill");
         //获取班次信息
-        DynamicObject workshifts = BusinessDataServiceHelper.loadSingle("2066082303343345664","mpdm_workshifts");
+        DynamicObject workid = QueryServiceHelper.queryOne("mpdm_workshifts", "id", new QFilter[]{new QFilter("number", QCP.equals, "CD")});
+        DynamicObject workshifts = null;
+        if (workid != null) {
+            workshifts = BusinessDataServiceHelper.loadSingle(workid.get("id"),"mpdm_workshifts");
+        }
         if (imSaloutbill != null) {
             DynamicObject salEntry = imSaloutbill.getDynamicObjectCollection("billentry").get(0);
             for (DynamicObject save : saveDynamicObject) {

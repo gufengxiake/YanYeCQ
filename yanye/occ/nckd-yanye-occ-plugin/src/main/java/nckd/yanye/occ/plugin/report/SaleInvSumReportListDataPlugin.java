@@ -112,12 +112,16 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
                 "billentry.amount as amount," +
                 //原币价税合计
                 "billentry.amountandtax as amountandtax," +
-                //成本单价
-                "billentry.nckd_cbdj as nckd_cbdj," +
+                //成本金额
+                "billentry.nckd_cbj as nckd_cbj," +
+                "nckd_ismore," +
                 "billentry.id as out_entryid";
 
         DataSet imSaloutbill = QueryServiceHelper.queryDataSet(this.getClass().getName(),
                 "im_saloutbill", sFields, qFilters.toArray(new QFilter[0]), null);
+        if(imSaloutbill.isEmpty()){
+            return imSaloutbill;
+        }
         //根据销售出库表体id获取财务应付单信息
         List<Long> outEntryid = DataSetToList.getOneToList(imSaloutbill, "out_entryid");
         DataSet finArBill = QueryServiceHelper.queryDataSet(this.getClass().getName(), "ar_finarbill",
@@ -126,6 +130,18 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
                 new QFilter[]{new QFilter("entry.e_srcentryid", QCP.in, outEntryid.toArray(new Long[0]))}, null);
         //关联财务应收单
         imSaloutbill = imSaloutbill.leftJoin(finArBill).on("out_entryid", "fin_srcentryid").select(imSaloutbill.getRowMeta().getFieldNames(), new String[]{"nckd_area"}).finish();
+
+        imSaloutbill = imSaloutbill.groupBy(new String[]{"bizorg","nckd_area","bizdept","bizoperator","customer","customername", "warehouse","group","groupname","material","materialname","materialmodel","ispresent","nckd_ismore"})
+                .sum("baseqty")
+                .sum("case when nckd_signbaseqty = 0 then baseqty else nckd_signbaseqty end","nckd_signbaseqty")
+                .sum("curamount")
+                .sum("curtaxamount")
+                .sum("curamountandtax")
+                .sum("discountamount")
+                .sum("taxamount")
+                .sum("amount")
+                .sum("amountandtax").finish();
+
         //根据财务应收单的日期进行过滤
         return imSaloutbill.orderBy(new String[]{"bizorg","material"});
     }
@@ -156,7 +172,8 @@ public class SaleInvSumReportListDataPlugin extends AbstractReportListDataPlugin
         columns.add(createReportColumn("taxamount",ReportColumn.TYPE_DECIMAL,"原币税额"));
         columns.add(createReportColumn("amount",ReportColumn.TYPE_DECIMAL,"原币无税金额"));
         columns.add(createReportColumn("amountandtax",ReportColumn.TYPE_DECIMAL,"原币价税合计"));
-        columns.add(createReportColumn("nckd_cbdj",ReportColumn.TYPE_DECIMAL,"成本金额"));
+        columns.add(createReportColumn("nckd_cbj",ReportColumn.TYPE_DECIMAL,"成本金额"));
+//        columns.add(createReportColumn("nckd_ismore",ReportColumn.TYPE_CHECKBOX,"是否长吨出库"));
 
         return columns;
     }

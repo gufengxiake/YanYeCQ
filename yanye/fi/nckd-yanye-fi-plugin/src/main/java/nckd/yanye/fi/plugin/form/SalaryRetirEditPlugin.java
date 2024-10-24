@@ -135,7 +135,8 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
         if(ObjectUtils.isEmpty(nckdStaffretiresalacounts)){
             return;
         }else{
-            //
+            Date nckdstartDate = null;
+            Date nckdendDate = null;
             this.getModel().deleteEntryData("payruleentryentity");
             DynamicObjectCollection payruleentryentity = this.getModel().getDataEntity(true).getDynamicObjectCollection("payruleentryentity");
             payruleentryentity.clear();
@@ -150,115 +151,132 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                             Date nckdRetiredate = dynamicObject.getDate("nckd_retiredate");
                             // 开始时间
                             Date nckdTaskeffect = dynamicObject.getDate("nckd_taskeffect");
-                            // 相差的月份
-                            int totalMonths = getDiffMonthsByLocalDate(nckdTaskeffect, nckdRetiredate, false, true);
-                            // 获取对应用户的高温费
-                            BigDecimal nckdHighfee = dynamicObject.getBigDecimal("nckd_highfee");
-                            // 计算开始日期和结束日期的 LocalDate
-                            LocalDate startDate = nckdTaskeffect.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
-                            // 退养人员工资
-                            DynamicObject rulePayitem = FAPAYMENTITEMSMAP.get("02");
-                            Object rulePayitemFrequency = FAPAYMENTITEMSMAP.get("02").get("frequency");
-                            BigDecimal nckdAmountstandard = dynamicObject.getBigDecimal("nckd_amountstandard");
-                            BigDecimal nckdOnesum = dynamicObject.getBigDecimal("nckd_onesum");
-                            BigDecimal nckdOneupsum = dynamicObject.getBigDecimal("nckd_oneupsum");
-                            BigDecimal nckdTwoupsum = dynamicObject.getBigDecimal("nckd_twoupsum");
-                            // 工资标准 不为0 的情况下，计算各个时间段的工资
-                            if(nckdAmountstandard.compareTo(BigDecimal.ZERO) != 0){
-                                if(totalMonths>24){
-                                    DynamicObject dynamicObject1 = payruleentryentity.addNew();
-                                    dynamicObject1.set("rule_startdate",nckdTaskeffect);
-                                    dynamicObject1.set("rule_enddate",Date.from(startDate.plusMonths(12).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject1.set("amount",nckdOnesum);
-                                    dynamicObject1.set("paypoint","A");
-                                    dynamicObject1.set("relativepaydate",1);
-                                    dynamicObject1.set("rule_invoicetype","A");
-                                    dynamicObject1.set("rule_payitem",rulePayitem);
-                                    dynamicObject1.set("frequency",rulePayitemFrequency);
 
-                                    DynamicObject dynamicObject2 = payruleentryentity.addNew();
-                                    dynamicObject2.set("rule_startdate",Date.from(startDate.plusMonths(12).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject2.set("rule_enddate",Date.from(startDate.plusMonths(24).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject2.set("amount",nckdOneupsum);
-                                    dynamicObject2.set("paypoint","A");
-                                    dynamicObject2.set("relativepaydate",1);
-                                    dynamicObject2.set("rule_invoicetype","A");
-                                    dynamicObject2.set("rule_payitem",rulePayitem);
-                                    dynamicObject2.set("frequency",rulePayitemFrequency);
-
-                                    DynamicObject dynamicObject3 = payruleentryentity.addNew();
-                                    dynamicObject3.set("rule_startdate",Date.from(startDate.plusMonths(24).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject3.set("rule_enddate",nckdRetiredate);
-                                    dynamicObject3.set("paypoint","A");
-                                    dynamicObject3.set("relativepaydate",1);
-                                    dynamicObject3.set("rule_invoicetype","A");
-                                    dynamicObject3.set("amount",nckdTwoupsum);
-                                    dynamicObject3.set("rule_payitem",rulePayitem);
-                                    dynamicObject3.set("frequency",rulePayitemFrequency);
-
-                                }else if(totalMonths>12){
-                                    DynamicObject dynamicObject1 = payruleentryentity.addNew();
-                                    dynamicObject1.set("rule_startdate",nckdTaskeffect);
-                                    dynamicObject1.set("rule_enddate",Date.from(startDate.plusMonths(12).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject1.set("amount",nckdOnesum);
-                                    dynamicObject1.set("paypoint","A");
-                                    dynamicObject1.set("relativepaydate",1);
-                                    dynamicObject1.set("rule_invoicetype","A");
-                                    dynamicObject1.set("rule_payitem",rulePayitem);
-                                    dynamicObject1.set("frequency",rulePayitemFrequency);
-
-                                    DynamicObject dynamicObject2 = payruleentryentity.addNew();
-                                    dynamicObject2.set("rule_startdate",Date.from(startDate.plusMonths(12).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-                                    dynamicObject2.set("rule_enddate",nckdRetiredate);
-                                    dynamicObject2.set("paypoint","A");
-                                    dynamicObject2.set("relativepaydate",1);
-                                    dynamicObject2.set("rule_invoicetype","A");
-                                    dynamicObject2.set("amount",nckdOneupsum);
-                                    dynamicObject2.set("rule_payitem",rulePayitem);
-                                    dynamicObject2.set("frequency",rulePayitemFrequency);
-                                }else{
-                                    // 一年以内使用开始到结束日期
-                                    DynamicObject dynamicObject1 = payruleentryentity.addNew();
-                                    dynamicObject1.set("rule_startdate",nckdTaskeffect);
-                                    dynamicObject1.set("rule_enddate",nckdRetiredate);
-                                    dynamicObject1.set("paypoint","A");
-                                    dynamicObject1.set("relativepaydate",1);
-                                    dynamicObject1.set("rule_invoicetype","A");
-                                    dynamicObject1.set("amount",nckdOnesum);
-                                    dynamicObject1.set("rule_payitem",rulePayitem);
-                                    dynamicObject1.set("frequency",rulePayitemFrequency);
-                                }
+                            // 比较并赋值
+                            if (nckdstartDate == null) {
+                                nckdstartDate = nckdTaskeffect; // 如果开始时间为 null，赋值为 nckdTaskeffect
+                            } else if (nckdTaskeffect != null) {
+                                nckdstartDate = nckdstartDate.before(nckdTaskeffect) ? nckdstartDate : nckdTaskeffect; // 取较小的时间
                             }
 
+                            if (nckdendDate == null) {
+                                nckdendDate = nckdRetiredate; // 如果结束时间为 null，赋值为 nckdRetiredate
+                            } else if (nckdRetiredate != null) {
+                                nckdendDate = nckdendDate.after(nckdRetiredate) ? nckdendDate : nckdRetiredate; // 取较大的时间
+                            }
 
+                            if(nckdRetiredate != null ){
+                                // 相差的月份
+                                int totalMonths = getDiffMonthsByLocalDate(nckdTaskeffect, nckdRetiredate, false, true);
+                                // 获取对应用户的高温费
+                                BigDecimal nckdHighfee = dynamicObject.getBigDecimal("nckd_highfee");
+                                // 计算开始日期和结束日期的 LocalDate
+                                LocalDate startDate = nckdTaskeffect.toInstant().atZone(ZoneId.systemDefault()).toLocalDate();
+                                // 退养人员工资
+                                DynamicObject rulePayitem = FAPAYMENTITEMSMAP.get("02");
+                                Object rulePayitemFrequency = FAPAYMENTITEMSMAP.get("02").get("frequency");
+                                BigDecimal nckdAmountstandard = dynamicObject.getBigDecimal("nckd_amountstandard");
+                                BigDecimal nckdOnesum = dynamicObject.getBigDecimal("nckd_onesum");
+                                BigDecimal nckdOneupsum = dynamicObject.getBigDecimal("nckd_oneupsum");
+                                BigDecimal nckdTwoupsum = dynamicObject.getBigDecimal("nckd_twoupsum");
+                                // 工资标准 不为0 的情况下，计算各个时间段的工资
+                                if(nckdAmountstandard.compareTo(BigDecimal.ZERO) != 0){
+                                    if(totalMonths>24){
+                                        DynamicObject dynamicObject1 = payruleentryentity.addNew();
+                                        dynamicObject1.set("rule_startdate",nckdTaskeffect);
+                                        dynamicObject1.set("rule_enddate",Date.from(startDate.plusMonths(12).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject1.set("amount",nckdOnesum);
+                                        dynamicObject1.set("paypoint","A");
+                                        dynamicObject1.set("relativepaydate",1);
+                                        dynamicObject1.set("rule_invoicetype","A");
+                                        dynamicObject1.set("rule_payitem",rulePayitem);
+                                        dynamicObject1.set("frequency",rulePayitemFrequency);
 
-                            // 计算高温费
-                            if(!nckdHighfee.equals(new BigDecimal("0E-10"))) {
-                                //  存在高温费
-                                int nckdHighfeemonth = dynamicObject.getInt("nckd_highfeemonth");
-                                // 高温费项目
-                                DynamicObject dynamicObject2 = FAPAYMENTITEMSMAP.get("03");
-                                boolean isHighfee = true;
-                                if(ObjectUtils.isEmpty(dynamicObject2)){
-                                    isHighfee = false;
+                                        DynamicObject dynamicObject2 = payruleentryentity.addNew();
+                                        dynamicObject2.set("rule_startdate",Date.from(startDate.plusMonths(12).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject2.set("rule_enddate",Date.from(startDate.plusMonths(24).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject2.set("amount",nckdOneupsum);
+                                        dynamicObject2.set("paypoint","A");
+                                        dynamicObject2.set("relativepaydate",1);
+                                        dynamicObject2.set("rule_invoicetype","A");
+                                        dynamicObject2.set("rule_payitem",rulePayitem);
+                                        dynamicObject2.set("frequency",rulePayitemFrequency);
+
+                                        DynamicObject dynamicObject3 = payruleentryentity.addNew();
+                                        dynamicObject3.set("rule_startdate",Date.from(startDate.plusMonths(24).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject3.set("rule_enddate",nckdRetiredate);
+                                        dynamicObject3.set("paypoint","A");
+                                        dynamicObject3.set("relativepaydate",1);
+                                        dynamicObject3.set("rule_invoicetype","A");
+                                        dynamicObject3.set("amount",nckdTwoupsum);
+                                        dynamicObject3.set("rule_payitem",rulePayitem);
+                                        dynamicObject3.set("frequency",rulePayitemFrequency);
+
+                                    }else if(totalMonths>12){
+                                        DynamicObject dynamicObject1 = payruleentryentity.addNew();
+                                        dynamicObject1.set("rule_startdate",nckdTaskeffect);
+                                        dynamicObject1.set("rule_enddate",Date.from(startDate.plusMonths(12).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject1.set("amount",nckdOnesum);
+                                        dynamicObject1.set("paypoint","A");
+                                        dynamicObject1.set("relativepaydate",1);
+                                        dynamicObject1.set("rule_invoicetype","A");
+                                        dynamicObject1.set("rule_payitem",rulePayitem);
+                                        dynamicObject1.set("frequency",rulePayitemFrequency);
+
+                                        DynamicObject dynamicObject2 = payruleentryentity.addNew();
+                                        dynamicObject2.set("rule_startdate",Date.from(startDate.plusMonths(12).plusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+                                        dynamicObject2.set("rule_enddate",nckdRetiredate);
+                                        dynamicObject2.set("paypoint","A");
+                                        dynamicObject2.set("relativepaydate",1);
+                                        dynamicObject2.set("rule_invoicetype","A");
+                                        dynamicObject2.set("amount",nckdOneupsum);
+                                        dynamicObject2.set("rule_payitem",rulePayitem);
+                                        dynamicObject2.set("frequency",rulePayitemFrequency);
+                                    }else{
+                                        // 一年以内使用开始到结束日期
+                                        DynamicObject dynamicObject1 = payruleentryentity.addNew();
+                                        dynamicObject1.set("rule_startdate",nckdTaskeffect);
+                                        dynamicObject1.set("rule_enddate",nckdRetiredate);
+                                        dynamicObject1.set("paypoint","A");
+                                        dynamicObject1.set("relativepaydate",1);
+                                        dynamicObject1.set("rule_invoicetype","A");
+                                        dynamicObject1.set("amount",nckdOnesum);
+                                        dynamicObject1.set("rule_payitem",rulePayitem);
+                                        dynamicObject1.set("frequency",rulePayitemFrequency);
+                                    }
                                 }
-                                BigDecimal highfeestand = dynamicObject.getBigDecimal("nckd_highfeestand");
-                                // 判断当前月份是否处于高温费月份，判断结算日期是否处于高温费月份
-                                List<Date[]> consolidatedTimeRanges = getConsolidatedTimeRanges(nckdTaskeffect, nckdRetiredate);
-                                for (Date[] consolidatedTimeRange : consolidatedTimeRanges) {
-                                    DynamicObject dynamicObject1 = payruleentryentity.addNew();
-                                    dynamicObject1.set("rule_startdate", consolidatedTimeRange[0]);
-                                    dynamicObject1.set("rule_enddate", consolidatedTimeRange[1]);
-                                    dynamicObject1.set("amount",highfeestand);
-                                    dynamicObject1.set("paypoint","A");
-                                    dynamicObject1.set("relativepaydate",1);
-                                    dynamicObject1.set("rule_invoicetype","A");
-                                    if(isHighfee){
-                                        dynamicObject1.set("rule_payitem",dynamicObject2);
-                                        dynamicObject1.set("frequency",dynamicObject2.get("frequency"));
+
+
+
+                                // 计算高温费
+                                if(!nckdHighfee.equals(new BigDecimal("0E-10"))) {
+                                    //  存在高温费
+                                    int nckdHighfeemonth = dynamicObject.getInt("nckd_highfeemonth");
+                                    // 高温费项目
+                                    DynamicObject dynamicObject2 = FAPAYMENTITEMSMAP.get("03");
+                                    boolean isHighfee = true;
+                                    if(ObjectUtils.isEmpty(dynamicObject2)){
+                                        isHighfee = false;
+                                    }
+                                    BigDecimal highfeestand = dynamicObject.getBigDecimal("nckd_highfeestand");
+                                    // 判断当前月份是否处于高温费月份，判断结算日期是否处于高温费月份
+                                    List<Date[]> consolidatedTimeRanges = getConsolidatedTimeRanges(nckdTaskeffect, nckdRetiredate);
+                                    for (Date[] consolidatedTimeRange : consolidatedTimeRanges) {
+                                        DynamicObject dynamicObject1 = payruleentryentity.addNew();
+                                        dynamicObject1.set("rule_startdate", consolidatedTimeRange[0]);
+                                        dynamicObject1.set("rule_enddate", consolidatedTimeRange[1]);
+                                        dynamicObject1.set("amount",highfeestand);
+                                        dynamicObject1.set("paypoint","A");
+                                        dynamicObject1.set("relativepaydate",1);
+                                        dynamicObject1.set("rule_invoicetype","A");
+                                        if(isHighfee){
+                                            dynamicObject1.set("rule_payitem",dynamicObject2);
+                                            dynamicObject1.set("frequency",dynamicObject2.get("frequency"));
+                                        }
                                     }
                                 }
                             }
+
                             //  其他福利项
 
                             BigDecimal nckdWelfareamount = dynamicObject.getBigDecimal("nckd_welfareamount");
@@ -274,6 +292,8 @@ public class SalaryRetirEditPlugin extends AbstractBillPlugIn implements HyperLi
                     this.getView().updateView("payruleentryentity");
                 }
             }
+            this.getModel().setValue("leasestartdate",nckdstartDate);
+            this.getModel().setValue("leaseenddate",nckdendDate);
         }
     }
 
