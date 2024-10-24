@@ -1,8 +1,5 @@
 package nckd.yanye.scm.plugin.operate;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.alibaba.druid.support.logging.Log;
 import com.alibaba.druid.support.logging.LogFactory;
 import kd.bd.master.util.GroupStandardUtils;
@@ -32,6 +29,9 @@ import kd.bos.servicehelper.operation.SaveServiceHelper;
 import kd.bos.util.CollectionUtils;
 import nckd.yanye.scm.common.utils.MaterialAttributeInformationUtils;
 import org.apache.commons.lang.StringUtils;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author husheng
@@ -130,7 +130,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 SaveServiceHelper.update(t);
             });
         } catch (Exception exception) {
-            logger.info("报错详情：" + exception.getLocalizedMessage());
+            logger.info("报错详情：" + exception);
             rollbackAudit(e);
             throw new KDBizException(exception.getLocalizedMessage());
         }
@@ -332,21 +332,21 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
 //            if (!operationResult.isSuccess()) {
 //                errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败：" + operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
 //            } else {
-                if (!"3".equals(billType)) {
+            if (!"3".equals(billType)) {
 //                    List<Object> successPkIds = operationResult.getSuccessPkIds();
 //                    DynamicObject single = BusinessDataServiceHelper.loadSingle("nckd_materialmaintenan", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
 
-                    // 提交
-                    OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
-                    if (!submitOperate.isSuccess()) {
-                        errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "提交物料维护单失败：" + submitOperate.getAllErrorOrValidateInfo() + submitOperate.getMessage());
-                    }
-                }else {
-                    OperationResult operationResult = SaveServiceHelper.saveOperate("nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
-                    if (!operationResult.isSuccess()) {
-                        errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败：" + operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
-                    }
+                // 提交
+                OperationResult submitOperate = OperationServiceHelper.executeOperate("submit", "nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                if (!submitOperate.isSuccess()) {
+                    errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "提交物料维护单失败：" + submitOperate.getAllErrorOrValidateInfo() + submitOperate.getMessage());
                 }
+            } else {
+                OperationResult operationResult = SaveServiceHelper.saveOperate("nckd_materialmaintenan", new DynamicObject[]{materialmaintenanObject}, OperateOption.create());
+                if (!operationResult.isSuccess()) {
+                    errorMsg.add("物料名称：" + dynamicObject.getString("nckd_materialname") + "新增物料维护单失败：" + operationResult.getAllErrorOrValidateInfo() + operationResult.getMessage());
+                }
+            }
 //            }
         }
     }
@@ -481,40 +481,37 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 addNew.set("isaffectplan", false);
             });
         }
-
         //调用保存操作
 //        OperationResult saveOperationResult = SaveServiceHelper.saveOperate("bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
-////        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
-//        if (!saveOperationResult.isSuccess()) {
-//            errorMsg.add(materialObject.getString("name") + "对应的物料新增失败：" + saveOperationResult.getAllErrorOrValidateInfo() + saveOperationResult.getMessage());
-//        } else {
+        OperationResult saveOperationResult = OperationServiceHelper.executeOperate("save", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
+        if (!saveOperationResult.isSuccess()) {
+            errorMsg.add(materialObject.getString("name") + "对应的物料新增失败：" + saveOperationResult.getAllErrorOrValidateInfo() + saveOperationResult.getMessage());
+        } else {
             OperateOption operateOption = OperateOption.create();
             operateOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
 
 //            List<Object> successPkIds = saveOperationResult.getSuccessPkIds();
 //            DynamicObject single = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
-
             //提交审批
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new DynamicObject[]{materialObject}, operateOption);
+            List<Object> saveSuccessPkIds = saveOperationResult.getSuccessPkIds();
+            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new Object[]{saveSuccessPkIds}, operateOption);
             if (!submit.isSuccess()) {
-                OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{materialObject}, OperateOption.create());
+                OperationServiceHelper.executeOperate("delete", "bd_material", new Object[]{saveSuccessPkIds}, OperateOption.create());
                 errorMsg.add(materialObject.getString("name") + "对应的物料提交失败：" + submit.getAllErrorOrValidateInfo() + submit.getMessage());
             } else {
                 List<Object> successPkIds = submit.getSuccessPkIds();
-                DynamicObject single = BusinessDataServiceHelper.loadSingle(successPkIds.get(0),"bd_material");
-
-                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new DynamicObject[]{single}, operateOption);
+                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new Object[]{successPkIds}, operateOption);
                 if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
-                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new DynamicObject[]{single}, OperateOption.create());
-                    OperationServiceHelper.executeOperate("delete", "bd_material", new DynamicObject[]{single}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new Object[]{successPkIds}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("delete", "bd_material", new Object[]{successPkIds}, OperateOption.create());
                     errorMsg.add(materialObject.getString("name") + "对应的物料发起审核失败：" + audit.getAllErrorOrValidateInfo() + audit.getMessage());
                 } else {
                     return materialObject;
                 }
             }
 
-//        }
+        }
         return null;
     }
 }
