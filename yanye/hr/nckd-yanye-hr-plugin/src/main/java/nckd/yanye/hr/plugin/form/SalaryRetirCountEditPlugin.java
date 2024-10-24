@@ -314,6 +314,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             // 高温费标准
             BigDecimal nckdHighfee = BigDecimal.valueOf(countOneYear).multiply((BigDecimal) this.getModel().getValue("nckd_highfeestand"));
             this.getModel().setValue("nckd_highfee",nckdHighfee,iRow);
+            this.getModel().setValue("nckd_highfeemonth",countOneYear,iRow);
 
             // 发放比例
             BigDecimal nckdGrantproportion = (BigDecimal) this.getModel().getValue("nckd_grantproportion");
@@ -358,7 +359,7 @@ public class SalaryRetirCountEditPlugin extends AbstractBillPlugIn   {
             this.getModel().beginInit();
             this.getModel().setValue("nckd_twoupmonth",0,iRow);
             this.getModel().setValue("nckd_twoupsum",0,iRow);
-
+            this.getModel().setValue("nckd_highfeemonth",0,iRow);
             this.getModel().setValue("nckd_oneupmonth",0,iRow);
             this.getModel().setValue("nckd_oneupsum",0,iRow);
 
