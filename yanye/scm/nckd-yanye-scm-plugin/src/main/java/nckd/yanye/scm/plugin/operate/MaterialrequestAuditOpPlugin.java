@@ -130,11 +130,15 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
                 SaveServiceHelper.update(t);
             });
         } catch (Exception exception) {
+            exception.printStackTrace();
+            logger.info("报错详情：" + exception.getMessage());
             logger.info("报错详情：" + exception);
+            logger.info("报错详情：" + exception.getStackTrace());
             rollbackAudit(e);
-            throw new KDBizException(exception.getLocalizedMessage());
+            //throw new KDBizException(exception.getLocalizedMessage());
         }
     }
+
 
     private void rollbackAudit(AfterOperationArgs e) {
         Arrays.stream(e.getDataEntities()).forEach(t -> {
