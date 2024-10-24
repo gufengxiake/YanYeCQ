@@ -487,6 +487,7 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
         if (!saveOperationResult.isSuccess()) {
             errorMsg.add(materialObject.getString("name") + "对应的物料新增失败：" + saveOperationResult.getAllErrorOrValidateInfo() + saveOperationResult.getMessage());
         } else {
+            logger.info("新增物料成功");
             OperateOption operateOption = OperateOption.create();
             operateOption.setVariableValue(OperateOptionConst.ISHASRIGHT, "true");//不验证权限
 
@@ -494,19 +495,21 @@ public class MaterialrequestAuditOpPlugin extends AbstractOperationServicePlugIn
 //            DynamicObject single = BusinessDataServiceHelper.loadSingle("bd_material", new QFilter[]{new QFilter("id", QCP.equals, successPkIds.get(0))});
             //提交审批
             List<Object> saveSuccessPkIds = saveOperationResult.getSuccessPkIds();
-            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", new Object[]{saveSuccessPkIds}, operateOption);
+
+            OperationResult submit = OperationServiceHelper.executeOperate("submit", "bd_material", saveSuccessPkIds.toArray(), operateOption);
             if (!submit.isSuccess()) {
-                OperationServiceHelper.executeOperate("delete", "bd_material", new Object[]{saveSuccessPkIds}, OperateOption.create());
+                OperationServiceHelper.executeOperate("delete", "bd_material", saveSuccessPkIds.toArray(), OperateOption.create());
                 errorMsg.add(materialObject.getString("name") + "对应的物料提交失败：" + submit.getAllErrorOrValidateInfo() + submit.getMessage());
             } else {
-                List<Object> successPkIds = submit.getSuccessPkIds();
-                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", new Object[]{successPkIds}, operateOption);
+                logger.info("提交物料成功");
+                OperationResult audit = OperationServiceHelper.executeOperate("audit", "bd_material", saveSuccessPkIds.toArray(), operateOption);
                 if (!audit.isSuccess()) {
                     //已提交的数据需要先撤销提交再执行删除操作
-                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", new Object[]{successPkIds}, OperateOption.create());
-                    OperationServiceHelper.executeOperate("delete", "bd_material", new Object[]{successPkIds}, OperateOption.create());
+                    OperationServiceHelper.executeOperate("unsubmit", "bd_material", saveSuccessPkIds.toArray(), OperateOption.create());
+                    OperationServiceHelper.executeOperate("delete", "bd_material", saveSuccessPkIds.toArray(), OperateOption.create());
                     errorMsg.add(materialObject.getString("name") + "对应的物料发起审核失败：" + audit.getAllErrorOrValidateInfo() + audit.getMessage());
                 } else {
+                    logger.info("审核物料成功");
                     return materialObject;
                 }
             }
