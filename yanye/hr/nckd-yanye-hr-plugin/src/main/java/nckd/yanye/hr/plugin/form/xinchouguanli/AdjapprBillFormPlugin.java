@@ -1,6 +1,5 @@
 package nckd.yanye.hr.plugin.form.xinchouguanli;
 
-import com.google.common.collect.Lists;
 import kd.bos.dataentity.entity.DynamicObject;
 import kd.bos.dataentity.entity.DynamicObjectCollection;
 import kd.bos.dataentity.entity.LocaleString;
@@ -8,10 +7,7 @@ import kd.bos.entity.datamodel.IDataModel;
 import kd.bos.entity.datamodel.events.ChangeData;
 import kd.bos.entity.datamodel.events.PropertyChangedArgs;
 import kd.bos.exception.KDBizException;
-import kd.bos.form.ClientProperties;
-import kd.bos.form.IClientViewProxy;
 import kd.bos.form.IFormView;
-import kd.bos.form.control.ProgressBar;
 import kd.bos.form.control.events.BeforeItemClickEvent;
 import kd.bos.form.plugin.AbstractFormPlugin;
 import kd.bos.orm.query.QCP;
@@ -579,7 +575,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "up".equals(result.getUnionId()))
-                        .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
+                        .findFirst().map(SalaryCountAmountMatchResult::getRankId).orElse(null);
 
                 if (finalRankId == null) {
                     Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream().filter(r -> "up".equals(r.getUnionId()))
@@ -605,7 +601,7 @@ public class AdjapprBillFormPlugin extends AbstractFormPlugin {
 
                 finalRankId = salaryCountAmountMatchResults.stream()
                         .filter(result -> "down".equals(result.getUnionId()))
-                        .findFirst().map(SalaryCountAmountMatchResult::getGradeId).orElse(null);
+                        .findFirst().map(SalaryCountAmountMatchResult::getRankId).orElse(null);
 
                 if (finalRankId == null) {
                     Map<Long, List<Pair<Long, Long>>> positionInfo = salaryCountAmountMatchResults.stream()
