@@ -41,8 +41,11 @@ public class SaleInvSumReportFormPlugin extends AbstractReportFormPlugin impleme
         for (DynamicObject rowDatum : rowData) {
             //计算成本金额
             BigDecimal baseqty = rowDatum.getBigDecimal("baseqty") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("baseqty");
-            BigDecimal nckdCbdj = rowDatum.getBigDecimal("nckd_cbdj") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("nckd_cbdj");
-            rowDatum.set("nckd_cbdj",baseqty.multiply(nckdCbdj));
+            BigDecimal amountandtax = rowDatum.getBigDecimal("amountandtax") == null ? BigDecimal.ZERO : rowDatum.getBigDecimal("amountandtax");
+            if(baseqty.compareTo(BigDecimal.ZERO) != 0){
+                double v = amountandtax.doubleValue() / baseqty.doubleValue();
+                rowDatum.set("priceandtax",v);
+            }
             //赠品改为是/否
             String ispresent = rowDatum.getString("ispresent");
             if(ispresent.equals("true")){
@@ -59,10 +62,6 @@ public class SaleInvSumReportFormPlugin extends AbstractReportFormPlugin impleme
                 rowDatum.set("kjdb",subtract);
             }else{
                 rowDatum.set("kjdb",BigDecimal.ZERO);
-            }
-            //签收数量为空则取基本数量
-            if (BigDecimal.ZERO.compareTo(signbaseqty) == 0){
-                rowDatum.set("nckd_signbaseqty",baseqty);
             }
         }
     }
